@@ -82,6 +82,7 @@ struct _KRadioDevice {
   SPIDriver               *driver;
   thread_reference_t      thread;
   mutex_t                 radio_mutex;
+  int                     radio_intr;
 };
 
 KRadioDevice KRADIO1;
@@ -557,6 +558,7 @@ static void radio_handle_interrupt(KRadioDevice *radio) {
 
   if (radio->mode == mode_transmitting) {
     osalSysLockFromISR();
+    radio->radio_intr = 1;
     osalThreadResumeI(&(radio)->thread, MSG_OK);
     osalSysUnlockFromISR();
   }
@@ -567,11 +569,12 @@ static void radio_handle_interrupt(KRadioDevice *radio) {
   }
 }
 
+int radioIntrs = 0;
 void radioInterrupt(EXTDriver *extp, expchannel_t channel) {
 
   (void)extp;
   (void)channel;
-
+radioIntrs++;
   radio_handle_interrupt(radioDriver);
 }
 
@@ -617,6 +620,10 @@ void radioSend(KRadioDevice *radio,
 
   radio_select(radio);
 
+  osalSysLock();
+  radio->radio_intr = 0;
+  osalSysUnlock();
+
   /* Select the FIFO */
   reg = RADIO_Fifo | 0x80;
   spiSend(radio->driver, 1, &reg);
@@ -630,7 +637,8 @@ void radioSend(KRadioDevice *radio,
 
   /* Wait for the transmission to complete (will be unlocked in IRQ) */
   osalSysLock();
-  (void) osalThreadSuspendS(&radio->thread);
+  if (radio->radio_intr == 0)
+      (void) osalThreadSuspendS(&radio->thread);
   osalSysUnlock();
 
   /* Move back into "Rx" mode */

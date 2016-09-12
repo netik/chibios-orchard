@@ -57,7 +57,7 @@ OrchardTestResult orchardTestRunByName(const char *name, uint32_t test_type) {
   return orchardTestRun(test, test_type);
 }
 
-void orchardTestRunAll(BaseSequentialStream *chp, OrchardTestType test_type) {
+void orchardTestRunAll(BaseSequentialStream *chp, uint32_t test_type) {
   const TestRoutine *cur_test;
   OrchardTestResult test_result;
 

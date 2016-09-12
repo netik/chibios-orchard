@@ -25,11 +25,16 @@
  * Board identifier.
  */
 #define BOARD_KOSAGI_ORCHARD
-#define BOARD_NAME                  "Kosagi Orchard"
+ #define BOARD_NAME                  "Freedom KW01 Development"
 
 /* External 8 MHz crystal with PLL for 48 MHz core/system clock. */
-#define KINETIS_SYSCLK_FREQUENCY    48000000UL
+#ifdef notdef
+#define KINETIS_SYSCLK_FREQUENCY    48000000UL 
 #define KINETIS_MCG_MODE            KINETIS_MCG_MODE_PEE
+#endif
+#define KINETIS_SYSCLK_FREQUENCY    20971520UL
+#define KINETIS_MCG_MODE            KINETIS_MCG_MODE_FEI
+
 
 /*
  * Check for board revision specification.
@@ -57,3 +62,4 @@ extern "C" {
 #endif /* _FROM_ASM_ */
 
 #endif /* _BOARD_H_ */
+

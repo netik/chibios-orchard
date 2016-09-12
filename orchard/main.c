@@ -252,6 +252,7 @@ int main(void)
   chprintf(stream, "\r\n\r\nOrchard shell.  Based on build %s\r\n", gitversion);
   print_mcu_info();
 
+
   flashStart();
   orchardTestInit();
 
@@ -263,29 +264,36 @@ int main(void)
 
   orchardEventsStart();
 
+#ifdef notdef
   gpioxStart(i2cDriver);
 
   accelStart(i2cDriver);
   chargerStart(i2cDriver);
   ggStart(i2cDriver);
   captouchStart(i2cDriver);
+#endif
   radioStart(radioDriver, &SPID1);
+#ifdef notdef
   bleStart(bleDriver, &SPID2);
   oledStart(&SPID2);
   ledStart(LED_COUNT, fb, UI_LED_COUNT, ui_fb);
   effectsStart();
   uiStart();
   orchardAppInit();
+#endif
 
+#ifdef notdef
   // disable USB power source by default
   gpioxSetPadMode(GPIOX, usbOutPad, GPIOX_OUT_PUSHPULL | GPIOX_VAL_HIGH);
 
+#endif
   evtTableHook(orchard_events, shell_terminated, shell_termination_handler);
   evtTableHook(orchard_events, orchard_app_terminated, orchard_app_restart);
   evtTableHook(orchard_events, captouch_changed, key_mod);
   evtTableHook(orchard_events, accel_freefall, freefall);
   radioSetDefaultHandler(radioDriver, default_radio_handler);
 
+#ifdef notdef
   gfxInit();
 
   captouchCalibrate();
@@ -301,16 +309,21 @@ int main(void)
   configStart();
   
   orchardTestRunAll(stream, orchardTestPoweron);
+#endif
   
   // eventually get rid of this
   chprintf(stream, "User flash start: 0x%x  user flash end: 0x%x  length: 0x%x\r\n",
       __storage_start__, __storage_end__, __storage_size__);
   
+
   orchardShellRestart();
+#ifdef notdef
   orchardAppRestart();
+#endif
 
   while (TRUE)
     chEvtDispatch(evtHandlers(orchard_events), chEvtWaitOne(ALL_EVENTS));
+
 }
 
 void halt(void) {

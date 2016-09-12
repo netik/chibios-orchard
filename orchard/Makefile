@@ -5,7 +5,8 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -Os -ggdb -fomit-frame-pointer -falign-functions=16 -nostdlib -fstack-protector
+  USE_OPT = -Os -ggdb -fno-omit-frame-pointer -falign-functions=16 -nostdlib
+  USE_OPT += -DBIG_ENDIAN=0 -DLITTLE_ENDIAN=1
 endif
 
 # C specific options here (added to USE_OPT).
@@ -201,8 +202,9 @@ INCDIR = $(STARTUPINC) $(KERNINC) $(PORTINC) $(OSALINC) $(LIBFIXMATHINC) \
 
 MCU  = cortex-m0
 
+HOSTCC=cc
 #TRGT = arm-elf-
-#TRGT = arm-none-eabi-
+TRGT = arm-none-eabi-
 CC   = $(TRGT)gcc
 CPPC = $(TRGT)g++
 # Enable loading with g++ only if you need C++ runtime support.
@@ -278,6 +280,7 @@ gitversion.c: $(CHIBIOS)/.git/HEAD $(CHIBIOS)/.git/index
 POST_MAKE_ALL_RULE_HOOK: build/factory-test
 
 build/factory-test: factory-test.c
-	$(CC) factory-test.c -o build/factory-test -Wall -g
+	$(HOSTCC) factory-test.c -o build/factory-test -Wall -g
 
 factory-test.c:
+
