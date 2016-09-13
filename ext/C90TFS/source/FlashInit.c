@@ -154,8 +154,10 @@ uint32_t SIZE_OPTIMIZATION FlashInit (PFLASH_SSD_CONFIG pSSDConfig)
 
 #else /* DEBLOCK_SIZE == 0 */
     /* If size of D/E-Flash = 0 */
-    pSSDConfig->DFlashSize = 0x0U;
-    pSSDConfig->EEESize = 0x0U;
+    if (pSSDConfig->DFlashSize != 0x0U)
+        pSSDConfig->DFlashSize = 0x0U;
+    if (pSSDConfig->EEESize != 0x0U)
+        pSSDConfig->EEESize = 0x0U;
 #endif /* end of DEBLOCK_SIZE */
 #if C90TFS_ENABLE_DEBUG
     /* Enter Debug state if enabled */
