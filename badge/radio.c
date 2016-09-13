@@ -700,7 +700,7 @@ OrchardTestResult test_radio(const char *my_name, OrchardTestType test_type) {
         nonce = SIM->UIDMH;
         break;
       default:
-        nonce = rand();
+        nonce = 0 /*rand()*/;
         break;
       }
 
