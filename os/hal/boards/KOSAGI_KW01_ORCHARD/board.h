@@ -41,9 +41,8 @@
 
 /* Freescale/NXP Freedom KW019032 board uses FEI mode. */
 
-#define KINETIS_SYSCLK_FREQUENCY    20971520UL
+#define KINETIS_SYSCLK_FREQUENCY    47972352UL
 #define KINETIS_MCG_MODE            KINETIS_MCG_MODE_FEI
-
 
 /*
  * Check for board revision specification.

@@ -109,9 +109,25 @@ void kl1x_clock_init(void) {
   /* The MCGOUTCLK is divided by OUTDIV1 and OUTDIV4:
    * OUTDIV1 (divider for core/system and bus/flash clock)
    * OUTDIV4 (additional divider for bus/flash clock) */
+
+  /*
+   * Note: in FEI mode, the chip uses an internal 32KHz oscillator.
+   * If we don't do anything to the MCG, then the default is to run
+   * the CPU clock at 21MHz. We want to be able to run the CPU at
+   * full speed though, so we set the DMX32 bit and set the range
+   * select to mid range.
+   *
+   * This should yield an output of 48MHz. The OUTDIV1 divisor affects
+   * the system clock, and we want it at 0 (48/1 == 48). The OUTDIV4
+   * divisor affects the bus clock, and we want it at 1 (48/2 = 24).
+   */
+
   SIM->CLKDIV1 =
-          SIM_CLKDIV1_OUTDIV1(1) |  /* OUTDIV1 = divide-by-2 => 24 MHz */
-          SIM_CLKDIV1_OUTDIV4(0);   /* OUTDIV4 = divide-by-1 => 24 MHz */
+          SIM_CLKDIV1_OUTDIV1(0) |  /* OUTDIV1 = divide-by-1 => 48 MHz */
+          SIM_CLKDIV1_OUTDIV4(1);   /* OUTDIV4 = divide-by-2 => 24 MHz */
+
+  MCG->C4 &= ~(MCG_C4_DMX32 | MCG_C4_DRST_DRS_MASK);
+  MCG->C4 |= MCG_C4_DMX32 | MCG_C4_DRST_DRS(1);
 
 #elif KINETIS_MCG_MODE == KINETIS_MCG_MODE_FEE
   /*

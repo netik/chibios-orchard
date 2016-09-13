@@ -498,10 +498,13 @@ void radioWrite(KRadioDevice *radio, uint8_t addr, uint8_t val) {
 
 int radioDump(KRadioDevice *radio, uint8_t addr, void *bfr, int count) {
 
-  radio_select(radio);
-  spiSend(radio->driver, 1, &addr);
-  spiReceive(radio->driver, count, bfr);
-  radio_unselect(radio);
+   uint8_t i;
+   uint8_t * p;
+
+   p = bfr;
+   for (i = 0; i < count; i++) {
+       p[i] = radio_get (radio, addr + i);
+   }
 
   return 0;
 }
