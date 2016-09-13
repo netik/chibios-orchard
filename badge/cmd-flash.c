@@ -97,7 +97,7 @@ void cmd_flashtest(BaseSequentialStream *chp, int argc, char *argv[]) {
   
   chprintf(chp, "Flash test routine.\n\r");
   for( i = 0; i < TESTSIZE; i++ ) {
-    testdat[i] = (uint8_t) rand();
+    testdat[i] = (uint8_t) 0x12 /*rand()*/;
   }
 
   chprintf(chp, "Before programming: \n\r" );
