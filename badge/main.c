@@ -71,12 +71,14 @@ static void shell_termination_handler(eventid_t id) {
 extern int print_hex(BaseSequentialStream *chp,
                      const void *block, int count, uint32_t start);
 
-static void default_radio_handler(uint8_t type, uint8_t src, uint8_t dst,
-                                  uint8_t length, const void *data) {
-
+static void default_radio_handler(KW01_PKT * pkt)
+{
   chprintf(stream, "\r\nNo handler for packet found.  %02x -> %02x : %02x\r\n",
-           src, dst, type);
-  print_hex(stream, data, length, 0);
+           pkt->kw01_hdr.kw01_src,
+           pkt->kw01_hdr.kw01_dst,
+           pkt->kw01_hdr.kw01_prot);
+
+  print_hex(stream, pkt->kw01_payload, pkt->kw01_hdr.kw01_length, 0);
 }
 
 static void print_mcu_info(void) {
@@ -159,7 +161,7 @@ int main(void)
 
   orchardEventsStart();
 
-  radioStart(radioDriver, &SPID1);
+  radioStart(&SPID1);
 
 #ifdef notdef
   // disable USB power source by default
@@ -167,7 +169,7 @@ int main(void)
 
 #endif
   evtTableHook(orchard_events, shell_terminated, shell_termination_handler);
-  radioSetDefaultHandler(radioDriver, default_radio_handler);
+  radioDefaultHandlerSet (default_radio_handler);
 
   // eventually get rid of this
   chprintf(stream, "User flash start: 0x%x  user flash end: 0x%x  length: 0x%x\r\n",
@@ -202,7 +204,7 @@ void halt(void) {
   pbe_fbe();
   fbe_fei();
   
-  radioStop(radioDriver);
+  radioStop(&SPID1);
   cpuVLLS0();
 }
 

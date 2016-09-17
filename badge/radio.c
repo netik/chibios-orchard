@@ -1,741 +1,597 @@
+/*
+ * This module implements support for the Semtech SX123x IMS radio module.
+ * The SX123x chips are available as standalone devices, are may also be
+ * embedded as the on-board radio device in an SoC, such as the
+ * Freescale/NXP KW01 processor.
+ *
+ * The SX123x series are Industrial Scientific and Medical (ISM) radio modems
+ * that cover the 433MHz, 868MHz and 915MHZ bands, supporting FSK, GMSK, MSK
+ * and OOK modulation. They also include built-in AES-128 encryption support
+ * as well as a battery monitor and temperature sensor. The packet handler
+ * also includes a 66-byte FIFO.
+ *
+ * The radio module is programmed using a SPI interface. A set of digital
+ * I/O pins are provided for signalling interrupt conditions and a CLKOUT
+ * pin to which an be optionally configured to provide an image of the
+ * radio's reference clock. There is also a hard reset pin.
+ *
+ * The radio module radio module supports several tunable parameters,
+ * including center carrier frequency, deviation, bitrate, and RX filter
+ * bandwidth. Packet filtering can be done using a bit synchronizer that
+ * can be programmed to recognize up to 8 bytes of synronization data.
+ * (This effectively forms a radio network.) Additional filtering can be
+ * performed using a node ID byte, which allows for 254 unique unicast
+ * addresses and one broadcast address.
+ *
+ * On the Freescale/NXP KW01 chip, the radio module's SPI pins are wired
+ * internally to the KW01's SPI0 interface. The DIO, reset and CLKOUT pins
+ * must be wired up by the board designer. On the KW019032 reference board,
+ * the DIO0 pin is wired to PORTC pin 3, the DIO1 pin is wired to PORTC
+ * pin 4 and the reset pin is wired to PORTE pin 30.
+ *
+ * SEE ALSO:
+ * http://www.nxp.com/files/microcontrollers/doc/ref_manual/MKW01xxRM.pdf
+ * http://www.semtech.com/images/datasheet/sx1232.pdf
+ * http://www.semtech.com/images/datasheet/sx1233.pdf
+ */
 
 #include <string.h>
 
 #include "ch.h"
 #include "hal.h"
 #include "spi.h"
+#include "pal.h"
+#include "chprintf.h"
+
+#include "radio_reg.h"
+#include "radio.h"
 
 #include "orchard.h"
 #include "orchard-events.h"
-#include "radio.h"
 
-#include "TransceiverReg.h"
-#ifdef notdef
-#include "orchard-test.h"
-#include "test-audit.h"
-#endif
-#define REG_TEMP1                 0x4e
-#define REG_TEMP1_START             (1 << 3)
-#define REG_TEMP1_RUNNING           (1 << 2)
-#define REG_TEMP2                 0x4f
+/*
+ * Statically allocate memory for a single packet.
+ * We can only dispatch one frame at a time.
+ */
 
-#define RADIO_XTAL_FREQUENCY      32000000 /* 32 MHz crystal */
-#define RADIO_FIFO_DEPTH          66
-#define RADIO_BUFFER_SIZE         64
-#define RADIO_BUFFER_MASK         (RADIO_BUFFER_SIZE - 1)
+static KW01_PKT pkt;
+static KW01_PKT_HANDLER handlers[KW01_PKT_HANDLERS_MAX];
+static KW01_PKT_HANDLER default_handler;
 
-#define MAX_PACKET_HANDLERS       10
+static int radioDispatch (void);
+static void radioIntrHandle (eventid_t);
+static void radio_select (SPIDriver *);
+static void radio_unselect (SPIDriver *);
 
-/* This number was guessed based on observations (133 at 30 degrees) */
-static int temperature_offset = 133 + 30;
+/******************************************************************************
+*
+* radioInterrupt - SX123x interrupt service routine
+*
+* This function is triggered when the radio module asserts its interrupt pin.
+* On the Freescale Freedom KW019032 board, the DIO0 pin is tied to I/O
+* PORT C pin 4.
+*
+* RETURNS: N/A
+*/
 
-enum modulation_type {
-  modulation_fsk_no_shaping = 0,
-  modulation_fsk_gaussian_bt_1p0 = 1,
-  modulation_fsk_gaussian_bt_0p5 = 2,
-  modulation_fsk_gaussian_bt_0p3 = 3,
-  modulation_ook_no_filter = 8,
-  modulation_ook_filter_br = 9,
-  modulation_ook_filter_2xbr = 10,
-};
+void
+radioInterrupt (EXTDriver *extp, expchannel_t channel)
+{
+	(void)extp;
+	(void)channel;
 
-enum radio_mode {
-  mode_sleep,
-  mode_standby,
-  mode_fs,
-  mode_receiving,
-  mode_transmitting,
-};
+	chSysLockFromISR();
+	chEvtBroadcastI(&rf_pkt_rdy);
+	chSysUnlockFromISR();
 
-enum encoding_type {
-  encoding_none = 0,
-  encoding_manchester = 1,
-  encoding_whitening = 2,
-};
-
-typedef struct _PacketHandler {
-    void (*handler)(uint8_t prot, uint8_t src, uint8_t dst,
-                    uint8_t length, const void *data);
-      uint8_t prot;
-} PacketHandler;
-
-/* Kinetis Radio definition */
-struct _KRadioDevice {
-  uint16_t                bit_rate;
-  uint16_t                fdev;
-  uint32_t                channel;
-  uint8_t                 rx_buf[RADIO_BUFFER_SIZE];
-  uint32_t                rx_buf_end;
-  uint32_t                rx_buf_pos;
-  uint8_t                 address;
-  uint8_t                 broadcast;
-  uint8_t                 num_handlers;
-  PacketHandler           handlers[MAX_PACKET_HANDLERS];
-  void                    (*default_handler)(uint8_t prot,
-                                             uint8_t src,
-                                             uint8_t dst,
-                                             uint8_t length,
-                                             const void *data);
-  enum modulation_type    modulation;
-  enum radio_mode         mode;
-  enum encoding_type      encoding;
-  SPIDriver               *driver;
-  thread_reference_t      thread;
-  mutex_t                 radio_mutex;
-  int                     radio_intr;
-};
-
-KRadioDevice KRADIO1;
-
-
-static uint8_t const default_registers[] = {
-  /* Radio operation mode initialization @0x01*/
-  RADIO_OpMode, OpMode_Sequencer_On | OpMode_Listen_Off | OpMode_StandBy,
-
-  /* Radio Data mode and modulation initialization @0x02*/
-//  RADIO_DataModul, DataModul_DataMode_Packet | DataModul_Modulation_Fsk | DataModul_ModulationShaping_BT_05,
-
-  /* Radio bit rate initialization @0x03-0x04*/
-  RADIO_BitrateMsb, BitrateMsb_4800,
-  RADIO_BitrateLsb, BitrateLsb_4800,
-
-  /* Radio frequency deviation initialization @0x05-0x06*/
-  RADIO_FdevMsb, FdevMsb_2400,
-  RADIO_FdevLsb, FdevLsb_2400,
-
-  /* Radio RF frequency initialization @0x07-0x09*/
-  /*Default Frequencies*/
-#define DEFAULT_FRF_915
-
-#ifdef DEFAULT_FRF_915
-  RADIO_FrfMsb, FrfMsb_915,
-  RADIO_FrfMid, FrfMid_915,
-  RADIO_FrfLsb, FrfLsb_915,
-#endif
-
-#ifdef DEFAULT_FRF_868  
-  RADIO_FrfMsb, FrfMsb_868,
-  RADIO_FrfMid, FrfMid_868,
-  RADIO_FrfLsb, FrfLsb_868,
-#endif
-
-#ifdef DEFAULT_FRF_865
-  RADIO_FrfMsb, FrfMsb_865,
-  RADIO_FrfMid, FrfMid_865,
-  RADIO_FrfLsb, FrfLsb_865,
-#endif
-
-#ifdef DEFAULT_FRF_470  
-  RADIO_FrfMsb, FrfMsb_470,
-  RADIO_FrfMid, FrfMid_470,
-  RADIO_FrfLsb, FrfLsb_470,
-#endif
-
-#ifdef DEFAULT_FRF_434  
-  RADIO_FrfMsb, FrfMsb_434,
-  RADIO_FrfMid, FrfMid_434,
-  RADIO_FrfLsb, FrfLsb_434,
-#endif
-
-#ifdef DEFAULT_FRF_920                                                          //JAPAN
-  RADIO_FrfMsb, FrfMsb_920,
-  RADIO_FrfMid, FrfMid_920,
-  RADIO_FrfLsb, FrfLsb_920,
-#endif
-
-  /* Radio RegAfcCtrl initialization @0x0B*/
-  RADIO_AfcCtrl, AfcCtrl_AfcLowBeta_Off ,
-
-  /* Radio output power initialization @0x11*/
-  RADIO_PaLevel, PaLevel_Pa0_On | PaLevel_Pa1_Off | PaLevel_Pa2_Off | 0x1F,
-
-  /* Radio Rise/Fall time of ramp up/down in FSK initialization @0x12*/
-  RADIO_PaRamp, PaRamp_40,
-
-  /* Radio overload current protection for PA initialization 0x13*/
-  RADIO_Ocp, Ocp_Ocp_On | 0x0C,
-
-  /* Radio LNA gain and input impedance initialization @0x18*/
-  RADIO_Lna, Lna_LnaZin_50 | Lna_LnaGain_Agc,
-
-  /* Radio channel filter bandwidth initialization @0x19*/
-  RADIO_RxBw, DccFreq_7 | RxBw_10400,
-
-  /* Radio channel filter bandwidth for AFC operation initialization @0x1A*/
-  RADIO_AfcBw, DccFreq_7 | RxBw_10400,
-
-  /* Radio automatic frequency control initialization @0x1E*/
-  RADIO_AfcFei, AfcFei_AfcAuto_Off | AfcFei_AfcAutoClear_On,
-
-  /* Radio Rssi threshold initialization @0x29*/
-  // RSSIthres = [-174 + NF +10*log(2*RxBw) + DemodSNR] dBm
-  // NF = 7dB
-  // DemodSnr = 8dB
-  // RxBw depends on frequency bands and profiles
-  RADIO_RssiThresh, 0xDC, // -101 dBm for 333.3 Khz singleside channel filter bandwith
-
-  /* Radio RegTimeoutRxStart initialization @0x2A*/
-  /* Radio RegTimeoutRssiThresh initialization @0x2B*/
-  RADIO_RxTimeout1, 0x00, //disable timeout rx start
-  RADIO_RxTimeout2, 0x00, //disable timeout rx start
-
-  /* MKW01 preamble size initialization @0x2C-0x2D*/
-  RADIO_PreambleMsb, 0x00,
-  RADIO_PreambleLsb, 0x10,
-
-  /* Radio sync word control and value initialization @0x2E-0x30*/
-  RADIO_SyncConfig, SyncConfig_Sync_On | SyncConfig_FifioFill_ifSyncAddres | SyncConfig_SyncSize_2,
-  RADIO_SyncValue1, 0x90, //SFD value for uncoded with phySUNMRFSKSFD = 0
-  RADIO_SyncValue2, 0x4E, //SFD value for uncoded with phySUNMRFSKSFD = 0
-
-  /* Radio packet mode config */
-  RADIO_PacketConfig1, PacketConfig1_PacketFormat_Variable_Length | PacketConfig1_AddresFiltering_Node_Or_Broadcast | PacketConfig1_Crc_On,
-  RADIO_PacketConfig2, 0x00,
-
-  /* Radio payload length initialization */
-  RADIO_PayloadLength, 255,  //max length in rx
-
-  /* Prep a temperature sample */
-  RADIO_Temp1, REG_TEMP1_START,
-};
-
-static void radio_select(KRadioDevice *radio) {
-
-  spiAcquireBus(radio->driver);
-  spiSelect(radio->driver);
+	return;
 }
 
-static void radio_unselect(KRadioDevice *radio) {
+static int
+radioDispatch ()
+{
+	uint8_t * p;
+	KW01_PKT_HANDLER * ph;
+	uint8_t reg;
+	uint8_t len;
+	uint8_t i;
 
-  spiUnselect(radio->driver);
-  spiReleaseBus(radio->driver);
+	/* Get the signal strength reading for this frame. */
+
+	pkt.kw01_rssi = radioRead (KW01_RSSIVAL);
+
+	/* Start reading from the FIFO. */
+
+	radio_select (&SPID1);
+	reg = KW01_FIFO;
+	spiSend (&SPID1, 1, &reg);
+
+	/* The frame length is the first byte in the FIFO. */
+
+	spiReceive (&SPID1, 1, &len);
+
+	if (len > KW01_PKT_MAXLEN) {
+		radio_unselect (&SPID1);
+		radioWrite (KW01_PKTCONF2, KW01_PKTCONF2_RESTARTRX);
+		return (-1);
+	}
+
+	/*
+	 * The first byte in the pkt structure is the RSSI value
+	 * and the second is the length, both of which we will
+	 * fill in manually, so start filling the packet buffer
+	 * from the second byte in.
+	 */
+
+	p = (uint8_t *)&pkt;
+	p += 2;
+
+	/* Read the rest of the frame. */
+
+	spiReceive (&SPID1, len - 1, p);
+	radio_unselect (&SPID1);
+
+	/* Set the payload length (don't include the header length) */
+
+	pkt.kw01_hdr.kw01_length = len - sizeof (KW01_PKT_HDR);
+
+	/* Restart the receiver */
+
+	radioWrite (KW01_PKTCONF2, KW01_PKTCONF2_RESTARTRX);
+
+	for (i = 0; i < KW01_PKT_HANDLERS_MAX; i++) {
+		ph = &handlers[i];
+		if (ph->kw01_handler != NULL &&
+		    ph->kw01_prot == pkt.kw01_hdr.kw01_prot) {
+			ph->kw01_handler (&pkt);
+			break;
+		}
+	}
+
+	if (i == KW01_PKT_HANDLERS_MAX)
+		default_handler.kw01_handler (&pkt);
+
+	return (0);
 }
 
-static void radio_set(KRadioDevice *radio, uint8_t addr, uint8_t val) {
+static void
+radioIntrHandle (eventid_t id)
+{
+	uint8_t irq1;
+	uint8_t irq2;
 
-  uint8_t buf[2] = {addr | 0x80, val};
+	(void)id;
 
-  radio_select(radio);
-  spiSend(radio->driver, 2, buf);
-  radio_unselect(radio);
+	irq1 = radioRead (KW01_IRQ1);
+	irq2 = radioRead (KW01_IRQ2);
+
+	/* We received a packet -- read it and dispatch it. */
+	if (irq2 & KW01_IRQ2_PAYLOADREADY)
+		radioDispatch ();
+
+	/* Acknowledge interrupts */
+
+	radioWrite (KW01_IRQ1, irq1);
+	radioWrite (KW01_IRQ2, irq2);
+
+	return;
 }
 
-static uint8_t radio_get(KRadioDevice *radio, uint8_t addr) {
+/******************************************************************************
+*
+* radioReset - force a reset of the SX1232 chip
+*
+* The SX1232 module has a reset pin which can be asserted to force a complete
+* reset of the radio. This reloads the power-up default register contents and
+* puts the radio into standby mode.
+*
+* On the Freescale Freedom KW019032 board, the reset pin is wired to I/O
+* port E pin 30. This function asserts that pin for 1 millisecond and then
+* then waits for 10 ms afterwards for the chip reset to complete.
+*
+* RETURNS: N/A
+*/
 
-  uint8_t val;
+static void
+radioReset (void)
+{
+        /* Assert the reset pin for 1 millisecond */
 
-  radio_select(radio);
-  spiSend(radio->driver, 1, &addr);
-  spiReceive(radio->driver, 1, &val);
-  radio_unselect(radio);
-  return val;
+        palSetPad (GPIOE, 30);
+        chThdSleepMilliseconds(1);
+        palClearPad (GPIOE, 30);
+
+ 	/* Now wait for the chip to get its brains in order. */
+
+        chThdSleepMilliseconds(100);
+	
+	return;
 }
 
-static void radio_set_bit_rate(KRadioDevice *radio, uint32_t rate) {
+int
+radioModeSet (uint8_t mode)
+{
+	unsigned int i;
 
-  rate = RADIO_XTAL_FREQUENCY / rate;
-  radio_set(radio, RADIO_BitrateMsb, rate >> 8);
-  radio_set(radio, RADIO_BitrateLsb, rate);
+	if (mode != KW01_MODE_STANDBY &&
+	    mode != KW01_MODE_SLEEP &&
+	    mode != KW01_MODE_RX &&
+	    mode != KW01_MODE_TX)
+		return (-1);
+
+	radioWrite (KW01_OPMODE, mode);
+
+	for (i = 0; i < KW01_DELAY; i++) {
+		if (radioRead (KW01_IRQ1) & KW01_IRQ1_MODEREADY)
+			break;
+	}
+
+	if (i == KW01_DELAY)
+		return (-1);
+
+	return (0);
 }
 
-static void radio_phy_update_modulation_parameters(KRadioDevice *radio) {
+int
+radioFrequencySet (uint32_t freq)
+{
+	double val;
+	uint32_t regval;
 
-  /* Radio frequency deviation initialization @0x05-0x06*/
-  radio_set(radio, RADIO_FdevMsb, radio->fdev >> 8);
-  radio_set(radio, RADIO_FdevLsb, radio->fdev);
+	if (freq < 430000000 || freq > 920000000)
+		return (-1);
 
-  /* Radio channel filter bandwidth initialization @0x19*/
-  radio_set(radio, RADIO_RxBw, DccFreq_2 | RxBw_250000);
+	val = KW01_FREQ(freq);
+	regval = (uint32_t)val;
 
-  /* Radio channel filter bandwidth for AFC operation initialization @0x1A*/
-  radio_set(radio, RADIO_AfcBw, DccFreq_2 | RxBw_250000);
+	radioWrite (KW01_FRFMSB, regval >> 16);
+	radioWrite (KW01_FRFISB, regval >> 8);
+	radioWrite (KW01_FRFLSB, regval & 0xFF);
+
+	return (0);
 }
 
-static void radio_phy_update_rf_frequency(KRadioDevice *radio) {
+uint32_t
+radioFrequencyGet(void)
+{
+	double val;
+	uint32_t regval;
 
-  uint32_t channel_frequency;
+	regval = radioRead (KW01_FRFLSB);
+	regval |= radioRead (KW01_FRFISB) << 8;
+	regval |= radioRead (KW01_FRFMSB) << 16;
 
-  /* Calculation->  Frf = Foperate/Fstep
-   *                (Fstep = 61.03515625; for a 32Mhz FXOSC)
-   */
+	val = (double)regval * KW01_FSTEP;
+	regval = (uint32_t)val;
 
-  /* This value corresponds to a channel spacing of 1 MHz.*/
-  channel_frequency = radio->channel * 0x4000;
-
-  /* This value corresponds to a Operating Frequency of 902,500,000
-   * Value for Channel0 (902.500 MHz)
-   */
-  channel_frequency += 14786560;
-
-  radio_set(radio, RADIO_FrfMsb, channel_frequency >> 16);
-  radio_set(radio, RADIO_FrfMid, channel_frequency >> 8);
-  radio_set(radio, RADIO_FrfLsb, channel_frequency);
+	return (regval);
 }
 
-static void radio_set_preamble_length(KRadioDevice *radio, uint32_t length) {
+int
+radioDeviationSet (uint32_t deviation)
+{
+	double val;
+	uint32_t regval;
 
-  /* Radio preamble size initialization @0x2C-0x2D*/
-  radio_set(radio, RADIO_PreambleMsb, length >> 8);
-  radio_set(radio, RADIO_PreambleLsb, length);
+	if (deviation < 600 || deviation > 200000)
+		return (-1);
+
+	val = KW01_FREQ(deviation);
+	regval = (uint32_t)val;
+
+	radioWrite (KW01_FDEVMSB, regval >> 8);
+	radioWrite (KW01_FDEVLSB, regval & 0xFF);
+
+	return (0);
 }
 
-/* Valid range: -18 to 13 dBm */
-static void radio_set_output_power_dbm(KRadioDevice *radio, int power) {
+uint32_t
+radioDeviationGet(void)
+{
+	double val;
+	uint32_t regval;
 
-  radio_set(radio, RADIO_PaLevel, PaLevel_Pa0_On
-                                | PaLevel_Pa1_Off
-                                | PaLevel_Pa2_Off
-                                | ((power + 18) & 0x1f));
+	regval = radioRead (KW01_FDEVLSB);
+	regval |= radioRead (KW01_FDEVMSB) << 8;
+
+	val = (double)regval * KW01_FSTEP;
+	regval = (uint32_t)val;
+
+	return (regval);
 }
 
-#if 0
-static void radio_phy_force_idle(KRadioDevice *radio) {
-  //Put transceiver in Stand-By mode
-  radio_set(radio, RADIO_OpMode, OpMode_Sequencer_On
-                            | OpMode_Listen_Off
-                            | OpMode_StandBy);
+int
+radioBitrateSet (uint32_t bitrate)
+{
+	double val;
+	uint32_t regval;
 
-  //clear the transceiver FIFO
-  while(radio_get(radio, RADIO_IrqFlags2) & 0x40)
-    (void)radio_get(radio, RADIO_Fifo);
-}
-#endif
+	if (bitrate < 1200 || bitrate > 200000)
+		return (-1);
 
-static void radio_set_packet_mode(KRadioDevice *radio) {
-  uint8_t reg;
+	val = KW01_BITRATE(bitrate);
+	regval = (uint32_t)val;
 
-  reg = radio_get(radio, RADIO_DataModul);
-  reg &= ~DataModul_DataMode_Mask;
-  reg |= DataModul_DataMode_Packet;
-  radio_set(radio, RADIO_DataModul, reg);
+	radioWrite (KW01_BITRATEMSB, regval >> 8);
+	radioWrite (KW01_BITRATELSB, regval & 0xFF);
+
+	return (0);
 }
 
-static void radio_set_modulation(KRadioDevice *radio,
-                                 enum modulation_type modulation) {
+uint32_t
+radioBitrateGet(void)
+{
+	double val;
+	uint32_t regval;
 
-  uint8_t reg;
+	regval = radioRead (KW01_BITRATELSB);
+	regval |= radioRead (KW01_BITRATEMSB) << 8;
 
-  reg = radio_get(radio, RADIO_DataModul);
-  reg &= ~DataModul_ModulationShaping_Mask;
-  reg &= ~DataModul_Modulation_Mask;
-  reg |= modulation;
-  radio_set(radio, RADIO_DataModul, reg);
+	val = (double)KW01_XTAL_FREQ / (double)regval;
+	regval = (uint32_t)val;
+
+	return (regval);
 }
 
-void radio_set_encoding(KRadioDevice *radio, enum encoding_type encoding) {
+void
+radioStart (SPIDriver * sp)
+{
+	uint8_t version;
 
-  uint8_t reg;
-  
-  radio->encoding = encoding;
-  reg = radio_get(radio, RADIO_PacketConfig1);
-  reg &= ~PacketConfig1_DcFree_Mask;
-  reg |= (encoding << PacketConfig1_DcFree_Shift);
-  radio_set(radio, RADIO_PacketConfig1, reg);
+	(void)sp;
+
+	/* Reset radio hardware to known state. */
+
+	radioReset ();
+
+	/* Put radio in standby mode */
+
+	radioModeSet (KW01_MODE_STANDBY);
+
+	/* Select variable length packet mode */
+
+	radioWrite (KW01_DATMOD, KW01_DATAMODE_PACKET|
+		    KW01_MODULATION_FSK|KW01_MODSHAPE_GFBT03);
+
+	/*
+	 * Enable whitening and CRC insertion/checking,
+	 * select unicast/broadcast address filtering mode.
+	 */
+
+	radioWrite (KW01_PKTCONF1, KW01_FORMAT_VARIABLE|KW01_DCFREE_WHITENING|
+			KW01_PKTCONF1_CRCON|KW01_AFILT_UCASTBCAST);
+
+	radioWrite (KW01_PKTCONF2, 0);
+	radioWrite (KW01_PAYLEN, 0xFF);
+
+	radioWrite (KW01_PREAMBLEMSB, 0);
+	radioWrite (KW01_PREAMBLELSB, 3);
+
+	/* Select frequency, deviation and bitrate */
+
+	radioFrequencySet (902500000);
+	radioDeviationSet (170000);
+	radioBitrateSet (50000);
+
+	/* Set power output mode */
+
+	radioWrite (KW01_PALEVEL, KW01_PALEVEL_PA0);
+
+	/* Set node and broadcas taddress */
+
+	radioAddressSet (1);
+	radioWrite (KW01_BCASTADDR, 0xFF);
+
+	/* Set antenna impedance, enable rX AGC,  */
+
+	radioWrite (KW01_LNA, KW01_ZIN_200OHM|KW01_GAIN_AGC);
+
+	/* Initialize synchronization bytes */
+
+	radioWrite (KW01_SYNCCONF, KW01_SYNCCONF_SYNCON | KW01_SYNCSIZE_4);
+	radioWrite (KW01_SYNCVAL0, 0x90);
+	radioWrite (KW01_SYNCVAL1, 0x4E);
+	radioWrite (KW01_SYNCVAL2, 0xDE);
+	radioWrite (KW01_SYNCVAL3, 0xAD);
+
+	/* Set squelch level. */
+
+	radioWrite (KW01_RSSITHRESH, 0xD0);
+
+	/* Set TX FIFO threshold -- send immediately. */
+
+	radioWrite (KW01_FIFOTHRESH, 1);
+
+	radioWrite (KW01_AFC_FEI, KW01_AFC_FEI_AFCACLR);
+
+	radioWrite (KW01_RXBW, KW01_DCCFREQ_4 | KWW01_RXBW_250000);
+	radioWrite (KW01_RXBWAFC, KW01_DCCFREQ_4 | KWW01_RXBW_250000);
+
+	/* Set up interrupt event handler */
+
+	evtTableHook (orchard_events, rf_pkt_rdy, radioIntrHandle);
+
+	/* Display radio info. */
+
+	version = radioRead (KW01_VERSION);
+
+	chprintf (stream, "Radio chip version: %d Mask version: %d\r\n",
+		KW01_CHIPREV(version), KW01_MASKREV(version));
+	chprintf (stream, "Radio channel: %dMHz ", radioFrequencyGet());
+	chprintf (stream, "Deviation: +/- %dKHz ", radioDeviationGet());
+	chprintf (stream, "Bitrate: %dbps\r\n", radioBitrateGet());
+
+	radioModeSet (KW01_MODE_RX);
+
+	return;
 }
 
-static void radio_set_node_address(KRadioDevice *radio, uint8_t address) {
-
-  radio->address = address;
-  radio_set(radio, RADIO_NodeAddress, address);
+void
+radioStop (SPIDriver * sp)
+{
+	(void)sp;
+	radioReset();
+	return;
 }
 
-static void radio_set_broadcast_address(KRadioDevice *radio, uint8_t address) {
-
-  radio->broadcast = address;
-  radio_set(radio, RADIO_BroadcastAddress, address);
+static void
+radio_select(SPIDriver * sp)
+{
+	spiAcquireBus (sp);
+	spiSelect (sp);
+	return;
 }
 
-static void radio_unload_packet(eventid_t id) {
-  
-  (void)id;
-
-  KRadioDevice *radio = radioDriver;
-  RadioPacket pkt;
-  uint8_t reg, crc;
-
-  radio_select(radio);
-  reg = RADIO_Fifo;
-  spiSend(radio->driver, 1, &reg);
-
-  /* Read the "length" byte */
-  spiReceive(radio->driver, sizeof(pkt), &pkt);
-
-  uint8_t payload[pkt.length - sizeof(pkt)];
-
-  /* read the remainder of the packet */
-  spiReceive(radio->driver, sizeof(payload), payload);
-  spiReceive(radio->driver, sizeof(crc), &crc);
-  radio_unselect(radio);
-
-  /* Dispatch the packet handler */
-  unsigned int i;
-  bool handled = false;
-  for (i = 0; i < radio->num_handlers; i++) {
-    if (radio->handlers[i].prot == pkt.prot) {
-      radio->handlers[i].handler(pkt.prot,
-                                 pkt.src,
-                                 pkt.dst,
-                                 sizeof(payload),
-                                 payload);
-      handled = true;
-      break;
-    }
-  }
-
-  /* If the packet wasn't handled, pass it to the default handler */
-  if (!handled && radio->default_handler)
-      radio->default_handler(pkt.prot,
-                             pkt.src,
-                             pkt.dst,
-                             sizeof(payload),
-                             payload);
+static void
+radio_unselect(SPIDriver * sp)
+{
+	spiUnselect (sp);
+	spiReleaseBus (sp);
 }
 
-void radioStop(KRadioDevice *radio) {
-  radio_set(radio, RADIO_OpMode, 0x80); // force into sleep mode immediately
+void
+radioAcquire (void)
+{
+	/*radio_select (&SPID1);*/
+	return;
+}
+void
+radioRelease (void)
+{
+	/*radio_select (&SPID1);*/
+	return;
 }
 
-void radioAcquire(KRadioDevice *radio) {
-  osalMutexLock(&(radio->radio_mutex));
+void
+radioWrite (uint8_t addr, uint8_t val)
+{
+	uint8_t buf[2];
+	SPIDriver * sp;
+
+	sp = &SPID1;
+
+	buf[0] = addr | 0x80;
+	buf[1] = val;
+
+	radio_select (sp);
+	spiSend (sp, 2, buf);
+	radio_unselect (sp);
+
+	return;
 }
 
-void radioRelease(KRadioDevice *radio) {
-  osalMutexUnlock(&(radio->radio_mutex));
+uint8_t
+radioRead (uint8_t addr)
+{
+	uint8_t val;
+	SPIDriver * sp;
+
+	sp = &SPID1;
+
+	radio_select (sp);
+	spiSend (sp, 1, &addr);
+	spiReceive (sp, 1, &val);
+	radio_unselect (sp);
+
+	return (val);
 }
 
-void radioStart(KRadioDevice *radio, SPIDriver *spip) {
+uint8_t
+radioAddressGet (void)
+{
+	uint8_t addr;
 
-  unsigned int reg;
-
-  radio->driver = spip;
-
-  evtTableHook(orchard_events, rf_pkt_rdy, radio_unload_packet);
-
-  reg = 0;
-  while (reg < ARRAY_SIZE(default_registers)) {
-    uint8_t cmd = default_registers[reg++];
-    uint8_t dat = default_registers[reg++];
-
-    radio_set(radio, cmd, dat);
-  }
-
-  radio->fdev = Fdev_170000;
-  radio_phy_update_modulation_parameters(radio);
-  radio_set_bit_rate(radio, 50000);
-
-  radio->channel = 0;
-  radio_phy_update_rf_frequency(radio);
-
-  radio_set_preamble_length(radio, 3);
-
-  radio_set_output_power_dbm(radio, 13); /* Max output with PA0 is 13 dBm */
-
-  radio_set_encoding(radio, encoding_whitening);
-  radio_set_modulation(radio, modulation_fsk_gaussian_bt_0p3);
-  radio_set_packet_mode(radio);
-  radio_set_broadcast_address(radio, 255);
-  radio_set_node_address(radio, 1);
-
-  /* Drain the Fifo */
-  while (radio_get(radio, RADIO_IrqFlags2) & IrqFlags2_FifoNotEmpty)
-    (void)radio_get(radio, RADIO_Fifo);
-
-  /* Move into "Rx" mode */
-  radio->mode = mode_receiving;
-  radio_set(radio, RADIO_OpMode, OpMode_Sequencer_On
-                               | OpMode_Listen_Off
-                               | OpMode_Receiver);
-
-  osalMutexObjectInit(&(radio->radio_mutex));  
+	addr = radioRead (KW01_NODEADDR);
+	return (addr);
 }
 
-void radioSetDefaultHandler(KRadioDevice *radio,
-                            void (*handler)(uint8_t prot,
-                                            uint8_t src,
-                                            uint8_t dst,
-                                            uint8_t length,
-                                            const void *data)) {
-  radio->default_handler = handler;
+void
+radioAddressSet (uint8_t addr)
+{
+	radioWrite (KW01_NODEADDR, addr);
+	return;
 }
 
-void radioSetHandler(KRadioDevice *radio, uint8_t prot,
-                     void (*handler)(uint8_t prot,
-                                     uint8_t src,
-                                     uint8_t dst,
-                                     uint8_t length,
-                                     const void *data)) {
-  unsigned int i;
-
-  /* Replace an existing handler? */
-  for (i = 0; i < radio->num_handlers; i++) {
-    if (radio->handlers[i].prot == prot) {
-      radio->handlers[i].handler = handler;
-      return;
-    }
-  }
-
-  /* New handler */
-  osalDbgAssert(radio->num_handlers < MAX_PACKET_HANDLERS,
-                "Too many packet handler prots");
-  radio->handlers[radio->num_handlers].prot    = prot;
-  radio->handlers[radio->num_handlers].handler = handler;
-  radio->num_handlers++;
+void
+radioDefaultHandlerSet (KW01_PKT_FUNC handler)
+{
+	default_handler.kw01_handler = handler;
+	return;
 }
 
-uint8_t radioRead(KRadioDevice *radio, uint8_t addr) {
+void
+radioHandlerSet (uint8_t prot, KW01_PKT_FUNC handler)
+{
+	uint8_t i;
+	KW01_PKT_HANDLER * p;
 
-  uint8_t val;
+	for (i = 0; i < KW01_PKT_HANDLERS_MAX; i++) {
+		p = &handlers[i];
+		if (p->kw01_prot == 0 || p->kw01_prot == prot) {
+			p->kw01_handler = handler;
+			p->kw01_prot = prot;
+			break;
+		}
+	}
 
-  val = radio_get(radio, addr);
-
-  return val;
+	return;
 }
 
-void radioWrite(KRadioDevice *radio, uint8_t addr, uint8_t val) {
+void
+radioSend(uint8_t dest, uint8_t prot,
+          size_t len, const void *payload)
+{
+	KW01_PKT_HDR hdr;
+	uint8_t reg;
+	unsigned int i;
 
-  radio_set(radio, addr, val);
+	/* Don't send more data than will fit in the FIFO. */
+
+	if (len > KW01_PKT_MAXLEN - KW01_PKT_HDRLEN)
+		return;
+
+	radioModeSet (KW01_MODE_STANDBY);
+
+	hdr.kw01_length = len + sizeof(hdr);
+	hdr.kw01_src = radioAddressGet();
+	hdr.kw01_dst = dest;
+	hdr.kw01_prot = prot;
+
+	radio_select(&SPID1);
+
+	reg = KW01_FIFO | 0x80;
+	spiSend (&SPID1, 1, &reg);
+
+	/* Load the header into the FIFO */
+	spiSend(&SPID1, sizeof(hdr), &hdr);
+
+	/* Load the payload into the FIFO */
+	spiSend(&SPID1, len, payload);
+
+	radio_unselect (&SPID1);
+
+	radioModeSet (KW01_MODE_TX);
+
+	for (i = 0; i < KW01_DELAY; i++) {
+		reg = radioRead (KW01_IRQ2);
+		if (reg & KW01_IRQ2_PACKETSENT)
+			break;
+	}
+
+	radioModeSet (KW01_MODE_RX);
+
+	return;
 }
 
-int radioDump(KRadioDevice *radio, uint8_t addr, void *bfr, int count) {
+int
+radioDump (uint8_t addr, void *bfr, int count)
+{
+	uint8_t i;
+	uint8_t * p;
 
-   uint8_t i;
-   uint8_t * p;
+	p = bfr;
+	for (i = 0; i < count; i++)
+		p[i] = radioRead (addr + i);
 
-   p = bfr;
-   for (i = 0; i < count; i++) {
-       p[i] = radio_get (radio, addr + i);
-   }
-
-  return 0;
+	return (0);
 }
-
-int radioTemperature(KRadioDevice *radio) {
-
-  uint8_t buf[2];
-
-  radio_set(radio, REG_TEMP1, REG_TEMP1_START);
-
-  do {
-    buf[0] = REG_TEMP1;
-
-    radio_select(radio);
-    spiSend(radio->driver, 1, buf);
-    spiReceive(radio->driver, 2, buf);
-    radio_unselect(radio);
-  }
-  while (buf[0] & REG_TEMP1_RUNNING);
-
-
-  return (temperature_offset - buf[1]);
-}
-
-void radioSetNetwork(KRadioDevice *radio, const uint8_t *id, uint8_t len) {
-
-  uint8_t reg;
-  uint32_t ptr;
-
-  reg = radio_get(radio, RADIO_SyncConfig);
-
-  /* Disable sync config */
-  if (!id || !len) {
-    radio_set(radio, RADIO_SyncConfig, reg & ~RADIO_SyncConfig_SyncOn);
-    return;
-  }
-
-  if (len > RADIO_NETWORK_MAX_LENGTH)
-    len = RADIO_NETWORK_MAX_LENGTH;
-
-  radio_set(radio, RADIO_SyncConfig, reg | RADIO_SyncConfig_SyncOn);
-  for (ptr = 0; ptr < len; ptr++) {
-    reg = id[ptr];
-
-    /* NOTE: The radio does not allow sync words to contain 0 bytes (7.5.7.1) */
-    if (reg == 0)
-      reg = 1;
-
-    radio_set(radio, RADIO_SyncValue1 + ptr, reg);
-  }
-}
-
-static void radio_handle_interrupt(KRadioDevice *radio) {
-
-  if (radio->mode == mode_transmitting) {
-    osalSysLockFromISR();
-    radio->radio_intr = 1;
-    osalThreadResumeI(&(radio)->thread, MSG_OK);
-    osalSysUnlockFromISR();
-  }
-  else if (radio->mode == mode_receiving) {
-    chSysLockFromISR();
-    chEvtBroadcastI(&rf_pkt_rdy);
-    chSysUnlockFromISR();
-  }
-}
-
-void radioInterrupt(EXTDriver *extp, expchannel_t channel) {
-
-  (void)extp;
-  (void)channel;
-  radio_handle_interrupt(radioDriver);
-}
-
-void radioSetAddress(KRadioDevice *radio, uint8_t addr) {
-
-  radio->address = addr;
-  radio_set_node_address(radio, addr);
-}
-
-uint8_t radioAddress(KRadioDevice *radio) {
-  
-  return radio->address;
-}
-
-void radioSend(KRadioDevice *radio,
-               uint8_t addr,
-               uint8_t prot,
-               size_t bytes,
-               const void *payload) {
-
-  RadioPacket pkt;
-  uint8_t reg;
-
-  pkt.length = bytes + sizeof(pkt);
-  pkt.src = radio->address;
-  pkt.dst = addr;
-  pkt.prot = prot;
-
-  /* Ideally, we'd poll for DIO1 to see when the FIFO can accept data.
-   * This is not wired up on Orchard, so we can't transmit packets larger
-   * than the FIFO.
-   */
-  osalDbgAssert(pkt.length < RADIO_FIFO_DEPTH, "Packet is too large");
-
-  /* Enter transmission mode */
-  radio->mode = mode_transmitting;
-  radio_set(radio, RADIO_OpMode, OpMode_Sequencer_On
-                               | OpMode_Listen_Off
-                               | OpMode_Transmitter);
-
-  /* Transmit the packet as soon as the entire thing is in the Fifo */
-  radio_set(radio, RADIO_FifoThresh, pkt.length - 1);
-
-  radio_select(radio);
-
-  osalSysLock();
-  radio->radio_intr = 0;
-  osalSysUnlock();
-
-  /* Select the FIFO */
-  reg = RADIO_Fifo | 0x80;
-  spiSend(radio->driver, 1, &reg);
-
-  /* Load the header into the Fifo */
-  spiSend(radio->driver, sizeof(pkt), &pkt);
-
-  /* Load the payload into the Fifo */
-  spiSend(radio->driver, bytes, payload);
-  radio_unselect(radio);
-
-  /* Wait for the transmission to complete (will be unlocked in IRQ) */
-  osalSysLock();
-  if (radio->radio_intr == 0)
-      (void) osalThreadSuspendS(&radio->thread);
-  osalSysUnlock();
-
-  /* Move back into "Rx" mode */
-  radio->mode = mode_receiving;
-  radio_set(radio, RADIO_OpMode, OpMode_Sequencer_On
-                               | OpMode_Listen_Off
-                               | OpMode_Receiver);
-}
-
-#ifdef notdef
-static uint32_t test_rxseq = 0;
-static uint32_t test_rxdat = 0;
-
-static void test_radio_handler(uint8_t prot, uint8_t src, uint8_t dst,
-                               uint8_t length, const void *data) {
-
-  (void)length;
-  (void)prot;
-  (void)src;
-  (void)dst;
-
-  test_rxdat = *((uint32_t *) data);
-  test_rxseq++;
-}
-
-#define RADIO_TEST_TIMEOUT_MS  5000
-#define RADIO_TEST_TX_RETRY_MS 300
-OrchardTestResult test_radio(const char *my_name, OrchardTestType test_type) {
-  (void) my_name;
-  uint8_t reg;
-  uint32_t nonce;
-  uint32_t oldseq;
-  uint32_t starttime;
-  uint8_t i, j;
-  char promptA[16];
-  char promptB[16];
-  
-  switch(test_type) {
-  case orchardTestPoweron:
-  case orchardTestTrivial:
-    reg = radio_get(radioDriver, RADIO_Version);
-    if( reg != 0x23 ) {
-      return orchardResultFail;
-    } else {
-      return orchardResultPass;
-    }
-    break;
-  case orchardTestInteractive:
-    orchardTestPrompt("radio test", "requires test peer", 0);
-    radioSetHandler(radioDriver, radio_prot_peer_to_dut, test_radio_handler);
-
-    for (i = 0; i < 4; i++) {
-      switch(i) {
-      case 0:
-        nonce = SIM->UIDL;
-        break;
-      case 1:
-        nonce = SIM->UIDML;
-        break;
-      case 2:
-        nonce = SIM->UIDMH;
-        break;
-      default:
-        nonce = 0 /*rand()*/;
-        break;
-      }
-
-      j = 0;
-      oldseq = test_rxseq;
-      starttime = chVTGetSystemTime();
-      while (oldseq == test_rxseq) {
-        chsnprintf(promptA, sizeof(promptA), "radio tx: %d", i+1 );
-        chsnprintf(promptB, sizeof(promptB), "retry: %d", j++ );
-        orchardTestPrompt(promptA, promptB, 0);
-	radioAcquire(radioDriver);
-        radioSend(radioDriver, RADIO_BROADCAST_ADDRESS, radio_prot_dut_to_peer,
-                  sizeof(nonce), &nonce);
-	radioRelease(radioDriver);
-        if (chVTGetSystemTime() - starttime > RADIO_TEST_TIMEOUT_MS) {
-          orchardTestPrompt("radio test", "timeout fail!", 0);
-          return orchardResultFail;
-        }
-        chThdSleepMilliseconds(RADIO_TEST_TX_RETRY_MS);
-      }
-      if (test_rxdat != nonce) {
-        orchardTestPrompt("radio test", "rx mismatch!", 0);
-        return orchardResultFail;
-      }
-    }
-    orchardTestPrompt("radio test", "pass!", 0);
-    return orchardResultPass;
-  default:
-    return orchardResultNoTest;
-  }
-  
-  return orchardResultNoTest;
-}
-orchard_test("radio", test_radio);
-#endif

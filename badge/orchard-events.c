@@ -22,9 +22,16 @@ static void gpiox_rdy_cb(EXTDriver *extp, expchannel_t channel) {
 }
 #endif
 
+/*
+ * On the Freescale KW019032 board:
+ * Radio pin DIO0 is connected to PORTC pin 3
+ * Radio pin DIO1 is connected to PORTC pin 4
+ * We want pin 3 since that will trigger on payload ready/tx done events.
+ */
+
 static const EXTConfig ext_config = {
   {
-    {EXT_CH_MODE_RISING_EDGE | EXT_CH_MODE_AUTOSTART, radioInterrupt, PORTC, 4},
+    {EXT_CH_MODE_RISING_EDGE | EXT_CH_MODE_AUTOSTART, radioInterrupt, PORTC, 3},
 #if ORCHARD_BOARD_REV != ORCHARD_REV_EVT1
     {EXT_CH_MODE_FALLING_EDGE | EXT_CH_MODE_AUTOSTART, gpiox_rdy_cb, PORTD, 4},
 #endif

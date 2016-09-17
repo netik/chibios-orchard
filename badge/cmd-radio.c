@@ -40,7 +40,7 @@ static void radio_get(BaseSequentialStream *chp, int argc, char *argv[]) {
 
   addr = strtoul(argv[1], NULL, 0);
   chprintf(chp, "Value at address 0x%02x: ", addr);
-  chprintf(chp, "0x%02x\r\n", radioRead(radioDriver, addr));
+  chprintf(chp, "0x%02x\r\n", radioRead(addr));
 }
 
 static void radio_set(BaseSequentialStream *chp, int argc, char *argv[]) {
@@ -55,7 +55,7 @@ static void radio_set(BaseSequentialStream *chp, int argc, char *argv[]) {
   addr = strtoul(argv[1], NULL, 0);
   val  = strtoul(argv[2], NULL, 0);
   chprintf(chp, "Writing address 0x%02x: ", addr);
-  radioWrite(radioDriver, addr, val);
+  radioWrite(addr, val);
   chprintf(chp, "0x%02x\r\n", val);
 }
 
@@ -78,7 +78,7 @@ static void radio_dump(BaseSequentialStream *chp, int argc, char *argv[]) {
   uint8_t buf[count];
 
   chprintf(chp, "Dumping %d bytes from address 0x%02x:\r\n", count, addr);
-  radioDump(radioDriver, addr, buf, count);
+  radioDump(addr, buf, count);
 
   print_hex_offset(chp, buf, count, 0, addr);
 }
@@ -88,7 +88,7 @@ static void radio_addr(BaseSequentialStream *chp, int argc, char *argv[]) {
   unsigned int addr;
 
   if (argc == 1) {
-    chprintf(chp, "Radio address: %d\r\n", radioAddress(radioDriver));
+    chprintf(chp, "Radio address: %d\r\n", radioAddressGet());
     return;
   }
 
@@ -98,7 +98,7 @@ static void radio_addr(BaseSequentialStream *chp, int argc, char *argv[]) {
   }
 
   addr = strtoul(argv[1], NULL, 0);
-  radioSetAddress(radioDriver, addr);
+  radioAddressSet(addr);
   chprintf(chp, "Set radio address to %d\r\n", addr);
 }
 
@@ -127,11 +127,12 @@ static void cmd_radio(BaseSequentialStream *chp, int argc, char *argv[]) {
 
 orchard_command("radio", cmd_radio);
 
-
+#ifdef RADIO_SEND_LOOP
 static int should_stop(void) {
   uint8_t bfr[1];
   return chnReadTimeout(serialDriver, bfr, sizeof(bfr), 1);
 }
+#endif
 
 static void cmd_msg(BaseSequentialStream *chp, int argc, char *argv[]) {
 
@@ -145,10 +146,12 @@ static void cmd_msg(BaseSequentialStream *chp, int argc, char *argv[]) {
 
   addr = strtoul(argv[0], NULL, 0);
   chprintf(chp, "Sending '%s' to address %d\r\n", argv[1], addr);
+#ifdef RADIO_SEND_LOOP
   while(!should_stop()) {
-    radioAcquire(radioDriver);
-    radioSend(radioDriver, addr, 0, strlen(argv[1]) + 1, argv[1]);
-    radioRelease(radioDriver);
+#else
+  {
+#endif
+    radioSend(addr, 0, strlen(argv[1]) + 1, argv[1]);
   }
 }
 orchard_command("msg", cmd_msg);
