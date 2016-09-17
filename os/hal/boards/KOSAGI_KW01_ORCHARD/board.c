@@ -174,7 +174,7 @@ const PALConfig pal_default_config =
         /*PTE30*/ PAL_MODE_OUTPUT_PUSHPULL, /*PTE31*/ PAL_MODE_UNCONNECTED,
 #else
         /* ECO7: E30 DAC/RESET swap */
-        /*PTE30*/ PAL_MODE_INPUT_ANALOG,    /*PTE31*/ PAL_MODE_UNCONNECTED,
+        /*PTE30*/ PAL_MODE_OUTPUT_PUSHPULL,    /*PTE31*/ PAL_MODE_UNCONNECTED,
 #endif
       },
     },
