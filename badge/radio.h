@@ -4,16 +4,18 @@
 #define KW01_PKT_HANDLERS_MAX 10
 
 /*
- * The packet header definition is not defined by the hardware. The
- * hardware mandates that the first byte in or out of the FIFO during
- * TX/RX is an 8-byte length field. The last byte is a CRC. Everything
- * else is defined by the user.
+ * Only the first two bytes of the packet header definition are defined
+ * by the hardware. The length field is not actually transmitted but must
+ * be written to the FIFO to indicate the packet size. The destination
+ * field is used when address filtering is enabled. The radio also
+ * appends a two byte CRC when hardware CRC calculation/checking is
+ * enabled. Everything else is defined by the user.
  */
 
 typedef struct kw01_pkt_hdr {
 	uint8_t		kw01_length;	/* Total frame length */
-	uint8_t		kw01_src;	/* Source node */
 	uint8_t		kw01_dst;	/* Destination node */
+	uint8_t		kw01_src;	/* Source node */
 	uint8_t		kw01_prot;	/* Protocol type */
 } KW01_PKT_HDR;
 
