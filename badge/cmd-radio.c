@@ -40,7 +40,7 @@ static void radio_get(BaseSequentialStream *chp, int argc, char *argv[]) {
 
   addr = strtoul(argv[1], NULL, 0);
   chprintf(chp, "Value at address 0x%02x: ", addr);
-  chprintf(chp, "0x%02x\r\n", radioRead(addr));
+  chprintf(chp, "0x%02x\r\n", radioRead (radioDriver, addr));
 }
 
 static void radio_set(BaseSequentialStream *chp, int argc, char *argv[]) {
@@ -55,7 +55,7 @@ static void radio_set(BaseSequentialStream *chp, int argc, char *argv[]) {
   addr = strtoul(argv[1], NULL, 0);
   val  = strtoul(argv[2], NULL, 0);
   chprintf(chp, "Writing address 0x%02x: ", addr);
-  radioWrite(addr, val);
+  radioWrite (radioDriver, addr, val);
   chprintf(chp, "0x%02x\r\n", val);
 }
 
@@ -78,7 +78,7 @@ static void radio_dump(BaseSequentialStream *chp, int argc, char *argv[]) {
   uint8_t buf[count];
 
   chprintf(chp, "Dumping %d bytes from address 0x%02x:\r\n", count, addr);
-  radioDump(addr, buf, count);
+  radioDump(radioDriver, addr, buf, count);
 
   print_hex_offset(chp, buf, count, 0, addr);
 }
@@ -88,7 +88,7 @@ static void radio_addr(BaseSequentialStream *chp, int argc, char *argv[]) {
   unsigned int addr;
 
   if (argc == 1) {
-    chprintf(chp, "Radio address: %d\r\n", radioAddressGet());
+    chprintf(chp, "Radio address: %d\r\n", radioAddressGet(radioDriver));
     return;
   }
 
@@ -98,7 +98,7 @@ static void radio_addr(BaseSequentialStream *chp, int argc, char *argv[]) {
   }
 
   addr = strtoul(argv[1], NULL, 0);
-  radioAddressSet(addr);
+  radioAddressSet(radioDriver, addr);
   chprintf(chp, "Set radio address to %d\r\n", addr);
 }
 
@@ -151,7 +151,7 @@ static void cmd_msg(BaseSequentialStream *chp, int argc, char *argv[]) {
 #else
   {
 #endif
-    radioSend(addr, 0, strlen(argv[1]) + 1, argv[1]);
+    radioSend(radioDriver, addr, 0, strlen(argv[1]) + 1, argv[1]);
   }
 }
 orchard_command("msg", cmd_msg);

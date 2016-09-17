@@ -1,3 +1,38 @@
+/*-
+ * Copyright (c) 2016
+ *      Bill Paul <wpaul@windriver.com>.  All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. All advertising materials mentioning features or use of this software
+ *    must display the following acknowledgement:
+ *      This product includes software developed by Bill Paul.
+ * 4. Neither the name of the author nor the names of any co-contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY Bill Paul AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL Bill Paul OR THE VOICES IN HIS HEAD
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+ * THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#ifndef _RADIO_H_
+#define _RADIO_H_
+
 #define KW01_DELAY 1000
 #define KW01_PKT_MAXLEN 64
 #define KW01_PKT_HDRLEN 3
@@ -32,27 +67,37 @@ typedef struct kw01_pkt_handler {
 	uint8_t		kw01_prot;
 } KW01_PKT_HANDLER;
 
+typedef struct radio_driver {
+	SPIDriver *	kw01_spi;
+	KW01_PKT	kw01_pkt;
+	KW01_PKT_HANDLER kw01_handlers[KW01_PKT_HANDLERS_MAX];
+	KW01_PKT_HANDLER kw01_default_handler;
+} RADIODriver;
+
+extern RADIODriver KRADIO1;
+
 extern void radioStart (SPIDriver *);
-extern void radioStop (SPIDriver *);
+extern void radioStop (RADIODriver *);
 extern void radioInterrupt (EXTDriver *, expchannel_t);
-extern uint8_t radioRead (uint8_t);
-extern void radioWrite (uint8_t, uint8_t);
-extern int radioDump (uint8_t addr, void *bfr, int count);
-extern void radioAcquire (void);
-extern void radioRelease (void);
-extern void radioSend(uint8_t dest, uint8_t prot,
+extern uint8_t radioRead (RADIODriver *, uint8_t);
+extern void radioWrite (RADIODriver *, uint8_t, uint8_t);
+extern void radioDump (RADIODriver *, uint8_t addr, void *bfr, int count);
+extern void radioAcquire (RADIODriver *);
+extern void radioRelease (RADIODriver *);
+extern int radioSend(RADIODriver *, uint8_t dest, uint8_t prot,
 			size_t len, const void *payload);
 
-extern int radioModeSet (uint8_t mode);
-extern int radioFrequencySet (uint32_t freq);
-extern int radioDeviationSet (uint32_t freq);
-extern int radioBitrateSet (uint32_t freq);
-extern uint32_t radioFrequencyGet (void);
-extern uint32_t radioDeviationGet (void);
-extern uint32_t radioBitrateGet (void);
-extern uint8_t radioAddressGet (void);
-extern void radioAddressSet (uint8_t);
+extern int radioModeSet (RADIODriver *, uint8_t mode);
+extern int radioFrequencySet (RADIODriver *, uint32_t freq);
+extern int radioDeviationSet (RADIODriver *, uint32_t freq);
+extern int radioBitrateSet (RADIODriver *, uint32_t freq);
+extern uint32_t radioFrequencyGet (RADIODriver *);
+extern uint32_t radioDeviationGet (RADIODriver *);
+extern uint32_t radioBitrateGet (RADIODriver *);
+extern uint8_t radioAddressGet (RADIODriver *);
+extern void radioAddressSet (RADIODriver *, uint8_t);
 
-extern void radioDefaultHandlerSet (KW01_PKT_FUNC);
-extern void radioHandlerSet (uint8_t, KW01_PKT_FUNC);
+extern void radioDefaultHandlerSet (RADIODriver *, KW01_PKT_FUNC);
+extern void radioHandlerSet (RADIODriver *, uint8_t, KW01_PKT_FUNC);
 
+#endif /* _RADIO_H_ */

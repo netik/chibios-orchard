@@ -169,7 +169,7 @@ int main(void)
 
 #endif
   evtTableHook(orchard_events, shell_terminated, shell_termination_handler);
-  radioDefaultHandlerSet (default_radio_handler);
+  radioDefaultHandlerSet (radioDriver, default_radio_handler);
 
   // eventually get rid of this
   chprintf(stream, "User flash start: 0x%x  user flash end: 0x%x  length: 0x%x\r\n",
@@ -204,7 +204,7 @@ void halt(void) {
   pbe_fbe();
   fbe_fei();
   
-  radioStop(&SPID1);
+  radioStop(radioDriver);
   cpuVLLS0();
 }
 
