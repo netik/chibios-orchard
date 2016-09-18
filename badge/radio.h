@@ -39,7 +39,7 @@
 #define KW01_PKT_HANDLERS_MAX 10
 
 /*
- * Only the first two bytes of the packet header definition are defined
+ * Only the first byte of the packet header definition is defined
  * by the hardware. The length field is not actually transmitted but must
  * be written to the FIFO to indicate the packet size. The destination
  * field is used when address filtering is enabled. The radio also
@@ -48,7 +48,6 @@
  */
 
 typedef struct kw01_pkt_hdr {
-	uint8_t		kw01_length;	/* Total frame length */
 	uint8_t		kw01_dst;	/* Destination node */
 	uint8_t		kw01_src;	/* Source node */
 	uint8_t		kw01_prot;	/* Protocol type */
@@ -56,6 +55,7 @@ typedef struct kw01_pkt_hdr {
 
 typedef struct kw01_pkt {
 	uint8_t		kw01_rssi;	/* Signal strength reading */
+	uint8_t		kw01_length;	/* Total frame length */
 	KW01_PKT_HDR	kw01_hdr;
 	uint8_t		kw01_payload[KW01_PKT_MAXLEN - KW01_PKT_HDRLEN];
 } KW01_PKT;
@@ -96,7 +96,10 @@ extern uint32_t radioDeviationGet (RADIODriver *);
 extern uint32_t radioBitrateGet (RADIODriver *);
 extern uint8_t radioAddressGet (RADIODriver *);
 extern void radioAddressSet (RADIODriver *, uint8_t);
-
+extern int radioNetworkSet (RADIODriver *, const uint8_t *, uint8_t);
+extern int radioNetworkGet (RADIODriver *, uint8_t *, uint8_t *);
+extern int radioAesEnable (RADIODriver *, const uint8_t *, uint8_t);
+extern void radioAesDisable (RADIODriver *);
 extern void radioDefaultHandlerSet (RADIODriver *, KW01_PKT_FUNC);
 extern void radioHandlerSet (RADIODriver *, uint8_t, KW01_PKT_FUNC);
 

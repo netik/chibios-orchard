@@ -432,6 +432,8 @@
 #define KW01_SYNCSIZE_7		0x30
 #define KW01_SYNCSIZE_8		0x38
 
+#define KW01_SYNCSIZE(x)	(((x) << 3) & KW01_SYNCCONF_SYNCSIZE)
+
 /* Packet configuration 1 register */
 
 #define KW01_PKTCONF1_FORMAT	0x80	/* Packet format */

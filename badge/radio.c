@@ -159,7 +159,9 @@ radioReceive (RADIODriver * radio)
 
 	if (len > KW01_PKT_MAXLEN) {
 		radioRelease (radio);
-		radioWrite (radio, KW01_PKTCONF2, KW01_PKTCONF2_RESTARTRX);
+		reg = radioRead (radio, KW01_PKTCONF2);
+		radioWrite (radio, KW01_PKTCONF2,
+		            reg | KW01_PKTCONF2_RESTARTRX);
 		return (-1);
 	}
 
@@ -180,11 +182,12 @@ radioReceive (RADIODriver * radio)
 
 	/* Set the payload length (don't include the header length) */
 
-	pkt->kw01_hdr.kw01_length = len - sizeof (KW01_PKT_HDR);
+	pkt->kw01_length = len - sizeof (KW01_PKT_HDR);
 
 	/* Restart the receiver */
 
-	radioWrite (radio, KW01_PKTCONF2, KW01_PKTCONF2_RESTARTRX);
+	reg = radioRead (radio, KW01_PKTCONF2);
+	radioWrite (radio, KW01_PKTCONF2, reg | KW01_PKTCONF2_RESTARTRX);
 
 	for (i = 0; i < KW01_PKT_HANDLERS_MAX; i++) {
 		ph = &radio->kw01_handlers[i];
@@ -515,6 +518,11 @@ radioStart (SPIDriver * sp)
 {
 	uint8_t version;
 	RADIODriver * radio;
+	uint8_t syncbytes[6] = { 0x90, 0x4e, 0xde, 0xad, 0xbe, 0xef };
+	uint8_t key[16] = { 0x01, 0x02, 0x03, 0x4,
+			    0x01, 0x02, 0x04, 0x4,
+			    0x01, 0x02, 0x04, 0x4,
+			    0x01, 0x02, 0x04, 0x4 };
 
 	radio = radioDriver;
 
@@ -569,12 +577,8 @@ radioStart (SPIDriver * sp)
 
 	/* Initialize synchronization bytes */
 
-	radioWrite (radio, KW01_SYNCCONF, KW01_SYNCCONF_SYNCON |
-		    KW01_SYNCSIZE_4);
-	radioWrite (radio, KW01_SYNCVAL0, 0x90);
-	radioWrite (radio, KW01_SYNCVAL1, 0x4E);
-	radioWrite (radio, KW01_SYNCVAL2, 0xDE);
-	radioWrite (radio, KW01_SYNCVAL3, 0xAD);
+	radioWrite (radio, KW01_SYNCCONF, KW01_SYNCCONF_SYNCON);
+	radioNetworkSet (radio, syncbytes, 6);
 
 	/* Set squelch level. */
 
@@ -589,6 +593,10 @@ radioStart (SPIDriver * sp)
 	radioWrite (radio, KW01_RXBW, KW01_DCCFREQ_4 | KWW01_RXBW_250000);
 	radioWrite (radio, KW01_RXBWAFC, KW01_DCCFREQ_4 | KWW01_RXBW_250000);
 
+	/* Enable AES and set the key. */
+
+	radioAesEnable (radio, key, 16);
+
 	/* Set up interrupt event handler */
 
 	evtTableHook (orchard_events, rf_pkt_rdy, radioIntrHandle);
@@ -602,6 +610,8 @@ radioStart (SPIDriver * sp)
 	chprintf (stream, "Radio channel: %dMHz ", radioFrequencyGet (radio));
 	chprintf (stream, "Deviation: +/- %dKHz ", radioDeviationGet (radio));
 	chprintf (stream, "Bitrate: %dbps\r\n", radioBitrateGet (radio));
+
+	/* Go into receive mode. */
 
 	radioModeSet (radio, KW01_MODE_RX);
 
@@ -836,7 +846,6 @@ radioSend(RADIODriver * radio, uint8_t dest, uint8_t prot,
 	if (radioModeSet (radio, KW01_MODE_STANDBY) != 0)
 		return (-1);
 
-	hdr.kw01_length = len + sizeof(hdr);
 	hdr.kw01_src = radioAddressGet(radio);
 	hdr.kw01_dst = dest;
 	hdr.kw01_prot = prot;
@@ -846,6 +855,11 @@ radioSend(RADIODriver * radio, uint8_t dest, uint8_t prot,
 	/* Start a SPI write transaction. */
 
 	reg = KW01_FIFO | 0x80;
+	spiSend (radio->kw01_spi, 1, &reg);
+
+	/* Write the frame length -- not really part of the payload. */
+
+	reg = len + sizeof (hdr);
 	spiSend (radio->kw01_spi, 1, &reg);
 
 	/* Load the header into the FIFO */
@@ -873,6 +887,170 @@ radioSend(RADIODriver * radio, uint8_t dest, uint8_t prot,
 		return (-1);
 
 	return (0);
+}
+
+/******************************************************************************
+*
+* radioNetworkGet - get the current network ID
+*
+* This function reads the current network ID in the form of the syncbytes
+* configuration in the radio. There can be up to 8 sync bytes, so the
+* supplied buffer must be large enought to hold however many bytes are
+* currently configured. The number of bytes is returned via the len
+* parameter.
+*
+* RETURNS: 0 if the sync bytes can be returned, or -1 if the supplied
+*          buffer is too small
+*/
+
+int
+radioNetworkGet (RADIODriver * radio, uint8_t * net, uint8_t * len)
+{
+	uint8_t i;
+
+	i = radioRead (radio, KW01_SYNCCONF);
+	i = (i & KW01_SYNCCONF_SYNCSIZE) >> 3;
+
+	if (*len < i)
+		return (-1);
+
+	*len = i;
+
+	for (i = 0; i < *len; i++)
+		net[i] = radioRead (radio, KW01_SYNCCONF + i);
+
+	return (0);
+}
+
+/******************************************************************************
+*
+* radioNetworkSet - set the current network ID
+*
+* This function sets the current network ID in the form of the syncbytes
+* configuration in the radio. There can be up to 8 sync bytes, so the
+* supplied buffer should contain no more than 8 bytes. The sync bytes may
+* be any valey except 0.
+*
+* RETURNS: 0 if the sync bytes can be set, or -1 if the supplied
+*          network ID is too large
+*/
+
+int
+radioNetworkSet (RADIODriver * radio, const uint8_t * net, uint8_t len)
+{
+	uint8_t i;
+
+	if (len > 8)
+		return (-1);
+
+	/*
+	 * Check that the requested network ID doesn't contain any
+	 * 0 bytes as these are not allowed by the hardware.
+	 */
+
+	for (i = 0; i < len; i++) {
+		if (net[i] == 0)
+			return (-1);
+	}
+
+	/* Write the sync bytes */
+
+	for (i = 0; i < len; i++)
+		radioWrite (radio, KW01_SYNCVAL0 + i, net[i]);
+
+	/* Update the sync size */
+
+	i = radioRead (radio, KW01_SYNCCONF);
+	i &= ~(KW01_SYNCCONF_SYNCSIZE);
+	i |= KW01_SYNCSIZE(len);
+	radioWrite(radio, KW01_SYNCCONF, i);
+
+	return (0);
+}
+
+/******************************************************************************
+*
+* radioAesEnable - enable AES encryption/decryption and set the key
+*
+* This function enables hardware AES encryption/decryption of radio payloads
+* and programs the AES key. The SX1233 uses AES-128, meaning that the key
+* can be up to 16 bytes in size.
+*
+* Once the key is programmed, the AES enable bit is set in the PacketConfig2
+* register. Once this is done, all outbound payloads will be encrypted and
+* only payloads encrypted with the same key will be accepted from other
+* radios.
+*
+* Note that the AES key registers are write-only.
+*
+* The radioAesDisable() function should be called before this routine in
+* order to ensure that unused key bytes are zeroed.
+*
+* RETURNS: 0 if AES is successfully enabled, or -1 if the key is too large
+*          or if AES is already turned on
+*/
+
+int
+radioAesEnable (RADIODriver * radio, const uint8_t * key, uint8_t len)
+{
+	uint8_t i;
+	uint8_t pktconf;
+
+	/* Check that the key lenght is valid. */
+
+	if (len > 16)
+		return (-1);
+
+	/* Check that AES isn't already enabled. */
+
+	pktconf = radioRead (radio, KW01_PKTCONF2);
+	if (pktconf & KW01_PKTCONF2_AESON)
+		return (-1);
+
+	/* Set the key. */
+
+	for (i = 0; i < len; i++)
+		radioWrite (radio, KW01_AESKEY0 + i, key[i]);
+
+	/* Enable AES encryption/decryption. */
+
+	pktconf |= KW01_PKTCONF2_AESON;
+	radioWrite (radio, KW01_PKTCONF2, pktconf);
+
+	return (0);
+}
+
+/******************************************************************************
+*
+* radioAesDisable - disnable AES encryption/decryption and clear the key
+*
+* This function forces off AES encryption/decryption of packet payloads
+* by clearing the AES enable bit in the PacketConfig2 register and zeroes
+* out the AES key bytes.
+*
+* This function should be called before using radioAesEnable() to turn AES
+* on and set a new key.
+*
+* RETURNS: N/A
+*/
+
+void
+radioAesDisable (RADIODriver * radio)
+{
+	uint8_t i;
+
+	/* Turn off AES encryption/decryption. */
+
+	i = radioRead (radio, KW01_PKTCONF2);
+	i &= ~(KW01_PKTCONF2_AESON);
+	radioWrite (radio, KW01_PKTCONF2, i);
+
+	/* Clear the key. */
+
+	for (i = 0; i < 16; i++)
+		radioWrite (radio, KW01_AESKEY0, 0);
+
+	return;
 }
 
 /******************************************************************************

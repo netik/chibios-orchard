@@ -78,7 +78,7 @@ static void default_radio_handler(KW01_PKT * pkt)
            pkt->kw01_hdr.kw01_dst,
            pkt->kw01_hdr.kw01_prot);
 
-  print_hex(stream, pkt->kw01_payload, pkt->kw01_hdr.kw01_length, 0);
+  print_hex(stream, pkt->kw01_payload, pkt->kw01_length, 0);
 }
 
 static void print_mcu_info(void) {
