@@ -144,13 +144,37 @@ int main(void)
   halInit();
   chSysInit();
 
+  /*
+   * The Freescale/NXP KW019032 board has two LEDs connected to the CPU:
+   * - One single-color blue LED on port E pin 17
+   * - One tri-color LED with the following pin connections:
+   *   red - port E pin 16
+   *   green - port B pin 1
+   *   blue - port B pin 0
+   *
+   * We turn on the blue LED and leave the tri-color one off for now.
+   */
+
+  /* Single color LED */
+
+  palSetPad (GPIOE, 17); /* Blue LED */
+ 
+  /* Multi-color LED */
+ 
+  palSetPad (GPIOE, 16);  /* Red */
+  palSetPad (GPIOB, 1);   /* Green */
+  palSetPad (GPIOB, 0);   /* Blue */
+
+  /* Turn on the blue LED */
+ 
+  palClearPad (GPIOE, 17);
+
   evtTableInit(orchard_events, 32);
 
   orchardShellInit();
 
   chprintf(stream, "\r\n\r\nOrchard shell.  Based on build %s\r\n", gitversion);
   print_mcu_info();
-
 
   flashStart();
 
