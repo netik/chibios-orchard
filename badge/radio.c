@@ -91,7 +91,7 @@ static void radioReset (RADIODriver *);
 
 /******************************************************************************
 *
-* radioInterrupt - SX123x interrupt service routine
+* radioInterrupt - SX1233 interrupt service routine
 *
 * This function is triggered when the radio module asserts its interrupt pin.
 * On the Freescale Freedom KW019032 board, the DIO0 pin is tied to I/O
@@ -177,7 +177,7 @@ radioReceive (RADIODriver * radio)
 
 	/* Read the rest of the frame. */
 
-	spiReceive (radio->kw01_spi, len - 1, p);
+	spiReceive (radio->kw01_spi, len, p);
 	radioRelease (radio);
 
 	/* Set the payload length (don't include the header length) */

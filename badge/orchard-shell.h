@@ -19,12 +19,12 @@ void orchardShellRestart(void);
 
 #define orchard_command(_name, _func) \
   const ShellCommand _orchard_cmd_list_##_func \
-  __attribute__((unused, aligned(4), section(".chibi_list_cmd_2_" _name))) = \
+  __attribute__((used, aligned(4), section(".chibi_list_cmd_2_" _name))) = \
      { _name, _func }
 
 #define orchard_command_end() \
   const ShellCommand _orchard_cmd_list_##_func \
-  __attribute__((unused, aligned(4), section(".chibi_list_cmd_3_end"))) = \
+  __attribute__((used, aligned(4), section(".chibi_list_cmd_3_end"))) = \
      { NULL, NULL }
 
 #endif /* __ORCHARD_SHELL_H__ */
