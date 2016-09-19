@@ -32,13 +32,13 @@
 
 /*
  * This module implements support for the Semtech SX1233 IMS radio module.
- * The SX1233 chip is available as standalone devices, are may also be
+ * The SX1233 chip is available as a standalone device, and may also be
  * embedded as the on-board radio device in an SoC, such as the
  * Freescale/NXP KW01 processor.
  *
- * The SX1233 series are Industrial Scientific and Medical (ISM) radio modems
- * that cover the 433MHz, 868MHz and 915MHZ bands, supporting FSK, GMSK, MSK
- * and OOK modulation. They also include built-in AES-128 encryption support
+ * The SX1233 is an Industrial Scientific and Medical (ISM) radio modem
+ * that covers the 433MHz, 868MHz and 915MHZ bands, supporting FSK, GMSK, MSK
+ * and OOK modulation. It also includes built-in AES-128 encryption support
  * as well as a battery monitor and temperature sensor. The packet handler
  * also includes a 66-byte FIFO.
  *
@@ -47,12 +47,12 @@
  * pin to which an be optionally configured to provide an image of the
  * radio's reference clock. There is also a hard reset pin.
  *
- * The radio module radio module supports several tunable parameters,
+ * The SX1233 radio module supports several tunable parameters,
  * including center carrier frequency, deviation, bitrate, and RX filter
  * bandwidth. Packet filtering can be done using a bit synchronizer that
  * can be programmed to recognize up to 8 bytes of synronization data.
- * (This effectively forms a radio network.) Additional filtering can be
- * performed using a node ID byte, which allows for 254 unique unicast
+ * (This effectively forms a radio network ID.) Additional filtering can
+ * be performed using a node ID byte, which allows for 255 unique unicast
  * addresses and one broadcast address.
  *
  * On the Freescale/NXP KW01 chip, the radio module's SPI pins are wired
@@ -257,9 +257,9 @@ radioIntrHandle (eventid_t id)
 
 /******************************************************************************
 *
-* radioReset - force a reset of the SX1232 chip
+* radioReset - force a reset of the SX1233 chip
 *
-* The SX1232 module has a reset pin which can be asserted to force a complete
+* The SX1233 module has a reset pin which can be asserted to force a complete
 * reset of the radio. This reloads the power-up default register contents and
 * puts the radio into standby mode.
 *
@@ -418,7 +418,7 @@ radioDeviationSet (RADIODriver * radio, uint32_t deviation)
 
 /******************************************************************************
 *
-* radioFrequencyGet - get the current radio deviation setting
+* radioDeviationGet - get the current radio deviation setting
 *
 * This function reads the radio's current deviation setting and returns
 * it to the caller.
@@ -504,7 +504,7 @@ radioBitrateGet (RADIODriver * radio)
 * reset pin is toggled, and the radio is programmed for FSK modulation
 * with a deviation of 170000Hz and a bitrate of 50K baud. The default
 * carrier frequency is 902.5MHz. Address filtering is enabled and the
-* bit synchronizer is enabled with a 4 byte sync value. (Note: all radios
+* bit synchronizer is enabled with a 6 byte sync value. (Note: all radios
 * must use the same sync bytes to communicate.) An RSSITHRESH value is
 * also set, which indicates the radio's squelch setting.
 *
@@ -566,7 +566,7 @@ radioStart (SPIDriver * sp)
 
 	radioWrite (radio, KW01_PALEVEL, KW01_PALEVEL_PA0);
 
-	/* Set node and broadcas taddress */
+	/* Set node and broadcast address */
 
 	radioAddressSet (radio, 1);
 	radioWrite (radio, KW01_BCASTADDR, 0xFF);
@@ -606,8 +606,8 @@ radioStart (SPIDriver * sp)
 	version = radioRead (radio, KW01_VERSION);
 
 	chprintf (stream, "Radio chip version: %d Mask version: %d\r\n",
-		KW01_CHIPREV(version), KW01_MASKREV(version));
-	chprintf (stream, "Radio channel: %dMHz ", radioFrequencyGet (radio));
+		  KW01_CHIPREV(version), KW01_MASKREV(version));
+	chprintf (stream, "Radio channel: %dHz ", radioFrequencyGet (radio));
 	chprintf (stream, "Deviation: +/- %dKHz ", radioDeviationGet (radio));
 	chprintf (stream, "Bitrate: %dbps\r\n", radioBitrateGet (radio));
 
@@ -831,8 +831,8 @@ radioHandlerSet (RADIODriver * radio, uint8_t prot, KW01_PKT_FUNC handler)
 */
 
 int
-radioSend(RADIODriver * radio, uint8_t dest, uint8_t prot,
-          size_t len, const void *payload)
+radioSend (RADIODriver * radio, uint8_t dest, uint8_t prot,
+           size_t len, const void *payload)
 {
 	KW01_PKT_HDR hdr;
 	uint8_t reg;
@@ -1048,7 +1048,7 @@ radioAesDisable (RADIODriver * radio)
 	/* Clear the key. */
 
 	for (i = 0; i < 16; i++)
-		radioWrite (radio, KW01_AESKEY0, 0);
+		radioWrite (radio, KW01_AESKEY0 + i, 0);
 
 	return;
 }
