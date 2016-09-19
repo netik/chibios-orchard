@@ -73,10 +73,11 @@ extern int print_hex(BaseSequentialStream *chp,
 
 static void default_radio_handler(KW01_PKT * pkt)
 {
-  chprintf(stream, "\r\nNo handler for packet found.  %02x -> %02x : %02x\r\n",
+  chprintf(stream, "\r\nNo handler for packet found.  %02x -> %02x : %02x (signal strength: -%ddBm)\r\n",
            pkt->kw01_hdr.kw01_src,
            pkt->kw01_hdr.kw01_dst,
-           pkt->kw01_hdr.kw01_prot);
+           pkt->kw01_hdr.kw01_prot,
+           pkt->kw01_rssi);
 
   print_hex(stream, pkt->kw01_payload, pkt->kw01_length, 0);
 }
