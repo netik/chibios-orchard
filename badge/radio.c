@@ -283,7 +283,7 @@ radioReset (RADIODriver * radio)
 
  	/* Now wait for the chip to get its brains in order. */
 
-        chThdSleepMilliseconds (100);
+        chThdSleepMilliseconds (20);
 	
 	return;
 }
@@ -523,6 +523,8 @@ radioStart (SPIDriver * sp)
 			    0x01, 0x02, 0x04, 0x4,
 			    0x01, 0x02, 0x04, 0x4,
 			    0x01, 0x02, 0x04, 0x4 };
+	unsigned int i;
+	uint8_t rssi;
 
 	radio = radioDriver;
 
@@ -562,9 +564,9 @@ radioStart (SPIDriver * sp)
 	radioDeviationSet (radio, 170000);
 	radioBitrateSet (radio, 50000);
 
-	/* Set power output mode */
+	/* Set power output mode and power level to max */
 
-	radioWrite (radio, KW01_PALEVEL, KW01_PALEVEL_PA0);
+	radioWrite (radio, KW01_PALEVEL, KW01_PALEVEL_PA0 | KW01_TXPWR(31));
 
 	/* Set node and broadcast address */
 
@@ -579,10 +581,6 @@ radioStart (SPIDriver * sp)
 
 	radioWrite (radio, KW01_SYNCCONF, KW01_SYNCCONF_SYNCON);
 	radioNetworkSet (radio, syncbytes, 6);
-
-	/* Set squelch level. */
-
-	radioWrite (radio, KW01_RSSITHRESH, 0xDC);
 
 	/* Set TX FIFO threshold -- send immediately. */
 
@@ -614,6 +612,40 @@ radioStart (SPIDriver * sp)
 	/* Go into receive mode. */
 
 	radioModeSet (radio, KW01_MODE_RX);
+
+	/* Calibrate the squelch level. Set squelch to full open, */
+
+	radioWrite (radio, KW01_RSSITHRESH, 0xFF);
+
+	/* Initiate an RSSI reading */
+
+	radioWrite (radio, KW01_RSSICONF, KW01_RSSICONF_START);
+
+	/* Wait until it finishes. */
+
+	for (i = 0; i < KW01_DELAY; i++) {
+		version = radioRead (radio, KW01_RSSICONF);
+		if (version & KW01_RSSICONF_DONE)
+			break;
+        	chThdSleepMilliseconds (1);
+	}
+
+	/* Get the result. */
+
+	rssi = radioRead (radio, KW01_RSSIVAL);
+
+	chprintf (stream, "Background noise level: -%ddBm\r\n", rssi / 2);
+
+	/*
+	 * Program the squelch threshold to be a few dBm below the
+	 * current noise level.
+	 */
+
+	rssi -= 16;
+	radioWrite (radio, KW01_RSSITHRESH, rssi);
+
+	chprintf (stream, "Auto-calibrated squelch level: -%ddBm\r\n",
+		  rssi / 2);
 
 	return;
 }
@@ -1022,7 +1054,7 @@ radioAesEnable (RADIODriver * radio, const uint8_t * key, uint8_t len)
 
 /******************************************************************************
 *
-* radioAesDisable - disnable AES encryption/decryption and clear the key
+* radioAesDisable - disable AES encryption/decryption and clear the key
 *
 * This function forces off AES encryption/decryption of packet payloads
 * by clearing the AES enable bit in the PacketConfig2 register and zeroes
@@ -1051,6 +1083,60 @@ radioAesDisable (RADIODriver * radio)
 		radioWrite (radio, KW01_AESKEY0 + i, 0);
 
 	return;
+}
+
+/******************************************************************************
+*
+* radioTemperatureGet - read the radio temperature sensor
+*
+* This function performs a temperature measurement using the radio's on-board
+* sensor and returns the result. The radio's internal ADC is used to obtain
+* the measurement, so the radio must be either in standby or frequency
+* synthesis mode. This means the radio has to be be briefly turned off
+* in order to make the measurement. The receiver is re-enabled once the
+* temperature reading is complete.
+*
+* RETURNS: temperature reading in degrees celsius or -1 if reading the
+*          sensor fails
+*/
+
+int
+radioTemperatureGet (RADIODriver * radio)
+{
+	int temp;
+	unsigned int i;
+
+	if (radioModeSet (radio, KW01_MODE_STANDBY) != 0)
+		return (-1);
+
+	radioWrite (radio, KW01_TEMPCTL, KW01_TEMPCTL_START);
+
+	for (i = 0; i < KW01_DELAY; i++) {
+		temp = radioRead (radio, KW01_TEMPCTL);
+		if ((temp & KW01_TEMPCTL_BUSY) == 0)
+			break;
+	}
+
+	if (radioModeSet (radio, KW01_MODE_RX) != 0)
+		return (-1);
+
+	if (i == KW01_DELAY)
+		return (-1);
+
+	temp = radioRead (radio, KW01_TEMPVAL);
+
+	/* Convert sign. */
+
+	temp = 255 - temp;
+
+	/*
+	 * Adjust to degrees celsius based on an approximate
+	 * calibration value.
+	 */
+
+	temp -= 99;
+
+	return (temp);
 }
 
 /******************************************************************************

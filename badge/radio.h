@@ -98,6 +98,7 @@ extern uint8_t radioAddressGet (RADIODriver *);
 extern void radioAddressSet (RADIODriver *, uint8_t);
 extern int radioNetworkSet (RADIODriver *, const uint8_t *, uint8_t);
 extern int radioNetworkGet (RADIODriver *, uint8_t *, uint8_t *);
+extern int radioTemperatureGet (RADIODriver *);
 extern int radioAesEnable (RADIODriver *, const uint8_t *, uint8_t);
 extern void radioAesDisable (RADIODriver *);
 extern void radioDefaultHandlerSet (RADIODriver *, KW01_PKT_FUNC);
