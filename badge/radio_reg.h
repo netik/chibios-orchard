@@ -121,8 +121,8 @@
 #define KW01_AESKEY13		0x4B	/* AES KEY 13 */
 #define KW01_AESKEY14		0x4C	/* AES KEY 14 */
 #define KW01_AESKEY15		0x4D	/* AES KEY 15 */
-#define KW01_TEMP1		0x4E	/* Temp sensor control */
-#define KW01_TEMP2		0x4F	/* Temp readout */
+#define KW01_TEMPCTL		0x4E	/* Temp sensor control */
+#define KW01_TEMPVAL		0x4F	/* Temp readout */
 
 /* Test registers */
 
@@ -243,6 +243,9 @@
 #define KW01_PALEVEL_PA0	0x80	/* PA0 on RFIO and LNA */
 #define KW01_PALEVEL_PA1	0x40	/* PA1 on PA_BOOST pin */
 #define KW01_PALEVEL_PA2	0x20	/* PA1 on PA_BOOST pin */
+#define KW01_PALEVEL_TXPWR	0x1F	/* TX output power */
+
+#define KW01_TXPWR(x)		((x) & KW01_PALEVEL_TXPWR)
 
 /* PA ramp up register */
 
@@ -372,6 +375,12 @@
 #define KW01_RSSICONF_DONE	0x02	/* RSSI working/finished */
 #define KW01_RSSICONF_START	0x01	/* Trigger RSSI measurement */
 
+/* RSSI value register */
+
+/* The RSSI value is in units of 0.5 dBm */
+
+#define KW01_RSSI(x)		((x) / 2.0)
+
 /* Digital I/O pin mapping register 1 */
 
 #define KW01_DIOMAP1_DIO0MAP	0xC0	/* DIO0 mapping */
@@ -459,5 +468,10 @@
 #define KW01_PKTCONF2_RESTARTRX	0x04	/* Force RX restart */
 #define KW01_PKTCONF2_AUTORRX	0x02	/* Automatically restart RX */
 #define KW01_PKTCONF2_AESON	0x01	/* Enable AES crypto */
+
+/* Temperature sensor control */
+
+#define KW01_TEMPCTL_START	0x08	/* Start a temperature measurement */
+#define KW01_TEMPCTL_BUSY	0x04	/* Temp measurement in progress */
 
 #endif /* _RADIO_REG_H_ */
