@@ -42,7 +42,7 @@ static void adc_temperature_end_cb(ADCDriver *adcp, adcsample_t *buffer, size_t 
    * The v25 value is the voltage reading at 25C, it comes from the ADC
    * electricals table in the processor manual. V25 is in millivolts.
    */
-  int32_t v25 = 716;
+  int32_t v25 = 706 /*716*/;
 
   /*
    * The m value is slope of the temperature sensor values, again from
