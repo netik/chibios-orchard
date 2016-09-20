@@ -34,7 +34,8 @@
 #define _RADIO_H_
 
 #define KW01_DELAY 1000
-#define KW01_PKT_MAXLEN 64
+#define KW01_PKT_MAXLEN 66	/* Max packet size (FIFO size) */
+#define KW01_PKT_AES_MAXLEN 48	/* Max packet size with AES and filtering on */
 #define KW01_PKT_HDRLEN 3
 #define KW01_PKT_HANDLERS_MAX 10
 
@@ -67,9 +68,14 @@ typedef struct kw01_pkt_handler {
 	uint8_t		kw01_prot;
 } KW01_PKT_HANDLER;
 
+#define KW01_FLAG_AES		0x01	/* AES enabled */
+#define KW01_FLAG_AFILT		0x02	/* Address filtering enabled */
+
 typedef struct radio_driver {
 	SPIDriver *	kw01_spi;
 	KW01_PKT	kw01_pkt;
+	uint8_t		kw01_flags;
+	uint8_t		kw01_maxlen;
 	KW01_PKT_HANDLER kw01_handlers[KW01_PKT_HANDLERS_MAX];
 	KW01_PKT_HANDLER kw01_default_handler;
 } RADIODriver;
@@ -85,7 +91,7 @@ extern void radioDump (RADIODriver *, uint8_t addr, void *bfr, int count);
 extern void radioAcquire (RADIODriver *);
 extern void radioRelease (RADIODriver *);
 extern int radioSend(RADIODriver *, uint8_t dest, uint8_t prot,
-			size_t len, const void *payload);
+			uint8_t len, const void *payload);
 
 extern int radioModeSet (RADIODriver *, uint8_t mode);
 extern int radioFrequencySet (RADIODriver *, uint32_t freq);

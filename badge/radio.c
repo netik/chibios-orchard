@@ -552,6 +552,9 @@ radioStart (SPIDriver * sp)
 		    KW01_DCFREE_WHITENING | KW01_PKTCONF1_CRCON |
 		    KW01_AFILT_UCASTBCAST);
 
+	radio->kw01_flags = KW01_FLAG_AFILT;
+	radio->kw01_maxlen = KW01_PKT_MAXLEN;
+
 	radioWrite (radio, KW01_PKTCONF2, 0);
 	radioWrite (radio, KW01_PAYLEN, 0xFF);
 
@@ -864,7 +867,7 @@ radioHandlerSet (RADIODriver * radio, uint8_t prot, KW01_PKT_FUNC handler)
 
 int
 radioSend (RADIODriver * radio, uint8_t dest, uint8_t prot,
-           size_t len, const void *payload)
+           uint8_t len, const void *payload)
 {
 	KW01_PKT_HDR hdr;
 	uint8_t reg;
@@ -872,7 +875,7 @@ radioSend (RADIODriver * radio, uint8_t dest, uint8_t prot,
 
 	/* Don't send more data than will fit in the FIFO. */
 
-	if (len > KW01_PKT_MAXLEN - KW01_PKT_HDRLEN)
+	if (len > (radio->kw01_maxlen - KW01_PKT_HDRLEN))
 		return (-1);
 
 	if (radioModeSet (radio, KW01_MODE_STANDBY) != 0)
@@ -892,6 +895,7 @@ radioSend (RADIODriver * radio, uint8_t dest, uint8_t prot,
 	/* Write the frame length -- not really part of the payload. */
 
 	reg = len + sizeof (hdr);
+
 	spiSend (radio->kw01_spi, 1, &reg);
 
 	/* Load the header into the FIFO */
@@ -1048,6 +1052,18 @@ radioAesEnable (RADIODriver * radio, const uint8_t * key, uint8_t len)
 
 	pktconf |= KW01_PKTCONF2_AESON;
 	radioWrite (radio, KW01_PKTCONF2, pktconf);
+	radio->kw01_flags |= KW01_FLAG_AES;
+
+	/*
+	 * When AES encryption is turned on, packets may be up to 66
+	 * bytes in size when address filtering is off, or up to 48
+	 * bytes in size when it's turned on. So if address filtering
+	 * is enabled (which it usually is), then we have to adjust
+	 * the packet size limit accordingly.
+	 */
+
+	if (radio->kw01_flags & KW01_FLAG_AFILT)
+		radio->kw01_maxlen = KW01_PKT_AES_MAXLEN;
 
 	return (0);
 }
@@ -1081,6 +1097,9 @@ radioAesDisable (RADIODriver * radio)
 
 	for (i = 0; i < 16; i++)
 		radioWrite (radio, KW01_AESKEY0 + i, 0);
+
+	radio->kw01_flags &= ~KW01_FLAG_AES;
+	radio->kw01_maxlen = KW01_PKT_MAXLEN;
 
 	return;
 }

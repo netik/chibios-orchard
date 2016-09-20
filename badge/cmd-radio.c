@@ -164,7 +164,11 @@ static void cmd_msg(BaseSequentialStream *chp, int argc, char *argv[]) {
   chprintf(chp, "Sending '%s' to address %d\r\n", argv[1], addr);
   while(!should_stop())
   {
-    radioSend(radioDriver, addr, 0, strlen(argv[1]) + 1, argv[1]);
+    if (radioSend(radioDriver, addr, 0, strlen(argv[1]) + 1, argv[1]) != 0) {
+      chprintf(chp, "Packet transmission of %d bytes failed!\r\n",
+        strlen(argv[1]) + 1);
+      break;
+    }
     chThdSleepMilliseconds (500);
   }
 }
