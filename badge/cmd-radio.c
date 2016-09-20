@@ -145,12 +145,10 @@ static void cmd_radio(BaseSequentialStream *chp, int argc, char *argv[]) {
 
 orchard_command("radio", cmd_radio);
 
-#ifdef RADIO_SEND_LOOP
 static int should_stop(void) {
   uint8_t bfr[1];
   return chnReadTimeout(serialDriver, bfr, sizeof(bfr), 1);
 }
-#endif
 
 static void cmd_msg(BaseSequentialStream *chp, int argc, char *argv[]) {
 
@@ -164,12 +162,10 @@ static void cmd_msg(BaseSequentialStream *chp, int argc, char *argv[]) {
 
   addr = strtoul(argv[0], NULL, 0);
   chprintf(chp, "Sending '%s' to address %d\r\n", argv[1], addr);
-#ifdef RADIO_SEND_LOOP
-  while(!should_stop()) {
-#else
+  while(!should_stop())
   {
-#endif
     radioSend(radioDriver, addr, 0, strlen(argv[1]) + 1, argv[1]);
+    chThdSleepMilliseconds (500);
   }
 }
 orchard_command("msg", cmd_msg);
