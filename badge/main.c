@@ -28,6 +28,7 @@
 
 #include "oled.h"
 #include "radio.h"
+#include "radio_reg.h"
 #include "flash.h"
 
 #include "gfx.h"
@@ -77,7 +78,7 @@ static void default_radio_handler(KW01_PKT * pkt)
            pkt->kw01_hdr.kw01_src,
            pkt->kw01_hdr.kw01_dst,
            pkt->kw01_hdr.kw01_prot,
-           pkt->kw01_rssi);
+           (uint8_t)KW01_RSSI(pkt->kw01_rssi));
 
   print_hex(stream, pkt->kw01_payload, pkt->kw01_length, 0);
 }
