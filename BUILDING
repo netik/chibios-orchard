@@ -1,0 +1,14 @@
+netik's build notes
+
+1. After you clone this repo, do a:
+
+git submodule update --init --recursive
+
+2. make sure you are using right compilers...
+
+export PATH=/usr/local/cortex-m0/bin:$PATH
+export CFLAGS="-I/usr/local/cortex-m0/include -L/usr/local/cortex-m0/lib"
+
+
+
+
