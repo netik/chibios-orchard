@@ -59,12 +59,16 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "ch.h"
+
+#ifdef notdef
 typedef volatile signed char vint8_t;
 typedef volatile unsigned char vuint8_t;
 typedef volatile signed short vint16_t;
 typedef volatile unsigned short vuint16_t;
 //typedef volatile signed long vint32_t;
 //typedef volatile unsigned long vuint32_t;
+#endif
 
 #if (defined __MWERKS__)
 typedef signed char int8_t;

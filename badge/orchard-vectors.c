@@ -14,7 +14,7 @@
 /*lint -save -e9075 [8.4] All symbols are invoked from asm context.*/
 
 void **HARDFAULT_PSP;
-register void *stack_pointer asm("sp");
+void *stack_pointer asm("sp");
 
 void HardFault_Handler(void) {
 /*lint -restore*/

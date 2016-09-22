@@ -27,6 +27,7 @@
 #include "ch.h"
 #include "hal.h"
 #include "shell.h"
+#include "strings.h"
 #include "chprintf.h"
 
 /**

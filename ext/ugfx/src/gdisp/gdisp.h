@@ -47,7 +47,7 @@ typedef int16_t	coord_t;
 /**
  * @brief   Type for a 2D point on the screen.
  */
-typedef struct point { coord_t x, y; } point, point_t;
+typedef struct point { coord_t x, y; } point_t;
 /**
  * @brief   Type for the text justification.
  */

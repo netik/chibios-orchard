@@ -491,7 +491,7 @@ void mf16_invert_lt(mf16 *dest, const mf16 *matrix)
     // https://code.google.com/p/efficient-java-matrix-library
 
     int_fast8_t i, j, k;
-    const uint_fast8_t n = matrix->rows;
+    const int_fast8_t n = matrix->rows;
 
     // If dest and input matrices alias, we have to use a temp matrix.
     mf16 tmp;

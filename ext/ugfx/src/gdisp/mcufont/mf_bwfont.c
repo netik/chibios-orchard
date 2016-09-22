@@ -13,7 +13,7 @@
 
 /* Find the character range and index that contains a given glyph.. */
 static const struct mf_bwfont_char_range_s *find_char_range(
-    const struct mf_bwfont_s *font, uint16_t character, uint16_t *index_ret)
+    const struct mf_bwfont_s *font, mf_char character, uint16_t *index_ret)
 {
     unsigned i, index;
     const struct mf_bwfont_char_range_s *range;
@@ -114,7 +114,7 @@ static uint8_t render_char(const struct mf_bwfont_char_range_s *r,
 
 uint8_t mf_bwfont_render_character(const struct mf_font_s *font,
                                    int16_t x0, int16_t y0,
-                                   uint16_t character,
+                                   mf_char character,
                                    mf_pixel_callback_t callback,
                                    void *state)
 {
@@ -130,7 +130,7 @@ uint8_t mf_bwfont_render_character(const struct mf_font_s *font,
 }
 
 uint8_t mf_bwfont_character_width(const struct mf_font_s *font,
-                                  uint16_t character)
+                                  mf_char character)
 {
     const struct mf_bwfont_s *bwfont = (const struct mf_bwfont_s*)font;
     const struct mf_bwfont_char_range_s *range;

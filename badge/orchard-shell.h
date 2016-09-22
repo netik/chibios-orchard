@@ -12,7 +12,7 @@ void orchardShellRestart(void);
 
 #define orchard_command_start() \
 ({ \
-  static char start[0] __attribute__((unused,  \
+  static char start[1] __attribute__((unused,  \
     aligned(4), section(".chibi_list_cmd_1")));        \
   (const ShellCommand *)&start;            \
 })

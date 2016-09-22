@@ -168,7 +168,7 @@ typedef struct _OrchardAppEvent {
     OrchardAppTimerEvent  timer;
     OrchardUiEvent        ui;
     OrchardAdcEvent       adc;
-  };
+  } u ;
 } OrchardAppEvent;
 
 #endif /* __ORCHARD_EVENTS__ */
