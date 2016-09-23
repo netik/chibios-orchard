@@ -11,11 +11,10 @@ void orchardShellInit(void);
 void orchardShellRestart(void);
 
 #define orchard_command_start() \
-({ \
-  static char start[1] __attribute__((unused,  \
-    aligned(4), section(".chibi_list_cmd_1")));        \
-  (const ShellCommand *)&start;            \
-})
+  static char start[4] __attribute__((unused,  \
+    aligned(4), section(".chibi_list_cmd_1")))
+
+#define orchard_commands()	(const ShellCommand *)&start[4]
 
 #define orchard_command(_name, _func) \
   const ShellCommand _orchard_cmd_list_##_func \

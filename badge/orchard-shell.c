@@ -23,6 +23,7 @@
 /* Global stream variable, lets modules use chprintf().*/
 void *stream;
 
+orchard_command_start();
 orchard_command_end();
 
 static const SerialConfig serialConfig = {
@@ -45,7 +46,7 @@ void orchardShellRestart(void)
   static ShellConfig shellConfig;
   static const ShellCommand *shellCommands;
 
-  shellCommands = orchard_command_start();
+  shellCommands = orchard_commands();
 
   shellConfig.sc_channel = stream_driver;
   shellConfig.sc_commands = shellCommands;
