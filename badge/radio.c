@@ -667,6 +667,7 @@ void
 radioStop (RADIODriver * radio)
 {
 	radioReset (radio);
+	radioModeSet (radio, KW01_MODE_SLEEP);
 	return;
 }
 
