@@ -166,9 +166,6 @@ radioReceive (RADIODriver * radio)
 
 	if (len > radio->kw01_maxlen) {
 		radioUnselect (radio);
-		reg = radioSpiRead (radio, KW01_PKTCONF2);
-		radioSpiWrite (radio, KW01_PKTCONF2,
-		            reg | KW01_PKTCONF2_RESTARTRX);
 		radioRelease (radio);
 		return (-1);
 	}
@@ -180,6 +177,7 @@ radioReceive (RADIODriver * radio)
 	 * from the second byte in.
 	 */
 
+	pkt->kw01_length = len - sizeof (KW01_PKT_HDR);
 	p = (uint8_t *)pkt;
 	p += 2;
 
@@ -188,15 +186,8 @@ radioReceive (RADIODriver * radio)
 	spiReceive (radio->kw01_spi, len, p);
 
 	radioUnselect (radio);
-
-	/* Restart the receiver */
-
-	reg = radioSpiRead (radio, KW01_PKTCONF2);
-	radioSpiWrite (radio, KW01_PKTCONF2, reg | KW01_PKTCONF2_RESTARTRX);
-
-	pkt->kw01_length = len - sizeof (KW01_PKT_HDR);
-
 	radioRelease (radio);
+
 
 	/* Set the payload length (don't include the header length) */
 
@@ -582,7 +573,7 @@ radioStart (SPIDriver * sp)
 	radio->kw01_flags = KW01_FLAG_AFILT;
 	radio->kw01_maxlen = KW01_PKT_MAXLEN;
 
-	radioWrite (radio, KW01_PKTCONF2, 0);
+	radioWrite (radio, KW01_PKTCONF2, KW01_PKTCONF2_AUTORRX);
 	radioWrite (radio, KW01_PAYLEN, 0xFF);
 
 	radioWrite (radio, KW01_PREAMBLEMSB, 0);
@@ -1033,7 +1024,7 @@ radioSend (RADIODriver * radio, uint8_t dest, uint8_t prot,
 		return (-1);
 	}
 
-	for (i = 0; i < KW01_DELAY; i++) {
+	for (i = 0; i < KW01_DELAY * 100; i++) {
 		reg = radioSpiRead (radio, KW01_IRQ2);
 		if (reg & KW01_IRQ2_PACKETSENT)
 			break;
