@@ -87,7 +87,11 @@ RADIODriver KRADIO1;
 
 static int radioReceive (RADIODriver *);
 static void radioIntrHandle (eventid_t);
-static void radioReset (RADIODriver *);
+static void radioSelect (RADIODriver *);
+static void radioUnselect (RADIODriver *);
+static void radioSpiWrite (RADIODriver *, uint8_t, uint8_t);
+static uint8_t radioSpiRead (RADIODriver *, uint8_t);
+static int radioModeSet (RADIODriver *, uint8_t);
 
 /******************************************************************************
 *
@@ -141,15 +145,18 @@ radioReceive (RADIODriver * radio)
 	uint8_t len;
 	uint8_t i;
 
+	radioAcquire (radio);
+
 	pkt = &radio->kw01_pkt;
 
 	/* Get the signal strength reading for this frame. */
 
-	pkt->kw01_rssi = radioRead (radio, KW01_RSSIVAL);
+	pkt->kw01_rssi = radioSpiRead (radio, KW01_RSSIVAL);
 
 	/* Start reading from the FIFO. */
 
-	radioAcquire (radio);
+	radioSelect (radio);
+
 	reg = KW01_FIFO;
 	spiSend (radio->kw01_spi, 1, &reg);
 
@@ -157,11 +164,12 @@ radioReceive (RADIODriver * radio)
 
 	spiReceive (radio->kw01_spi, 1, &len);
 
-	if (len > KW01_PKT_MAXLEN) {
-		radioRelease (radio);
-		reg = radioRead (radio, KW01_PKTCONF2);
-		radioWrite (radio, KW01_PKTCONF2,
+	if (len > radio->kw01_maxlen) {
+		radioUnselect (radio);
+		reg = radioSpiRead (radio, KW01_PKTCONF2);
+		radioSpiWrite (radio, KW01_PKTCONF2,
 		            reg | KW01_PKTCONF2_RESTARTRX);
+		radioRelease (radio);
 		return (-1);
 	}
 
@@ -178,16 +186,19 @@ radioReceive (RADIODriver * radio)
 	/* Read the rest of the frame. */
 
 	spiReceive (radio->kw01_spi, len, p);
-	radioRelease (radio);
 
-	/* Set the payload length (don't include the header length) */
-
-	pkt->kw01_length = len - sizeof (KW01_PKT_HDR);
+	radioUnselect (radio);
 
 	/* Restart the receiver */
 
-	reg = radioRead (radio, KW01_PKTCONF2);
-	radioWrite (radio, KW01_PKTCONF2, reg | KW01_PKTCONF2_RESTARTRX);
+	reg = radioSpiRead (radio, KW01_PKTCONF2);
+	radioSpiWrite (radio, KW01_PKTCONF2, reg | KW01_PKTCONF2_RESTARTRX);
+
+	pkt->kw01_length = len - sizeof (KW01_PKT_HDR);
+
+	radioRelease (radio);
+
+	/* Set the payload length (don't include the header length) */
 
 	for (i = 0; i < KW01_PKT_HANDLERS_MAX; i++) {
 		ph = &radio->kw01_handlers[i];
@@ -290,7 +301,7 @@ radioReset (RADIODriver * radio)
 
 /******************************************************************************
 *
-* radioModeSelect - set the radio mode
+* radioModeSet - set the radio mode
 *
 * This function selects the current radio mode. It must be one of STANDBY,
 * SLEEP, RX or TX. The function checks that a MODEREADY event is signalled
@@ -300,7 +311,7 @@ radioReset (RADIODriver * radio)
 *          is invalid or if setting the mode times out
 */
 
-int
+static int
 radioModeSet (RADIODriver * radio, uint8_t mode)
 {
 	unsigned int i;
@@ -311,10 +322,10 @@ radioModeSet (RADIODriver * radio, uint8_t mode)
 	    mode != KW01_MODE_TX)
 		return (-1);
 
-	radioWrite (radio, KW01_OPMODE, mode);
+	radioSpiWrite (radio, KW01_OPMODE, mode);
 
 	for (i = 0; i < KW01_DELAY; i++) {
-		if (radioRead (radio, KW01_IRQ1) & KW01_IRQ1_MODEREADY)
+		if (radioSpiRead (radio, KW01_IRQ1) & KW01_IRQ1_MODEREADY)
 			break;
 	}
 
@@ -354,9 +365,11 @@ radioFrequencySet (RADIODriver * radio, uint32_t freq)
 	val = KW01_FREQ(freq);
 	regval = (uint32_t)val;
 
-	radioWrite (radio, KW01_FRFMSB, regval >> 16);
-	radioWrite (radio, KW01_FRFISB, regval >> 8);
-	radioWrite (radio, KW01_FRFLSB, regval & 0xFF);
+	radioAcquire (radio);
+	radioSpiWrite (radio, KW01_FRFMSB, regval >> 16);
+	radioSpiWrite (radio, KW01_FRFISB, regval >> 8);
+	radioSpiWrite (radio, KW01_FRFLSB, regval & 0xFF);
+	radioRelease (radio);
 
 	return (0);
 }
@@ -377,9 +390,11 @@ radioFrequencyGet (RADIODriver * radio)
 	double val;
 	uint32_t regval;
 
-	regval = radioRead (radio, KW01_FRFLSB);
-	regval |= radioRead (radio, KW01_FRFISB) << 8;
-	regval |= radioRead (radio, KW01_FRFMSB) << 16;
+	radioAcquire (radio);
+	regval = radioSpiRead (radio, KW01_FRFLSB);
+	regval |= radioSpiRead (radio, KW01_FRFISB) << 8;
+	regval |= radioSpiRead (radio, KW01_FRFMSB) << 16;
+	radioRelease (radio);
 
 	val = (double)regval * KW01_FSTEP;
 	regval = (uint32_t)val;
@@ -410,8 +425,10 @@ radioDeviationSet (RADIODriver * radio, uint32_t deviation)
 	val = KW01_FREQ(deviation);
 	regval = (uint32_t)val;
 
-	radioWrite (radio, KW01_FDEVMSB, regval >> 8);
-	radioWrite (radio, KW01_FDEVLSB, regval & 0xFF);
+	radioAcquire (radio);
+	radioSpiWrite (radio, KW01_FDEVMSB, regval >> 8);
+	radioSpiWrite (radio, KW01_FDEVLSB, regval & 0xFF);
+	radioRelease (radio);
 
 	return (0);
 }
@@ -432,8 +449,10 @@ radioDeviationGet (RADIODriver * radio)
 	double val;
 	uint32_t regval;
 
-	regval = radioRead (radio, KW01_FDEVLSB);
-	regval |= radioRead (radio, KW01_FDEVMSB) << 8;
+	radioAcquire (radio);
+	regval = radioSpiRead (radio, KW01_FDEVLSB);
+	regval |= radioSpiRead (radio, KW01_FDEVMSB) << 8;
+	radioRelease (radio);
 
 	val = (double)regval * KW01_FSTEP;
 	regval = (uint32_t)val;
@@ -465,8 +484,10 @@ radioBitrateSet (RADIODriver * radio, uint32_t bitrate)
 	val = KW01_BITRATE(bitrate);
 	regval = (uint32_t)val;
 
-	radioWrite (radio, KW01_BITRATEMSB, regval >> 8);
-	radioWrite (radio, KW01_BITRATELSB, regval & 0xFF);
+	radioAcquire (radio);
+	radioSpiWrite (radio, KW01_BITRATEMSB, regval >> 8);
+	radioSpiWrite (radio, KW01_BITRATELSB, regval & 0xFF);
+	radioRelease (radio);
 
 	return (0);
 }
@@ -487,8 +508,10 @@ radioBitrateGet (RADIODriver * radio)
 	double val;
 	uint32_t regval;
 
-	regval = radioRead (radio, KW01_BITRATELSB);
-	regval |= radioRead (radio, KW01_BITRATEMSB) << 8;
+	radioAcquire (radio);
+	regval = radioSpiRead (radio, KW01_BITRATELSB);
+	regval |= radioSpiRead (radio, KW01_BITRATEMSB) << 8;
+	radioRelease (radio);
 
 	val = (double)KW01_XTAL_FREQ / (double)regval;
 	regval = (uint32_t)val;
@@ -528,6 +551,8 @@ radioStart (SPIDriver * sp)
 
 	radio = radioDriver;
 
+	osalMutexObjectInit (&radio->kw01_mutex);
+
 	radio->kw01_spi = sp;
 
 	/* Reset radio hardware to known state. */
@@ -536,7 +561,9 @@ radioStart (SPIDriver * sp)
 
 	/* Put radio in standby mode */
 
+	radioAcquire (radio);
 	radioModeSet (radio, KW01_MODE_STANDBY);
+	radioRelease (radio);
 
 	/* Select variable length packet mode */
 
@@ -614,7 +641,9 @@ radioStart (SPIDriver * sp)
 
 	/* Go into receive mode. */
 
+	radioAcquire (radio);
 	radioModeSet (radio, KW01_MODE_RX);
+	radioRelease (radio);
 
 	/* Calibrate the squelch level. Set squelch to full open, */
 
@@ -686,8 +715,7 @@ radioStop (RADIODriver * radio)
 void
 radioAcquire (RADIODriver * radio)
 {
-	spiAcquireBus (radio->kw01_spi);
-	spiSelect (radio->kw01_spi);
+	osalMutexLock (&radio->kw01_mutex);
 	return;
 }
 
@@ -706,6 +734,41 @@ radioAcquire (RADIODriver * radio)
 void
 radioRelease (RADIODriver * radio)
 {
+	osalMutexUnlock (&radio->kw01_mutex);
+	return;
+}
+
+/******************************************************************************
+*
+* radioSelect - select the radio's SPI interface
+*
+* This functions acquires access to the radio's SPI channel and prepares
+* it for a SPI transaction. This must be done before every SPI read/write.
+*
+* RETURNS: N/A
+*/
+
+static void
+radioSelect (RADIODriver * radio)
+{
+	spiAcquireBus (radio->kw01_spi);
+	spiSelect (radio->kw01_spi);
+	return;
+}
+
+/******************************************************************************
+*
+* radioUnselect - deselect the radio's SPI interface
+*
+* This functions relinquishes access to the radio's SPI channel after a
+* SPI transaction. This must be done after every SPI read/write.
+*
+* RETURNS: N/A
+*/
+
+static void
+radioUnselect (RADIODriver * radio)
+{
 	spiUnselect (radio->kw01_spi);
 	spiReleaseBus (radio->kw01_spi);
 	return;
@@ -713,11 +776,41 @@ radioRelease (RADIODriver * radio)
 
 /******************************************************************************
 *
-* radioWrite - write a value to a radio register
+* radioSpiWrite - write a value to a radio register
 *
 * This function writes a value to one of the radio's registers via the SPI
 * interface. The write transaction is in the form of a two byte request
 * containing the register offset and the value to write.
+*
+* This function does not acquire exclusive access to the radio.
+*
+* RETURNS: N/A
+*/
+
+static void
+radioSpiWrite (RADIODriver * radio, uint8_t addr, uint8_t val)
+{
+	uint8_t buf[2];
+
+	buf[0] = addr | 0x80;
+	buf[1] = val;
+
+	radioSelect (radio);
+	spiSend (radio->kw01_spi, 2, buf);
+	radioUnselect (radio);
+
+	return;
+}
+
+/******************************************************************************
+*
+* radioWrite - write a value to a radio register, with mutual exclusion
+*
+* This function writes a value to one of the radio's registers via the SPI
+* interface. The write transaction is in the form of a two byte request
+* containing the register offset and the value to write.
+*
+* This function acquires exclusive access to the radio.
 *
 * RETURNS: N/A
 */
@@ -725,13 +818,8 @@ radioRelease (RADIODriver * radio)
 void
 radioWrite (RADIODriver * radio, uint8_t addr, uint8_t val)
 {
-	uint8_t buf[2];
-
-	buf[0] = addr | 0x80;
-	buf[1] = val;
-
 	radioAcquire (radio);
-	spiSend (radio->kw01_spi, 2, buf);
+	radioSpiWrite (radio, addr, val);
 	radioRelease (radio);
 
 	return;
@@ -739,12 +827,41 @@ radioWrite (RADIODriver * radio, uint8_t addr, uint8_t val)
 
 /******************************************************************************
 *
-* radioRead - read a value from a radio register
+* radioSpiRead - read a value from a radio register
 *
 * This function reads a value from one of the radio's registers via the SPI
 * interface. The read transaction is in the form of a one byte request
 * containing the register offset and a one byte response containing the
 * result.
+*
+* This function does not acquire exclusive access to the radio.
+*
+* RETURNS: the requested 8-bit register value
+*/
+
+static uint8_t
+radioSpiRead (RADIODriver * radio, uint8_t addr)
+{
+	uint8_t val;
+
+	radioSelect (radio);
+	spiSend (radio->kw01_spi, 1, &addr);
+	spiReceive (radio->kw01_spi, 1, &val);
+	radioUnselect (radio);
+
+	return (val);
+}
+
+/******************************************************************************
+*
+* radioRead - read a value from a radio register, with mutual exclusion
+*
+* This function reads a value from one of the radio's registers via the SPI
+* interface. The read transaction is in the form of a one byte request
+* containing the register offset and a one byte response containing the
+* result.
+*
+* This function acquires exclusive access to the radio.
 *
 * RETURNS: the requested 8-bit register value
 */
@@ -755,8 +872,7 @@ radioRead (RADIODriver * radio, uint8_t addr)
 	uint8_t val;
 
 	radioAcquire (radio);
-	spiSend (radio->kw01_spi, 1, &addr);
-	spiReceive (radio->kw01_spi, 1, &val);
+	val = radioSpiRead (radio, addr);
 	radioRelease (radio);
 
 	return (val);
@@ -879,17 +995,20 @@ radioSend (RADIODriver * radio, uint8_t dest, uint8_t prot,
 	if (len > (radio->kw01_maxlen - KW01_PKT_HDRLEN))
 		return (-1);
 
-	if (radioModeSet (radio, KW01_MODE_STANDBY) != 0)
-		return (-1);
+	radioAcquire (radio);
 
-	hdr.kw01_src = radioAddressGet(radio);
+	if (radioModeSet (radio, KW01_MODE_STANDBY) != 0) {
+		radioRelease (radio);
+		return (-1);
+	}
+
+	hdr.kw01_src = radioSpiRead (radio, KW01_NODEADDR);
 	hdr.kw01_dst = dest;
 	hdr.kw01_prot = prot;
 
-	radioAcquire (radio);
-
 	/* Start a SPI write transaction. */
 
+	radioSelect (radio);
 	reg = KW01_FIFO | 0x80;
 	spiSend (radio->kw01_spi, 1, &reg);
 
@@ -907,18 +1026,21 @@ radioSend (RADIODriver * radio, uint8_t dest, uint8_t prot,
 
 	spiSend (radio->kw01_spi, len, payload);
 
-	radioRelease (radio);
+	radioUnselect (radio);
 
-	if (radioModeSet (radio, KW01_MODE_TX) != 0)
+	if (radioModeSet (radio, KW01_MODE_TX) != 0) {
+		radioRelease (radio);
 		return (-1);
+	}
 
 	for (i = 0; i < KW01_DELAY; i++) {
-		reg = radioRead (radio, KW01_IRQ2);
+		reg = radioSpiRead (radio, KW01_IRQ2);
 		if (reg & KW01_IRQ2_PACKETSENT)
 			break;
 	}
 
 	radioModeSet (radio, KW01_MODE_RX);
+	radioRelease (radio);
 
 	if (i == KW01_DELAY)
 		return (-1);
@@ -1040,19 +1162,23 @@ radioAesEnable (RADIODriver * radio, const uint8_t * key, uint8_t len)
 
 	/* Check that AES isn't already enabled. */
 
-	pktconf = radioRead (radio, KW01_PKTCONF2);
-	if (pktconf & KW01_PKTCONF2_AESON)
+	radioAcquire (radio);
+
+	pktconf = radioSpiRead (radio, KW01_PKTCONF2);
+	if (pktconf & KW01_PKTCONF2_AESON) {
+		radioRelease (radio);
 		return (-1);
+	}
 
 	/* Set the key. */
 
 	for (i = 0; i < len; i++)
-		radioWrite (radio, KW01_AESKEY0 + i, key[i]);
+		radioSpiWrite (radio, KW01_AESKEY0 + i, key[i]);
 
 	/* Enable AES encryption/decryption. */
 
 	pktconf |= KW01_PKTCONF2_AESON;
-	radioWrite (radio, KW01_PKTCONF2, pktconf);
+	radioSpiWrite (radio, KW01_PKTCONF2, pktconf);
 	radio->kw01_flags |= KW01_FLAG_AES;
 
 	/*
@@ -1065,6 +1191,8 @@ radioAesEnable (RADIODriver * radio, const uint8_t * key, uint8_t len)
 
 	if (radio->kw01_flags & KW01_FLAG_AFILT)
 		radio->kw01_maxlen = KW01_PKT_AES_MAXLEN;
+
+	radioRelease (radio);
 
 	return (0);
 }
@@ -1090,17 +1218,21 @@ radioAesDisable (RADIODriver * radio)
 
 	/* Turn off AES encryption/decryption. */
 
-	i = radioRead (radio, KW01_PKTCONF2);
+	radioAcquire (radio);
+
+	i = radioSpiRead (radio, KW01_PKTCONF2);
 	i &= ~(KW01_PKTCONF2_AESON);
-	radioWrite (radio, KW01_PKTCONF2, i);
+	radioSpiWrite (radio, KW01_PKTCONF2, i);
 
 	/* Clear the key. */
 
 	for (i = 0; i < 16; i++)
-		radioWrite (radio, KW01_AESKEY0 + i, 0);
+		radioSpiWrite (radio, KW01_AESKEY0 + i, 0);
 
 	radio->kw01_flags &= ~KW01_FLAG_AES;
 	radio->kw01_maxlen = KW01_PKT_MAXLEN;
+
+	radioRelease (radio);
 
 	return;
 }
@@ -1126,24 +1258,34 @@ radioTemperatureGet (RADIODriver * radio)
 	int temp;
 	unsigned int i;
 
-	if (radioModeSet (radio, KW01_MODE_STANDBY) != 0)
-		return (-1);
+	radioAcquire (radio);
 
-	radioWrite (radio, KW01_TEMPCTL, KW01_TEMPCTL_START);
+	if (radioModeSet (radio, KW01_MODE_STANDBY) != 0) {
+		radioRelease (radio);
+		return (-1);
+	}
+
+	radioSpiWrite (radio, KW01_TEMPCTL, KW01_TEMPCTL_START);
 
 	for (i = 0; i < KW01_DELAY; i++) {
-		temp = radioRead (radio, KW01_TEMPCTL);
+		temp = radioSpiRead (radio, KW01_TEMPCTL);
 		if ((temp & KW01_TEMPCTL_BUSY) == 0)
 			break;
 	}
 
-	if (radioModeSet (radio, KW01_MODE_RX) != 0)
+	if (radioModeSet (radio, KW01_MODE_RX) != 0) {
+		radioRelease (radio);
 		return (-1);
+	}
 
-	if (i == KW01_DELAY)
+	if (i == KW01_DELAY) {
+		radioRelease (radio);
 		return (-1);
+	}
 
-	temp = radioRead (radio, KW01_TEMPVAL);
+	temp = radioSpiRead (radio, KW01_TEMPVAL);
+
+	radioRelease (radio);
 
 	/* Convert sign. */
 

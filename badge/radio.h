@@ -76,6 +76,7 @@ typedef struct radio_driver {
 	KW01_PKT	kw01_pkt;
 	uint8_t		kw01_flags;
 	uint8_t		kw01_maxlen;
+	mutex_t		kw01_mutex;
 	KW01_PKT_HANDLER kw01_handlers[KW01_PKT_HANDLERS_MAX];
 	KW01_PKT_HANDLER kw01_default_handler;
 } RADIODriver;
@@ -93,7 +94,6 @@ extern void radioRelease (RADIODriver *);
 extern int radioSend(RADIODriver *, uint8_t dest, uint8_t prot,
 			uint8_t len, const void *payload);
 
-extern int radioModeSet (RADIODriver *, uint8_t mode);
 extern int radioFrequencySet (RADIODriver *, uint32_t freq);
 extern int radioDeviationSet (RADIODriver *, uint32_t freq);
 extern int radioBitrateSet (RADIODriver *, uint32_t freq);
