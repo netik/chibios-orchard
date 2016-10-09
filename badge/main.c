@@ -171,7 +171,7 @@ int main(void)
  
   palClearPad (GPIOE, 17);
 
-  evtTableInit(orchard_events, 32);
+  evtTableInit(orchard_events, 4);
 
   orchardShellInit();
 

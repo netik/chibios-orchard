@@ -4,20 +4,8 @@
 #
 
 # Compiler options here.
-# Note: normally we'd like to use -fomit-frame-pointer to optimize the code
-# a little further. There's a specific reason why we use
-# -fno-omit-frame-pointer instead. ChibiOS uses a special macro called
-# __get_PSP() to read the psp register in some of the ARMv6 support code.
-# This macro is written using inline assembly and some special attribute
-# tags. When compining with optimization greater than O1, GCC 6.2.0
-# seems to botch the code generation for these macros in that it uses
-# the r7 register without preserving its contents on the stack first,
-# thereby corrupting its contents. (This occurs most frequency with
-# _port_irq_epilogue().) Using -fno-omit-frame-pointer seems to work
-# around this problem, at the cost of generating slightly larger code.
-#
 ifeq ($(USE_OPT),)
-  USE_OPT = -Os -ggdb -fno-omit-frame-pointer -falign-functions=16 -nostdlib
+  USE_OPT = -Os -ggdb -fomit-frame-pointer -falign-functions=16 -nostdlib
   USE_OPT += -DBIG_ENDIAN=0 -DLITTLE_ENDIAN=1 -Dasm=__asm__
   USE_OPT += -ansi -pedantic
 endif
@@ -68,7 +56,7 @@ endif
 # Stack size to be allocated to the Cortex-M process stack. This stack is
 # the stack used by the main() thread.
 ifeq ($(USE_PROCESS_STACKSIZE),)
-  USE_PROCESS_STACKSIZE = 0x300
+  USE_PROCESS_STACKSIZE = 0x200
 endif
 
 # Stack size to the allocated to the Cortex-M main/exceptions stack. This

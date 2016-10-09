@@ -37,7 +37,7 @@
 #define KW01_PKT_MAXLEN 66	/* Max packet size (FIFO size) */
 #define KW01_PKT_AES_MAXLEN 48	/* Max packet size with AES and filtering on */
 #define KW01_PKT_HDRLEN 3
-#define KW01_PKT_HANDLERS_MAX 10
+#define KW01_PKT_HANDLERS_MAX 4
 
 /*
  * Only the first byte of the packet header definition is defined
