@@ -147,6 +147,8 @@ radioReceive (RADIODriver * radio)
 
 	radioAcquire (radio);
 
+	palClearPad (GPIOB, 1);   /* Green */
+
 	pkt = &radio->kw01_pkt;
 
 	/* Get the signal strength reading for this frame. */
@@ -165,6 +167,7 @@ radioReceive (RADIODriver * radio)
 	spiReceive (radio->kw01_spi, 1, &len);
 
 	if (len > radio->kw01_maxlen) {
+		palSetPad (GPIOB, 1);   /* Green */
 		radioUnselect (radio);
 		radioRelease (radio);
 		return (-1);
@@ -185,9 +188,10 @@ radioReceive (RADIODriver * radio)
 
 	spiReceive (radio->kw01_spi, len, p);
 
+	palSetPad (GPIOB, 1);   /* Green */
+
 	radioUnselect (radio);
 	radioRelease (radio);
-
 
 	/* Set the payload length (don't include the header length) */
 
@@ -988,7 +992,10 @@ radioSend (RADIODriver * radio, uint8_t dest, uint8_t prot,
 
 	radioAcquire (radio);
 
+	palClearPad (GPIOE, 16);  /* Red */
+
 	if (radioModeSet (radio, KW01_MODE_STANDBY) != 0) {
+		palSetPad (GPIOE, 16);  /* Red */
 		radioRelease (radio);
 		return (-1);
 	}
@@ -1000,6 +1007,7 @@ radioSend (RADIODriver * radio, uint8_t dest, uint8_t prot,
 	/* Start a SPI write transaction. */
 
 	radioSelect (radio);
+
 	reg = KW01_FIFO | 0x80;
 	spiSend (radio->kw01_spi, 1, &reg);
 
@@ -1018,6 +1026,8 @@ radioSend (RADIODriver * radio, uint8_t dest, uint8_t prot,
 	spiSend (radio->kw01_spi, len, payload);
 
 	radioUnselect (radio);
+
+	palSetPad (GPIOE, 16);  /* Red */
 
 	if (radioModeSet (radio, KW01_MODE_TX) != 0) {
 		radioRelease (radio);
