@@ -242,7 +242,7 @@
 
 #define KW01_PALEVEL_PA0	0x80	/* PA0 on RFIO and LNA */
 #define KW01_PALEVEL_PA1	0x40	/* PA1 on PA_BOOST pin */
-#define KW01_PALEVEL_PA2	0x20	/* PA1 on PA_BOOST pin */
+#define KW01_PALEVEL_PA2	0x20	/* PA2 on PA_BOOST pin */
 #define KW01_PALEVEL_TXPWR	0x1F	/* TX output power */
 
 #define KW01_TXPWR(x)		((x) & KW01_PALEVEL_TXPWR)
