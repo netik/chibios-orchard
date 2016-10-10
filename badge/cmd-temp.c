@@ -34,7 +34,7 @@ cmd_temperature(BaseSequentialStream *chp, int argc, char *argv[])
 	analogUpdateTemperature ();
 	chThdSleepMilliseconds (100);
 
-	chprintf (chp, "MCU temperature is %d decrees C\r\n",
+	chprintf (chp, "MCU temperature is %d degrees C\r\n",
 		analogReadTemperature () / 1000);
 
 	return;
