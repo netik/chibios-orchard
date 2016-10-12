@@ -1,14 +1,13 @@
 #include "ch.h"
 #include "hal.h"
 #include "osal.h"
-#include "chprintf.h"
 
 #include "pit_reg.h"
 #include "pit.h"
 
 PITDriver PIT1;
 
-OSAL_IRQ_HANDLER(Vector98)
+OSAL_IRQ_HANDLER(KINETIS_PIT_IRQ_VECTOR)
 {
 	OSAL_IRQ_PROLOGUE();
 
