@@ -145,8 +145,6 @@ radioReceive (RADIODriver * radio)
 	uint8_t len;
 	uint8_t i;
 
-	radioAcquire (radio);
-
 	palClearPad (GPIOB, 1);   /* Green */
 
 	pkt = &radio->kw01_pkt;
@@ -169,7 +167,6 @@ radioReceive (RADIODriver * radio)
 	if (len > radio->kw01_maxlen) {
 		palSetPad (GPIOB, 1);   /* Green */
 		radioUnselect (radio);
-		radioRelease (radio);
 		return (-1);
 	}
 
@@ -235,6 +232,7 @@ radioIntrHandle (eventid_t id)
 	uint8_t irq1;
 	uint8_t irq2;
 	RADIODriver * radio;
+	int sts = -1;
 
 	(void)id;
 
@@ -245,18 +243,23 @@ radioIntrHandle (eventid_t id)
 
 	radio = radioDriver;
 
-	irq1 = radioRead (radio, KW01_IRQ1);
-	irq2 = radioRead (radio, KW01_IRQ2);
+	radioAcquire (radio);
+
+	irq1 = radioSpiRead (radio, KW01_IRQ1);
+	irq2 = radioSpiRead (radio, KW01_IRQ2);
+
+	/* Acknowledge interrupts */
+
+	radioSpiWrite (radio, KW01_IRQ1, irq1);
+	radioSpiWrite (radio, KW01_IRQ2, irq2);
 
 	/* We received a packet -- read it and dispatch it. */
 
 	if (irq2 & KW01_IRQ2_PAYLOADREADY)
-		radioReceive (radio);
+		sts = radioReceive (radio);
 
-	/* Acknowledge interrupts */
-
-	radioWrite (radio, KW01_IRQ1, irq1);
-	radioWrite (radio, KW01_IRQ2, irq2);
+	if (sts != 0)
+		radioRelease (radio);
 
 	return;
 }
