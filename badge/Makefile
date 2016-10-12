@@ -105,6 +105,10 @@ include $(LIBFIXMATH)/build.mk
 LIBC90TFS = $(CHIBIOS)/ext/C90TFS
 include $(LIBC90TFS)/build.mk
 
+#FatFS library
+FATFS = $(CHIBIOS)/ext/fatfs
+include $(FATFS)/build.mk
+
 # libfixmatrix
 LIBFIXMATRIX = $(CHIBIOS)/ext/libfixmatrix
 include $(LIBFIXMATRIX)/build.mk
@@ -128,9 +132,11 @@ CSRC = main.c \
        analog.c \
        orchard-events.c \
        radio.c \
+       pit.c \
        hex.c \
        flash.c \
        storage.c \
+       mmc_kinetis_spi.c \
        $(STARTUPSRC) \
        $(PORTSRC) \
        $(KERNSRC) \
@@ -145,6 +151,7 @@ CSRC = main.c \
        $(LIBFIXMATHSRC) \
        $(LIBC90TFSSRC) \
        $(LIBFIXMATRIXSRC) \
+       $(FATFSSRC) \
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -175,6 +182,7 @@ ASMSRC = $(STARTUPASM) $(PORTASM) $(OSALASM) ws2812b_ll.s
 
 INCDIR = $(STARTUPINC) $(KERNINC) $(PORTINC) $(OSALINC) $(LIBFIXMATHINC) \
          $(LIBC90TFSINC) \
+         $(FATFSINC) \
          $(HALINC) $(PLATFORMINC) $(BOARDINC) $(TESTINC) $(GFXINC) \
          $(CHIBIOS)/os/hal/lib/streams $(CHIBIOS)/os/various
 
