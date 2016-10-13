@@ -9,12 +9,20 @@
  * code.
  *
  * The KW01 chip has two SPI channels. Channel 0 is tied directly to
- * the built in radio chip, so we use channel 1 for SDIO.
+ * the built-in radio chip, so we use channel 1 for SDIO.
  *
- * Still to be done:
+ * The SD card that we're targeting doesn't have pin connections for
+ * insertion detection or write protect signals, so those are hard
+ * wired (card detect always true, write protect always false).
  *
- * - Chip select pin selection
- * - SPI clock setting
+ * Chip select is currently set to port B, pin 0. This is wired to
+ * the blue segment of the tri-color LED on the Freescale KW019032 board,
+ * which means we can use it to indicate disk activity.
+ *
+ * The Kinetis SPI driver for ChibiOS doesn't provide a way to set the
+ * speed. We do it here by manually setting the BR register divisor
+ * values to select a total divisor factor of 192 (64 x 3). With a bus
+ * clock of 24MHz, this yields a slow SPI speed of 125KHz.
  */
 
 /*
@@ -35,12 +43,12 @@
 #include "mmc.h"
 
 /* Peripheral controls (Platform dependent) */
-#define CS_LOW()		/* TBD */	/* Set MMC_CS = low */
-#define	CS_HIGH()		/* TBD */	/* Set MMC_CS = high */
-#define MMC_CD			1 /* TBD */	/* Test if card detected.   yes:true, no:false, default:true */
-#define MMC_WP			0 /* TBD */	/* Test if write protected. yes:true, no:false, default:false */
-#define	FCLK_SLOW()		/* TBD */	/* Set SPI slow clock (100-400kHz) */
-#define	FCLK_FAST()		/* TBD */	/* Set SPI fast clock (20MHz max) */
+#define CS_LOW()	palClearPad (GPIOB, 0);/* Set MMC_CS = low */
+#define	CS_HIGH()	palSetPad (GPIOB, 0);	/* Set MMC_CS = high */
+#define MMC_CD		1			/* Test if card detected.   yes:true, no:false, default:true */
+#define MMC_WP		0			/* Test if write protected. yes:true, no:false, default:false */
+#define	FCLK_SLOW()	SPID2.spi->BR = 0x35;	/* Set SPI slow clock (100-400kHz) */
+#define	FCLK_FAST()	SPID2.spi->BR = 0;	/* Set SPI fast clock (20MHz max) */
 
 
 /*--------------------------------------------------------------------------
@@ -94,32 +102,14 @@ BYTE CardType;			/* Card type flags (b0:MMC, b1:SDv1, b2:SDv2, b3:Block addressi
 static
 void power_on (void)
 {
-	/* Trun socket power on and wait for 10ms+ (nothing to do if no power controls) */
-	/* TBD */
-
-
-	/* Configure MOSI/MISO/SCLK/CS pins */
-	/* TBD */
-
-
-	/* Enable SPI module in SPI mode 0 */
-	/* TBD */
+	/* Nothing to do for our board */
 }
 
 
 static
 void power_off (void)
 {
-	/* Disable SPI function */
-	/* TBD */
-
-
-	/* De-configure MOSI/MISO/SCLK/CS pins (set hi-z) */
-	/* TBD */
-
-
-	/* Trun socket power off (nothing to do if no power controls) */
-	/* TBD */
+	/* Nothing to do for our board */
 }
 
 
