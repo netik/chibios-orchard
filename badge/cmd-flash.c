@@ -82,7 +82,7 @@ static void dump(uint8_t *byte, uint32_t count) {
   chprintf(stream, "\n\r" );
 }
 
-#define TESTSIZE 64
+#define TESTSIZE 16
 void cmd_flashtest(BaseSequentialStream *chp, int argc, char *argv[]) {
   uint8_t testdat[TESTSIZE];
   uint8_t i;
