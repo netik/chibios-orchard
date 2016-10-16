@@ -185,7 +185,6 @@ void deselect (void)
 {
 	CS_HIGH();		/* Set CS# high */
 	xchg_spi(0xFF);	/* Dummy clock (force DO hi-z for multiple slave SPI) */
-	spiUnselect (&SPID2);
 	spiReleaseBus (&SPID2);
 }
 
@@ -198,9 +197,8 @@ void deselect (void)
 static
 int select (void)	/* 1:Successful, 0:Timeout */
 {
-	CS_LOW();		/* Set CS# low */
 	spiAcquireBus (&SPID2);
-	spiSelect (&SPID2);
+	CS_LOW();		/* Set CS# low */
 	xchg_spi(0xFF);	/* Dummy clock (force DO enabled) */
 	if (wait_ready(500)) return 1;	/* Wait for card ready */
 
