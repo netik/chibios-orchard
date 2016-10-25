@@ -61,7 +61,7 @@
 #define GDISP_NEED_CONVEX_POLYGON                    TRUE
 //#define GDISP_NEED_SCROLL                            FALSE
 //#define GDISP_NEED_PIXELREAD                         FALSE
-#define GDISP_NEED_CONTROL                           FALSE
+#define GDISP_NEED_CONTROL                           TRUE
 //#define GDISP_NEED_QUERY                             FALSE
 // #define GDISP_NEED_MULTITHREAD                       FALSE
 //#define GDISP_NEED_STREAMING                         FALSE
@@ -109,7 +109,7 @@
 //#define GDISP_NEED_PIXMAP                            FALSE
 //    #define GDISP_NEED_PIXMAP_IMAGE                  FALSE
 
-// #define GDISP_DEFAULT_ORIENTATION                    GDISP_ROTATE_LANDSCAPE    // If not defined the native hardware orientation is used.
+#define GDISP_DEFAULT_ORIENTATION                    GDISP_ROTATE_LANDSCAPE    // If not defined the native hardware orientation is used.
 //#define GDISP_LINEBUF_SIZE                           128
 #define GDISP_STARTUP_COLOR                          Blue
 #define GDISP_NEED_STARTUP_LOGO                      FALSE
@@ -128,7 +128,7 @@
 //        #define GDISP_HARDWARE_BITFILLS              FALSE
 //        #define GDISP_HARDWARE_SCROLL                FALSE
 //        #define GDISP_HARDWARE_PIXELREAD             FALSE
-//        #define GDISP_HARDWARE_CONTROL               FALSE
+#define GDISP_HARDWARE_CONTROL              TRUE
 //        #define GDISP_HARDWARE_QUERY                 FALSE
 //        #define GDISP_HARDWARE_CLIP                  FALSE
 
