@@ -76,7 +76,7 @@
 //    #define GDISP_INCLUDE_FONT_DEJAVUSANS12          TRUE
 //    #define GDISP_INCLUDE_FONT_DEJAVUSANS16          TRUE
 //    #define GDISP_INCLUDE_FONT_DEJAVUSANS20          FALSE
-//    #define GDISP_INCLUDE_FONT_DEJAVUSANS24          FALSE
+#define GDISP_INCLUDE_FONT_DEJAVUSANS24          TRUE
 //    #define GDISP_INCLUDE_FONT_DEJAVUSANS32          FALSE
 //    #define GDISP_INCLUDE_FONT_DEJAVUSANSBOLD12      FALSE
 //    #define GDISP_INCLUDE_FONT_FIXED_10X20           FALSE
@@ -109,9 +109,9 @@
 //#define GDISP_NEED_PIXMAP                            FALSE
 //    #define GDISP_NEED_PIXMAP_IMAGE                  FALSE
 
-//#define GDISP_DEFAULT_ORIENTATION                    GDISP_ROTATE_LANDSCAPE    // If not defined the native hardware orientation is used.
+// #define GDISP_DEFAULT_ORIENTATION                    GDISP_ROTATE_LANDSCAPE    // If not defined the native hardware orientation is used.
 //#define GDISP_LINEBUF_SIZE                           128
-//#define GDISP_STARTUP_COLOR                          Black
+#define GDISP_STARTUP_COLOR                          Blue
 #define GDISP_NEED_STARTUP_LOGO                      FALSE
 
 //#define GDISP_TOTAL_DISPLAYS                         1

@@ -97,16 +97,19 @@ void oledOrchardBanner(void) {
   coord_t width;
   font_t font;
   
-  orchardGfxStart();
+  /*orchardGfxStart();*/
   width = gdispGetWidth();
-  font = gdispOpenFont("UI2");
+  font = gdispOpenFont("DejaVuSans24");
   
-  gdispClear(Black);
   gdispDrawStringBox(0, 0, width, gdispGetFontMetric(font, fontHeight),
-                     "Orchard EVT1", font, White, justifyCenter);
+                     "Defcon 25", font, White, justifyCenter);
+  gdispDrawStringBox(0, 50, width, gdispGetFontMetric(font, fontHeight),
+                     "Defcon 25", font, White, justifyCenter);
+  gdispDrawStringBox(0, 100, width, gdispGetFontMetric(font, fontHeight),
+                     "herp derp...", font, White, justifyCenter);
   gdispFlush();
   gdispCloseFont(font);
-  orchardGfxEnd();
+  /*orchardGfxEnd();*/
 }
 
 #ifdef notdef

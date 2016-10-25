@@ -53,11 +53,18 @@ static const I2CConfig i2c_config = {
   100000
 };
 
-static const SPIConfig spi_config = {
+static const SPIConfig spi1_config = {
   NULL,
   /* HW dependent part.*/
   GPIOD,
   0,
+};
+
+static const SPIConfig spi2_config = {
+  NULL,
+  /* HW dependent part.*/
+  GPIOD,
+  4,
 };
 
 static const ADCConfig adccfg1 = {
@@ -186,9 +193,17 @@ int main(void)
   flashStart();
 
   i2cStart(i2cDriver, &i2c_config);
-  spiStart(&SPID1, &spi_config);
-  spiStart(&SPID2, &spi_config);
+  spiStart(&SPID1, &spi1_config);
+  spiStart(&SPID2, &spi2_config);
   adcStart(&ADCD1, &adccfg1);
+
+  /* Initialize the graphics library */
+
+  gfxInit();
+
+  /* Draw a banner... */
+
+  oledOrchardBanner ();
 
   orchardEventsStart();
 
