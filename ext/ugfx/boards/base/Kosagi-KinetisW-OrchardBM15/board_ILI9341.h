@@ -50,18 +50,18 @@ static inline void release_bus(GDisplay *g) {
 
 static inline void write_index(GDisplay *g, uint16_t index) {
 	(void) g;
-	uint8_t val;
-	val = index & 0xFF;
 	palClearPad (GPIOB, 1);
-	spiSend (&SPID2, 1, &val);
+ 	while ((SPID2.spi->S & SPIx_S_SPTEF) == 0)
+		;
+	SPID2.spi->DL = index & 0xFF;
 }
 
 static inline void write_data(GDisplay *g, uint16_t data) {
 	(void) g;
-	uint8_t val;
-	val = data & 0xFF;
 	palSetPad (GPIOB, 1);
-	spiSend (&SPID2, 1, (uint8_t *)&val);
+ 	while ((SPID2.spi->S & SPIx_S_SPTEF) == 0)
+		;
+	SPID2.spi->DL = data & 0xFF;
 }
 
 static inline void setreadmode(GDisplay *g) {
