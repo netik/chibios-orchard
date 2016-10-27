@@ -669,8 +669,8 @@ bool_t _gmouseInitDriver(GDriver *g, void *display, unsigned driverinstance, uns
 	#endif
 
 	// Init the mouse
-    if (!gmvmt(m)->init((GMouse *)g, driverinstance))
-        return FALSE;
+	if (!gmvmt(m)->init((GMouse *)g, driverinstance))
+		return FALSE;
 
 	// Ensure the Poll timer is started
 	if (!gtimerIsActive(&MouseTimer))
