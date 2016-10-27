@@ -5,7 +5,6 @@
 #include "orchard-events.h"
 
 event_source_t rf_pkt_rdy;
-event_source_t celcius_rdy;
 
 #ifdef notdef
 event_source_t mic_rdy;
@@ -29,8 +28,6 @@ void orchardEventsStart(void) {
 
   chEvtObjectInit(&rf_pkt_rdy);
 
-  // ADC-related events
-  chEvtObjectInit(&celcius_rdy);
 #ifdef notdef
   chEvtObjectInit(&mic_rdy);
   chEvtObjectInit(&usbdet_rdy);
