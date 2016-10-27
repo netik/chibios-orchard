@@ -16,9 +16,6 @@
 
 static inline void init_board(GDisplay *g) {
 	(void) g;
-	/* Enable the slave select function. */
-	SPID2.spi->C1 |= SPIx_C1_SSOE;
-	SPID2.spi->C2 |= SPIx_C2_MODFEN;
 	return;
 }
 
@@ -39,11 +36,21 @@ static inline void set_backlight(GDisplay *g, uint8_t percent) {
 static inline void acquire_bus(GDisplay *g) {
 	(void) g;
 	spiAcquireBus (&SPID2);
+	/* Enable the slave select function. */
+	SPID2.spi->C1 |= SPIx_C1_SSOE;
+	SPID2.spi->C2 |= SPIx_C2_MODFEN;
+        /* Disable transmit interrupt */
+	SPID2.spi->C1 &= ~SPIx_C1_SPTIE;
 	return;
 }
 
 static inline void release_bus(GDisplay *g) {
 	(void) g;
+	/* Disable the slave select function. */
+	SPID2.spi->C1 &= ~SPIx_C1_SSOE;
+	SPID2.spi->C2 &= ~SPIx_C2_MODFEN;
+        /* Enable transmit interrupt */
+	SPID2.spi->C1 |= SPIx_C1_SPTIE;
 	spiReleaseBus (&SPID2);
 	return;
 }
