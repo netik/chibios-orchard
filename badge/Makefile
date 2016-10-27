@@ -56,7 +56,7 @@ endif
 # Stack size to be allocated to the Cortex-M process stack. This stack is
 # the stack used by the main() thread.
 ifeq ($(USE_PROCESS_STACKSIZE),)
-  USE_PROCESS_STACKSIZE = 0x300
+  USE_PROCESS_STACKSIZE = 0x280
 endif
 
 # Stack size to the allocated to the Cortex-M main/exceptions stack. This
@@ -96,6 +96,7 @@ GFXLIB =$(CHIBIOS)/ext/ugfx
 include $(GFXLIB)/gfx.mk
 include $(GFXLIB)/boards/base/Kosagi-KinetisW-OrchardBM15/board.mk
 include $(GFXLIB)/drivers/gdisp/ILI9341/driver.mk
+include $(GFXLIB)/drivers/ginput/touch/MCU/driver.mk
 
 # libfixmath
 LIBFIXMATH = $(CHIBIOS)/ext/libfixmath
@@ -126,10 +127,7 @@ CSRC = main.c \
        cmd-radio.c \
        cmd-threads.c \
        cmd-flash.c \
-       cmd-temp.c \
-       gpiox.c \
        oled.c \
-       analog.c \
        orchard-events.c \
        radio.c \
        pit.c \

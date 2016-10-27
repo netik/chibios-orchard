@@ -52,7 +52,7 @@
 
 //#define GDISP_NEED_AUTOFLUSH                         FALSE
 //#define GDISP_NEED_TIMERFLUSH                        FALSE
-#define GDISP_NEED_VALIDATION                        TRUE
+//#define GDISP_NEED_VALIDATION                        TRUE
 #define GDISP_NEED_CLIP                              TRUE
 #define GDISP_NEED_CIRCLE                            TRUE
 //#define GDISP_NEED_ELLIPSE                           FALSE
@@ -63,7 +63,7 @@
 //#define GDISP_NEED_PIXELREAD                         FALSE
 #define GDISP_NEED_CONTROL                           TRUE
 //#define GDISP_NEED_QUERY                             FALSE
-// #define GDISP_NEED_MULTITHREAD                       FALSE
+#define GDISP_NEED_MULTITHREAD                       TRUE
 //#define GDISP_NEED_STREAMING                         FALSE
 #define GDISP_NEED_TEXT                              TRUE
 //    #define GDISP_NEED_ANTIALIAS                     FALSE
@@ -145,9 +145,9 @@
 ///////////////////////////////////////////////////////////////////////////
 // GWIN                                                                  //
 ///////////////////////////////////////////////////////////////////////////
-//#define GFX_USE_GWIN                                 FALSE
+#define GFX_USE_GWIN                                 TRUE
 
-//#define GWIN_NEED_WINDOWMANAGER                      FALSE
+#define GWIN_NEED_WINDOWMANAGER                      TRUE
 //    #define GWIN_REDRAW_IMMEDIATE                    FALSE
 //    #define GWIN_REDRAW_SINGLEOP                     FALSE
 //    #define GWIN_NEED_FLASHING                       FALSE
@@ -163,9 +163,9 @@
 //#define GWIN_NEED_GRAPH                              FALSE
 //#define GWIN_NEED_GL3D                               FALSE
 
-//#define GWIN_NEED_WIDGET                             FALSE
-//    #define GWIN_NEED_LABEL                          FALSE
-//        #define GWIN_LABEL_ATTRIBUTE                 FALSE
+#define GWIN_NEED_WIDGET                             TRUE
+    #define GWIN_NEED_LABEL                          TRUE
+        #define GWIN_LABEL_ATTRIBUTE                 TRUE
 //    #define GWIN_NEED_BUTTON                         FALSE
 //        #define GWIN_BUTTON_LAZY_RELEASE             FALSE
 //    #define GWIN_NEED_SLIDER                         FALSE
@@ -196,28 +196,28 @@
 ///////////////////////////////////////////////////////////////////////////
 // GEVENT                                                                //
 ///////////////////////////////////////////////////////////////////////////
-//#define GFX_USE_GEVENT                               FALSE
+#define GFX_USE_GEVENT                               TRUE
 
 //#define GEVENT_ASSERT_NO_RESOURCE                    FALSE
 //#define GEVENT_MAXIMUM_SIZE                          32
-//#define GEVENT_MAX_SOURCE_LISTENERS                  32
+#define GEVENT_MAX_SOURCE_LISTENERS                  4
 
 
 ///////////////////////////////////////////////////////////////////////////
 // GTIMER                                                                //
 ///////////////////////////////////////////////////////////////////////////
-//#define GFX_USE_GTIMER                               FALSE
+#define GFX_USE_GTIMER                               TRUE
 
 //#define GTIMER_THREAD_PRIORITY                       HIGH_PRIORITY
-//#define GTIMER_THREAD_WORKAREA_SIZE                  2048
+#define GTIMER_THREAD_WORKAREA_SIZE                  500
 
 
 ///////////////////////////////////////////////////////////////////////////
 // GQUEUE                                                                //
 ///////////////////////////////////////////////////////////////////////////
-//#define GFX_USE_GQUEUE                               FALSE
+#define GFX_USE_GQUEUE                               TRUE
 
-//#define GQUEUE_NEED_ASYNC                            FALSE
+#define GQUEUE_NEED_ASYNC                            TRUE
 //#define GQUEUE_NEED_GSYNC                            FALSE
 //#define GQUEUE_NEED_FSYNC                            FALSE
 //#define GQUEUE_NEED_BUFFERS                          FALSE
@@ -225,13 +225,13 @@
 ///////////////////////////////////////////////////////////////////////////
 // GINPUT                                                                //
 ///////////////////////////////////////////////////////////////////////////
-//#define GFX_USE_GINPUT                               FALSE
+#define GFX_USE_GINPUT                               TRUE
 
-//#define GINPUT_NEED_MOUSE                            FALSE
+#define GINPUT_NEED_MOUSE                            TRUE
 //    #define GINPUT_TOUCH_STARTRAW                    FALSE
 //    #define GINPUT_TOUCH_NOTOUCH                     FALSE
-//    #define GINPUT_TOUCH_NOCALIBRATE                 FALSE
-//    #define GINPUT_TOUCH_NOCALIBRATE_GUI             FALSE
+#define GINPUT_TOUCH_NOCALIBRATE                 TRUE
+#define GINPUT_TOUCH_NOCALIBRATE_GUI             TRUE
 //    #define GINPUT_MOUSE_POLL_PERIOD                 25
 //    #define GINPUT_MOUSE_CLICK_TIME                  300
 //    #define GINPUT_TOUCH_CXTCLICK_TIME               700
@@ -243,7 +243,7 @@
 //    #define GKEYBOARD_DRIVER_LIST                    GKEYBOARDVMT_Win32, GKEYBOARDVMT_Win32
 //    #define GKEYBOARD_LAYOUT_OFF                     FALSE
 //        #define GKEYBOARD_LAYOUT_SCANCODE2_US        FALSE
-//#define GINPUT_NEED_TOGGLE                           FALSE
+// #define GINPUT_NEED_TOGGLE                           TRUE
 //#define GINPUT_NEED_DIAL                             FALSE
 
 

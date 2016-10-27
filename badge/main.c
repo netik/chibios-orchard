@@ -16,7 +16,6 @@
 
 #include "ch.h"
 #include "hal.h"
-#include "i2c.h"
 #include "spi.h"
 #include "pit.h"
 
@@ -49,10 +48,6 @@ uint8_t fbe_fei(void);
 void cpuStop(void);
 void cpuVLLS0(void);
 
-static const I2CConfig i2c_config = {
-  100000
-};
-
 static const SPIConfig spi1_config = {
   NULL,
   /* HW dependent part.*/
@@ -65,11 +60,6 @@ static const SPIConfig spi2_config = {
   /* HW dependent part.*/
   GPIOD,
   4,
-};
-
-static const ADCConfig adccfg1 = {
-  /* Perform initial calibration */
-  true
 };
 
 static void shell_termination_handler(eventid_t id) {
@@ -192,18 +182,8 @@ int main(void)
 
   flashStart();
 
-  i2cStart(i2cDriver, &i2c_config);
   spiStart(&SPID1, &spi1_config);
   spiStart(&SPID2, &spi2_config);
-  adcStart(&ADCD1, &adccfg1);
-
-  /* Initialize the graphics library */
-
-  gfxInit();
-
-  /* Draw a banner... */
-
-  oledOrchardBanner ();
 
   orchardEventsStart();
 
@@ -225,6 +205,14 @@ int main(void)
   
 
   orchardShellRestart();
+
+  /* Initialize the graphics library */
+
+  gfxInit();
+
+  /* Draw a banner... */
+
+  oledOrchardBanner ();
 
   if (f_mount (&fs, "0:", 1) != 0)
      chprintf (stream, "No SD card found.\r\n");
