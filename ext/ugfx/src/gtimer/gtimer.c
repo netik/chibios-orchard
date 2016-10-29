@@ -37,6 +37,8 @@ static DECLARE_THREAD_FUNCTION(GTimerThreadHandler, arg) {
 	GTimerFunction	fn;
 	void			*param;
 
+	chRegSetThreadName("gtimer");
+
 	nxtTimeout = TIME_INFINITE;
 	lastTime = 0;
 	while(1) {
