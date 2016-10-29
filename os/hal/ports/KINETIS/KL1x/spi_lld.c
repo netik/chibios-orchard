@@ -219,7 +219,7 @@ void spi_lld_start(SPIDriver *spip) {
   /* Initialize the SPI peripheral default values.*/
   spip->spi->C1 = 0;
   spip->spi->C2 = 0;
-  spip->spi->BR = 0;
+  spip->spi->BR = spip->config->br;
 
   /* Enable SPI system, and run as a Master.*/
   spip->spi->C1 |= (SPIx_C1_SPE | SPIx_C1_MSTR);

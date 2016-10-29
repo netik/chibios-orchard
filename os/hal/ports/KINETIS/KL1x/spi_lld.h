@@ -123,6 +123,10 @@ typedef struct {
    * @brief The chip select line pad number - when not using pcs.
    */
   uint16_t                  sspad;
+  /*
+   * @brief The baud rate register value to set to control SPI speed.
+   */
+  uint8_t                   br;
 } SPIConfig;
 
 /**
