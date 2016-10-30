@@ -18,6 +18,7 @@
 #include "hal.h"
 #include "spi.h"
 #include "pit.h"
+#include "mmc_spi.h"
 
 #include "shell.h"
 #include "chprintf.h"
@@ -53,13 +54,15 @@ static const SPIConfig spi1_config = {
   /* HW dependent part.*/
   GPIOD,
   0,
+  0
 };
 
 static const SPIConfig spi2_config = {
   NULL,
   /* HW dependent part.*/
-  GPIOD,
-  4,
+  GPIOE,
+  19,
+  0
 };
 
 static void shell_termination_handler(eventid_t id) {
@@ -207,15 +210,16 @@ int main(void)
   orchardShellRestart();
 
   /* Initialize the graphics library */
-
   gfxInit();
 
   /* Draw a banner... */
 
   oledOrchardBanner ();
 
+#ifdef notyet
   if (f_mount (&fs, "0:", 1) != 0)
      chprintf (stream, "No SD card found.\r\n");
+#endif
 
   while (TRUE)
     chEvtDispatch(evtHandlers(orchard_events), chEvtWaitOne(ALL_EVENTS));
