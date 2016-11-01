@@ -10,12 +10,25 @@
 
 static GHandle ghLabel1;
 static GWidgetInit wi;
+static gdispImage myImage;
 
 void oledOrchardBanner(void)
 {
 	font_t font;
  
 	/*orchardGfxStart();*/
+
+	if (gdispImageOpenFile (&myImage,
+	    "badge.bmp") == GDISP_IMAGE_ERR_OK) {
+		gdispImageDraw (&myImage, 0, 0, 320, 240, 0, 0);
+		gdispImageClose (&myImage);
+	}
+
+	if (gdispImageOpenFile (&myImage,
+	    "test-pal8.bmp") == GDISP_IMAGE_ERR_OK) {
+		gdispImageDraw (&myImage, 0, 0, 320, 240, 0, 0);
+		gdispImageClose (&myImage);
+	}
 
 	font = gdispOpenFont ("DejaVuSans24");
  

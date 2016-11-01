@@ -39,8 +39,7 @@ static inline void acquire_bus(GDisplay *g) {
 	/* Enable the slave select function. */
 	SPID2.spi->C1 |= SPIx_C1_SSOE;
 	SPID2.spi->C2 |= SPIx_C2_MODFEN;
-        /* Disable transmit interrupt */
-	SPID2.spi->C1 &= ~SPIx_C1_SPTIE;
+	SPID2.spi->BR = 0;
 	return;
 }
 
@@ -49,8 +48,7 @@ static inline void release_bus(GDisplay *g) {
 	/* Disable the slave select function. */
 	SPID2.spi->C1 &= ~SPIx_C1_SSOE;
 	SPID2.spi->C2 &= ~SPIx_C2_MODFEN;
-        /* Enable transmit interrupt */
-	SPID2.spi->C1 |= SPIx_C1_SPTIE;
+	SPID2.spi->BR = SPID2.config->br;
 	spiReleaseBus (&SPID2);
 	return;
 }
