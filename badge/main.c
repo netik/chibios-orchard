@@ -62,22 +62,14 @@ static const SPIConfig spi2_config = {
   /* HW dependent part.*/
   MMC_CHIP_SELECT_PORT,
   MMC_CHIP_SELECT_PIN,
-  0x01
-};
-
-static const SPIConfig spi2_slow_config = {
-  NULL,
-  /* HW dependent part.*/
-  MMC_CHIP_SELECT_PORT,
-  MMC_CHIP_SELECT_PIN,
-  0x52
+  0x10
 };
 
 MMCDriver MMCD1;
 
-static MMCConfig mmccfg = {
+static const MMCConfig mmccfg = {
 	&SPID2,
-	&spi2_slow_config,
+	&spi2_config,
 	&spi2_config
 };
 
@@ -167,7 +159,6 @@ static void print_mcu_info(void) {
  */
 int main(void)
 {
-  int i;
   /*
    * System initializations.
    * - HAL initialization, this also initializes the configured device drivers
@@ -196,7 +187,7 @@ int main(void)
   /* Multi-color LED */
  
   palSetPad (GPIOE, 16);  /* Red */
-  palClearPad (GPIOB, 1);   /* Green */
+  palSetPad (GPIOB, 1);   /* Green */
   palSetPad (GPIOB, 0);   /* Blue */
 
   /* Turn on the blue LED */
@@ -213,6 +204,7 @@ int main(void)
   flashStart();
 
   spiStart(&SPID1, &spi1_config);
+  spiStart(&SPID2, &spi2_config);
 
   orchardEventsStart();
 
@@ -224,21 +216,29 @@ int main(void)
   // eventually get rid of this
   chprintf(stream, "User flash start: 0x%x  user flash end: 0x%x  length: 0x%x\r\n",
       __storage_start__, __storage_end__, __storage_size__);
-  
+
+  /*
+   * Force all the chip select pins for the SD card, display and
+   * touch controller high so that they all start out in the
+   * deselected state. We don't know what state the pins will be
+   * in when we get here, and if the chip select for the screen
+   * or touch controller happens to be low, it will interfere
+   * with the probe for the SD card.
+   */
+
+  palSetPad (GPIOB, 1);
+  palSetPad (GPIOE, 18);
+  palSetPad (GPIOE, 19);
+
   /* Connect the SD card */
 
   mmcObjectInit (&MMCD1);
   mmcStart (&MMCD1, &mmccfg);
 
-  for (i = 0; i < 10; i++) {
-    if (mmcConnect (&MMCD1) == HAL_SUCCESS) {
-      chprintf (stream, "SD card detected\r\n");
-      break;
-    } else
-      chprintf (stream, "No SD card found...\r\n");
-  }
-
-  spiStart(&SPID2, &spi2_config);
+  if (mmcConnect (&MMCD1) == HAL_SUCCESS)
+    chprintf (stream, "SD card detected\r\n");
+  else
+    chprintf (stream, "No SD card found...\r\n");
 
   orchardShellRestart();
 

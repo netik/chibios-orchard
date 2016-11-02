@@ -121,7 +121,6 @@ CSRC = main.c \
        orchard-vectors.c \
        cmd-mem.c \
        cmd-radio.c \
-       cmd-threads.c \
        cmd-flash.c \
        oled.c \
        orchard-events.c \
