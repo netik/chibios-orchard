@@ -204,7 +204,6 @@ int main(void)
   flashStart();
 
   spiStart(&SPID1, &spi1_config);
-  spiStart(&SPID2, &spi2_config);
 
   orchardEventsStart();
 
@@ -226,9 +225,40 @@ int main(void)
    * with the probe for the SD card.
    */
 
-  palSetPad (GPIOB, 1);
-  palSetPad (GPIOE, 18);
-  palSetPad (GPIOE, 19);
+  palSetPad (GPIOB, 1);		/* MMC/SD card */
+  palSetPad (GPIOD, 4);		/* 240x320 display */
+  palSetPad (GPIOE, 18);	/* Touch controller */
+  palSetPad (GPIOE, 19);	/* Display command/data pin */
+
+  /*
+   * The following code works around what seems to be a problem with
+   * the Texas Instruments level converters on the Freescale/NXP KW019032
+   * board. Pin PTE0/SPI1_MISO seems to end up pulled to ground from the
+   * output side, and since the level converter is bi-directional, this
+   * seems to cause the it to latch the input side low too. For the MISO
+   * pin, this is bad because it makes it look like every device is
+   * driving 0 bits onto the SPI bus.
+   *
+   * To get around this, we set PTE0 as an output, set it high and then
+   * enable the internal pullup resistor. This seems to unlatch the
+   * level converter and allow the pin to work properly again. We set
+   * it back to SPI1_MISO mode after we're done. For good measure, we
+   * do the same thing to the PTE1/SPI1_MOSI pin.
+   *
+   * This may not be necessary with the final design since will likely
+   * not include level converters, but it should be harmless to leave
+   * it in.
+   */
+
+  palSetPadMode (GPIOE, 0, PAL_MODE_OUTPUT_PUSHPULL);	/* Set to output */
+  palSetPad (GPIOE, 0);					/* Pull high */
+  palSetPadMode (GPIOE, 0, PAL_MODE_INPUT_PULLUP);	/* Enable pullup */
+  palSetPadMode (GPIOE, 0, PAL_MODE_ALTERNATIVE_2);	/* Restore SPI mode */
+
+  palSetPadMode (GPIOE, 1, PAL_MODE_OUTPUT_PUSHPULL);
+  palSetPad (GPIOE, 1);
+  palSetPadMode (GPIOE, 1, PAL_MODE_INPUT_PULLUP);
+  palSetPadMode (GPIOE, 1, PAL_MODE_ALTERNATIVE_2);
 
   /* Connect the SD card */
 
@@ -241,6 +271,16 @@ int main(void)
     chprintf (stream, "No SD card found...\r\n");
 
   orchardShellRestart();
+
+  /*
+   * Be sure to start the second SPI channel again here. If mmcConnect()
+   * returns error because there's no SD card plugged in, it will call
+   * spiStop() which turns off the clock gating and interrupts for the
+   * SPi1 module. We have to re-enable them otherwise we'll get an
+   * exception when trying to access the SPI1 registers.
+   */
+
+  spiStart(&SPID2, &spi2_config);
 
   /* Initialize uGfx */
 
