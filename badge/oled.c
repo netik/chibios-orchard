@@ -15,18 +15,20 @@ static gdispImage myImage;
 void oledOrchardBanner(void)
 {
 	font_t font;
+	uint8_t x, y;
  
 	/*orchardGfxStart();*/
 
 	if (gdispImageOpenFile (&myImage,
-	    "badge.bmp") == GDISP_IMAGE_ERR_OK) {
-		gdispImageDraw (&myImage, 0, 0, 320, 240, 0, 0);
-		gdispImageClose (&myImage);
-	}
-
-	if (gdispImageOpenFile (&myImage,
-	    "test-pal8.bmp") == GDISP_IMAGE_ERR_OK) {
-		gdispImageDraw (&myImage, 0, 0, 320, 240, 0, 0);
+	    "caesar.rgb") == GDISP_IMAGE_ERR_OK) {
+		for (x = 0; x < 4; x++) {
+			for (y = 0; y < 3; y++) {
+				gdispImageDraw (&myImage,
+					x * 80, y * 80,
+					myImage.width,
+					myImage.height, 0, 0);
+			}
+		}
 		gdispImageClose (&myImage);
 	}
 
@@ -58,7 +60,7 @@ void oledOrchardBanner(void)
 	/* Create the actual label */
 
 	ghLabel1 = gwinLabelCreate (NULL, &wi);  
-        gwinLabelSetBorder (ghLabel1, TRUE);
+	gwinLabelSetBorder (ghLabel1, TRUE);
 	gwinRedraw (ghLabel1);
 
 	gdispCloseFont (font);

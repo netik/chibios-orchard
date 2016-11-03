@@ -91,9 +91,9 @@
 //    #define GDISP_INCLUDE_USER_FONTS                 FALSE
 
 #define GDISP_NEED_IMAGE                             TRUE
-//    #define GDISP_NEED_IMAGE_NATIVE                  FALSE
+#define GDISP_NEED_IMAGE_NATIVE                  TRUE
 //    #define GDISP_NEED_IMAGE_GIF                     FALSE
-#define GDISP_NEED_IMAGE_BMP                     TRUE
+//    #define GDISP_NEED_IMAGE_BMP                     FALSE
 //        #define GDISP_NEED_IMAGE_BMP_1               FALSE
 //        #define GDISP_NEED_IMAGE_BMP_4               FALSE
 //        #define GDISP_NEED_IMAGE_BMP_4_RLE           FALSE
