@@ -55,7 +55,7 @@ static const SPIConfig spi1_config = {
 };
 
 #define MMC_CHIP_SELECT_PORT	GPIOB
-#define MMC_CHIP_SELECT_PIN	1
+#define MMC_CHIP_SELECT_PIN	0
 
 static const SPIConfig spi2_config = {
   NULL,
@@ -266,7 +266,8 @@ int main(void)
   mmcStart (&MMCD1, &mmccfg);
 
   if (mmcConnect (&MMCD1) == HAL_SUCCESS)
-    chprintf (stream, "SD card detected\r\n");
+    chprintf (stream, "SD card detected: %dMB\r\n",
+        mmcsdGetCardCapacity (&MMCD1) >> 11);
   else
     chprintf (stream, "No SD card found...\r\n");
 
