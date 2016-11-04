@@ -26,9 +26,4 @@
 #define XPT_CHAN_AUX		0x60	/* Aux input */
 #define XPT_CHAN_TEMP		0x70	/* Temperature */
 
-#define XPT_READ_Z1		(XPT_CTL_START | XPT_CHAN_Z1 /*| XPT_CTL_PD0 | XPT_CTL_PD1*/)
-#define XPT_READ_Z2		(XPT_CTL_START | XPT_CHAN_Z2 /*| XPT_CTL_PD0|XPT_CTL_PD1*/)
-#define XPT_READ_X		(XPT_CTL_START | XPT_CHAN_X /*| XPT_CTL_PD0|XPT_CTL_PD1*/)
-#define XPT_READ_Y		(XPT_CTL_START | XPT_CHAN_Y /*| XPT_CTL_PD0|XPT_CTL_PD1*/)
-
 #endif /* _XPT2046_REG_H_ */
