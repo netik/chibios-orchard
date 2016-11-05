@@ -38,14 +38,16 @@ static bool_t read_xyz(GMouse *m, GMouseReading *prd) {
 	(void)m;
 
 	prd->buttons = 0;
-	prd->z = 0;
+	prd->z = GMOUSE_MCU_Z_TOUCHOFF;
+	prd->x = 8191;
+	prd->y = 8191;
 
 	z1 = xptGet (XPT_CHAN_Z1);
 
 	if (z1 > 50) {
-		prd->z = 1;
-		prd->x = xptGet (XPT_CHAN_X);
-		prd->y = xptGet (XPT_CHAN_Y);
+		prd->z = GMOUSE_MCU_Z_TOUCHON;
+		prd->y = xptGet (XPT_CHAN_X);
+		prd->x = xptGet (XPT_CHAN_Y);
 		prd->buttons = GINPUT_TOUCH_PRESSED;
 	}
 
