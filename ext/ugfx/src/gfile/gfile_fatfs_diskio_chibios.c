@@ -119,24 +119,24 @@ DRESULT disk_read (
   case MMC:
     if (blkGetDriverState(&MMCD1) != BLK_READY)
       return RES_NOTRDY;
-    spiAcquireBus (&SPID2);
+    spiAcquireBus (MMCD1.config->spip);
     if (mmcStartSequentialRead(&MMCD1, sector)) {
-      spiReleaseBus (&SPID2);
+      spiReleaseBus (MMCD1.config->spip);
       return RES_ERROR;
     }
     while (count > 0) {
       if (mmcSequentialRead(&MMCD1, buff)) {
-        spiReleaseBus (&SPID2);
+        spiReleaseBus (MMCD1.config->spip);
         return RES_ERROR;
       }
       buff += MMCSD_BLOCK_SIZE;
       count--;
     }
     if (mmcStopSequentialRead(&MMCD1)) {
-        spiReleaseBus (&SPID2);
+        spiReleaseBus (MMCD1.config->spip);
         return RES_ERROR;
     }
-    spiReleaseBus (&SPID2);
+    spiReleaseBus (MMCD1.config->spip);
     return RES_OK;
 #else
   case SDC:
@@ -170,16 +170,24 @@ DRESULT disk_write (
         return RES_NOTRDY;
     if (mmcIsWriteProtected(&MMCD1))
         return RES_WRPRT;
-    if (mmcStartSequentialWrite(&MMCD1, sector))
+    spiAcquireBus (MMCD1.config->spip);
+    if (mmcStartSequentialWrite(&MMCD1, sector)) {
+        spiReleaseBus (MMCD1.config->spip);
         return RES_ERROR;
+    }
     while (count > 0) {
-        if (mmcSequentialWrite(&MMCD1, buff))
+        if (mmcSequentialWrite(&MMCD1, buff)) {
+            spiReleaseBus (MMCD1.config->spip);
             return RES_ERROR;
+        }
         buff += MMCSD_BLOCK_SIZE;
         count--;
     }
-    if (mmcStopSequentialWrite(&MMCD1))
+    if (mmcStopSequentialWrite(&MMCD1)) {
+        spiReleaseBus (MMCD1.config->spip);
         return RES_ERROR;
+    }
+    spiReleaseBus (MMCD1.config->spip);
     return RES_OK;
 #else
   case SDC:
@@ -211,14 +219,17 @@ DRESULT disk_ioctl (
     switch (ctrl) {
     case CTRL_SYNC:
         return RES_OK;
+    case GET_SECTOR_COUNT:
+        *((DWORD *)buff) = mmcsdGetCardCapacity(&MMCD1);
+        return RES_OK;
     case GET_SECTOR_SIZE:
         *((WORD *)buff) = MMCSD_BLOCK_SIZE;
         return RES_OK;
 #if _USE_ERASE
     case CTRL_ERASE_SECTOR:
-        spiAcquireBus (&SPID2);
+        spiAcquireBus (MMCD1.config->spip);
         mmcErase(&MMCD1, *((DWORD *)buff), *((DWORD *)buff + 1));
-        spiReleaseBus (&SPID2);
+        spiReleaseBus (MMCD1.config->spip);
         return RES_OK;
 #endif
     default:
@@ -230,9 +241,7 @@ DRESULT disk_ioctl (
     case CTRL_SYNC:
         return RES_OK;
     case GET_SECTOR_COUNT:
-        spiAcquireBus (&SPID2);
         *((DWORD *)buff) = mmcsdGetCardCapacity(&SDCD1);
-        spiReleaseBus (&SPID2);
         return RES_OK;
     case GET_SECTOR_SIZE:
         *((WORD *)buff) = MMCSD_BLOCK_SIZE;
