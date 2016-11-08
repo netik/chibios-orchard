@@ -51,7 +51,7 @@ static bool_t read_xyz(GMouse *m, GMouseReading *prd) {
 	/*
 	 * Note: we flip the X and Y axis readings because the
 	 * screen is being used in landscape mode and the touch
-	 * controller assumes protrait mode.
+	 * controller assumes portrait mode.
 	 */
 
 	prd->y = xptGet (XPT_CHAN_X);
