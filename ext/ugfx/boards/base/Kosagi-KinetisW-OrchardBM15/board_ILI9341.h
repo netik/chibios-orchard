@@ -36,18 +36,28 @@ static inline void set_backlight(GDisplay *g, uint8_t percent) {
 static inline void acquire_bus(GDisplay *g) {
 	(void) g;
 	spiAcquireBus (&SPID2);
-	/* Enable the slave select function. */
+	/*
+	 * Enable the slave select function, enable FIFO
+	 * mode, disable interrupts.
+	 */
 	SPID2.spi->C1 |= SPIx_C1_SSOE;
 	SPID2.spi->C2 |= SPIx_C2_MODFEN;
+	SPID2.spi->C3 |= SPIx_C3_FIFOMODE;
+	SPID2.spi->C1 &= ~SPIx_C1_SPIE;
 	SPID2.spi->BR = 0;
 	return;
 }
 
 static inline void release_bus(GDisplay *g) {
 	(void) g;
-	/* Disable the slave select function. */
+	/*
+	 * Disable the slave select function, disable FIFO
+	 * mode, re-enable interrupts.
+	 */
 	SPID2.spi->C1 &= ~SPIx_C1_SSOE;
 	SPID2.spi->C2 &= ~SPIx_C2_MODFEN;
+	SPID2.spi->C3 &= ~SPIx_C3_FIFOMODE;
+	SPID2.spi->C1 |= SPIx_C1_SPIE;
 	SPID2.spi->BR = SPID2.config->br;
 	spiReleaseBus (&SPID2);
 	return;
@@ -56,8 +66,6 @@ static inline void release_bus(GDisplay *g) {
 static inline void write_index(GDisplay *g, uint16_t index) {
 	(void) g;
 	palClearPad (GPIOE, 18);
- 	while ((SPID2.spi->S & SPIx_S_SPTEF) == 0)
-		;
 	SPID2.spi->DL = index & 0xFF;
 	return;
 }
@@ -65,8 +73,6 @@ static inline void write_index(GDisplay *g, uint16_t index) {
 static inline void write_data(GDisplay *g, uint16_t data) {
 	(void) g;
 	palSetPad (GPIOE, 18);
- 	while ((SPID2.spi->S & SPIx_S_SPTEF) == 0)
-		;
 	SPID2.spi->DL = data & 0xFF;
 	return;
 }
