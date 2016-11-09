@@ -238,16 +238,30 @@ LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
 		acquire_bus(g);
 		set_viewport(g);
 		write_index(g, 0x2C);
+		/*
+		 * Switch the SPI controller to do 16-bit transfers
+		 * and set the graphics controller for data mode.
+		 * Make sure the FIFO drains completely before
+		 * switching into 16-bit mode.
+		 */
+		while ((SPID2.spi->S & SPIx_S_TXFULLF))
+			;
 	        SPID2.spi->C2 |= SPIx_C2_SPMODE;
 	        palSetPad (GPIOE, 18);
 	}
 	LLDSPEC	void gdisp_lld_write_color(GDisplay *g) {
+		while ((SPID2.spi->S & SPIx_S_TNEAREF) == 0)
+			;
 		SPID2.spi->DH = gdispColor2Native(g->p.color) >> 8;
 		SPID2.spi->DL = (uint8_t)gdispColor2Native(g->p.color);
-		while ((SPID2.spi->S & SPIx_S_TXFULLF))
-			;
 	}
 	LLDSPEC	void gdisp_lld_write_stop(GDisplay *g) {
+		/*
+		 * Make sure the TX FIFO drains completely before
+		 * switching out of 16-bit mode.
+		 */
+		while ((SPID2.spi->S & SPIx_S_TXFULLF))
+			;
 	        SPID2.spi->C2 &= ~SPIx_C2_SPMODE;
 		release_bus(g);
 	}

@@ -42,7 +42,7 @@ static inline void acquire_bus(GDisplay *g) {
 	 */
 	SPID2.spi->C1 |= SPIx_C1_SSOE;
 	SPID2.spi->C2 |= SPIx_C2_MODFEN;
-	SPID2.spi->C3 |= SPIx_C3_FIFOMODE;
+	SPID2.spi->C3 |= SPIx_C3_FIFOMODE|SPIx_C3_TNEAREF_MARK;
 	SPID2.spi->C1 &= ~SPIx_C1_SPIE;
 	SPID2.spi->BR = 0;
 	return;
@@ -56,7 +56,7 @@ static inline void release_bus(GDisplay *g) {
 	 */
 	SPID2.spi->C1 &= ~SPIx_C1_SSOE;
 	SPID2.spi->C2 &= ~SPIx_C2_MODFEN;
-	SPID2.spi->C3 &= ~SPIx_C3_FIFOMODE;
+	SPID2.spi->C3 &= ~(SPIx_C3_FIFOMODE|SPIx_C3_TNEAREF_MARK);
 	SPID2.spi->C1 |= SPIx_C1_SPIE;
 	SPID2.spi->BR = SPID2.config->br;
 	spiReleaseBus (&SPID2);

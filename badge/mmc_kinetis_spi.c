@@ -43,12 +43,12 @@
 #include "mmc.h"
 
 /* Peripheral controls (Platform dependent) */
-#define CS_LOW()	palClearPad (GPIOB, 0);/* Set MMC_CS = low */
+#define CS_LOW()	palClearPad (GPIOB, 0);	/* Set MMC_CS = low */
 #define	CS_HIGH()	palSetPad (GPIOB, 0);	/* Set MMC_CS = high */
 #define MMC_CD		1			/* Test if card detected.   yes:true, no:false, default:true */
 #define MMC_WP		0			/* Test if write protected. yes:true, no:false, default:false */
-#define	FCLK_SLOW()	SPID2.spi->BR = 0x35;	/* Set SPI slow clock (100-400kHz) */
-#define	FCLK_FAST()	SPID2.spi->BR = 0;	/* Set SPI fast clock (20MHz max) */
+#define	FCLK_SLOW()				/* Set SPI slow clock (100-400kHz) */
+#define	FCLK_FAST()				/* Set SPI fast clock (20MHz max) */
 
 
 /*--------------------------------------------------------------------------
@@ -124,7 +124,17 @@ BYTE xchg_spi (		/* Returns received data */
 	BYTE dat		/* Data to be sent */
 )
 {
-	spiExchange (&SPID2, 1, &dat, &dat);
+	SPI1->C1 &= ~SPIx_C1_SPIE;
+
+	while ((SPI1->S & SPIx_S_SPTEF) == 0)
+		;
+	SPI1->DL = dat;
+	while ((SPI1->S & SPIx_S_SPRF) == 0)
+		;
+	dat = SPI1->DL;
+
+	SPI1->C1 |= SPIx_C1_SPIE;
+
 	return (dat);
 }
 
@@ -136,7 +146,21 @@ void rcvr_spi_multi (
 	UINT cnt	/* Size of data block */
 )
 {
-	spiReceive (&SPID2, cnt, p);
+	UINT i;
+
+	SPI1->C1 &= ~SPIx_C1_SPIE;
+
+	for (i = 0; i < cnt; i++) {
+		while ((SPI1->S & SPIx_S_SPTEF) == 0)
+			;
+	   	SPI1->DL = 0xFF;
+		while ((SPI1->S & SPIx_S_SPRF) == 0)
+			;
+		p[i] = SPI1->DL;
+	}
+
+	SPI1->C1 |= SPIx_C1_SPIE;
+
 	return;
 }
 
@@ -148,7 +172,18 @@ void xmit_spi_multi (
 	UINT cnt		/* Size of data block */
 )
 {
-	spiSend (&SPID2, cnt, p);
+	UINT i;
+
+	SPI1->C1 &= ~SPIx_C1_SPIE;
+
+	for (i = 0; i < cnt; i++) {
+		while ((SPI1->S & SPIx_S_SPTEF) == 0)
+			;
+		SPI1->DL = p[i];
+	}
+
+	SPI1->C1 |= SPIx_C1_SPIE;
+
 	return;
 }
 
@@ -185,7 +220,6 @@ void deselect (void)
 {
 	CS_HIGH();		/* Set CS# high */
 	xchg_spi(0xFF);	/* Dummy clock (force DO hi-z for multiple slave SPI) */
-	spiReleaseBus (&SPID2);
 }
 
 
@@ -197,7 +231,6 @@ void deselect (void)
 static
 int select (void)	/* 1:Successful, 0:Timeout */
 {
-	spiAcquireBus (&SPID2);
 	CS_LOW();		/* Set CS# low */
 	xchg_spi(0xFF);	/* Dummy clock (force DO enabled) */
 	if (wait_ready(500)) return 1;	/* Wait for card ready */
@@ -335,6 +368,7 @@ DSTATUS mmc_disk_initialize (void)
 	for (Timer1 = 10; Timer1; ) ;		/* Wait for 100ms */
 	if (Stat & STA_NODISK) return Stat;	/* No card in the socket? */
 
+	spiAcquireBus (&SPID2);
 	power_on();							/* Turn on the socket power */
 	FCLK_SLOW();
 	for (n = 10; n; n--) xchg_spi(0xFF);	/* 80 dummy clocks */
@@ -372,6 +406,8 @@ DSTATUS mmc_disk_initialize (void)
 		power_off();
 	}
 
+	spiReleaseBus (&SPID2);
+
 	return Stat;
 }
 
@@ -407,6 +443,7 @@ DRESULT mmc_disk_read (
 	if (!(CardType & CT_BLOCK)) sector *= 512;	/* Convert to byte address if needed */
 
 	cmd = count > 1 ? CMD18 : CMD17;			/*  READ_MULTIPLE_BLOCK : READ_SINGLE_BLOCK */
+	spiAcquireBus(&SPID2);
 	if (send_cmd(cmd, sector) == 0) {
 		do {
 			if (!rcvr_datablock(buff, 512)) break;
@@ -415,6 +452,7 @@ DRESULT mmc_disk_read (
 		if (cmd == CMD18) send_cmd(CMD12, 0);	/* STOP_TRANSMISSION */
 	}
 	deselect();
+	spiReleaseBus(&SPID2);
 
 	return count ? RES_ERROR : RES_OK;
 }
@@ -438,6 +476,7 @@ DRESULT mmc_disk_write (
 
 	if (!(CardType & CT_BLOCK)) sector *= 512;	/* Convert to byte address if needed */
 
+	spiAcquireBus(&SPID2);
 	if (count == 1) {	/* Single block write */
 		if ((send_cmd(CMD24, sector) == 0)	/* WRITE_BLOCK */
 			&& xmit_datablock(buff, 0xFE))
@@ -455,6 +494,7 @@ DRESULT mmc_disk_write (
 		}
 	}
 	deselect();
+	spiReleaseBus(&SPID2);
 
 	return count ? RES_ERROR : RES_OK;
 }
@@ -482,6 +522,7 @@ DRESULT mmc_disk_ioctl (
 
 	if (Stat & STA_NOINIT) return RES_NOTRDY;
 
+	spiAcquireBus(&SPID2);
 	res = RES_ERROR;
 	switch (cmd) {
 	case CTRL_SYNC :		/* Make sure that no pending write process. Do not remove this or written sector might not left updated. */
@@ -620,6 +661,7 @@ DRESULT mmc_disk_ioctl (
 		res = RES_PARERR;
 	}
 
+	spiReleaseBus(&SPID2);
 	return res;
 }
 #endif
@@ -653,5 +695,10 @@ void mmc_disk_timerproc (void)
 		s |= (STA_NODISK | STA_NOINIT);
 
 	Stat = s;				/* Update MMC status */
+}
+
+DWORD get_fattime(void)
+{
+	return (0);
 }
 

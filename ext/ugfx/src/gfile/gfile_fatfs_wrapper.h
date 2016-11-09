@@ -23,10 +23,15 @@
 	#define _INC_TCHAR
 #endif
 
+#if HAL_USE_MMC_SPI
 // Include the fatfs API
 #include "3rdparty/fatfs-0.10b/src/ff.h"
 
 // Include the fatfs diskio API
 #include "3rdparty/fatfs-0.10b/src/diskio.h"
+#else
+#include "ff.h"
+#include "diskio.h"
+#endif
 
 #endif //_FATFS_WRAPPER
