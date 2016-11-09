@@ -1,13 +1,35 @@
 netik's build notes
 
-1. After you clone this repo, do a:
+1. Update submodules... (ugfx, etc...)
 
 git submodule update --init --recursive
 
+1. Install the gcc arm compiler.
+
+  cd /usr/local
+  wget https://launchpad.net/gcc-arm-embedded/5.0/5-2016-q3-update/+download/gcc-arm-none-eabi-5_4-2016q3-20160926-mac.tar.bz2
+  tar xjf gcc-arm-none-eabi-5_4-2016q3-20160926-mac.tar.bz2   
+  ln -s gcc-arm-none-eabi-5_4-2016q3-20160926-mac.tar.bz2 cortex-m0
+  
 2. make sure you are using right compilers...
 
-export PATH=/usr/local/cortex-m0/bin:$PATH
-export CFLAGS="-I/usr/local/cortex-m0/include -L/usr/local/cortex-m0/lib"
+ export PATH=/usr/local/cortex-m0/bin:$PATH
+ export CFLAGS="-I/usr/local/cortex-m0/include -L/usr/local/cortex-m0/lib"
+
+3. Make
+
+ cd badge
+ make clean; make
+
+4. Start openOCD
+
+5. Start GDB
+
+6. Push code to device
+
+7. Profit
+
+
 
 
 
