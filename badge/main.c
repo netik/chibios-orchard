@@ -18,7 +18,6 @@
 #include "hal.h"
 #include "spi.h"
 #include "pit.h"
-#include "mmc_spi.h"
 
 #include "shell.h"
 #include "chprintf.h"
@@ -32,9 +31,12 @@
 #include "radio_reg.h"
 #include "flash.h"
 
-#if !HAL_USE_MMC_SPI
-#include "ff.h"
-#include "diskio.h"
+#if HAL_USE_MMC_SPI
+#include "mmc_spi.h"
+#else
+/*#include "ff.h"
+#include "diskio.h"*/
+#include "mmc.h"
 #endif
 
 #include "gfx.h"
@@ -277,12 +279,8 @@ int main(void)
     chprintf (stream, "SD card detected: %dMB\r\n",
         mmcsdGetCardCapacity (&MMCD1) >> 11);
   else
-    chprintf (stream, "No SD card found...\r\n");
-#else
-  pitStart (&PIT1, disk_timerproc);
+    chprintf (stream, "No SD card found.\r\n");
 #endif
-
-  orchardShellRestart();
 
   /*
    * Be sure to start the second SPI channel again here. If mmcConnect()
@@ -293,6 +291,19 @@ int main(void)
    */
 
   spiStart(&SPID2, &spi2_config);
+
+#if !HAL_USE_MMC_SPI
+  /* Connect the SD card */
+
+  pitStart (&PIT1, disk_timerproc);
+
+  if (mmc_disk_initialize () == 0) {
+    chprintf (stream, "SD card detected.\r\n");
+  } else
+    chprintf (stream, "No SD card found.\r\n");
+#endif
+
+  orchardShellRestart();
 
   /* Initialize uGfx */
 
