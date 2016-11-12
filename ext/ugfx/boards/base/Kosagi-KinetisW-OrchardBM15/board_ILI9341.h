@@ -67,6 +67,8 @@ static inline void write_index(GDisplay *g, uint16_t index) {
 	(void) g;
 	palClearPad (GPIOE, 18);
 	SPID2.spi->DL = index & 0xFF;
+	while ((SPID2.spi->S & SPIx_S_SPTEF) == 0)
+		;
 	return;
 }
 
@@ -74,6 +76,8 @@ static inline void write_data(GDisplay *g, uint16_t data) {
 	(void) g;
 	palSetPad (GPIOE, 18);
 	SPID2.spi->DL = data & 0xFF;
+	while ((SPID2.spi->S & SPIx_S_SPTEF) == 0)
+		;
 	return;
 }
 

@@ -279,7 +279,7 @@ typedef struct
  *
  * @notapi
  */
-#define pal_lld_setpad(port, pad) (port)->PSOR |= ((uint32_t) 1 << (pad))
+#define pal_lld_setpad(port, pad) (port)->PSOR = ((uint32_t) 1 << (pad))
 
 /**
  * @brief   Clears a pad logical state to @p PAL_LOW.
@@ -292,7 +292,7 @@ typedef struct
  *
  * @notapi
  */
-#define pal_lld_clearpad(port, pad) (port)->PCOR |= ((uint32_t) 1 << (pad))
+#define pal_lld_clearpad(port, pad) (port)->PCOR = ((uint32_t) 1 << (pad))
 
 /**
  * @brief   Toggles a pad logical state.

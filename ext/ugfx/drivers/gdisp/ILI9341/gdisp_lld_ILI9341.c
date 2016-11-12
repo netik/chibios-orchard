@@ -244,7 +244,7 @@ LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
 		 * Make sure the FIFO drains completely before
 		 * switching into 16-bit mode.
 		 */
-		while ((SPID2.spi->S & SPIx_S_TXFULLF))
+		while ((SPID2.spi->S & SPIx_S_SPTEF) == 0)
 			;
 	        SPID2.spi->C2 |= SPIx_C2_SPMODE;
 	        palSetPad (GPIOE, 18);
@@ -260,7 +260,7 @@ LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
 		 * Make sure the TX FIFO drains completely before
 		 * switching out of 16-bit mode.
 		 */
-		while ((SPID2.spi->S & SPIx_S_TXFULLF))
+		while ((SPID2.spi->S & SPIx_S_SPTEF) == 0)
 			;
 	        SPID2.spi->C2 &= ~SPIx_C2_SPMODE;
 		release_bus(g);

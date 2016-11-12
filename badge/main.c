@@ -34,8 +34,6 @@
 #if HAL_USE_MMC_SPI
 #include "mmc_spi.h"
 #else
-/*#include "ff.h"
-#include "diskio.h"*/
 #include "mmc.h"
 #endif
 
