@@ -1,3 +1,49 @@
+/*-
+ * Copyright (c) 2016
+ *      Bill Paul <wpaul@windriver.com>.  All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. All advertising materials mentioning features or use of this software
+ *    must display the following acknowledgement:
+ *      This product includes software developed by Bill Paul.
+ * 4. Neither the name of the author nor the names of any co-contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY Bill Paul AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL Bill Paul OR THE VOICES IN HIS HEAD
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+ * THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/*
+ * This module implements support for the Shenzen XPTEK XPT2046 4-wire
+ * resistive touch screen controller chip. The XPT2046 provides a SPI
+ * 4-wite SPI interface and includes a set of ADC blocks for performing
+ * sensing with resistive touch units. It provides X, Y and X axis
+ * readings as well as a temperature sensor. Commands are sent as a
+ * single 8-bit transaction and responses are received as either an 8
+ * bit or 16 bit transaction. Sendsor readings are returned as 12-bit
+ * quantities.
+ *
+ * SEE ALSO:
+ * https://ldm-systems.ru/f/doc/catalog/HY-TFT-2,8/XPT2046.pdf
+ */
+
 #include "ch.h"
 #include "hal.h"
 #include "osal.h"
@@ -7,8 +53,30 @@
 #include "xpt2046_reg.h"
 #include "xpt2046.h"
 
+/* Current chip select setting */
+
 #define XPT_CHIP_SELECT_PORT	GPIOE
 #define XPT_CHIP_SELECT_PIN	19
+
+/******************************************************************************
+*
+* xptGet - issue command to XPT2046 chip and return result
+*
+* This function issues a command to the XPT2046 chip and returns a result.
+* The command is an instruction to sample a value from one of the ADC
+* channels. Sensor results can be returned as either 8-bit or 12-bit values.
+* This function always requests 12-bit results. Valid commands are be:
+*
+* XPT_CHAN_X		X axis position
+* XPT_CHAN_Y		Y axis position
+* XPT_CHAN_Z1           Z1 pressure sense
+* XPT_CHAN_VBAT		battery voltage
+* XPT_CHAN_TEMP         temperature sensor
+*
+* The chip is kept powered down between readings to conserve power.
+*
+* RETURNS: 16-bit sensor value for X, Y or Z axis, or temperature reading
+*/
 
 uint16_t xptGet (uint8_t cmd)
 {
@@ -21,12 +89,34 @@ uint16_t xptGet (uint8_t cmd)
 
 	spiAcquireBus (&SPID2);
 	br = SPID2.spi->BR;
-	SPID2.spi->BR = 0x0;
-	spiIgnore (&SPID2, 1);
 	SPID2.spi->BR = 0x75;
-	palClearPad (XPT_CHIP_SELECT_PORT, XPT_CHIP_SELECT_PIN);	
-	spiSend (&SPID2, 1, &reg);
-	spiReceive (&SPID2, 2, &v);
+	palClearPad (XPT_CHIP_SELECT_PORT, XPT_CHIP_SELECT_PIN);
+	SPI1->C1 &= ~SPIx_C1_SPIE;
+
+	/* Send command byte */
+
+        while ((SPI1->S & SPIx_S_SPTEF) == 0)
+                ;
+	SPI1->DL = reg;
+        while ((SPI1->S & SPIx_S_SPRF) == 0)
+                ;
+	(void) SPI1->DL;
+
+	/* Receive response byte 1 */
+
+	SPI1->DL = 0xFF;
+        while ((SPI1->S & SPIx_S_SPRF) == 0)
+                ;
+	v[0] = SPI1->DL;
+
+	/* Receive response byte 2 */
+
+	SPI1->DL = 0xFF;
+        while ((SPI1->S & SPIx_S_SPRF) == 0)
+		;
+	v[1] = SPI1->DL;
+
+	SPI1->C1 |= SPIx_C1_SPIE;
 	palSetPad (XPT_CHIP_SELECT_PORT, XPT_CHIP_SELECT_PIN);	
 	SPID2.spi->BR = br;
 	spiReleaseBus (&SPID2);
@@ -40,7 +130,7 @@ uint16_t xptGet (uint8_t cmd)
 #ifdef notdef
 #include "chprintf.h"
 extern void * stream;
-void xpt_test(void)
+void xptTest(void)
 {
 	uint16_t	v;
 	uint16_t	z1;
@@ -48,7 +138,7 @@ void xpt_test(void)
 	while (1) {
 		z1 = xptGet (XPT_CHAN_Z1);
 		if (z1 > 10) {
-			chprintf (stream, "press: ");
+			chprintf (stream, "press(%d): ", z1);
 			v = xptGet (XPT_CHAN_X);
 			chprintf (stream, "X: %d ", v);
 			v = xptGet (XPT_CHAN_Y);

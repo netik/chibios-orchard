@@ -56,5 +56,5 @@ void orchardShellRestart(void)
     chThdRelease(shell_tp);
 
   shell_tp = shellCreateStatic(&shellConfig, waShellThread,
-                              sizeof(waShellThread), NORMALPRIO - 5);
+                              sizeof(waShellThread), NORMALPRIO + 5);
 }

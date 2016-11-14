@@ -40,11 +40,11 @@ static inline void acquire_bus(GDisplay *g) {
 	 * Enable the slave select function, enable FIFO
 	 * mode, disable interrupts.
 	 */
-	SPID2.spi->C1 |= SPIx_C1_SSOE;
-	SPID2.spi->C2 |= SPIx_C2_MODFEN;
-	SPID2.spi->C3 |= SPIx_C3_FIFOMODE|SPIx_C3_TNEAREF_MARK;
-	SPID2.spi->C1 &= ~SPIx_C1_SPIE;
-	SPID2.spi->BR = 0;
+	SPI1->C1 |= SPIx_C1_SSOE;
+	SPI1->C2 |= SPIx_C2_MODFEN;
+	SPI1->C3 |= SPIx_C3_FIFOMODE|SPIx_C3_TNEAREF_MARK;
+	SPI1->C1 &= ~SPIx_C1_SPIE;
+	SPI1->BR = 0;
 	return;
 }
 
@@ -54,11 +54,11 @@ static inline void release_bus(GDisplay *g) {
 	 * Disable the slave select function, disable FIFO
 	 * mode, re-enable interrupts.
 	 */
-	SPID2.spi->C1 &= ~SPIx_C1_SSOE;
-	SPID2.spi->C2 &= ~SPIx_C2_MODFEN;
-	SPID2.spi->C3 &= ~(SPIx_C3_FIFOMODE|SPIx_C3_TNEAREF_MARK);
-	SPID2.spi->C1 |= SPIx_C1_SPIE;
-	SPID2.spi->BR = SPID2.config->br;
+	SPI1->C1 &= ~SPIx_C1_SSOE;
+	SPI1->C2 &= ~SPIx_C2_MODFEN;
+	SPI1->C3 &= ~(SPIx_C3_FIFOMODE|SPIx_C3_TNEAREF_MARK);
+	SPI1->C1 |= SPIx_C1_SPIE;
+	SPI1->BR = SPID2.config->br;
 	spiReleaseBus (&SPID2);
 	return;
 }
@@ -66,14 +66,18 @@ static inline void release_bus(GDisplay *g) {
 static inline void write_index(GDisplay *g, uint16_t index) {
 	(void) g;
 	palClearPad (GPIOE, 18);
-	SPID2.spi->DL = index & 0xFF;
+	SPI1->DL = index & 0xFF;
+	while ((SPI1->S & SPIx_S_SPTEF) == 0)
+		;
 	return;
 }
 
 static inline void write_data(GDisplay *g, uint16_t data) {
 	(void) g;
 	palSetPad (GPIOE, 18);
-	SPID2.spi->DL = data & 0xFF;
+	SPI1->DL = data & 0xFF;
+	while ((SPI1->S & SPIx_S_SPTEF) == 0)
+		;
 	return;
 }
 
