@@ -55,17 +55,25 @@
 #define delayms(ms)					gfxSleepMilliseconds(ms)
 
 static void set_viewport(GDisplay *g) {
-	write_index(g, 0x2A);
-	write_data(g, (g->p.x >> 8));
-	write_data(g, (uint8_t) g->p.x);
-	write_data(g, (g->p.x + g->p.cx - 1) >> 8);
-	write_data(g, (uint8_t) (g->p.x + g->p.cx - 1));
+	write_index (g, 0x2A);
+	palSetPad (GPIOE, 18);
+	SPI1->DL = (g->p.x >> 8);
+	SPI1->DL = (uint8_t) g->p.x;
+	SPI1->DL = (g->p.x + g->p.cx - 1) >> 8;
+	SPI1->DL = (uint8_t) (g->p.x + g->p.cx - 1);
+	while ((SPI1->S & SPIx_S_SPTEF) == 0)
+		;
 
-	write_index(g, 0x2B);
-	write_data(g, (g->p.y >> 8));
-	write_data(g, (uint8_t) g->p.y);
-	write_data(g, (g->p.y + g->p.cy - 1) >> 8);
-	write_data(g, (uint8_t) (g->p.y + g->p.cy - 1));
+	write_index (g, 0x2B);
+	palSetPad (GPIOE, 18);
+	SPI1->DL = (g->p.y >> 8);
+	SPI1->DL = (uint8_t) g->p.y;
+	SPI1->DL = (g->p.y + g->p.cy - 1) >> 8;
+	SPI1->DL = (uint8_t) (g->p.y + g->p.cy - 1);
+	while ((SPI1->S & SPIx_S_SPTEF) == 0)
+		;
+
+	return;
 }
 
 /*===========================================================================*/
@@ -244,25 +252,25 @@ LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
 		 * Make sure the FIFO drains completely before
 		 * switching into 16-bit mode.
 		 */
-		while ((SPID2.spi->S & SPIx_S_SPTEF) == 0)
+		while ((SPI1->S & SPIx_S_SPTEF) == 0)
 			;
-	        SPID2.spi->C2 |= SPIx_C2_SPMODE;
+	        SPI1->C2 |= SPIx_C2_SPMODE;
 	        palSetPad (GPIOE, 18);
 	}
 	LLDSPEC	void gdisp_lld_write_color(GDisplay *g) {
-		while ((SPID2.spi->S & SPIx_S_TNEAREF) == 0)
+		while ((SPI1->S & SPIx_S_TNEAREF) == 0)
 			;
-		SPID2.spi->DH = gdispColor2Native(g->p.color) >> 8;
-		SPID2.spi->DL = (uint8_t)gdispColor2Native(g->p.color);
+		SPI1->DH = gdispColor2Native(g->p.color) >> 8;
+		SPI1->DL = (uint8_t)gdispColor2Native(g->p.color);
 	}
 	LLDSPEC	void gdisp_lld_write_stop(GDisplay *g) {
 		/*
 		 * Make sure the TX FIFO drains completely before
 		 * switching out of 16-bit mode.
 		 */
-		while ((SPID2.spi->S & SPIx_S_SPTEF) == 0)
+		while ((SPI1->S & SPIx_S_SPTEF) == 0)
 			;
-	        SPID2.spi->C2 &= ~SPIx_C2_SPMODE;
+	        SPI1->C2 &= ~SPIx_C2_SPMODE;
 		release_bus(g);
 	}
 #endif
