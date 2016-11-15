@@ -19,10 +19,9 @@
  * the blue segment of the tri-color LED on the Freescale KW019032 board,
  * which means we can use it to indicate disk activity.
  *
- * The Kinetis SPI driver for ChibiOS doesn't provide a way to set the
- * speed. We do it here by manually setting the BR register divisor
- * values to select a total divisor factor of 192 (64 x 3). With a bus
- * clock of 24MHz, this yields a slow SPI speed of 125KHz.
+ * SPI channel 2 is set to default to a baud rate divisor of 2, which
+ * yields a clock speed of 24MHz. This seems to the maximum clock rate
+ * an SD card in SPI mode can sustain.
  */
 
 /*
