@@ -116,10 +116,10 @@ static void gwidgetEvent(void *param, GEvent *pe) {
 				gh = h;
 				if ((pme->buttons & GMETA_MOUSE_UP)) {
 					gh->flags &= ~GWIN_FLG_MOUSECAPTURE;
-					if (wvmt->MouseUp)
-						wvmt->MouseUp(gw, pme->x - gh->x, pme->y - gh->y);
-				} else if (wvmt->MouseMove)
-					wvmt->MouseMove(gw, pme->x - gh->x, pme->y - gh->y);
+					if (wvmt->m.MouseUp)
+						wvmt->m.MouseUp(gw, pme->x - gh->x, pme->y - gh->y);
+				} else if (wvmt->m.MouseMove)
+					wvmt->m.MouseMove(gw, pme->x - gh->x, pme->y - gh->y);
 
 				// There is only ever one captured mouse. Prevent normal mouse processing if there is a captured mouse
 				gh = 0;
@@ -135,8 +135,8 @@ static void gwidgetEvent(void *param, GEvent *pe) {
 		if (gh && (gh->flags & (GWIN_FLG_WIDGET|GWIN_FLG_SYSENABLED)) == (GWIN_FLG_WIDGET|GWIN_FLG_SYSENABLED)) {
 			if ((pme->buttons & GMETA_MOUSE_DOWN)) {
 				gh->flags |= GWIN_FLG_MOUSECAPTURE;
-				if (wvmt->MouseDown)
-					wvmt->MouseDown(gw, pme->x - gh->x, pme->y - gh->y);
+				if (wvmt->m.MouseDown)
+					wvmt->m.MouseDown(gw, pme->x - gh->x, pme->y - gh->y);
 			}
 		}
 		break;
@@ -151,14 +151,14 @@ static void gwidgetEvent(void *param, GEvent *pe) {
 			if ((gh->flags & (GWIN_FLG_WIDGET|GWIN_FLG_SYSENABLED|GWIN_FLG_SYSVISIBLE)) != (GWIN_FLG_WIDGET|GWIN_FLG_SYSENABLED|GWIN_FLG_SYSVISIBLE))
 				continue;
 
-			for(role = 0; role < wvmt->toggleroles; role++) {
-				if (wvmt->ToggleGet(gw, role) == pte->instance) {
+			for(role = 0; role < wvmt->t.toggleroles; role++) {
+				if (wvmt->t.ToggleGet(gw, role) == pte->instance) {
 					if (pte->on) {
-						if (wvmt->ToggleOn)
-							wvmt->ToggleOn(gw, role);
+						if (wvmt->t.ToggleOn)
+							wvmt->t.ToggleOn(gw, role);
 					} else {
-						if (wvmt->ToggleOff)
-							wvmt->ToggleOff(gw, role);
+						if (wvmt->t.ToggleOff)
+							wvmt->t.ToggleOff(gw, role);
 					}
 				}
 			}
@@ -175,10 +175,10 @@ static void gwidgetEvent(void *param, GEvent *pe) {
 			if ((gh->flags & (GWIN_FLG_WIDGET|GWIN_FLG_SYSENABLED|GWIN_FLG_SYSVISIBLE)) != (GWIN_FLG_WIDGET|GWIN_FLG_SYSENABLED|GWIN_FLG_SYSVISIBLE))
 				continue;
 
-			for(role = 0; role < wvmt->dialroles; role++) {
-				if (wvmt->DialGet(gw, role) == pte->instance) {
-					if (wvmt->DialMove)
-						wvmt->DialMove(gw, role, pde->value, pde->maxvalue);
+			for(role = 0; role < wvmt->d.dialroles; role++) {
+				if (wvmt->d.DialGet(gw, role) == pte->instance) {
+					if (wvmt->d.DialMove)
+						wvmt->d.DialMove(gw, role, pde->value, pde->maxvalue);
 				}
 			}
 		}
@@ -203,8 +203,8 @@ static void gwidgetEvent(void *param, GEvent *pe) {
 			if (!(gh->flags & GWIN_FLG_WIDGET))		// check if it a widget
 				continue;
 
-			for(role = 0; role < wvmt->toggleroles; role++) {
-				if (wvmt->ToggleGet(gw, role) == instance)
+			for(role = 0; role < wvmt->t.toggleroles; role++) {
+				if (wvmt->t.ToggleGet(gw, role) == instance)
 					return gh;
 			}
 		}
@@ -221,8 +221,8 @@ static void gwidgetEvent(void *param, GEvent *pe) {
 			if (!(gh->flags & GWIN_FLG_WIDGET))		// check if it a widget
 				continue;
 
-			for(role = 0; role < wvmt->dialroles; role++) {
-				if (wvmt->DialGet(gw, role) == instance)
+			for(role = 0; role < wvmt->d.dialroles; role++) {
+				if (wvmt->d.DialGet(gw, role) == instance)
 					return gh;
 			}
 		}
@@ -275,10 +275,10 @@ void _gwidgetDestroy(GHandle gh) {
 
 	#if GFX_USE_GINPUT && GINPUT_NEED_TOGGLE
 		// Detach any toggles from this object
-		for(role = 0; role < wvmt->toggleroles; role++) {
-			instance = wvmt->ToggleGet(gw, role);
+		for(role = 0; role < wvmt->t.toggleroles; role++) {
+			instance = wvmt->t.ToggleGet(gw, role);
 			if (instance != GWIDGET_NO_INSTANCE) {
-				wvmt->ToggleAssign(gw, role, GWIDGET_NO_INSTANCE);
+				wvmt->t.ToggleAssign(gw, role, GWIDGET_NO_INSTANCE);
 				if (!FindToggleUser(instance))
 					geventDetachSource(&gl, ginputGetToggle(instance));
 			}
@@ -287,10 +287,10 @@ void _gwidgetDestroy(GHandle gh) {
 
 	#if GFX_USE_GINPUT && GINPUT_NEED_DIAL
 		// Detach any dials from this object
-		for(role = 0; role < wvmt->dialroles; role++) {
-			instance = wvmt->DialGet(gw, role);
+		for(role = 0; role < wvmt->d.dialroles; role++) {
+			instance = wvmt->d.DialGet(gw, role);
 			if (instance != GWIDGET_NO_INSTANCE) {
-				wvmt->DialAssign(gw, role, GWIDGET_NO_INSTANCE);
+				wvmt->d.DialAssign(gw, role, GWIDGET_NO_INSTANCE);
 				if (!FindDialUser(instance))
 					geventDetachSource(&gl, ginputGetDial(instance));
 			}
@@ -445,7 +445,7 @@ bool_t gwinAttachListener(GListener *pl) {
 			return FALSE;
 
 		// Is the role valid
-		if (role >= wvmt->toggleroles)
+		if (role >= wvmt->t.toggleroles)
 			return FALSE;
 
 		// Is this a valid device
@@ -453,19 +453,19 @@ bool_t gwinAttachListener(GListener *pl) {
 			return FALSE;
 
 		// Is this already done?
-		oi = wvmt->ToggleGet(gw, role);
+		oi = wvmt->t.ToggleGet(gw, role);
 		if (instance == oi)
 			return TRUE;
 
 		// Remove the old instance
 		if (oi != GWIDGET_NO_INSTANCE) {
-			wvmt->ToggleAssign(gw, role, GWIDGET_NO_INSTANCE);
+			wvmt->t.ToggleAssign(gw, role, GWIDGET_NO_INSTANCE);
 			if (!FindToggleUser(oi))
 				geventDetachSource(&gl, ginputGetToggle(oi));
 		}
 
 		// Assign the new
-		wvmt->ToggleAssign(gw, role, instance);
+		wvmt->t.ToggleAssign(gw, role, instance);
 		return geventAttachSource(&gl, gsh, GLISTEN_TOGGLE_ON|GLISTEN_TOGGLE_OFF);
 	}
 #endif
@@ -479,7 +479,7 @@ bool_t gwinAttachListener(GListener *pl) {
 			return FALSE;
 
 		// Is the role valid
-		if (role >= wvmt->dialroles)
+		if (role >= wvmt->d.dialroles)
 			return FALSE;
 
 		// Is this a valid device
@@ -487,19 +487,19 @@ bool_t gwinAttachListener(GListener *pl) {
 			return FALSE;
 
 		// Is this already done?
-		oi = wvmt->DialGet(gw, role);
+		oi = wvmt->d.DialGet(gw, role);
 		if (instance == oi)
 			return TRUE;
 
 		// Remove the old instance
 		if (oi != GWIDGET_NO_INSTANCE) {
-			wvmt->DialAssign(gw, role, GWIDGET_NO_INSTANCE);
+			wvmt->d.DialAssign(gw, role, GWIDGET_NO_INSTANCE);
 			if (!FindDialUser(oi))
 				geventDetachSource(&gl, ginputGetDial(oi));
 		}
 
 		// Assign the new
-		wvmt->DialAssign(gw, role, instance);
+		wvmt->d.DialAssign(gw, role, instance);
 		return geventAttachSource(&gl, gsh, 0);
 	}
 #endif

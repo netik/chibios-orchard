@@ -90,28 +90,28 @@ typedef struct gwinVMT {
 		struct gwinVMT				g;														// @< This is still a GWIN
 		void (*DefaultDraw)			(GWidgetObject *gw, void *param);						// @< The default drawing routine (mandatory)
 		#if GINPUT_NEED_MOUSE
-			/*struct {*/
+			struct _mouse {
 				void (*MouseDown)		(GWidgetObject *gw, coord_t x, coord_t y);				// @< Process mouse down events (optional)
 				void (*MouseUp)			(GWidgetObject *gw, coord_t x, coord_t y);				// @< Process mouse up events (optional)
 				void (*MouseMove)		(GWidgetObject *gw, coord_t x, coord_t y);				// @< Process mouse move events (optional)
-			/*};*/
+			} m;
 		#endif
 		#if GINPUT_NEED_TOGGLE
-			/*struct {*/
+			struct _toggle {
 				uint16_t				toggleroles;											// @< The roles supported for toggles (0->toggleroles-1)
 				void (*ToggleAssign)	(GWidgetObject *gw, uint16_t role, uint16_t instance);	// @< Assign a toggle to a role (optional)
 				uint16_t (*ToggleGet)	(GWidgetObject *gw, uint16_t role);						// @< Return the instance for a particular role (optional)
 				void (*ToggleOff)		(GWidgetObject *gw, uint16_t role);						// @< Process toggle off events (optional)
 				void (*ToggleOn)		(GWidgetObject *gw, uint16_t role);						// @< Process toggle on events (optional)
-			/*};*/
+			} t;
 		#endif
 		#if GINPUT_NEED_DIAL
-			/*struct {*/
+			struct _dial {
 				uint16_t				dialroles;												// @< The roles supported for dials (0->dialroles-1)
 				void (*DialAssign)		(GWidgetObject *gw, uint16_t role, uint16_t instance);	// @< Test the role and save the dial instance handle (optional)
 				uint16_t (*DialGet)		(GWidgetObject *gw, uint16_t role);						// @< Return the instance for a particular role (optional)
 				void (*DialMove)		(GWidgetObject *gw, uint16_t role, uint16_t value, uint16_t max);	// @< Process dial move events (optional)
-			/*};*/
+			} d;
 		#endif
 	} gwidgetVMT;
 	/** @} */
