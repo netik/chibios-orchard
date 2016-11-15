@@ -790,8 +790,8 @@ bool_t ginputGetMouseStatus(unsigned instance, GEventMouse *pe) {
 			return 0;
 
 		// Check it needs calibration
-        if (!(gmvmt(m)->d.flags & GMOUSE_VFLG_CALIBRATE))
-        	return 0;
+        	if (!(gmvmt(m)->d.flags & GMOUSE_VFLG_CALIBRATE))
+        		return 0;
 
 		return CalibrateMouse(m);
 	}
