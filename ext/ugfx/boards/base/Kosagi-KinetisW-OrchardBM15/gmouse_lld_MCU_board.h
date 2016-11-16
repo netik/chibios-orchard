@@ -14,12 +14,12 @@
 #include <string.h>
 
 static const float calibrationData[] = {
-	0.09198,		// ax
-	-0.00305,		// bx
-	-14.45468,		// cx
-	0.00118,		// ay
-	0.06849,		// by
-	-27.25699		// cy
+	0.09437,		// ax
+	-0.00239,		// bx
+	-19.68127,		// cx
+	0.00104,		// ay
+	0.07062,		// by
+	-29.25399		// cy
 };
  
 bool_t LoadMouseCalibration(unsigned instance, void *data, size_t sz)
@@ -34,9 +34,9 @@ bool_t LoadMouseCalibration(unsigned instance, void *data, size_t sz)
 }
 
 // Resolution and Accuracy Settings
-#define GMOUSE_MCU_PEN_CALIBRATE_ERROR		16
-#define GMOUSE_MCU_PEN_CLICK_ERROR		30
-#define GMOUSE_MCU_PEN_MOVE_ERROR		16
+#define GMOUSE_MCU_PEN_CALIBRATE_ERROR		20
+#define GMOUSE_MCU_PEN_CLICK_ERROR		20
+#define GMOUSE_MCU_PEN_MOVE_ERROR		20
 #define GMOUSE_MCU_FINGER_CALIBRATE_ERROR	14
 #define GMOUSE_MCU_FINGER_CLICK_ERROR		18
 #define GMOUSE_MCU_FINGER_MOVE_ERROR		14
