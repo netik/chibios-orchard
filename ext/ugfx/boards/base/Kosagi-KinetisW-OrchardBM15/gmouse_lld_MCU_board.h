@@ -13,7 +13,7 @@
 
 #include <string.h>
 
-float calibrationData[] = {
+static const float calibrationData[] = {
 	0.09198,		// ax
 	-0.00083,		// bx
 	-15.07428,		// cx
