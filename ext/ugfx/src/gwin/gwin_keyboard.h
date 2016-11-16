@@ -37,9 +37,6 @@
  */
 typedef GEventGWin		GEventGWinKeyboard;
 
-struct keyinfo {
-};
-
 /**
  * @brief	The keyboard widget structure
  * @note	Do not use the members directly - treat it as a black-box.
