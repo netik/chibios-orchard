@@ -262,6 +262,8 @@ LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
 			;
 		SPI1->DH = gdispColor2Native(g->p.color) >> 8;
 		SPI1->DL = (uint8_t)gdispColor2Native(g->p.color);
+		(void)SPI1->DL;
+		(void)SPI1->DH;
 	}
 	LLDSPEC	void gdisp_lld_write_stop(GDisplay *g) {
 		/*
