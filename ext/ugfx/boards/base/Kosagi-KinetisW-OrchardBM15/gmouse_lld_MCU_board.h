@@ -15,11 +15,11 @@
 
 static const float calibrationData[] = {
 	0.09198,		// ax
-	-0.00083,		// bx
-	-15.07428,		// cx
-	0.00206,		// ay
-	0.06770,		// by
-	-27.46004		// cy
+	-0.00305,		// bx
+	-14.45468,		// cx
+	0.00118,		// ay
+	0.06849,		// by
+	-27.25699		// cy
 };
  
 bool_t LoadMouseCalibration(unsigned instance, void *data, size_t sz)
@@ -34,21 +34,21 @@ bool_t LoadMouseCalibration(unsigned instance, void *data, size_t sz)
 }
 
 // Resolution and Accuracy Settings
-#define GMOUSE_MCU_PEN_CALIBRATE_ERROR		8
-#define GMOUSE_MCU_PEN_CLICK_ERROR		24
-#define GMOUSE_MCU_PEN_MOVE_ERROR		24
+#define GMOUSE_MCU_PEN_CALIBRATE_ERROR		16
+#define GMOUSE_MCU_PEN_CLICK_ERROR		30
+#define GMOUSE_MCU_PEN_MOVE_ERROR		16
 #define GMOUSE_MCU_FINGER_CALIBRATE_ERROR	14
 #define GMOUSE_MCU_FINGER_CLICK_ERROR		18
 #define GMOUSE_MCU_FINGER_MOVE_ERROR		14
 #define GMOUSE_MCU_Z_MIN		0	/* The minimum Z reading */
 #define GMOUSE_MCU_Z_MAX		4096	/* The maximum Z reading */
 
-#define GMOUSE_MCU_Z_TOUCHON		90	/*
+#define GMOUSE_MCU_Z_TOUCHON		150	/*
 						 * Values between this and
 						 * Z_MAX are definitely pressed
 						 */
 
-#define GMOUSE_MCU_Z_TOUCHOFF		50	/*
+#define GMOUSE_MCU_Z_TOUCHOFF		100	/*
 						 * Values between this and
 						 * Z_MIN are definitely not
 						 * pressed
