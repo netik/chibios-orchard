@@ -1,8 +1,13 @@
 netik's build notes
 
+I am building on a Mac Pro (OSX 10.11) and Bill is using freeBSD.
+
+Bill's link - https://people.freebsd.org/~wpaul/w00t/badge/
+Pin usage   -
+
 1. Update submodules... (ugfx, etc...)
 
-git submodule update --init --recursive
+  git submodule update --init --recursive
 
 1. Install the gcc arm compiler.
 
@@ -21,14 +26,60 @@ git submodule update --init --recursive
  cd badge
  make clean; make
 
-4. Start openOCD
+4. Start openOCD (assumes you have it installed ...)
+( See also: https://people.freebsd.org/~wpaul/w00t/badge/freedom_board.txt )
 
+The version of OpenOCD that I build has support for this device. I used
+the following command to connect to it. Run this in one window. 
+
+/usr/local/cortex-m0/bin/openocd -f interface/cmsis-dap.cfg -f target/klx.cfg
+
+Note: to talk directly to the device via JTAG/SWD header with the Olimex
+debugger, use this command:
+
+/usr/local/cortex-m0/bin/openocd -f interface/ftdi/olimex-arm-usb-ocd-h.cfg \
+				 -f interface/ftdi/olimex-arm-jtag-swd.cfg -f target/klx.cfg
 5. Start GDB
 
+OpenOCD provides two interfaces: a telnet server on port 4444 and a remote
+GDB server on port 3333. You need to halt the CPU before GDB will connect.
+You can use the telnet interface for that:
+
+Open a new window, and type:
+
+% telnet localhost 4444
+
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+Open On-Chip Debugger
+> halt
+target state: halted
+target halted due to debug-request, current mode: Thread
+xPSR: 0x81000000 pc: 0x0000904c psp: 0x1ffffbd0
+>
+
 6. Push code to device
+  cd badge/build
+  
+  % arm-none-eabi-gdb
+  (gdb) target remote localhost:3333
+  (gdb) load badge.elf
+  
+7. Profit!
 
-7. Profit
+Appendix A: Programming tools.
 
+If you are using the freescale KW01 demo board, you'll need the following to talk to it via SWD
+
+Olimex ARM-USB-OCH-H JTAG debugger ($50):
+http://www.mouser.com/ProductDetail/Olimex-Ltd/ARM-USB-OCD-H
+
+Olimex JTAG to SWD (Serial Wire Debug) adapter ($5):
+http://www.mouser.com/ProductDetail/Olimex-Ltd/ARM-JTAG-SWD
+
+Embedded Artists 20 pin to 10 pin adapter ($15):
+http://www.mouser.com/ProductDetail/Embedded-Artists/EA-ACC-040
 
 
 

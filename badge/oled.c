@@ -36,7 +36,7 @@ void oledOrchardBanner(void)
  
 	gdispDrawStringBox (0, 0, gdispGetWidth(),
 		gdispGetFontMetric(font, fontHeight),
-		"Hello world......", font, White, justifyCenter);
+		"It works!", font, White, justifyCenter);
 
 	gdispCloseFont (font);
 

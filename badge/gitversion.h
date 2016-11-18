@@ -1,1 +1,1 @@
-static const char *gitversion = "f112194d7ea1a82cd01937b6248935c9df2021b9";
+static const char *gitversion = "fa20435fd05b644f739d66ab198e58410f5b874a";
