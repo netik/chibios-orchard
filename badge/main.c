@@ -60,8 +60,8 @@ void cpuVLLS0(void);
  */
 
 static const PWMConfig pwm_config = {
-	10000,		/* Frequency */
-	10000,		/* Period */
+	KINETIS_SYSCLK_FREQUENCY,	/* Clock frequency */
+	10000,				/* Trigger period */
 	NULL,		/* Callback */
 	{
 		{PWM_OUTPUT_DISABLED, NULL},	/* PTC1 */
@@ -234,6 +234,17 @@ int main(void)
 
   /*
    * Start the pulse width modulator running on PTC2
+   *
+   * The TPM is configured to run from the MCGFLLCLK, which is
+   * the system clock frequency (47972352 Hz). The period is some
+   * fraction of that number of ticks. So for example, to get the
+   * TPM generata pulse every 1000Hz, you need to select a period
+   * value that's 1 one-thousandth of the MCGFLLCLK value:
+   *
+   * period = MCGFLLCLK / 1000
+   * period = 47972352 / 1000
+   * period = 47972
+   *
    * Period can be changed with:
    * pwmChangePeriod(&PWMD1, <period>);
    */
