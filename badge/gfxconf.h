@@ -230,12 +230,12 @@
 #define GINPUT_NEED_MOUSE                            TRUE
 //    #define GINPUT_TOUCH_STARTRAW                    FALSE
 //    #define GINPUT_TOUCH_NOTOUCH                     FALSE
-#define GINPUT_TOUCH_NOCALIBRATE                 TRUE
+//    #define GINPUT_TOUCH_NOCALIBRATE                 FALSE
 #define GINPUT_TOUCH_NOCALIBRATE_GUI             TRUE
 //    #define GINPUT_MOUSE_POLL_PERIOD                 25
 //    #define GINPUT_MOUSE_CLICK_TIME                  300
 //    #define GINPUT_TOUCH_CXTCLICK_TIME               700
-//    #define GINPUT_TOUCH_USER_CALIBRATION_LOAD       FALSE
+#define GINPUT_TOUCH_USER_CALIBRATION_LOAD       TRUE
 //    #define GINPUT_TOUCH_USER_CALIBRATION_SAVE       FALSE
 //    #define GMOUSE_DRIVER_LIST                       GMOUSEVMT_Win32, GMOUSEVMT_Win32
 //#define GINPUT_NEED_KEYBOARD                         FALSE

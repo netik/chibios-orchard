@@ -11,22 +11,44 @@
 #include "xpt2046.h"
 #include "xpt2046_reg.h"
 
+#include <string.h>
+
+static const float calibrationData[] = {
+	0.09437,		// ax
+	-0.00239,		// bx
+	-19.68127,		// cx
+	0.00104,		// ay
+	0.07062,		// by
+	-29.25399		// cy
+};
+ 
+bool_t LoadMouseCalibration(unsigned instance, void *data, size_t sz)
+{
+	(void)data;
+	if (sz != sizeof(calibrationData) || instance != 0) {
+		return FALSE;
+	}
+	memcpy (data, (void*)&calibrationData, sz);
+
+	return (TRUE);
+}
+
 // Resolution and Accuracy Settings
-#define GMOUSE_MCU_PEN_CALIBRATE_ERROR	8
-#define GMOUSE_MCU_PEN_CLICK_ERROR	6
-#define GMOUSE_MCU_PEN_MOVE_ERROR	4
+#define GMOUSE_MCU_PEN_CALIBRATE_ERROR		20
+#define GMOUSE_MCU_PEN_CLICK_ERROR		20
+#define GMOUSE_MCU_PEN_MOVE_ERROR		20
 #define GMOUSE_MCU_FINGER_CALIBRATE_ERROR	14
-#define GMOUSE_MCU_FINGER_CLICK_ERROR	18
-#define GMOUSE_MCU_FINGER_MOVE_ERROR	14
+#define GMOUSE_MCU_FINGER_CLICK_ERROR		18
+#define GMOUSE_MCU_FINGER_MOVE_ERROR		14
 #define GMOUSE_MCU_Z_MIN		0	/* The minimum Z reading */
 #define GMOUSE_MCU_Z_MAX		4096	/* The maximum Z reading */
 
-#define GMOUSE_MCU_Z_TOUCHON		80	/*
+#define GMOUSE_MCU_Z_TOUCHON		150	/*
 						 * Values between this and
 						 * Z_MAX are definitely pressed
 						 */
 
-#define GMOUSE_MCU_Z_TOUCHOFF		50	/*
+#define GMOUSE_MCU_Z_TOUCHOFF		100	/*
 						 * Values between this and
 						 * Z_MIN are definitely not
 						 * pressed

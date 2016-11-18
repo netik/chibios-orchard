@@ -177,6 +177,8 @@ void pwm_lld_init(void) {
   PWMD3.channels = KINETIS_TPM2_CHANNELS;
   PWMD3.tpm = TPM2;
 #endif
+  SIM->SOPT2 &= ~(SIM_SOPT2_TPMSRC_MASK);
+  SIM->SOPT2 |= SIM_SOPT2_TPMSRC(KINETIS_TPM_CLOCK_SRC);
 }
 
 /**

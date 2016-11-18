@@ -119,3 +119,9 @@
 #ifndef KINETIS_EXT_PORTE_WIDTH
 #define KINETIS_EXT_PORTE_WIDTH                 0
 #endif
+
+/* Pulse width modulator */
+
+#define KINETIS_TPM_CLOCK_SRC			1
+#define KINETIS_PWM_USE_TPM0			TRUE
+#define KINETIS_PWM_TPM0_IRQ_PRIORITY		5
