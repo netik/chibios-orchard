@@ -98,10 +98,6 @@ include $(GFXLIB)/boards/base/Kosagi-KinetisW-OrchardBM15/board.mk
 include $(GFXLIB)/drivers/gdisp/ILI9341/driver.mk
 include $(GFXLIB)/drivers/ginput/touch/MCU/driver.mk
 
-# libfixmath
-LIBFIXMATH = $(CHIBIOS)/ext/libfixmath
-include $(LIBFIXMATH)/build.mk
-
 #C90TFS Freescale Flash drivers
 LIBC90TFS = $(CHIBIOS)/ext/C90TFS
 include $(LIBC90TFS)/build.mk
@@ -109,10 +105,6 @@ include $(LIBC90TFS)/build.mk
 #FatFS library
 FATFS = $(CHIBIOS)/ext/fatfs
 include $(FATFS)/build.mk
-
-# libfixmatrix
-LIBFIXMATRIX = $(CHIBIOS)/ext/libfixmatrix
-include $(LIBFIXMATRIX)/build.mk
 
 # Define linker script file here
 LDSCRIPT= $(STARTUPLD)/KL16Z128.ld
@@ -148,9 +140,7 @@ CSRC = main.c \
        $(CHIBIOS)/os/hal/lib/streams/memstreams.c \
        $(CHIBIOS)/os/various/shell.c \
        $(GFXSRC) \
-       $(LIBFIXMATHSRC) \
        $(LIBC90TFSSRC) \
-       $(LIBFIXMATRIXSRC) \
        $(FATFSSRC)
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
