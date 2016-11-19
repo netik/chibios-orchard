@@ -18,7 +18,7 @@
 #include "hal.h"
 #include "spi.h"
 #include "pit.h"
-#include "pwm.h"
+#include "tpm.h"
 
 #include "shell.h"
 #include "chprintf.h"
@@ -51,27 +51,6 @@ int32_t fll_freq(int32_t fll_ref);
 uint8_t fbe_fei(void);
 void cpuStop(void);
 void cpuVLLS0(void);
-
-/*
- * Pulse width modulator configuration. TPM0 has 6 PWM channels.
- * Channel 0 is tied to PTC1 and channel 1 is tied to PTC2.
- * Unfortunately PTC1 is wired to the 32KHz RTC crystal on the
- * Freescale/NXP KW019032 board, so we use channel 1.
- */
-
-static const PWMConfig pwm_config = {
-	KINETIS_SYSCLK_FREQUENCY,	/* Clock frequency */
-	10000,				/* Trigger period */
-	NULL,		/* Callback */
-	{
-		{PWM_OUTPUT_DISABLED, NULL},	/* PTC1 */
-		{PWM_OUTPUT_ACTIVE_HIGH, NULL},	/* PTC2 */
-		{PWM_OUTPUT_DISABLED, NULL},
-		{PWM_OUTPUT_DISABLED, NULL},
-		{PWM_OUTPUT_DISABLED, NULL},
-		{PWM_OUTPUT_DISABLED, NULL},
-	}
-};
 
 static const SPIConfig spi1_config = {
   NULL,
@@ -232,25 +211,7 @@ int main(void)
 
   flashStart();
 
-  /*
-   * Start the pulse width modulator running on PTC2
-   *
-   * The TPM is configured to run from the MCGFLLCLK, which is
-   * the system clock frequency (47972352 Hz). The period is some
-   * fraction of that number of ticks. So for example, to get the
-   * TPM generata pulse every 1000Hz, you need to select a period
-   * value that's 1 one-thousandth of the MCGFLLCLK value:
-   *
-   * period = MCGFLLCLK / 1000
-   * period = 47972352 / 1000
-   * period = 47972
-   *
-   * Period can be changed with:
-   * pwmChangePeriod(&PWMD1, <period>);
-   */
-
-  pwmStart (&PWMD1, &pwm_config);
-  pwmEnableChannel (&PWMD1, 1, 5000); /* pulse width */
+  pwmInit();
 
   spiStart(&SPID1, &spi1_config);
 

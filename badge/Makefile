@@ -131,6 +131,7 @@ CSRC = main.c \
        orchard-events.c \
        radio.c \
        pit.c \
+       tpm.c \
        xpt2046.c \
        hex.c \
        flash.c \
