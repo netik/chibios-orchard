@@ -24,7 +24,7 @@ main (int argc, char * argv[])
 	uint16_t		width;
 	uint16_t		height;
 
-	if (argc < 2) {
+	if (argc < 3) {
 		fprintf (stderr, "specify width and height\n");
 		exit (1);
 	}
