@@ -121,6 +121,7 @@ CSRC = main.c \
        cmd-threads.c \
        cmd-buzzer.c \
        sound.c \
+       led.c \
        oled.c \
        orchard-events.c \
        radio.c \

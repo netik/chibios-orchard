@@ -14,8 +14,8 @@ static const PWM_NOTE soundStart[] = {
 	{ PWM_NOTE_PAUSE, note32 * 2 },
 	{ NOTE_CS5, note32 * 2 },
 	{ NOTE_D5, note32 * 2 },
-	{ NOTE_F4, note32 * 2 },
-	{ NOTE_B4, note32 * 5 },
+	{ NOTE_A4, note32 * 2 },
+	{ NOTE_FS5, note32 * 5 },
 	{ 0, PWM_DURATION_END }
 };
     

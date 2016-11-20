@@ -29,6 +29,7 @@
 #include "orchard-events.h"
 
 #include "oled.h"
+#include "led.h"
 #include "radio.h"
 #include "radio_reg.h"
 #include "flash.h"
@@ -52,6 +53,8 @@ int32_t fll_freq(int32_t fll_ref);
 uint8_t fbe_fei(void);
 void cpuStop(void);
 void cpuVLLS0(void);
+
+uint32_t led_fb[48];
 
 static const SPIConfig spi1_config = {
   NULL,
@@ -177,6 +180,7 @@ int main(void)
    */
   halInit();
   chSysInit();
+  ledStart(16, led_fb, 0 , NULL );
 
   /*
    * The Freescale/NXP KW019032 board has two LEDs connected to the CPU:
