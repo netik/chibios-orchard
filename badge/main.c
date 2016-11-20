@@ -54,7 +54,7 @@ uint8_t fbe_fei(void);
 void cpuStop(void);
 void cpuVLLS0(void);
 
-uint32_t led_fb[48];
+uint8_t led_fb[48];
 
 static const SPIConfig spi1_config = {
   NULL,
