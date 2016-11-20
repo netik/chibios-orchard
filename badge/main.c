@@ -19,6 +19,7 @@
 #include "spi.h"
 #include "pit.h"
 #include "tpm.h"
+#include "sound.h"
 
 #include "shell.h"
 #include "chprintf.h"
@@ -212,7 +213,8 @@ int main(void)
   flashStart();
 
   pwmInit();
-
+  playStartupSong();
+  
   spiStart(&SPID1, &spi1_config);
 
   orchardEventsStart();

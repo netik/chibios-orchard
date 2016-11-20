@@ -119,6 +119,8 @@ CSRC = main.c \
        cmd-radio.c \
        cmd-flash.c \
        cmd-threads.c \
+       cmd-buzzer.c \
+       sound.c \
        oled.c \
        orchard-events.c \
        radio.c \
@@ -251,7 +253,7 @@ ULIBDIR =
 
 # List all user libraries here
 #ULIBS = lib/armv6-m-libgcc.a lib/libc-nano-armv6-m.a
-ULIBS = -lm_nano -lc_nano -lnosys -lgcc
+ULIBS = -lc_nano -lnosys -lgcc # -lm_nano
 
 #
 # End of user defines
