@@ -181,7 +181,8 @@ int main(void)
   halInit();
   chSysInit();
   ledStart(16, led_fb);
-
+  effectsStart();
+  
   /*
    * The Freescale/NXP KW019032 board has two LEDs connected to the CPU:
    * - One single-color blue LED on port E pin 17

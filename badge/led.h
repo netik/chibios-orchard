@@ -2,6 +2,7 @@
 #define __LED_H__
 
 #include "hal.h"
+#include "math.h"
 
 #define LEDS_COUNT 16
 
