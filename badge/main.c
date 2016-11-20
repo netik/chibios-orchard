@@ -180,7 +180,7 @@ int main(void)
    */
   halInit();
   chSysInit();
-  ledStart(16, led_fb, 0 , NULL );
+  ledStart(16, led_fb);
 
   /*
    * The Freescale/NXP KW019032 board has two LEDs connected to the CPU:
