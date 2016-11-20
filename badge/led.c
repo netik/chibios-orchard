@@ -2,12 +2,12 @@
 #include "hal.h"
 #include "pwm.h"
 #include "led.h"
-#include "orchard-effects.h"
+/*#include "orchard-effects.h"*/
 #include "gfx.h"
 
 #include "chprintf.h"
 #include "stdlib.h"
-#include "orchard-math.h"
+/*#include "orchard-math.h"*/
 #include "orchard-ui.h"
 
 #include <string.h>
