@@ -1,9 +1,53 @@
 #include "ch.h"
 #include "hal.h"
-#include "osal.h"
+#include "chschd.h"
+#include "chthreads.h"
 
 #include "tpm.h"
 #include "pwm_lld.h"
+
+#include "chprintf.h"
+extern void * stream;
+
+static THD_WORKING_AREA(waPwmThread, 64);
+
+static PWM_NOTE * pTune;
+static thread_t * pThread;
+
+static THD_FUNCTION(pwmThread, arg) {
+	PWM_NOTE * p;
+	(void)arg;
+
+	chRegSetThreadName ("pwm");
+
+	while (1) {
+		chThdSleep (TIME_INFINITE);
+		while (pTune != NULL) {
+			p = pTune;
+			while (1) {
+				if (p->pwm_duration == PWM_DURATION_END) {
+					pwmToneStop ();
+					pTune = NULL;
+					break;
+				}
+				if (p->pwm_duration == PWM_DURATION_LOOP) {
+					pwmToneStop ();
+					break;
+				}
+				if (p->pwm_note != PWM_NOTE_PAUSE)
+					pwmToneStart (p->pwm_note);
+				if (p->pwm_note == PWM_NOTE_OFF)
+					pwmToneStop();
+				chThdSleepMilliseconds (p->pwm_duration);
+				p++;
+			}
+		}
+			
+	}
+
+	/* NOTREACHED */
+	return;
+}
 
 void pwmInit (void)
 {
@@ -48,6 +92,13 @@ void pwmInit (void)
 
 	TPM0->C[TPM_CHANNEL].SC = TPM_CnSC_MSB | TPM_CnSC_ELSB;
 
+	/* Create PWM thrad */
+
+	pThread = chThdCreateStatic(waPwmThread, sizeof(waPwmThread),
+		TPM_THREAD_PRIO, pwmThread, NULL);
+	/*while (pThread->p_state != CH_STATE_SLEEPING)
+		chThdSleepMilliseconds (1);*/
+
 	return;
 }
 
@@ -79,3 +130,11 @@ void pwmToneStop (void)
 
 	return;
 	}
+
+void pwmThreadPlay (const PWM_NOTE * p)
+{
+	pTune = (PWM_NOTE *)p;
+	chThdResume (&pThread, MSG_OK);
+
+	return;
+}
