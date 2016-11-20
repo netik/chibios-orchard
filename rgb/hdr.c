@@ -21,20 +21,16 @@ main (int argc, char * argv[])
 {
 	FILE *			fp;
 	GDISP_IMAGE		img;
-	char *                  filename;
 	uint16_t		width;
 	uint16_t		height;
 
-	printf("%d\n", argc);
-	
-	if (argc < 4) {
-		fprintf (stderr, "Usage: hdr filename width height\n");
+	if (argc < 3) {
+		fprintf (stderr, "specify width and height\n");
 		exit (1);
 	}
 
-	filename = argv[1];
-	width = atoi(argv[2]);
-	height = atoi(argv[3]);
+	width = atoi(argv[1]);
+	height = atoi(argv[2]);
 
 	img.gdi_id1 = 'N';
 	img.gdi_id2 = 'I';
@@ -45,7 +41,7 @@ main (int argc, char * argv[])
 	img.gdi_fmt_hi = (GDISP_PIXELFORMAT_RGB565) >> 8;
 	img.gdi_fmt_lo = (GDISP_PIXELFORMAT_RGB565) & 0xFF ;
 
-	fp = fopen (filename, "w");
+	fp = fopen ("hdr.rgb", "w");
 
 	if (fp == NULL) {
 		perror ("file open failed");
