@@ -120,6 +120,7 @@ CSRC = main.c \
        cmd-flash.c \
        cmd-threads.c \
        cmd-buzzer.c \
+       cmd-led.c \
        sound.c \
        led.c \
        oled.c \

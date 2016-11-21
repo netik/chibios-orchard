@@ -324,12 +324,10 @@ int main(void)
   orchardShellRestart();
 
   /* Initialize uGfx */
-
   gfxInit();
 
   /* Draw a banner... */
-
-  oledOrchardBanner ();
+  oledOrchardBanner();
 
   while (TRUE)
     chEvtDispatch(evtHandlers(orchard_events), chEvtWaitOne(ALL_EVENTS));

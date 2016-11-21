@@ -5,6 +5,7 @@
 #include "math.h"
 
 #define LEDS_COUNT 16
+#define LEDS_TOP_INDEX 8
 
 #define sign(x) (( x > 0 ) - ( x < 0 ))
 
@@ -42,9 +43,16 @@ void effectsNextPattern(void);
 void effectsPrevPattern(void);
 
 void listEffects(void);
+void ledResetPattern(void);
 
 const char *effectsCurName(void);
 
 #define EFFECTS_REDRAW_MS 35
+struct FXENTRY {
+  char *name;
+  void (*function)(void);
+};
+
+#define FX_COUNT 8
 
 #endif /* __LED_H__ */
