@@ -11,11 +11,14 @@
 #include <string.h>
 #include <math.h>
 
+/* Function pointer to the current, running animation */
 void (*current_fx)(void);
 
-static int16_t fx_index = 0;           // fx index (some algos need two positions)
+/* these keep track of the animation position and are used selectively
+   by the algorithms */
+static int16_t fx_index = 0;           // fx index 
 static int16_t fx_position = 0;        // fx position counter
-static int16_t fx_direction = 1;       // fx direction (used by some algos)
+static int16_t fx_direction = 1;       // fx direction 
 
 static struct led_config {
   uint8_t  *fb;          // effects frame buffer
@@ -23,7 +26,7 @@ static struct led_config {
   uint8_t  max_pixels;   // maximal generation length
 } led_config;
 
-// animations
+/* animation prototypes */
 static void anim_color_bounce_fade(void);
 static void anim_dot(void);
 static void anim_larsen(void);
@@ -32,18 +35,20 @@ static void anim_police_dots(void);
 static void anim_rainbow_fade(void);
 static void anim_rainbow_loop(void);
 static void anim_solid_color(void);
+static void anim_triangle(void);
 
+/* Update FX_COUNT in led.h if you make changes here */
 struct FXENTRY fxlist[] = {
   {"ColorBounce", anim_color_bounce_fade},
-  {"Dot", anim_dot},
-  {"Larsen", anim_larsen},
-  {"Police", anim_police_all},
-  {"PoliceDots", anim_police_dots},
-  {"RainbowFade", anim_rainbow_fade},
-  {"RainbowLoop", anim_rainbow_loop},
-  {"SolidColor", anim_solid_color}
+  {"Dot (White)", anim_dot},
+  {"Larsen Scanner", anim_larsen},
+  {"Police (Solid)", anim_police_all},
+  {"Police (Dots)", anim_police_dots},
+  {"Rainbow Fade", anim_rainbow_fade},
+  {"Rainbow Loop", anim_rainbow_loop},
+  {"Green Spiral", anim_solid_color},
+  {"Yellow Triangle", anim_triangle}
 };
-
 
 // stock colors
 const RgbColor roygbiv[7] = { {255, 0, 0},
@@ -58,23 +63,18 @@ static uint8_t ledsOff = 0;
 
 extern void ledUpdate(uint8_t *fb, uint32_t len);
 static void ledSetRGB(void *ptr, int x, uint8_t r, uint8_t g, uint8_t b, uint8_t shift);
+
 void ledClear(void);
 
-// hardware configuration information
-// max length is different from actual length because some
-// pattens may want to support the option of user-added LED
-// strips, whereas others will focus only on UI elements in the
-// circle provided on the board itself
-
-
-//-FIND INDEX OF ANTIPODAL OPPOSITE LED
+/* utility functions */
+// FIND INDEX OF ANTIPODAL (OPPOSITE) LED
 static int antipodal_index(int i) {
   int iN = i + LEDS_TOP_INDEX;
   if (i >= LEDS_TOP_INDEX) {iN = ( i + LEDS_TOP_INDEX ) % led_config.max_pixels; }
   return iN;
 }
 
-//-FIND ADJACENT INDEX CLOCKWISE
+// FIND ADJACENT INDEX CLOCKWISE
 static int adjacent_cw(int i) {
   int r;
   if (i < led_config.max_pixels - 1) {r = i + 1;}
@@ -83,7 +83,7 @@ static int adjacent_cw(int i) {
 }
 
 
-//-FIND ADJACENT INDEX COUNTER-CLOCKWISE
+// FIND ADJACENT INDEX COUNTER-CLOCKWISE
 static int adjacent_ccw(int i) {
   int r;
   if (i > 0) {r = i - 1;}
@@ -183,6 +183,29 @@ static void ledSetRGB(void *ptr, int x, uint8_t r, uint8_t g, uint8_t b, uint8_t
   buf[0] = g >> shift;
   buf[1] = r >> shift;
   buf[2] = b >> shift;
+}
+
+static void anim_triangle(void) {
+  int N3 = led_config.max_pixels/3;
+  int N6 = led_config.max_pixels/6;
+  int N12 = led_config.max_pixels/12;
+  int acolor[3];
+  int ahue = 300;
+  static float tcount;
+  
+  for(int i = 0; i < N6; i++ ) { //-HACKY, I KNOW...
+    tcount = tcount + .02;
+    if (tcount > 3.14) {tcount = 0.0;}
+
+    int j0 = (i + led_config.max_pixels - N12) % led_config.max_pixels;
+    int j1 = (j0+N3) % led_config.max_pixels;
+    int j2 = (j1+N3) % led_config.max_pixels;
+
+    HSVtoRGB(ahue, 255, sin(tcount)*255, acolor);
+    ledSetRGB(led_config.fb, j0, acolor[0], acolor[1], acolor[2], 0);
+    ledSetRGB(led_config.fb, j1, acolor[0], acolor[1], acolor[2], 0);
+    ledSetRGB(led_config.fb, j2, acolor[0], acolor[1], acolor[2], 0);
+  }    
 }
 
 static void anim_one_hue_pulse(int ahue) { //-PULSE BRIGHTNESS ON ALL LEDS TO ONE COLOR
@@ -313,7 +336,7 @@ static void anim_larsen(void) {
 static void anim_solid_color(void) {
   uint8_t i;
 
-  // solid color spiral
+  // solid color spiral (green)
   for(i=0; i < led_config.pixel_count; i++) {
     ledSetRGB(led_config.fb,i,0,
 	     ((sin(i+fx_position) * 127 + 128)/255)*180,

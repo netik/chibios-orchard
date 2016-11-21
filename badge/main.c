@@ -205,13 +205,10 @@ int main(void)
   palSetPad (GPIOB, 0);   /* Blue */
 
   /* Turn on the blue LED */
- 
   palClearPad (GPIOE, 17);
-
   evtTableInit(orchard_events, 4);
 
   orchardShellInit();
-
   chprintf(stream, "\r\n\r\nOrchard shell.  Based on build %s\r\n", gitversion);
   print_mcu_info();
 
