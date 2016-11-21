@@ -42,6 +42,7 @@ static void cmd_buzzer(BaseSequentialStream *chp, int argc, char *argv[]) {
   if (argc == 0) {
     chprintf(chp, "buzzer commands:\r\n");
     chprintf(chp, "   play [freq]          play frequency (in Hz)\r\n");
+    chprintf(chp, "   stop                 turn off buzzer\r\n");
     return;
   }
 
