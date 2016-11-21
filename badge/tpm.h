@@ -59,8 +59,8 @@
  * special cases for diration: PWM_DURATION_END, which indicates
  * the end of the tune to play, and PWM_DURATION_LOOP, which indicates
  * this tune should be played over and over again (until told to stop).
- * There are also two special cases for a note: PWM_NODE_PAUSE, which
- * that we should just pause for the duration time, and PWM_NODE_OFF,
+ * There are also two special cases for a note: PWM_NOTE_PAUSE, which
+ * that we should just pause for the duration time, and PWM_NOTE_OFF,
  * which measn to turn off the tone generator completely.
  */
 
