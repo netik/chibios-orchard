@@ -1,10 +1,13 @@
 #include "orchard-app.h"
 #include "orchard-ui.h"
-#include "configme.h"
 
 #include "storage.h"
 
 #include <string.h>
+
+struct myconfig {
+  char name[16];
+} myconfig;
 
 struct OrchardUiContext textUiContext;
 

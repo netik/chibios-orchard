@@ -13,11 +13,11 @@
 
 static GHandle ghLabel1;
 static GWidgetInit wi;
-static gdispImage myImage;
 
 void oledOrchardBanner(void)
 {
 	font_t font;
+	static gdispImage myImage;
 	
 	if (gdispImageOpenFile (&myImage,
 				IMG_SPLASH) == GDISP_IMAGE_ERR_OK) {
@@ -57,9 +57,7 @@ void oledOrchardBanner(void)
 	ghLabel1 = gwinLabelCreate (NULL, &wi);  
 	gwinLabelSetBorder (ghLabel1, TRUE);
 	gwinRedraw (ghLabel1);
-
 	gdispCloseFont (font);
-	/* orchardGfxEnd();*/
-
+	/* orchardGfxEnd(); */
 	return;
 }

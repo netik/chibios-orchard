@@ -224,9 +224,8 @@ int main(void)
   radioDefaultHandlerSet (radioDriver, default_radio_handler);
 
   // eventually get rid of this
-     chprintf(stream, "User flash start: 0x%x  user flash end: 0x%x  length: 0x%x\r\n",
-      __storage_start__, __storage_end__, __storage_size__);
-  
+  chprintf(stream, "User flash start: 0x%x  user flash end: 0x%x  length: 0x%x\r\n",
+	   __storage_start__, __storage_end__, __storage_size__);
 
   /*
    * Force all the chip select pins for the SD card, display and
@@ -322,15 +321,12 @@ int main(void)
   gfxInit();
 
   /* Draw a banner... */
-  oledOrchardBanner();
-  chThdSleepMilliseconds (500);
   uiStart();
-  
-  /*
+  oledOrchardBanner();
+  chThdSleepMilliseconds (3000);
   orchardAppInit();
   orchardAppRestart();
-  */
-  
+
   while (TRUE)
     chEvtDispatch(evtHandlers(orchard_events), chEvtWaitOne(ALL_EVENTS));
 }

@@ -127,6 +127,7 @@ CSRC = main.c \
        cmd-threads.c \
        cmd-buzzer.c \
        cmd-led.c \
+       app-name.c \
        $(wildcard ui-*.c) \
        sound.c \
        led.c \
