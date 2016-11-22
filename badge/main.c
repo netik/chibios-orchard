@@ -41,7 +41,6 @@
 #else
 #include "mmc.h"
 #endif
-#include "userconfig.h"
 #include "gfx.h"
 #include "images.h"
 
