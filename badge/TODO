@@ -1,0 +1,59 @@
+TODO! things to figure out
+--------------------------
+0. FONTS - need 8bit font or otherwise.
+
+1. Restore event hooks for:
+
+   radio
+   touch
+   key down events       
+   orientation events
+
+   ... in orchard-app.c 
+
+2. UI-List UI wiedge
+
+3. UI - Keyboard/passing of touch events, up/down selectors
+
+4. Name Entry
+
+5. FLASH STORAGE of LED, Name, and Stats
+    -- dimming - store dim status in status/conf page
+       
+6. Game protocol and Game
+   Restore event system first.
+
+7. Launcher doesn't work. why?
+   (first app loaded is launcher but it comes up with a bogus number of apps.)
+
+8. Game graphics ( can be done last )
+
+9. TIMERS - reset the UI if it is stuck
+
+10. Status / setup screen
+    -- ability to show ID
+
+11. Automatic jump to name page if not conf'd
+
+12. ENTROPY - maybe use time of every touch to roll more entropy into
+    the system, or an accel chip?
+
+  if ( config reg is not set ) {
+    jump to name entry app
+  } else {
+    jump to game
+  }
+
+13. App switching - I am fairly certain app switching is now functional because the dispatcher works. Needs test. 
+
+14. Our startup app is going to be the main app not the launcher. Launcher is secondary.
+
+15. Splash screen spqr, whatever. 
+
+HW NEEDS
+-------------
+1. Battery + charging, amperage testing
+
+2. Board layout
+
+3. Prototype #1
