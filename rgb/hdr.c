@@ -2,7 +2,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define GDISP_COLORSYSTEM_RGB                   0x2000
+/* this program outputs a simple 8 byte header for rgb565 files */
+/* prepend this to a raw rgb565 file format to load the image on our display */
+
+#define GDISP_COLORSYSTEM_RGB           0x2000
 #define GDISP_PIXELFORMAT_RGB565        (GDISP_COLORSYSTEM_RGB|0x0565)
 
 typedef struct gdisp_image {
