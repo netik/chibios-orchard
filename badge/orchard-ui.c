@@ -1,13 +1,16 @@
 #include "orchard-ui.h"
 #include <string.h>
 
+orchard_ui_start();
+orchard_ui_end();
+
 // mutex to lock the graphics subsystem for safe multi-threaded drawing
 mutex_t orchard_gfxMutex;
 
 const OrchardUi *getUiByName(const char *name) {
   const OrchardUi *current;
 
-  current = orchard_ui_start();
+  current = orchard_uis();
   while(current->name) {
     if( !strncmp(name, current->name, 16) ) {
       return current;

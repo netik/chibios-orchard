@@ -17,6 +17,7 @@
 #include "shell.h" // for friend testing function
 #include "orchard-shell.h" // for friend testing function
 
+orchard_app_start();
 orchard_app_end();
 
 static const OrchardApp *orchard_app_list;
@@ -120,7 +121,7 @@ static void timer_do_send_message(void *arg) {
 const OrchardApp *orchardAppByName(const char *name) {
   const OrchardApp *current;
 
-  current = orchard_app_start();
+  current = orchard_apps();
   while(current->name) {
     if( !strncmp(name, current->name, 16) ) {
       return current;
@@ -137,7 +138,7 @@ void orchardAppRun(const OrchardApp *app) {
 }
 
 void orchardAppExit(void) {
-  instance.next_app = orchard_app_start();  // the first app is the launcher
+  instance.next_app = orchard_app_list;  // the first app is the launcher
   chThdTerminate(instance.thr);
   chEvtBroadcast(&orchard_app_terminate);
 }
@@ -248,7 +249,7 @@ static THD_FUNCTION(orchard_app_thread, arg) {
 void orchardAppInit(void) {
   int i;
 
-  orchard_app_list = orchard_app_start();
+  orchard_app_list = orchard_apps();
   instance.app = orchard_app_list;
   chEvtObjectInit(&orchard_app_terminated);
   chEvtObjectInit(&orchard_app_terminate);

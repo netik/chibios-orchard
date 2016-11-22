@@ -32,20 +32,19 @@ typedef struct _OrchardUi {
 } OrchardUi;
 
 #define orchard_ui_start()                                                   \
-({                                                                            \
-  static char start[0] __attribute__((unused,                                 \
-    aligned(4), section(".chibi_list_ui_1")));                               \
-  (const OrchardUi *)&start;                                                 \
-})
+  static char start[4] __attribute__((unused,                                 \
+    aligned(4), section(".chibi_list_ui_1")));
+
+#define orchard_uis()  (const OrchardUi *)&start[4];
 
 #define orchard_ui(_name, _start, _event, _exit)                        \
   const OrchardUi _orchard_ui_list_##_start##_event##_exit           \
-  __attribute__((unused, aligned(4), section(".chibi_list_ui_2_" # _start # _event # _exit))) =  \
+  __attribute__((used, aligned(4), section(".chibi_list_ui_2_" # _start # _event # _exit))) =  \
      { _name, _start, _event, _exit }
 
 #define orchard_ui_end()                                                     \
   const OrchardUi _orchard_ui_list_final                                    \
-  __attribute__((unused, aligned(4), section(".chibi_list_ui_3_end"))) =     \
+  __attribute__((used, aligned(4), section(".chibi_list_ui_3_end"))) =     \
      { NULL, NULL, NULL, NULL }
 
 

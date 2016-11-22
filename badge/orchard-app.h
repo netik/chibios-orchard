@@ -72,20 +72,19 @@ typedef struct orchard_app_instance {
 
 
 #define orchard_app_start()                                                   \
-({                                                                            \
-  static char start[0] __attribute__((unused,                                 \
-    aligned(4), section(".chibi_list_app_1")));                               \
-  (const OrchardApp *)&start;                                                 \
-})
+  static char start[4] __attribute__((unused,                                 \
+    aligned(4), section(".chibi_list_app_1")));
+
+#define orchard_apps() (const OrchardApp *)&start[4]
 
 #define orchard_app(_name, _init, _start, _event, _exit)                        \
   const OrchardApp _orchard_app_list_##_init##_start##_event##_exit           \
-  __attribute__((unused, aligned(4), section(".chibi_list_app_2_" # _event # _start # _init # _exit))) =  \
+  __attribute__((used, aligned(4), section(".chibi_list_app_2_" # _event # _start # _init # _exit))) =  \
      { _name, _init, _start, _event, _exit }
 
 #define orchard_app_end()                                                     \
   const OrchardApp _orchard_app_list_final                                    \
-  __attribute__((unused, aligned(4), section(".chibi_list_app_3_end"))) =     \
+  __attribute__((used, aligned(4), section(".chibi_list_app_3_end"))) =     \
      { NULL, NULL, NULL, NULL, NULL }
 
 #define ORCHARD_APP_PRIO (LOWPRIO + 2)
