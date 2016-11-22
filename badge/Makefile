@@ -31,10 +31,8 @@ ifeq ($(USE_LDOPT),)
 endif
 
 # Enable this if you want link time optimizations (LTO)
-# TODO: jna: this seems to optimize away the app_list functionality!
-# don't enable until we find out find out why it breaks
 ifeq ($(USE_LTO),)
-  USE_LTO = no
+  USE_LTO = yes
 endif
 
 # If enabled, this option allows to compile the application in THUMB mode.
@@ -139,7 +137,6 @@ CSRC = main.c \
        xpt2046.c \
        hex.c \
        flash.c \
-       storage.c \
        mmc_kinetis_spi.c \
        $(STARTUPSRC) \
        $(PORTSRC) \

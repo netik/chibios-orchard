@@ -158,7 +158,7 @@ void orchardAppTimer(const OrchardAppContext *context,
   chVTSet(&context->instance->timer, US2ST(usecs), timer_do_send_message, NULL);
 }
 
-static THD_WORKING_AREA(waOrchardAppThread, 0x800);
+static THD_WORKING_AREA(waOrchardAppThread, 0x400);
 static THD_FUNCTION(orchard_app_thread, arg) {
 
   (void)arg;
@@ -185,13 +185,11 @@ static THD_FUNCTION(orchard_app_thread, arg) {
   evtTableHook(orchard_app_events, timer_expired, timer_event);
   */
 
-  // THIS IS WHERE WE CRASH
-  // we are crashing because instance->app is set to garbage!
+  // if APP is null, the system will crash here. 
   if (instance->app->init)
     app_context.priv_size = instance->app->init(&app_context);
   else
     app_context.priv_size = 0;
-  //THIS IS WHERE WE CRASH
   
   /* Allocate private data on the stack (word-aligned) */
   uint32_t priv_data[app_context.priv_size / 4];

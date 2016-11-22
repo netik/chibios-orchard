@@ -6,7 +6,6 @@
 
 #include "orchard.h"
 #include "orchard-ui.h"
-#include "gitversion.h"
 
 #include "gfx.h"
 #include "images.h"
