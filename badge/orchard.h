@@ -33,8 +33,5 @@ extern void *stream;
 #error "Must define a keylayout.  Set KEY_LAYOUT in Makefile."
 #endif
 
-/* jna: define clock speed -- maybe wrong place? */
-#define  MCGFLLCLK  47972352
-  
 #endif /* __ORCHARD_H__ */
 

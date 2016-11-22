@@ -1,15 +1,35 @@
 #!/bin/sh
 
+#
+# convert any readable image into a rgb565 image with proper header.
+#
+# requires ffmpeg, imagemagick, and rgbhdr
+#
+
+FFMPEG=/usr/local/bin/ffmpeg
+IDENTIFY=/usr/local/bin/identify
+RGBHDR=./rgbhdr
+
 rm -f hdr.rgb
 rm -f out.raw
 
-width=`identify -format %w $1`
-height=`identify -format %h $1`
+if [ "$1" == "" ]; then
+    echo "Usage: $0 filename"
+    exit
+fi
 
-./hdr $width $height
-ffmpeg -vcodec jpegls -i $1 -vcodec rawvideo -f rawvideo -pix_fmt rgb565 out.raw
+filename=$1
+newfilename=${filename%.*}.rgb
 
-cat hdr.rgb out.raw > out.rgb
+width=`${IDENTIFY} -format %w $filename`
+height=`${IDENTIFY} -format %h $filename`
 
+
+${RGBHDR} $width $height
+${FFMPEG} -vcodec jpegls -i $filename -vcodec rawvideo -f rawvideo -pix_fmt rgb565 out.raw
+
+cat hdr.rgb out.raw > ${newfilename}
+    
 rm -f hdr.rgb
 rm -f out.raw
+

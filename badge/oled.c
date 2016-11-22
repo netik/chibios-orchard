@@ -2,11 +2,14 @@
 #include "hal.h"
 #include "oled.h"
 #include "spi.h"
+#include "string.h"
 
 #include "orchard.h"
 #include "orchard-ui.h"
+#include "gitversion.h"
 
 #include "gfx.h"
+#include "images.h"
 
 static GHandle ghLabel1;
 static GWidgetInit wi;
@@ -15,28 +18,22 @@ static gdispImage myImage;
 void oledOrchardBanner(void)
 {
 	font_t font;
-	uint8_t x, y;
- 
-	/*orchardGfxStart();*/
-
+	
 	if (gdispImageOpenFile (&myImage,
-	    "caesar.rgb") == GDISP_IMAGE_ERR_OK) {
-		for (x = 0; x < 4; x++) {
-			for (y = 0; y < 3; y++) {
-				gdispImageDraw (&myImage,
-					x * 80, y * 80,
-					myImage.width,
-					myImage.height, 0, 0);
-			}
-		}
-		gdispImageClose (&myImage);
+				IMG_SPLASH) == GDISP_IMAGE_ERR_OK) {
+	  gdispImageDraw (&myImage,
+			  0, 0,
+			  myImage.width,
+			  myImage.height, 0, 0);
+	  gdispImageClose (&myImage);
 	}
-
+	
 	font = gdispOpenFont ("DejaVuSans24");
  
-	gdispDrawStringBox (0, 0, gdispGetWidth(),
+	/* 	gdispDrawStringBox (0, 0, gdispGetWidth(),
 		gdispGetFontMetric(font, fontHeight),
 		"It works!", font, White, justifyCenter);
+	*/
 
 	gdispCloseFont (font);
 
@@ -47,12 +44,11 @@ void oledOrchardBanner(void)
 	wi.g.show = TRUE;
  
 	/* Apply the label parameters */
-	wi.g.y = 200;
-	wi.g.x = 10;
-	wi.g.width = 120;
-	wi.g.height = 20;
-	wi.text = "     Defcon 25";
-
+	wi.g.y = 205;
+	wi.g.x = 2;
+	wi.g.width = 316;
+	wi.g.height = 35;
+	wi.text = gitversion;
 	font = gdispOpenFont ("UI1");
 	gwinSetDefaultFont (font);
 	/*gwinSetDefaultStyle (&WhiteWidgetStyle, FALSE);*/

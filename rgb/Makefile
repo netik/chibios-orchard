@@ -1,7 +1,7 @@
-all: hdr
+all: rgbhdr
 
-hdr: hdr.c
-	cc -g -o hdr hdr.c
+rgbhdr: rgbhdr.c
+	cc -g -o rgbhdr rgbhdr.c
 clean:
-	rm hdr
+	rm rgbhdr
 

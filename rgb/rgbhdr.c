@@ -28,8 +28,8 @@ main (int argc, char * argv[])
 	uint16_t		height;
 
 	if (argc < 3) {
-		fprintf (stderr, "specify width and height\n");
-		exit (1);
+	  fprintf (stderr, "\nUsage: %s width height\n\n", argv[0]);
+	  exit (1);
 	}
 
 	width = atoi(argv[1]);

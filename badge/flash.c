@@ -3,9 +3,7 @@
 
 #include "orchard.h"
 #include "chprintf.h"
-#ifdef notdef
 #include "orchard-app.h"
-#endif
 
 #include "flash.h"
 

@@ -44,6 +44,7 @@ void effectsPrevPattern(void);
 
 void listEffects(void);
 void ledResetPattern(void);
+void ledSetBrightness(uint8_t bval);
 
 const char *effectsCurName(void);
 

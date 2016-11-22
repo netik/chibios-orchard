@@ -561,7 +561,6 @@ void led_event(OrchardAppContext *context, const OrchardAppEvent *event) {
 }
 
 static void led_exit(OrchardAppContext *context) {
-
   (void)context;
 }
 

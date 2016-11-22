@@ -18,7 +18,8 @@ void (*current_fx)(void);
    by the algorithms */
 static int16_t fx_index = 0;           // fx index 
 static int16_t fx_position = 0;        // fx position counter
-static int16_t fx_direction = 1;       // fx direction 
+static int8_t  fx_direction = 1;       // fx direction 
+static uint8_t led_brightshift = 0;     // right-shift value, normally zero.
 
 static struct led_config {
   uint8_t  *fb;          // effects frame buffer
@@ -62,9 +63,13 @@ static uint8_t ledExitRequest = 0;
 static uint8_t ledsOff = 0;
 
 extern void ledUpdate(uint8_t *fb, uint32_t len);
-static void ledSetRGB(void *ptr, int x, uint8_t r, uint8_t g, uint8_t b, uint8_t shift);
+static void ledSetRGB(void *ptr, int x, uint8_t r, uint8_t g, uint8_t b);
 
 void ledClear(void);
+
+void ledSetBrightness(uint8_t bval) {
+  led_brightshift = bval;
+}
 
 /* utility functions */
 // FIND INDEX OF ANTIPODAL (OPPOSITE) LED
@@ -94,7 +99,11 @@ static int adjacent_ccw(int i) {
 
 static void HSVtoRGB(int hue, int sat, int val, int colors[3]) {
   // hue: 0-359, sat: 0-255, val (lightness): 0-255
-  int r, g, b, base;
+  int r = 0;
+  int b = 0;
+  int g = 0;
+  int base = 0;
+  
 
   if (sat == 0) { // Achromatic color (gray).
     colors[0]=val;
@@ -142,6 +151,7 @@ static void HSVtoRGB(int hue, int sat, int val, int colors[3]) {
 
 uint8_t effectsStop(void) {
   ledExitRequest = 1;
+  ledClear();
   return ledsOff;
 }
 
@@ -178,34 +188,29 @@ void ledStart(uint32_t leds, uint8_t *o_fb)
   chSysUnlock();
 }
 
-static void ledSetRGB(void *ptr, int x, uint8_t r, uint8_t g, uint8_t b, uint8_t shift) {
+static void ledSetRGB(void *ptr, int x, uint8_t r, uint8_t g, uint8_t b) {
   uint8_t *buf = ((uint8_t *)ptr) + (3 * x);
-  buf[0] = g >> shift;
-  buf[1] = r >> shift;
-  buf[2] = b >> shift;
+  buf[0] = g >> led_brightshift;
+  buf[1] = r >> led_brightshift;
+  buf[2] = b >> led_brightshift;
 }
 
 static void anim_triangle(void) {
-  int N3 = led_config.max_pixels/3;
-  int N6 = led_config.max_pixels/6;
-  int N12 = led_config.max_pixels/12;
-  int acolor[3];
-  int ahue = 300;
-  static float tcount;
+  // TODO: Make it breathe. 
+  // pulsating triangle, ramp up
+  int16_t N3 = led_config.max_pixels/4;
+  fx_index++;
+  if ( fx_index % 3 != 0 ) { return; } // 1/3rd speed
+  ledClear();
   
-  for(int i = 0; i < N6; i++ ) { //-HACKY, I KNOW...
-    tcount = tcount + .02;
-    if (tcount > 3.14) {tcount = 0.0;}
+  for(int i = 0; i < led_config.max_pixels; i++ ) {
+    if ((i == (0+fx_position)) || (i == (N3+1+fx_position)) || (i == (N3 * 3 - 1) + fx_position)) { 
+      ledSetRGB(led_config.fb, i, fx_index % 255, fx_index % 255, 0);
+    }
+  }
 
-    int j0 = (i + led_config.max_pixels - N12) % led_config.max_pixels;
-    int j1 = (j0+N3) % led_config.max_pixels;
-    int j2 = (j1+N3) % led_config.max_pixels;
-
-    HSVtoRGB(ahue, 255, sin(tcount)*255, acolor);
-    ledSetRGB(led_config.fb, j0, acolor[0], acolor[1], acolor[2], 0);
-    ledSetRGB(led_config.fb, j1, acolor[0], acolor[1], acolor[2], 0);
-    ledSetRGB(led_config.fb, j2, acolor[0], acolor[1], acolor[2], 0);
-  }    
+  fx_position++;
+  if (fx_position > N3) { fx_position = 0; }
 }
 
 static void anim_one_hue_pulse(int ahue) { //-PULSE BRIGHTNESS ON ALL LEDS TO ONE COLOR
@@ -223,7 +228,7 @@ static void anim_one_hue_pulse(int ahue) { //-PULSE BRIGHTNESS ON ALL LEDS TO ON
   HSVtoRGB(ahue, 255, fx_position, acolor);
 
   for(int i = 0 ; i < led_config.max_pixels; i++ ) {
-    ledSetRGB(led_config.fb, i, acolor[0], acolor[1], acolor[2], 0);
+    ledSetRGB(led_config.fb, i, acolor[0], acolor[1], acolor[2]);
   }
 }
 
@@ -236,7 +241,7 @@ static void anim_rainbow_fade(void) {
     HSVtoRGB(fx_position, 255, 255, thisColor);
 
     for(int idex = 0 ; idex < led_config.max_pixels; idex++ ) {
-      ledSetRGB(led_config.fb, idex,thisColor[0],thisColor[1],thisColor[2], 0);
+      ledSetRGB(led_config.fb, idex,thisColor[0],thisColor[1],thisColor[2]);
     }
 }
 
@@ -249,7 +254,7 @@ static void anim_rainbow_loop(void) { //-LOOP HSV RAINBOW
   if (fx_index >= 359) {fx_index = 0;}
 
   HSVtoRGB(fx_index, 255, 255, icolor);
-  ledSetRGB(led_config.fb, fx_position, icolor[0], icolor[1], icolor[2], 0);
+  ledSetRGB(led_config.fb, fx_position, icolor[0], icolor[1], icolor[2]);
 }
 
 
@@ -259,8 +264,8 @@ static void anim_police_all(void) {
   if (fx_position >= led_config.max_pixels) {fx_position = 0;}
   int fx_positionR = fx_position;
   int fx_positionB = antipodal_index(fx_positionR);
-  ledSetRGB(led_config.fb, fx_positionR, 255, 0, 0, 0 );
-  ledSetRGB(led_config.fb, fx_positionB, 0, 0, 255, 0);
+  ledSetRGB(led_config.fb, fx_positionR, 255, 0, 0);
+  ledSetRGB(led_config.fb, fx_positionB, 0, 0, 255);
 }
 
 static void anim_police_dots(void) {
@@ -270,9 +275,9 @@ static void anim_police_dots(void) {
   int idexR = fx_position;
   int idexB = antipodal_index(idexR);
   for(int i = 0; i < led_config.max_pixels; i++ ) {
-    if (i == idexR) { ledSetRGB(led_config.fb, i, 255, 0, 0, 0 ); }
-    else if (i == idexB) { ledSetRGB(led_config.fb, i, 0, 0, 255, 0 ); }
-    else  { ledSetRGB(led_config.fb, i, 0, 0, 0, 0 ); }
+    if (i == idexR) { ledSetRGB(led_config.fb, i, 255, 0, 0); }
+    else if (i == idexB) { ledSetRGB(led_config.fb, i, 0, 0, 255 ); }
+    else  { ledSetRGB(led_config.fb, i, 0, 0, 0 ); }
   }
 }
 
@@ -284,9 +289,9 @@ static void anim_dot(void) { // single dim white dot, one direction
 
   for(int i = 0; i < led_config.max_pixels; i++ ) {
     if (i == fx_position) {
-      ledSetRGB(led_config.fb, i, 20,20,20, 0 );
+      ledSetRGB(led_config.fb, i, 20,20,20 );
     } else { 
-      ledSetRGB(led_config.fb, i, 0, 0, 0, 0 );
+      ledSetRGB(led_config.fb, i, 0, 0, 0 );
     }
   }
 }
@@ -302,7 +307,7 @@ static void anim_larsen(void) {
   ledClear();
 
   // set primary dot 
-  ledSetRGB(led_config.fb, fx_position, c.r, c.g, c.b, 0);
+  ledSetRGB(led_config.fb, fx_position, c.r, c.g, c.b);
 
   // handle spread
   for (i = 1; i <= spread; i++) {
@@ -311,11 +316,11 @@ static void anim_larsen(void) {
     scol.b = c.b * ((spread + 1 - i) / (spread + 1));
     
     if (fx_position + i < led_config.max_pixels) {
-      ledSetRGB(led_config.fb, fx_position + i, scol.r, scol.g, scol.b, 0);
+      ledSetRGB(led_config.fb, fx_position + i, scol.r, scol.g, scol.b);
     }
     
     if (fx_position - i >= 0) {
-      ledSetRGB(led_config.fb, fx_position - i, scol.r, scol.g, scol.b, 0);
+      ledSetRGB(led_config.fb, fx_position - i, scol.r, scol.g, scol.b);
     }
   }
   
@@ -338,9 +343,7 @@ static void anim_solid_color(void) {
 
   // solid color spiral (green)
   for(i=0; i < led_config.pixel_count; i++) {
-    ledSetRGB(led_config.fb,i,0,
-	     ((sin(i+fx_position) * 127 + 128)/255)*180,
-	      0,0);
+    ledSetRGB(led_config.fb, i, 0, ((sin(i+fx_position) * 127 + 128)/255)*180,  0);
   }
 
   fx_position++;
@@ -371,14 +374,14 @@ static void anim_color_bounce_fade(void) {
     int iR3 = adjacent_ccw(iR2);
 
     for(int i = 0; i < led_config.max_pixels; i++ ) {
-      if (i == fx_position) {ledSetRGB(led_config.fb, i, 255, 0, 0, 0);}
-      else if (i == iL1) {ledSetRGB(led_config.fb, i, 100, 0, 0, 0);}
-      else if (i == iL2) {ledSetRGB(led_config.fb, i, 50, 0, 0, 0);}
-      else if (i == iL3) {ledSetRGB(led_config.fb, i, 10, 0, 0, 0);}
-      else if (i == iR1) {ledSetRGB(led_config.fb, i, 100, 0, 0, 0);}
-      else if (i == iR2) {ledSetRGB(led_config.fb, i, 50, 0, 0, 0);}
-      else if (i == iR3) {ledSetRGB(led_config.fb, i, 10, 0, 0, 0);}
-      else { ledSetRGB(led_config.fb, i, 0, 0, 0, 0); }
+      if (i == fx_position) {ledSetRGB(led_config.fb, i, 255, 0, 0);}
+      else if (i == iL1) {ledSetRGB(led_config.fb, i, 100, 0, 0);}
+      else if (i == iL2) {ledSetRGB(led_config.fb, i, 50, 0, 0);}
+      else if (i == iL3) {ledSetRGB(led_config.fb, i, 10, 0, 0);}
+      else if (i == iR1) {ledSetRGB(led_config.fb, i, 100, 0, 0);}
+      else if (i == iR2) {ledSetRGB(led_config.fb, i, 50, 0, 0);}
+      else if (i == iR3) {ledSetRGB(led_config.fb, i, 10, 0, 0);}
+      else { ledSetRGB(led_config.fb, i, 0, 0, 0); }
   }
 }
 
@@ -414,8 +417,9 @@ static THD_FUNCTION(effects_thread, arg) {
 
 void effectsStart(void) {
   fx_index = 0;
-  current_fx = &anim_dot;
+  current_fx = &anim_triangle;
   (*current_fx)();
+  led_brightshift = 4; // start at 1/2 power
   ledExitRequest = 0;
   ledsOff = 0;
 

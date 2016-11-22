@@ -29,7 +29,7 @@ static void led_stop(BaseSequentialStream *chp) {
 static void led_run(BaseSequentialStream *chp, int argc, char *argv[]) {
 
   uint8_t pattern;
-
+  
   if (argc != 2) {
     chprintf(chp, "No pattern specified\r\n");
     return;
@@ -46,6 +46,28 @@ static void led_run(BaseSequentialStream *chp, int argc, char *argv[]) {
   
   chprintf(chp, "pattern changed to %s...\r\n", fxlist[pattern-1].name);
 }
+
+static void led_dim(BaseSequentialStream *chp, int argc, char *argv[]) {
+
+  int8_t level;
+
+  if (argc != 2) {
+    chprintf(chp, "level?\r\n");
+    return;
+  }
+
+  level = strtoul(argv[1], NULL, 0);
+
+  if ((level < 0) || (level > 7)) {
+    chprintf(chp, "Invaild level.\r\n");
+    return;
+  }
+
+  ledSetBrightness(level);
+  chprintf(chp, "level now %d.\r\n", level);
+}
+
+
 static void led_list(BaseSequentialStream *chp) {
   chprintf(chp, "\r\nAvailable LED Patterns\r\n");
 
@@ -59,13 +81,19 @@ static void cmd_led(BaseSequentialStream *chp, int argc, char *argv[]) {
   if (argc == 0) {
     chprintf(chp, "led commands:\r\n");
     chprintf(chp, "   list             list animations available\r\n");
-    chprintf(chp, "   run [n]          run pattern #n\r\n");
+    chprintf(chp, "   bright n         set brightness (0-7)\r\n");
+    chprintf(chp, "   run n            run pattern #n\r\n");
     chprintf(chp, "   stop             stop and blank LEDs\r\n");
     return;
   }
 
   if (!strcasecmp(argv[0], "list")) {
     led_list(chp);
+    return;
+  }
+
+  if (!strcasecmp(argv[0], "dim")) {
+    led_dim(chp, argc, argv);
     return;
   }
 

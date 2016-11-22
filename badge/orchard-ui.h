@@ -10,6 +10,7 @@
 #include "gfx.h"
 
 struct _OrchardUi;
+typedef struct _OrchardUi OrchardUi;
 struct _OrchardAppContext;
 typedef struct _OrchardAppContext OrchardAppContext;
 
@@ -31,10 +32,11 @@ typedef struct _OrchardUi {
 } OrchardUi;
 
 #define orchard_ui_start()                                                   \
-  static char start[4] __attribute__((unused,                                 \
-    aligned(4), section(".chibi_list_ui_1")))
-
-#define orchard_uis()	(const OrchardUi *)&start[4]
+({                                                                            \
+  static char start[0] __attribute__((unused,                                 \
+    aligned(4), section(".chibi_list_ui_1")));                               \
+  (const OrchardUi *)&start;                                                 \
+})
 
 #define orchard_ui(_name, _start, _event, _exit)                        \
   const OrchardUi _orchard_ui_list_##_start##_event##_exit           \

@@ -7,7 +7,7 @@
 ifeq ($(USE_OPT),)
   USE_OPT = -Os -ggdb -fomit-frame-pointer -falign-functions=16 -nostdlib
   USE_OPT += -DBIG_ENDIAN=0 -DLITTLE_ENDIAN=1 -Dasm=__asm__
-  USE_OPT += -ansi -pedantic
+  USE_OPT += -ansi # -pedantic
 endif
 
 # C specific options here (added to USE_OPT).
@@ -31,8 +31,10 @@ ifeq ($(USE_LDOPT),)
 endif
 
 # Enable this if you want link time optimizations (LTO)
+# TODO: jna: this seems to optimize away the app_list functionality!
+# don't enable until we find out find out why it breaks
 ifeq ($(USE_LTO),)
-  USE_LTO = yes
+  USE_LTO = no
 endif
 
 # If enabled, this option allows to compile the application in THUMB mode.
@@ -111,16 +113,22 @@ LDSCRIPT= $(STARTUPLD)/KL16Z128.ld
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
+
+#       app-launcher.c \
+
 CSRC = main.c \
        orchard-shell.c \
+       orchard-app.c \
        orchard-ui.c \
        orchard-vectors.c \
+       app-name.c \
        cmd-mem.c \
        cmd-radio.c \
        cmd-flash.c \
        cmd-threads.c \
        cmd-buzzer.c \
        cmd-led.c \
+       $(wildcard ui-*.c) \
        sound.c \
        led.c \
        oled.c \
