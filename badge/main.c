@@ -320,6 +320,7 @@ int main(void)
     gfxInit();
     chprintf (stream, "No SD card found.\r\n");
     oledSDFail();
+    playHardFail();
     /* nuke the main thread but keep our shells up if we need them. */
     orchardShellRestart();
     chThdSleep (TIME_INFINITE);

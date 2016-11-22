@@ -47,7 +47,7 @@
 #define NOTE_F3    174
 #define NOTE_FS3   185
 #define NOTE_G3    196
-#define NOTE_GS    207
+#define NOTE_GS3   207
 #define NOTE_A3    220
 #define NOTE_AS3   233
 #define NOTE_B3    246
