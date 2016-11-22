@@ -21,9 +21,7 @@ const OrchardUi *getUiByName(const char *name) {
 }
 
 void uiStart(void) {
-  
   osalMutexObjectInit(&orchard_gfxMutex);
-  
 }
 
 void orchardGfxStart(void) {

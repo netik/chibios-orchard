@@ -9,53 +9,61 @@
 
 #include "gfx.h"
 #include "images.h"
+#include "buildtime.h"
+void oledSDFail(void) {
+  font_t font;
 
-static GHandle ghLabel1;
-static GWidgetInit wi;
+  font = gdispOpenFont ("UI1");
+  gwinSetDefaultFont (font);
+  
+  gdispDrawStringBox (0, 210, gdispGetWidth(),
+		      gdispGetFontMetric(font, fontHeight),
+		      "IDES OF MARCH | Defcon 25 (2016)",
+		      font, White, justifyCenter);
+  
+  gdispDrawStringBox (0, 225, gdispGetWidth(),
+		      gdispGetFontMetric(font, fontHeight),
+		      BUILDTIME,
+		      font, White, justifyCenter);
+
+  gdispCloseFont (font);  
+  font = gdispOpenFont ("DejaVuSans24");
+  
+  gdispDrawStringBox (0, 0, gdispGetWidth(),
+		      gdispGetFontMetric(font, fontHeight),
+		      "CHECK SD CARD!",
+		      font, Red, justifyCenter); 
+  
+}
 
 void oledOrchardBanner(void)
 {
 	font_t font;
 	static gdispImage myImage;
-	
+
 	if (gdispImageOpenFile (&myImage,
 				IMG_SPLASH) == GDISP_IMAGE_ERR_OK) {
 	  gdispImageDraw (&myImage,
 			  0, 0,
 			  myImage.width,
 			  myImage.height, 0, 0);
+	  
 	  gdispImageClose (&myImage);
 	}
-	
-	font = gdispOpenFont ("DejaVuSans24");
- 
-	/* 	gdispDrawStringBox (0, 0, gdispGetWidth(),
-		gdispGetFontMetric(font, fontHeight),
-		"It works!", font, White, justifyCenter);
-	*/
 
-	gdispCloseFont (font);
-
-	/* Apply some default values for GWIN */
-	wi.customDraw = 0;
-	wi.customParam = 0;
-	wi.customStyle = 0;
-	wi.g.show = TRUE;
- 
-	/* Apply the label parameters */
-	wi.g.y = 205;
-	wi.g.x = 2;
-	wi.g.width = 316;
-	wi.g.height = 35;
-	wi.text = "  IDES OF MARCH - DC 25 - Build #xxx";
 	font = gdispOpenFont ("UI1");
 	gwinSetDefaultFont (font);
-	/*gwinSetDefaultStyle (&WhiteWidgetStyle, FALSE);*/
- 
-	/* Create the actual label */
-	ghLabel1 = gwinLabelCreate (NULL, &wi);  
-	gwinLabelSetBorder (ghLabel1, TRUE);
-	gwinRedraw (ghLabel1);
+	
+	gdispDrawStringBox (0, 210, gdispGetWidth(),
+			    gdispGetFontMetric(font, fontHeight),
+			    "IDES OF MARCH | Defcon 25 (2016)",
+			    font, White, justifyCenter);
+
+	gdispDrawStringBox (0, 225, gdispGetWidth(),
+			    gdispGetFontMetric(font, fontHeight),
+			    BUILDTIME,
+			    font, White, justifyCenter);
+
 	gdispCloseFont (font);
 	/* orchardGfxEnd(); */
 	return;

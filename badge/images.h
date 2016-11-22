@@ -17,4 +17,4 @@ Bill Paul (hw,sw)\r\n \
 Egan Hirvelda (game mechanics)\r\n\r\n"
 
 #define IMG_SPLASH "SPQR.RGB"
-
+#define IMG_SPLASH_DISPLAY_TIME 4000

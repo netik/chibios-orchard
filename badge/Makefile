@@ -269,7 +269,10 @@ ULIBS = -lc_nano -lnosys -lgcc -lm # -lm_nano
 RULESPATH = $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC
 include $(RULESPATH)/rules.mk
 
-PRE_MAKE_ALL_RULE_HOOK: gitversion.h
+PRE_MAKE_ALL_RULE_HOOK: gitversion.h buildtime.h
+
+buildtime.h:
+	echo "#define BUILDTIME \"Built: `/bin/date` (`/bin/hostname`)\"" > $@
 
 gitversion.h: $(CHIBIOS)/.git/HEAD $(CHIBIOS)/.git/index
 	echo "static const char *gitversion = \"$(shell git rev-parse HEAD)\";" > $@

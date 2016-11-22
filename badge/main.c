@@ -214,13 +214,12 @@ int main(void)
   /* init the shell and show our banners */
   orchardShellInit();
   chprintf(stream, SHELL_BANNER);
-  chprintf(stream, "\r\n\r\n(===||:::::::::::::::> build %s\r\n\r\n", gitversion);
+  chprintf(stream, "\r\n\r\n()==[:::::::::::::> build %s\r\n\r\n", gitversion);
   print_mcu_info();
 
   /* start the engines */
   flashStart();
   pwmInit();
-  playStartupSong();
   spiStart(&SPID1, &spi1_config);
   orchardEventsStart();
   radioStart(&SPID1);
@@ -285,7 +284,7 @@ int main(void)
   if (mmcConnect (&MMCD1) == HAL_SUCCESS)
     chprintf (stream, "SD card detected: %dMB\r\n",
         mmcsdGetCardCapacity (&MMCD1) >> 11);
-  else
+  else 
     chprintf (stream, "No SD card found.\r\n");
 #endif
 
@@ -298,6 +297,7 @@ int main(void)
    */
 
   spiStart(&SPID2, &spi2_config);
+
 
 #if !HAL_USE_MMC_SPI
   /*
@@ -316,9 +316,19 @@ int main(void)
 
   if (mmc_disk_initialize () == 0) {
     chprintf (stream, "SD card detected.\r\n");
-  } else
+  } else {
+    /* Since we didn't init ugfx before, we have to init now. */
+    gfxInit();
     chprintf (stream, "No SD card found.\r\n");
+    oledSDFail();
+    /* nuke the main thread but keep our shells up if we need them. */
+    orchardShellRestart();
+    chThdSleep (TIME_INFINITE);
+  }
+  
 #endif
+  /* we're goood */
+  playStartupSong();
 
   orchardShellRestart();
 
@@ -328,7 +338,9 @@ int main(void)
   /* Draw a banner... */
   uiStart();
   oledOrchardBanner();
-  chThdSleepMilliseconds (3000);
+  chThdSleepMilliseconds(IMG_SPLASH_DISPLAY_TIME);
+
+  /* run apps */
   orchardAppInit();
   orchardAppRestart();
 
@@ -348,8 +360,7 @@ void halt(void) {
   // Radio
   // CPU
 
-
-  oledStop(&SPID2);
+  //  oledStop(&SPID2);
   chprintf(stream, "OLED stopped\n\r");
 
   chprintf(stream, "Slowing clock, sleeping radio & halting CPU...\n\r");
