@@ -48,13 +48,12 @@ void oledOrchardBanner(void)
 	wi.g.x = 2;
 	wi.g.width = 316;
 	wi.g.height = 35;
-	wi.text = gitversion;
+	wi.text = "  IDES OF MARCH - DC 25 - Build #xxx";
 	font = gdispOpenFont ("UI1");
 	gwinSetDefaultFont (font);
 	/*gwinSetDefaultStyle (&WhiteWidgetStyle, FALSE);*/
  
 	/* Create the actual label */
-
 	ghLabel1 = gwinLabelCreate (NULL, &wi);  
 	gwinLabelSetBorder (ghLabel1, TRUE);
 	gwinRedraw (ghLabel1);
