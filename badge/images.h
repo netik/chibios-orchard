@@ -1,0 +1,2 @@
+#define IMG_SPLASH "SPQR.RGB"
+

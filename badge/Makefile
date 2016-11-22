@@ -121,7 +121,6 @@ CSRC = main.c \
        orchard-app.c \
        orchard-ui.c \
        orchard-vectors.c \
-       app-name.c \
        cmd-mem.c \
        cmd-radio.c \
        cmd-flash.c \
