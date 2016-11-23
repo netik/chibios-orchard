@@ -53,8 +53,8 @@ void name_event(OrchardAppContext *context, const OrchardAppEvent *event)
 			keyboardUi = getUiByName("keyboard");
 			keyboardUi->exit (context);
 			chprintf(stream, "NAME: %s\r\n", name);
-			f_open (&fp, "USER.TXT", FA_READ | FA_WRITE |
-				FA_OPEN_ALWAYS);
+			f_unlink ("USER.TXT");
+			f_open (&fp, "USER.TXT", FA_WRITE | FA_CREATE_NEW);
 			f_write (&fp, name, strlen(name), &bw);
 			f_close (&fp);
 			orchardAppExit ();
