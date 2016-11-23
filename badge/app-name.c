@@ -25,7 +25,7 @@ static void name_start(OrchardAppContext *context)
 
 	keyboardUi = getUiByName("keyboard");
 	keyboardUiContext.itemlist = (const char **)name;
-	keyboardUiContext.total = 32;
+	keyboardUiContext.total = 30;
 	if (keyboardUi != NULL) {
     		context->instance->uicontext = &keyboardUiContext;
     		context->instance->ui = keyboardUi;
