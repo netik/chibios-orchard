@@ -125,7 +125,7 @@ CSRC = main.c \
        cmd-threads.c \
        cmd-buzzer.c \
        cmd-led.c \
-       app-name.c \
+       app-rome.c \
        $(wildcard ui-*.c) \
        sound.c \
        led.c \
@@ -272,7 +272,7 @@ include $(RULESPATH)/rules.mk
 PRE_MAKE_ALL_RULE_HOOK: gitversion.h buildtime.h
 
 buildtime.h:
-	echo "#define BUILDTIME \"Built: `/bin/date` (`/bin/hostname`)\"" > $@
+	echo "#define BUILDTIME \"Built: `/bin/date` (`/bin/hostname -s`)\"" > $@
 
 gitversion.h: $(CHIBIOS)/.git/HEAD $(CHIBIOS)/.git/index
 	echo "static const char *gitversion = \"$(shell git rev-parse HEAD)\";" > $@

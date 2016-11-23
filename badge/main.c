@@ -213,7 +213,7 @@ int main(void)
   /* init the shell and show our banners */
   orchardShellInit();
   chprintf(stream, SHELL_BANNER);
-  chprintf(stream, "\r\n\r\n()==[:::::::::::::> build %s\r\n\r\n", gitversion);
+  chprintf(stream, "\r\n     ()==[:::::::::::::> build %s\r\n\r\n\r\n", gitversion);
   print_mcu_info();
 
   /* start the engines */

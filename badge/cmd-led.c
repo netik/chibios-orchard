@@ -81,7 +81,7 @@ static void cmd_led(BaseSequentialStream *chp, int argc, char *argv[]) {
   if (argc == 0) {
     chprintf(chp, "led commands:\r\n");
     chprintf(chp, "   list             list animations available\r\n");
-    chprintf(chp, "   dim n            dimmer level (0-7)\r\n");
+    chprintf(chp, "   dim n            dimmer level (0-7) 0=brightest\r\n");
     chprintf(chp, "   run n            run pattern #n\r\n");
     chprintf(chp, "   stop             stop and blank LEDs\r\n");
     return;
