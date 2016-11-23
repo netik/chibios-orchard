@@ -179,6 +179,9 @@ void xmit_spi_multi (
 		while ((SPI1->S & SPIx_S_SPTEF) == 0)
 			;
 		SPI1->DL = p[i];
+		while ((SPI1->S & SPIx_S_SPRF) == 0)
+			;
+		(void)SPI1->DL;
 	}
 
 	SPI1->C1 |= SPIx_C1_SPIE;
