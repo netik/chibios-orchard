@@ -21,6 +21,8 @@ static void name_start(OrchardAppContext *context)
 {
 	const OrchardUi * keyboardUi;
 
+	memset (name, 0, sizeof(name));
+
 	keyboardUi = getUiByName("keyboard");
 	keyboardUiContext.itemlist = (const char **)name;
 	keyboardUiContext.total = 32;
