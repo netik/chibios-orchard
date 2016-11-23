@@ -79,7 +79,7 @@
 #define GDISP_INCLUDE_FONT_DEJAVUSANS24          TRUE
 //    #define GDISP_INCLUDE_FONT_DEJAVUSANS32          FALSE
 //    #define GDISP_INCLUDE_FONT_DEJAVUSANSBOLD12      FALSE
-//    #define GDISP_INCLUDE_FONT_FIXED_10X20           FALSE
+#define GDISP_INCLUDE_FONT_FIXED_10X20           TRUE
 //    #define GDISP_INCLUDE_FONT_FIXED_7X14            FALSE
 #define GDISP_INCLUDE_FONT_FIXED_5X8             TRUE
 //    #define GDISP_INCLUDE_FONT_DEJAVUSANS12_AA       FALSE
@@ -153,7 +153,7 @@
 //    #define GWIN_NEED_FLASHING                       FALSE
 //        #define GWIN_FLASHING_PERIOD                 250
 
-//#define GWIN_NEED_CONSOLE                            FALSE
+#define GWIN_NEED_CONSOLE                            TRUE
 //    #define GWIN_CONSOLE_USE_HISTORY                 FALSE
 //        #define GWIN_CONSOLE_HISTORY_AVERAGING       FALSE
 //        #define GWIN_CONSOLE_HISTORY_ATCREATE        FALSE
@@ -166,7 +166,7 @@
 #define GWIN_NEED_WIDGET                             TRUE
     #define GWIN_NEED_LABEL                          TRUE
         #define GWIN_LABEL_ATTRIBUTE                 TRUE
-//    #define GWIN_NEED_BUTTON                         FALSE
+#define GWIN_NEED_BUTTON                        TRUE
 //        #define GWIN_BUTTON_LAZY_RELEASE             FALSE
 //    #define GWIN_NEED_SLIDER                         FALSE
 //        #define GWIN_SLIDER_NOSNAP                   FALSE
@@ -180,7 +180,7 @@
 //        #define GWIN_NEED_LIST_IMAGES                FALSE
 //    #define GWIN_NEED_PROGRESSBAR                    FALSE
 //        #define GWIN_PROGRESSBAR_AUTO                FALSE
-//    #define GWIN_NEED_KEYBOARD                       FALSE
+#define GWIN_NEED_KEYBOARD                       TRUE
 //        #define GWIN_KEYBOARD_DEFAULT_LAYOUT         VirtualKeyboard_English1
 //        #define GWIN_NEED_KEYBOARD_ENGLISH1          TRUE
 //    #define GWIN_FLAT_STYLING                        FALSE

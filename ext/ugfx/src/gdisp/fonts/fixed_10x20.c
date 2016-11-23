@@ -199,7 +199,7 @@ const struct mf_bwfont_s mf_bwfont_fixed_10x20 = {
     17, /* height */
     10, /* min x advance */
     10, /* max x advance */
-    -1, /* baseline x */
+    0, /* baseline x */
     13, /* baseline y */
     20, /* line height */
     3, /* flags */
