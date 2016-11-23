@@ -10,13 +10,21 @@
 #define note32 50  /* 32nd note */
 
 static const PWM_NOTE soundStart[] = {
-	{ NOTE_FS3, note32 * 3 },
-	{ PWM_NOTE_PAUSE, note32 * 2 },
-	{ NOTE_CS5, note32 * 2 },
-	{ NOTE_D5, note32 * 2 },
-	{ NOTE_A4, note32 * 2 },
-	{ NOTE_FS5, note32 * 5 },
-	{ 0, PWM_DURATION_END }
+  { NOTE_FS3, note32 * 3 },
+  { PWM_NOTE_PAUSE, note32 * 2 },
+  { NOTE_CS5, note32 * 2 },
+  { NOTE_D5, note32 * 2 },
+  { NOTE_A4, note32 * 2 },
+  { NOTE_FS5, note32 * 5 },
+  { 0, PWM_DURATION_END }
+};
+    
+static const PWM_NOTE soundSadPanda[] = {
+  /* dissonant failure sound */
+  { NOTE_GS3, note16 },
+  { NOTE_F3, note16 },
+  { NOTE_E3, note4 },
+  { 0, PWM_DURATION_END }
 };
     
 void playTone(uint16_t freq, uint16_t duration) {
@@ -28,15 +36,10 @@ void playTone(uint16_t freq, uint16_t duration) {
 void playStartupSong(void) {
   /* the galaga level up sound */
   pwmThreadPlay (soundStart);
+}
 
-#ifdef testing
-  playTone(NOTE_FS3, note32 * 3);
-  chThdSleepMilliseconds(note32 * 2);
-  playTone(NOTE_CS5, note32 * 2);
-  playTone(NOTE_D5, note32 * 2);
-  playTone(NOTE_F4, note32 * 2);
-  playTone(NOTE_B4, note32 * 5);
-#endif
-
+void playHardFail(void) {
+  /* the galaga level up sound */
+  pwmThreadPlay (soundSadPanda);
 }
 
