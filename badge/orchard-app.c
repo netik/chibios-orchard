@@ -20,10 +20,12 @@
 orchard_app_start();
 orchard_app_end();
 
-static const OrchardApp *orchard_app_list;
+const OrchardApp *orchard_app_list;
+#ifdef notyet
 static virtual_timer_t run_launcher_timer;
 static bool run_launcher_timer_engaged;
 #define RUN_LAUNCHER_TIMEOUT MS2ST(500)
+#endif
 
 orchard_app_instance instance;  // the one and in fact only instance of any orchard app
 
@@ -37,6 +39,7 @@ event_source_t ui_completed;
 #define COLLECT_INTERVAL 50  // time to collect events for multi-touch gesture
 #define TRACK_INTERVAL 1  // trackpad debounce in ms
 
+#ifdef notyet
 static char *friends[MAX_FRIENDS]; // array of pointers to friends' names; first byte is priority metric
 #define FRIENDS_INIT_CREDIT  4  // defines how long a friend record stays around before expiration
 // max level of credit a friend can have; defines how long a record can stay around
@@ -46,12 +49,14 @@ static char *friends[MAX_FRIENDS]; // array of pointers to friends' names; first
 #define FRIENDS_SORT_HYSTERESIS 4 
 
 mutex_t friend_mutex;
+#endif
 
 static uint8_t ui_override = 0;
 
 #define MAIN_MENU_MASK  ((1 << 11) | (1 << 0))
 #define MAIN_MENU_VALUE ((1 << 11) | (1 << 0))
 
+#ifdef notyet
 static void run_launcher(void *arg) {
   (void)arg;
 
@@ -63,6 +68,7 @@ static void run_launcher(void *arg) {
   run_launcher_timer_engaged = false;
   chSysUnlockFromISR();
 }
+#endif
 
 static void ui_complete_cleanup(eventid_t id) {
   (void)id;
@@ -139,7 +145,16 @@ void orchardAppRun(const OrchardApp *app) {
 
 void orchardAppExit(void) {
   instance.next_app = orchard_app_list;  // the first app is the launcher
-  chThdTerminate(instance.thr);
+
+  /*
+   * The call to terminate the app thread below seems to be wrong. The
+   * terminate() handler will be invoked by broadcasting the app
+   * terminate event, and it already calls chThdTerminate() once it sends
+   * the app terminate event to the app's event handler, and that can't
+   * happen if the thread has already exited from here.
+   */
+  /*chThdTerminate(instance.thr);*/
+
   chEvtBroadcast(&orchard_app_terminate);
 }
 
@@ -178,12 +193,10 @@ static THD_FUNCTION(orchard_app_thread, arg) {
 
   chRegSetThreadName("Orchard App");
 
-  evtTableInit(orchard_app_events, 32);
-  /*
+  evtTableInit(orchard_app_events, 4);
   evtTableHook(orchard_app_events, ui_completed, ui_complete_cleanup);
   evtTableHook(orchard_app_events, orchard_app_terminate, terminate);
   evtTableHook(orchard_app_events, timer_expired, timer_event);
-  */
 
   // if APP is null, the system will crash here. 
   if (instance->app->init)
@@ -233,10 +246,9 @@ static THD_FUNCTION(orchard_app_thread, arg) {
   //  chVTReset(&run_launcher_timer);
   //  run_launcher_timer_engaged = false;
 
-  /*  evtTableUnhook(orchard_app_events, timer_expired, timer_event);
+  evtTableUnhook(orchard_app_events, timer_expired, timer_event);
   evtTableUnhook(orchard_app_events, orchard_app_terminate, terminate);
   evtTableUnhook(orchard_app_events, ui_completed, ui_complete_cleanup);
-  */
   /* Atomically broadcasting the event source and terminating the thread,
      there is not a chSysUnlock() because the thread terminates upon return.*/
   chSysLock();
@@ -245,8 +257,9 @@ static THD_FUNCTION(orchard_app_thread, arg) {
 }
 
 void orchardAppInit(void) {
+#ifdef notyet
   int i;
-
+#endif
   orchard_app_list = orchard_apps();
   instance.app = orchard_app_list;
   chEvtObjectInit(&orchard_app_terminated);
@@ -284,10 +297,12 @@ void orchardAppInit(void) {
   //  chVTReset(&ping_timer);
   //  chVTSet(&ping_timer, MS2ST(PING_MIN_INTERVAL + rand() % PING_RAND_INTERVAL), run_ping, NULL);
 
+#ifdef notyet
   for( i = 0; i < MAX_FRIENDS; i++ ) {
     friends[i] = NULL;
   }
   osalMutexObjectInit(&friend_mutex);
+#endif
 }
 
 void orchardAppRestart(void) {

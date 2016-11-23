@@ -8,6 +8,8 @@
 
 #include "storage.h"
 
+extern const OrchardApp *orchard_app_list;
+
 struct launcher_list_item {
   const char        *name;
   const OrchardApp  *entry;
@@ -93,7 +95,7 @@ static uint32_t launcher_init(OrchardAppContext *context) {
   const OrchardApp *current;
 
   /* Rebuild the app list */
-  current = orchard_app_start();
+  current = orchard_app_list;
   while (current->name) {
     total_apps++;
     current++;
@@ -109,7 +111,7 @@ static void launcher_start(OrchardAppContext *context) {
   const OrchardApp *current;
 
   /* Rebuild the app list */
-  current = orchard_app_start();
+  current = orchard_app_list;
   list->total = 0;
   while (current->name) {
     list->items[list->total].name = current->name;
@@ -118,7 +120,7 @@ static void launcher_start(OrchardAppContext *context) {
     current++;
   }
 
-  list->selected = 3;
+  list->selected = 1;
 
   last_ui_time = chVTGetSystemTime();
   redraw_list(list);
@@ -162,7 +164,7 @@ static void launcher_exit(OrchardAppContext *context) {
 }
 
 const OrchardApp _orchard_app_list_launcher
-__attribute__((unused, aligned(4), section(".chibi_list_app_1_launcher"))) = {
+__attribute__((used, aligned(4), section(".chibi_list_app_1_launcher"))) = {
   "Launcher", 
   launcher_init,
   launcher_start,
