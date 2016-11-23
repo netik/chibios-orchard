@@ -271,7 +271,7 @@ include $(RULESPATH)/rules.mk
 
 PRE_MAKE_ALL_RULE_HOOK: gitversion.h buildtime.h
 
-buildtime.h:
+buildtime.h: $(CHIBIOS)/.git/HEAD $(CHIBIOS)/.git/index
 	echo "#define BUILDTIME \"Built: `/bin/date` (`/bin/hostname`)\"" > $@
 
 gitversion.h: $(CHIBIOS)/.git/HEAD $(CHIBIOS)/.git/index
