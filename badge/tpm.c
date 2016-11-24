@@ -100,6 +100,11 @@ static THD_FUNCTION(pwmThread, arg) {
 		while (play) {
 			p = pTune;
 			while (1) {
+				if (play == 0) {
+					pwmToneStop ();
+					pTune = NULL;
+					break;
+				}
 				if (p->pwm_duration == PWM_DURATION_END) {
 					pwmToneStop ();
 					if (play)
@@ -296,9 +301,16 @@ void pwmThreadPlay (const PWM_NOTE * p)
 {
 	thread_t * t;
 
+	/*
+	 * Cancel any currently playing tune and wait for the
+	 * player thread to go idle. We have to do this otherwise
+	 * our next command to play a tune might be ignored.
+	 */
+
 	if (p == NULL) {
 		play = 0;
-		pTune = NULL;
+		while (pTune != NULL)
+			chThdSleepMicroseconds (10);
 		return;
 	}
 

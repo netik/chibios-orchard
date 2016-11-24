@@ -53,6 +53,9 @@ static void buzzer_play(BaseSequentialStream *chp, int argc, char *argv[]) {
   chprintf(chp, "playing...%d\r\n", selection);
 
   switch(selection) {
+  case 0:
+    pwmThreadPlay (NULL);
+    break;
   case 1:
     playStartupSong();
     break;
