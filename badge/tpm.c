@@ -71,6 +71,7 @@
 static THD_WORKING_AREA(waPwmThread, 0);
 
 static PWM_NOTE * pTune;
+static uint8_t play;
 static thread_t * pThread;
 
 /******************************************************************************
@@ -89,7 +90,6 @@ static thread_t * pThread;
 */
 
 static THD_FUNCTION(pwmThread, arg) {
-	PWM_NOTE * head;
 	PWM_NOTE * p;
 	(void)arg;
 
@@ -97,13 +97,14 @@ static THD_FUNCTION(pwmThread, arg) {
 
 	while (1) {
 		chThdSleep (TIME_INFINITE);
-		while (pTune != NULL) {
+		while (play) {
 			p = pTune;
-			head = pTune;
 			while (1) {
 				if (p->pwm_duration == PWM_DURATION_END) {
 					pwmToneStop ();
-					if (pTune == head)
+					if (play)
+						play--;
+					if (play == 0)
 						pTune = NULL;
 					break;
 				}
@@ -279,6 +280,15 @@ void pwmToneStop (void)
 * Calling pwmThreadPlay() with a <p> pointer of NULL has no effect,
 * except to cease the playing of a tune that is looping.
 *
+* Calling pwmThreadPlay() with a new tune pointer while a tune is already
+* playing, the new tune will be played after the current tune completes
+* (unless the current tune is set to loop, in which case playThreadPlay(NULL)
+* must be called to cancel it first).
+*
+* If pwmThreadPlay() is called more than once with a non-NULL tune pointer
+* while a tune is playing, only the tune specified in the last call will
+* be played (tunes are not queued).
+*
 * RETURNS: N/A
 */
 
@@ -286,9 +296,19 @@ void pwmThreadPlay (const PWM_NOTE * p)
 {
 	thread_t * t;
 
-	t = pThread;
+	if (p == NULL) {
+		play = 0;
+		pTune = NULL;
+		return;
+	}
+
 	pTune = (PWM_NOTE *)p;
-	chThdResume (&t, MSG_OK);
+	if (play == 0) {
+		play = 1;
+		t = pThread;
+		chThdResume (&t, MSG_OK);
+	} else
+		play = 2;
 
 	return;
 }
