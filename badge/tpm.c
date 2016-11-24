@@ -48,7 +48,7 @@
  * value. To play a tune, the pwmThreadPlay() function is with a pointer
  * to a tune table, and the thread will play each note in the table until
  * it reaches a note with a duration of PWM_DURATION_END. If the last
- * node has a duration of PWM_DURATION_LOOP, the same tune will play
+ * note has a duration of PWM_DURATION_LOOP, the same tune will play
  * over and over until pwmThreadPlay(NULL) is called.
  *
  * The TPM includes a pre-scaler feature which we make use of here. We
@@ -89,6 +89,7 @@ static thread_t * pThread;
 */
 
 static THD_FUNCTION(pwmThread, arg) {
+	PWM_NOTE * head;
 	PWM_NOTE * p;
 	(void)arg;
 
@@ -98,20 +99,23 @@ static THD_FUNCTION(pwmThread, arg) {
 		chThdSleep (TIME_INFINITE);
 		while (pTune != NULL) {
 			p = pTune;
+			head = pTune;
 			while (1) {
 				if (p->pwm_duration == PWM_DURATION_END) {
 					pwmToneStop ();
-					pTune = NULL;
+					if (pTune == head)
+						pTune = NULL;
 					break;
 				}
 				if (p->pwm_duration == PWM_DURATION_LOOP) {
 					pwmToneStop ();
 					break;
 				}
-				if (p->pwm_note != PWM_NOTE_PAUSE)
-					pwmToneStart (p->pwm_note);
-				if (p->pwm_note == PWM_NOTE_OFF)
+				if (p->pwm_note == PWM_NOTE_OFF) {
 					pwmToneStop();
+				} else if (p->pwm_note != PWM_NOTE_PAUSE) {
+					pwmToneStart (p->pwm_note);
+				}
 				chThdSleepMilliseconds (p->pwm_duration);
 				p++;
 			}
@@ -280,8 +284,11 @@ void pwmToneStop (void)
 
 void pwmThreadPlay (const PWM_NOTE * p)
 {
+	thread_t * t;
+
+	t = pThread;
 	pTune = (PWM_NOTE *)p;
-	chThdResume (&pThread, MSG_OK);
+	chThdResume (&t, MSG_OK);
 
 	return;
 }

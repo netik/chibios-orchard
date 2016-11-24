@@ -49,7 +49,6 @@ static const PWM_NOTE soundGalaga[] = {
 
 #ifdef notdef
 static const PWM_NOTE soundStart[] = {
-  { PWM_NOTE_OFF, note4 * 3 },
   { NOTE_FS3, note32 * 3 },
   { PWM_NOTE_PAUSE, note32 * 2 },
   { NOTE_CS5, note32 * 2 },
