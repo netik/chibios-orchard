@@ -67,7 +67,34 @@ static const PWM_NOTE soundSadPanda[] = {
   { NOTE_E3, note4 },
   { 0, PWM_DURATION_END }
 };
-    
+
+static const PWM_NOTE soundAttacked[] = {
+  { NOTE_A4, note16 },
+  { NOTE_A3, note16 },
+  { NOTE_A4, note16 },
+  { NOTE_A3, note16 },
+  { NOTE_A4, note16 },
+  { NOTE_A3, note16 },
+  { NOTE_A4, note16 },
+  { NOTE_A3, note16 },
+  { NOTE_A4, note16 },
+  { NOTE_A3, note16 },
+  { 0, PWM_DURATION_END }
+};
+
+static const PWM_NOTE soundVictory[] = {
+  { 0, PWM_DURATION_END }
+};
+
+static const PWM_NOTE soundDodge[] = {
+  { 0, PWM_DURATION_END }
+};
+
+static const PWM_NOTE soundDefeat[] = {
+  { 0, PWM_DURATION_END }
+};
+
+
 void playTone(uint16_t freq, uint16_t duration) {
   pwmToneStart(freq);
   chThdSleepMilliseconds (duration);
@@ -75,12 +102,37 @@ void playTone(uint16_t freq, uint16_t duration) {
 }
 
 void playStartupSong(void) {
-  /* the galaga level up sound */
+  /* the galaga game start sound */
   pwmThreadPlay (soundGalaga);
 }
 
 void playHardFail(void) {
-  /* the galaga level up sound */
+  /* sad panda tone */
   pwmThreadPlay (soundSadPanda);
 }
 
+void playAttacked(void) {
+  /* played when you're getting attacked by another player */
+  pwmThreadPlay (soundAttacked);
+}
+
+void playVictory(void) {
+  /* played when you win */
+  pwmThreadPlay (soundVictory);
+}
+
+void playDefeat(void) {
+  /* played when you lose */
+  pwmThreadPlay (soundDefeat);
+}
+
+void playDodge(void) {
+  /* played when you dodge an attack */
+  pwmThreadPlay (soundDodge);
+}
+
+void playHit(void) {
+  /* played when you lose */
+  
+}
+B

@@ -18,12 +18,14 @@
 #include "orchard.h"
 #include "orchard-shell.h"
 
+#include "sound.h"
+
 static void buzzer_stop(BaseSequentialStream *chp) {
   chprintf(chp, "silence!\r\n");
   pwmToneStop();;
 }
 
-static void buzzer_play(BaseSequentialStream *chp, int argc, char *argv[]) {
+static void buzzer_tone(BaseSequentialStream *chp, int argc, char *argv[]) {
 
   uint16_t freq;
 
@@ -37,22 +39,71 @@ static void buzzer_play(BaseSequentialStream *chp, int argc, char *argv[]) {
   pwmToneStart(freq);
 }
 
+static void buzzer_play(BaseSequentialStream *chp, int argc, char *argv[]) {
+
+  uint16_t selection;
+
+  if (argc != 2) {
+    chprintf(chp, "No song specified\r\n");
+    return;
+  }
+
+  selection = strtoul(argv[1], NULL, 0);
+
+  chprintf(chp, "playing...%d\r\n", selection);
+
+  switch(selection) {
+  case 1:
+    playStartupSong();
+    break;
+  case 2:
+    playHardFail();
+    break;
+  case 3:
+    playAttacked();
+    break;
+  case 4:
+    playVictory();
+    break;
+  case 5:
+    playDefeat();
+    break;
+  case 6:
+    playDodge();
+    break;
+  case 7:
+    playHit();
+    break;
+  default:
+    chprintf(chp, "No songa specified\r\n");
+  }
+  
+}
+
 static void cmd_buzzer(BaseSequentialStream *chp, int argc, char *argv[]) {
 
   if (argc == 0) {
     chprintf(chp, "buzzer commands:\r\n");
-    chprintf(chp, "   play [freq]          play frequency (in Hz)\r\n");
+    chprintf(chp, "   tone [freq]          play frequency (in Hz)\r\n");
+    chprintf(chp, "   play n               play note sequene #n\r\n");
     chprintf(chp, "   stop                 turn off buzzer\r\n");
     return;
   }
 
-  if (!strcasecmp(argv[0], "play"))
+  if (!strcasecmp(argv[0], "tone")) {
+    buzzer_tone(chp, argc, argv);
+    return;
+  }
+
+  if (!strcasecmp(argv[0], "play")) {
     buzzer_play(chp, argc, argv);
+    return;
+  }
+
+  if (!strcasecmp(argv[0], "stop"))
+    buzzer_stop(chp);
   else
-    if (!strcasecmp(argv[0], "stop"))
-      buzzer_stop(chp);
-    else
-      chprintf(chp, "Unrecognized buzzer command\r\n");
+    chprintf(chp, "Unrecognized buzzer command\r\n");
 }
 
 orchard_command("buzzer", cmd_buzzer);
