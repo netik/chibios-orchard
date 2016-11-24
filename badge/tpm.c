@@ -32,10 +32,10 @@
 
 /*
  * This module implements support for using the KW01 TPM module as a
- * tone generator. This simplified the generation of music notes as
- * the hardware can be set to generate a square wave on without having
- * to do it in software. There are two pins available for TPM output:
- * PTC1 for TPM0 channel 0 and PTC2 for TPM0 channel 1. On the
+ * tone generator. This simplifies the generation of music notes as
+ * the hardware can be set to generate a square wave without having
+ * jiggle GPIO pins in software. There are two pins available for TPM:
+ * output: PTC1 for TPM0 channel 0 and PTC2 for TPM0 channel 1. On the
  * Freescale/NXP KW019032 board, PTC1 is already used for the RTC crystal,
  * we use use TPM0 channel 1 and PTC2 here.
  *
@@ -50,13 +50,23 @@
  * it reaches a note with a duration of PWM_DURATION_END. If the last
  * node has a duration of PWM_DURATION_LOOP, the same tune will play
  * over and over until pwmThreadPlay(NULL) is called.
+ *
+ * The TPM includes a pre-scaler feature which we make use of here. We
+ * want to use the TPM to generate a pulse train at audio frequencies.
+ * When using the 48MHz system clock as the TPM timer source, the divisor
+ * values we need to use to generate audio frequencies can be fairly
+ * large. This is a problem because the value field for a TPM channel,
+ * which is used to set the mid-point of the pulse sycle, is only 16 bits
+ * wide. To ensure the desired values will fit, we divide the master
+ * clock using the pre-scaler. The default pre-scale factor is 16, which
+ * allows for tones as low as 45Hz.
  */
 
 #include "ch.h"
 #include "hal.h"
 
 #include "tpm.h"
-#include "pwm_lld.h"
+#include "kinetis_tpm.h"
 
 static THD_WORKING_AREA(waPwmThread, 0);
 
@@ -65,11 +75,11 @@ static thread_t * pThread;
 
 /******************************************************************************
 *
-* pwmThread - background tone generatoe thread
+* pwmThread - background tone generator thread
 *
 * This function implements a background thread for playing notes through
-* the pulse-width modulator. When music is not playing, the threads sleeps.
-* It can be woken up by pwmThreadPlay(). When wakened, pTune should point
+* the pulse width modulator. When music is not playing, the thread sleeps.
+* It can be woken up by pwmThreadPlay(). When awakened, pTune should point
 * to a table of PWM_NOTE structures which indicate the frequency and duration
 * for each note in the tune. The last note in the table should have a
 * duration of PWM_DURATION_END. If the duration is PWM_DURATION_LOOP, then
@@ -106,7 +116,6 @@ static THD_FUNCTION(pwmThread, arg) {
 				p++;
 			}
 		}
-			
 	}
 
 	/* NOTREACHED */
@@ -173,7 +182,7 @@ void pwmInit (void)
 
 	TPM0->C[TPM_CHANNEL].SC = TPM_CnSC_MSB | TPM_CnSC_ELSB;
 
-	/* Create PWM thrad */
+	/* Create PWM thread */
 
 	pThread = chThdCreateStatic(waPwmThread, sizeof(waPwmThread),
 		TPM_THREAD_PRIO, pwmThread, NULL);
