@@ -348,7 +348,8 @@ int main(void)
   uiStart();
   oledOrchardBanner();
   chThdSleepMilliseconds(IMG_SPLASH_DISPLAY_TIME);
-
+  playAttacked();
+  
   /* run apps */
   orchardAppInit();
   evtTableHook(orchard_events, orchard_app_terminated, orchard_app_restart);

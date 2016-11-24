@@ -135,4 +135,3 @@ void playHit(void) {
   /* played when you lose */
   
 }
-B
