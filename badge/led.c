@@ -37,6 +37,7 @@ static void anim_rainbow_fade(void);
 static void anim_rainbow_loop(void);
 static void anim_solid_color(void);
 static void anim_triangle(void);
+static void anim_one_hue_pulse(void);
 
 /* Update FX_COUNT in led.h if you make changes here */
 struct FXENTRY fxlist[] = {
@@ -48,7 +49,8 @@ struct FXENTRY fxlist[] = {
   {"Rainbow Fade", anim_rainbow_fade},
   {"Rainbow Loop", anim_rainbow_loop},
   {"Green Spiral", anim_solid_color},
-  {"Yellow Triangle", anim_triangle}
+  {"Yellow Triangle", anim_triangle},
+  {"Random Hue Pulse", anim_one_hue_pulse}
 };
 
 // stock colors
@@ -213,19 +215,24 @@ static void anim_triangle(void) {
   if (fx_position > N3) { fx_position = 0; }
 }
 
-static void anim_one_hue_pulse(int ahue) { //-PULSE BRIGHTNESS ON ALL LEDS TO ONE COLOR
+static void anim_one_hue_pulse(void) { //-PULSE BRIGHTNESS ON ALL LEDS TO ONE COLOR
+  if (fx_index == 0) {
+    // if it's the first time through, pick a random color
+    fx_index = 200;
+  }
+    
   if (fx_direction == 0) {
     fx_position++;
     if (fx_position >= 255) {fx_direction = 1;}
   }
 
   if (fx_direction == 1) {
-    fx_position = fx_position - 1;
+    fx_position--;
     if (fx_position <= 1) {fx_direction = 0;}
   }
   
   int acolor[3];
-  HSVtoRGB(ahue, 255, fx_position, acolor);
+  HSVtoRGB(fx_index, 255, fx_position, acolor);
 
   for(int i = 0 ; i < led_config.max_pixels; i++ ) {
     ledSetRGB(led_config.fb, i, acolor[0], acolor[1], acolor[2]);

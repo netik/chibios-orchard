@@ -68,20 +68,37 @@ static const PWM_NOTE soundSadPanda[] = {
 };
 
 static const PWM_NOTE soundAttacked[] = {
-  { NOTE_A4, note16 },
-  { NOTE_A3, note16 },
-  { NOTE_A4, note16 },
-  { NOTE_A3, note16 },
-  { NOTE_A4, note16 },
-  { NOTE_A3, note16 },
-  { NOTE_A4, note16 },
-  { NOTE_A3, note16 },
-  { NOTE_A4, note16 },
-  { NOTE_A3, note16 },
+  { NOTE_A6, note16 },
+  { NOTE_A7, note16 },
+  { PWM_NOTE_PAUSE, note16 * 2 },
+  { NOTE_A6, note16 },
+  { NOTE_A7, note16 },
+  { PWM_NOTE_PAUSE, note16 * 2 },
+  { NOTE_A6, note16 },
+  { NOTE_A7, note16 },
+  { PWM_NOTE_PAUSE, note16 * 2 },
+  { NOTE_A6, note16 },
+  { NOTE_A7, note16 },
+  { PWM_NOTE_PAUSE, note16 * 2 },
+  { NOTE_A6, note16 },
+  { NOTE_A7, note16 },
+  { PWM_NOTE_PAUSE, note16 * 2 },
+  { NOTE_A6, note16 },
+  { NOTE_A7, note16 },
+  { PWM_NOTE_PAUSE, note16 * 2 },
+  { NOTE_A6, note16 },
+  { NOTE_A7, note16 },  
   { 0, PWM_DURATION_END }
 };
 
 static const PWM_NOTE soundVictory[] = {
+  { NOTE_D4, note16 },
+  { NOTE_FS4, note16 },
+  { NOTE_A4, note16 },
+  { NOTE_D5, note16 },
+  { PWM_NOTE_PAUSE, note16 * 2 },
+  { NOTE_D4, note16 * 2 },
+  { NOTE_D5, note16 * 3 },
   { 0, PWM_DURATION_END }
 };
 
@@ -92,7 +109,6 @@ static const PWM_NOTE soundDodge[] = {
 static const PWM_NOTE soundDefeat[] = {
   { 0, PWM_DURATION_END }
 };
-
 
 void playTone(uint16_t freq, uint16_t duration) {
   pwmToneStart(freq);
@@ -131,6 +147,6 @@ void playDodge(void) {
 }
 
 void playHit(void) {
-  /* played when you lose */
+  /* played when you're hit */
   
 }

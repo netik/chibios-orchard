@@ -23,6 +23,7 @@ extern void (*current_fx)(void);
 extern struct FXENTRY fxlist[];
 
 static void led_stop(BaseSequentialStream *chp) {
+  effectsStop();
   chprintf(chp, "Off.\r\n");
 }
 

@@ -292,7 +292,7 @@ int main(void)
   if (mmcConnect (&MMCD1) == HAL_SUCCESS)
     chprintf (stream, "SD card detected: %dMB\r\n",
         mmcsdGetCardCapacity (&MMCD1) >> 11);
-  else 
+XF  else 
     chprintf (stream, "No SD card found.\r\n");
 #endif
 
@@ -325,19 +325,21 @@ int main(void)
   if (mmc_disk_initialize () == 0) {
     chprintf (stream, "SD card detected.\r\n");
   } else {
-    /* Since we didn't init ugfx before, we have to init now. */
+    /* Since we didn't init ugfx before because of the aforementioned
+       issues with the SD card, we have to init now, even though we're
+       going to die with an error. */
     gfxInit();
     chprintf (stream, "No SD card found.\r\n");
     oledSDFail();
     playHardFail();
-    /* nuke the main thread but keep our shells up if we need them. */
+    /* nuke the main thread but keep our shell up for debugging */
     orchardShellRestart();
     chThdSleep (TIME_INFINITE);
   }
   
 #endif
   /* we're goood */
-  playStartupSong();
+  //  playStartupSong();
 
   orchardShellRestart();
 
@@ -348,8 +350,7 @@ int main(void)
   uiStart();
   oledOrchardBanner();
   chThdSleepMilliseconds(IMG_SPLASH_DISPLAY_TIME);
-  playAttacked();
-  
+
   /* run apps */
   orchardAppInit();
   evtTableHook(orchard_events, orchard_app_terminated, orchard_app_restart);

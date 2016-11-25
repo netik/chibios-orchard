@@ -65,7 +65,7 @@ static void keyboard_start (OrchardAppContext *context)
 	uint8_t pos;
 
 	gwinSetDefaultStyle (&WhiteWidgetStyle, FALSE);
-	font = gdispOpenFont ("fixed_10x20");
+	font = gdispOpenFont ("Roman_SD12");
 	gwinSetDefaultFont (font);
 
 	/* Draw the console/text entry widget */

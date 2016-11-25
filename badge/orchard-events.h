@@ -83,6 +83,7 @@ typedef enum _OrchardAppEventType {
   timerEvent,
   uiEvent,
   radioEvent,
+  touchEvent,
 } OrchardAppEventType;
 
 /* ------- */
@@ -139,6 +140,14 @@ typedef struct _OrchardAppTimerEvent {
 
 /* ------- */
 
+typedef struct _OrchardTouchEvent {
+  uint16_t  x;
+  uint16_t  y;
+  uint16_t  z;
+  uint16_t  temp;
+  uint16_t  batt;
+} OrchardTouchEvent;
+
 typedef struct _OrchardAppEvent {
   OrchardAppEventType     type;
   union {
@@ -146,6 +155,7 @@ typedef struct _OrchardAppEvent {
     OrchardAppLifeEvent   app;
     OrchardAppTimerEvent  timer;
     OrchardUiEvent        ui;
+    OrchardTouchEvent     touch;
   } ;
 } OrchardAppEvent;
 
