@@ -125,6 +125,7 @@ CSRC = main.c \
        cmd-threads.c \
        cmd-buzzer.c \
        cmd-led.c \
+       cmd-reset.c \
        app-launcher.c \
        app-name.c \
        app-default.c \
