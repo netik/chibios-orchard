@@ -183,6 +183,7 @@ const PALConfig pal_default_config =
 };
 #endif
 
+#if KINETIS_MCG_MODE == KINETIS_MCG_MODE_PEE
 static void early_usleep(int usec) {
   int j, k;
 
@@ -190,12 +191,16 @@ static void early_usleep(int usec) {
     for (k = 0; k < 30; k++)
         asm("nop");
 }
+#endif /* KINETIS_MCG_MODE_PEE */
+
 /**
  * @brief   Early initialization code.
  * @details This initialization must be performed just after stack setup
  *          and before any other initialization.
  */
 void __early_init(void) {
+
+#if KINETIS_MCG_MODE == KINETIS_MCG_MODE_PEE
 
   /*
    * The Freescale/NXP KW019032 board has a 32MHz crystal attached to
@@ -267,6 +272,8 @@ void __early_init(void) {
         ;
   (void) SPI0->DL;
   palSetPad (GPIOD, 0);
+
+#endif /* KINETIS_MCG_MODE_PEE */
 
   kl1x_clock_init();
 }

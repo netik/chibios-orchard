@@ -91,6 +91,10 @@
 #include "orchard.h"
 #include "orchard-events.h"
 
+#if KINETIS_MCG_MODE == KINETIS_MCG_MODE_FEI
+#define KW01_HARD_RESET
+#endif /* KINETIS_MCG_MODE_FEI */
+
 /*
  * Statically allocate memory for a single radio handle structure.
  * This includes the device state and one packet structure.
