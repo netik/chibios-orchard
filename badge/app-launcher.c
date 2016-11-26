@@ -91,12 +91,12 @@ static void redraw_list(struct launcher_list *list) {
   ui_timeout = (BLINKY_DEFAULT_DELAY - (chVTGetSystemTime() - last_ui_time)) / 1000;
   chsnprintf(tmp, sizeof(tmp), "%d of %d apps", list->selected + 1, list->total);
 
+  gdispFillArea(0, 0, gdispGetWidth(), gdispGetHeight() / 2, Black);
   // draw title bar
   font = gdispOpenFont("UI2");
   width = gdispGetWidth();
   height = gdispGetFontMetric(font, fontHeight);
   header_height = height;
-  gdispClear(Black);
   gdispFillArea(0, 0, width, height, White);
 
   //  chsnprintf(tmp, sizeof(tmp), "%s", family->name);
@@ -133,8 +133,6 @@ static void redraw_list(struct launcher_list *list) {
                        list->items[i].name, font, draw_color, justifyCenter);
   }
 
-  draw_launcher_buttons();
-
   gdispCloseFont(font);
   gdispFlush();
   orchardGfxEnd();
@@ -152,6 +150,9 @@ static uint32_t launcher_init(OrchardAppContext *context) {
     total_apps++;
     current++;
   }
+
+  gdispClear(Black);
+  draw_launcher_buttons();
 
   return sizeof(struct launcher_list)
        + (total_apps * sizeof(struct launcher_list_item));
@@ -251,6 +252,11 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
 static void launcher_exit(OrchardAppContext *context) {
 
   (void)context;
+
+   gwinDestroy (ghButton1);
+   gwinDestroy (ghButton2);
+   gwinDestroy (ghButton3);
+
 }
 
 /* the app labelled as app_1 is always the launcher. changing this
