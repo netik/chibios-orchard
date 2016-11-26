@@ -388,7 +388,7 @@
 #define KW01_DIOMAP1_DIO2MAP	0x0C	/* DIO2 mapping */
 #define KW01_DIOMAP1_DIO3MAP	0x03	/* DIO3 mapping */
 
-/* Digital I/O pin mapping register 1 */
+/* Digital I/O pin mapping register 2 */
 
 #define KW01_DIOMAP2_DIO4MAP	0xC0	/* DIO4 mapping */
 #define KW01_DIOMAP2_DIO5MAP	0x30	/* DIO5 mapping */

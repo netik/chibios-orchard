@@ -172,8 +172,8 @@ static void print_mcu_info(void) {
                    (sdid >> 7) & 31,
                    pins[(sdid >> 0) & 15]);
   chprintf(stream, "CPU clock: %dMHz bus clock: %dMHz\r\n",
-     (KINETIS_SYSCLK_FREQUENCY / 1000000) + 1,
-     (KINETIS_BUSCLK_FREQUENCY / 1000000) + 1);
+     (KINETIS_SYSCLK_FREQUENCY / 1000000),
+     (KINETIS_BUSCLK_FREQUENCY / 1000000));
 }
 
 /*

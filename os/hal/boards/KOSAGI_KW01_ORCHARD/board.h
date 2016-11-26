@@ -28,9 +28,6 @@
 #define BOARD_KOSAGI_ORCHARD
 #define BOARD_NAME                  "Kosagi Orchard"
 
-/* External 8 MHz crystal with PLL for 48 MHz core/system clock. */
-#define KINETIS_SYSCLK_FREQUENCY    48000000UL 
-#define KINETIS_MCG_MODE            KINETIS_MCG_MODE_PEE
 #endif
 
 /*
@@ -39,10 +36,18 @@
 #define BOARD_KOSAGI_ORCHARD
 #define BOARD_NAME                  "Freescale/NXP FRDM-KW019032 Development"
 
-/* Freescale/NXP Freedom KW019032 board uses FEI mode. */
+/* Freescale/NXP Freedom KW019032 when using FEI mode. */
 
+#if notdef
 #define KINETIS_SYSCLK_FREQUENCY    47972352UL
 #define KINETIS_MCG_MODE            KINETIS_MCG_MODE_FEI
+#endif
+
+/* Freescale/NXP Freedom KW019032 when using PEE mode. */
+
+/* External 32 MHz clock from radio with PLL for 48 MHz core/system clock. */
+#define KINETIS_SYSCLK_FREQUENCY    48000000UL 
+#define KINETIS_MCG_MODE            KINETIS_MCG_MODE_PEE
 
 /*
  * Check for board revision specification.

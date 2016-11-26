@@ -61,6 +61,19 @@
  * the DIO0 pin is wired to PORTC pin 3, the DIO1 pin is wired to PORTC
  * pin 4 and the reset pin is wired to PORTE pin 30.
  *
+ * Note that by default the radioReset() function is disabled. We want
+ * to be able to use the radio's 32MHz crystal as a reference clock for
+ * the CPU (to keep the parts count low). This is possible because the
+ * radio passes through its reference clock to the CLKOUT pin. However
+ * at power up or reset, it sets a divisor of 32 on the CLKOUT signal
+ * by default. We need to disable this to restore it to 32MHz again,
+ * which we do in the __early_init() function in ChibisOS. The problem
+ * is that if we hard reset the radio again later, the clock will go
+ * back to 1MHz again and slow the whole system down until we can correct
+ * it again. For now we rely on the reset during __early_init() to put
+ * the radio into a known state and avoid asserting its reset pin again
+ * while the system is running.
+ *
  * SEE ALSO:
  * http://www.nxp.com/files/microcontrollers/doc/ref_manual/MKW01xxRM.pdf
  * http://www.semtech.com/images/datasheet/sx1233.pdf
@@ -264,6 +277,7 @@ radioIntrHandle (eventid_t id)
 	return;
 }
 
+#ifdef KW01_HARD_RESET
 /******************************************************************************
 *
 * radioReset - force a reset of the SX1233 chip
@@ -293,9 +307,10 @@ radioReset (RADIODriver * radio)
  	/* Now wait for the chip to get its brains in order. */
 
         chThdSleepMilliseconds (20);
-	
+
 	return;
 }
+#endif
 
 /******************************************************************************
 *
@@ -553,9 +568,11 @@ radioStart (SPIDriver * sp)
 
 	radio->kw01_spi = sp;
 
+#ifdef KW01_HARD_RESET
 	/* Reset radio hardware to known state. */
 
 	radioReset (radio);
+#endif
 
 	/* Put radio in standby mode */
 
@@ -693,7 +710,9 @@ radioStart (SPIDriver * sp)
 void
 radioStop (RADIODriver * radio)
 {
+#ifdef KW01_HARD_RESET
 	radioReset (radio);
+#endif
 	radioModeSet (radio, KW01_MODE_SLEEP);
 	return;
 }

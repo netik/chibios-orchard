@@ -15,6 +15,7 @@
 */
 
 #include "hal.h"
+#include "radio_reg.h"
 
 #define RADIO_REG_DIOMAPPING2   (0x26)
 #define RADIO_CLK_DIV1          (0x00)
@@ -182,12 +183,91 @@ const PALConfig pal_default_config =
 };
 #endif
 
+static void early_usleep(int usec) {
+  int j, k;
+
+  for (j = 0; j < usec; j++)
+    for (k = 0; k < 30; k++)
+        asm("nop");
+}
 /**
  * @brief   Early initialization code.
  * @details This initialization must be performed just after stack setup
  *          and before any other initialization.
  */
 void __early_init(void) {
+
+  /*
+   * The Freescale/NXP KW019032 board has a 32MHz crystal attached to
+   * the radio, and the CLKOUT pin of the radion wired to the PTA18/EXTAL0
+   * pin of the MCU. We have the option of either using the KW01's
+   * internal 32.768KHz reference (FEI mode) or the 32MHz reference from
+   * the radion (PEE mode). (At power on or reset, the CPU is running in
+   * FEI mode and we can customize the configuration in the clock init code
+   * in the hal_lld module.) However there's one catch: at power on/reset,
+   * the radio applies a divisor of 32 to the CLKOUT signal, meaning we
+   * actually get a 1MHz signal by default instead of 32MHz. To correct
+   * this, we need to write a 0 to the DIOMAP2 register in the radio, but
+   * we have to do it before doing the clock initialization in the hal_lld
+   * module. This means we have to do a bit of low level setup of ithe SPI0
+   * channel and a couple of the GPIO pins here. To make sure the radio is
+   * in a known state each time we boot, we perform a hard reset by asserting
+   * its reset pin, then quickly do a SPI transaction to update the
+   * clock divisor.
+   */
+
+  /* Enable clock gating for SPI0 and GPIO MUX blocks */
+
+  SIM->SCGC5 |= SIM_SCGC5_PORTC | SIM_SCGC5_PORTD | SIM_SCGC5_PORTE;
+  SIM->SCGC4 |= SIM_SCGC4_SPI0;
+
+  /* Mux PTD0 as a GPIO, since it's used for Chip Select.*/
+
+  palSetPadMode (GPIOD, 0, PAL_MODE_OUTPUT_PUSHPULL);
+
+  /* Mux PTC5 as SCK */
+
+  palSetPadMode (GPIOC, 5, PAL_MODE_ALTERNATIVE_2);
+
+  /* Mux PTC6 as MISO */
+
+  palSetPadMode (GPIOC, 6, PAL_MODE_ALTERNATIVE_2);
+
+  /* Mux PTC7 as MOSI */
+
+  palSetPadMode (GPIOC, 7, PAL_MODE_ALTERNATIVE_2);
+
+  /* Force radio SPI select high. */
+
+  palSetPad (GPIOD, 0);
+
+  /* Reset the radio */
+
+  palSetPad (GPIOE, 30);
+  early_usleep (100);
+  palClearPad (GPIOE, 30);
+  early_usleep (500);
+
+  /* Initialize SPI0 channel. Set for 16-bit writes. */
+
+  SPI0->C1 = 0;
+  SPI0->C2 = SPIx_C2_SPMODE;
+  SPI0->BR = 0;
+  SPI0->C1 |= SPIx_C1_SPE | SPIx_C1_MSTR;
+  (void)SPI0->S;
+ 
+  /* Now program the radio to generate a 32Mhz clock output */
+
+  palClearPad (GPIOD, 0);
+  while ((SPI0->S & SPIx_S_SPTEF) == 0)
+        ;
+  SPI0->DH = KW01_DIOMAP2 | 0x80;
+  SPI0->DL = KW01_CLKOUT_FXOSC;
+  while ((SPI0->S & SPIx_S_SPRF) == 0)
+        ;
+  (void) SPI0->DL;
+  palSetPad (GPIOD, 0);
+
   kl1x_clock_init();
 }
 
