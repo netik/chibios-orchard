@@ -88,8 +88,7 @@ static void redraw_list(struct launcher_list *list) {
   uint8_t max_list;
 
   chsnprintf(tmp, sizeof(tmp), "%d of %d apps", list->selected + 1, list->total);
-
-  gdispFillArea(0, 0, gdispGetWidth(), gdispGetHeight() / 2, Black);
+  //gdispFillArea(0, 0, gdispGetWidth(), gdispGetHeight() / 2, Black);
   // draw title bar
   font = gdispOpenFont("UI2");
   width = gdispGetWidth();
@@ -124,8 +123,13 @@ static void redraw_list(struct launcher_list *list) {
       gdispFillArea(0, header_height + (i - app_modulus * visible_apps) * height,
 		    width, height, White);
       draw_color = Black;
+    } else {
+      gdispFillArea(0, header_height + (i - app_modulus * visible_apps) * height,
+		    width, height, Black);
+      draw_color = White;
     }
     
+     
     gdispDrawStringBox(0, header_height + (i - app_modulus * visible_apps) * height,
                        width, height,
                        list->items[i].name, font, draw_color, justifyCenter);
