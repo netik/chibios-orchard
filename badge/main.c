@@ -340,7 +340,6 @@ XF  else
 #endif
   /* we're goood */
   //  playStartupSong();
-
   orchardShellRestart();
 
   /* Initialize uGfx */

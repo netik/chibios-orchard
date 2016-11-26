@@ -22,10 +22,56 @@ struct launcher_list {
 };
 
 static uint32_t last_ui_time = 0;
-#define BLINKY_DEFAULT_DELAY 60000 // in milliseconds
+#define BLINKY_DEFAULT_DELAY 5000 // in milliseconds
 
 // Buttons
-static GHandle   ghButton1, ghButton2, ghButton3;
+static GHandle ghButton1, ghButton2, ghButton3;
+static GListener gl;
+
+static void draw_launcher_buttons(void) {
+  
+  /* draw up down pushbuttons */
+  GWidgetInit  wi, wi2, wi3;
+  coord_t width;
+  coord_t totalheight;
+
+  width = gdispGetWidth();
+  totalheight = gdispGetHeight();
+  
+  // Apply some default values for GWIN
+  gwinWidgetClearInit(&wi);
+  gwinWidgetClearInit(&wi2);
+  gwinWidgetClearInit(&wi3);
+  
+  wi.g.show = TRUE;
+  wi2.g.show = TRUE;
+  wi3.g.show = TRUE;
+
+  // Apply the button parameters
+  wi.g.width = 80;
+  wi.g.height = 30;
+  wi.g.y = totalheight - 40;
+  wi.g.x = 2;
+  wi.text = "Up";
+  
+  wi2.g.width = 80;
+  wi2.g.height = 30;
+  wi2.g.y = totalheight - 40;
+  wi2.g.x = (width / 2)  - 40 ;
+  wi2.text = "Down";
+
+  wi3.g.width = 80;
+  wi3.g.height = 30;
+  wi3.g.y = totalheight - 40;
+  wi3.g.x = width - 80;
+  wi3.text = "Go";
+  
+  // Create the actual button
+  ghButton1 = gwinButtonCreate(NULL, &wi);
+  ghButton2 = gwinButtonCreate(NULL, &wi2);
+  ghButton3 = gwinButtonCreate(NULL, &wi3);
+  
+}
 
 static void redraw_list(struct launcher_list *list) {
 
@@ -87,42 +133,8 @@ static void redraw_list(struct launcher_list *list) {
                        list->items[i].name, font, draw_color, justifyCenter);
   }
 
-  /* draw up down pushbuttons */
-  GWidgetInit  wi, wi2, wi3;
+  draw_launcher_buttons();
 
-  // Apply some default values for GWIN
-  gwinWidgetClearInit(&wi);
-  gwinWidgetClearInit(&wi2);
-  gwinWidgetClearInit(&wi3);
-  
-  wi.g.show = TRUE;
-  wi2.g.show = TRUE;
-  wi3.g.show = TRUE;
-
-  // Apply the button parameters
-  wi.g.width = 80;
-  wi.g.height = 30;
-  wi.g.y = totalheight - 40;
-  wi.g.x = 2;
-  wi.text = "Up";
-  
-  wi2.g.width = 80;
-  wi2.g.height = 30;
-  wi2.g.y = totalheight - 40;
-  wi2.g.x = (width / 2)  - 40 ;
-  wi2.text = "Down";
-
-  wi3.g.width = 80;
-  wi3.g.height = 30;
-  wi3.g.y = totalheight - 40;
-  wi3.g.x = width - 80;
-  wi3.text = "Go";
-  
-  // Create the actual button
-  ghButton1 = gwinButtonCreate(NULL, &wi);
-  ghButton2 = gwinButtonCreate(NULL, &wi2);
-  ghButton3 = gwinButtonCreate(NULL, &wi3);
-    
   gdispCloseFont(font);
   gdispFlush();
   orchardGfxEnd();
@@ -148,6 +160,7 @@ static uint32_t launcher_init(OrchardAppContext *context) {
 static void launcher_start(OrchardAppContext *context) {
 
   struct launcher_list *list = (struct launcher_list *)context->priv;
+  GEvent* pe;  
   const OrchardApp *current;
 
   /* Rebuild the app list */
@@ -163,7 +176,44 @@ static void launcher_start(OrchardAppContext *context) {
   list->selected = 1;
 
   last_ui_time = chVTGetSystemTime();
+
   redraw_list(list);
+
+  // jna: this is really not the best place for this but I don't know where else it can go?
+  // maybe all of this should live in a standard ugfx handler that lives in tier1?
+  geventListenerInit(&gl);
+  gwinAttachListener(&gl);
+   
+  while(1) {
+    // Get an Event
+    pe = geventEventWait(&gl, TIME_INFINITE);
+
+    switch(pe->type) {
+    case GEVENT_GWIN_BUTTON:
+      if (((GEventGWinButton*)pe)->gwin == ghButton1) {
+	list->selected--;
+	if (list->selected >= list->total)
+	  list->selected = 0;
+      }
+      if (((GEventGWinButton*)pe)->gwin == ghButton2) {
+	list->selected++;
+	if (list->selected >= list->total)
+	  list->selected = list->total-1;
+      }
+
+      if (((GEventGWinButton*)pe)->gwin == ghButton3) {
+	orchardAppRun(list->items[list->selected].entry);
+	return;
+      }
+
+      redraw_list(list);
+      break;
+    default:
+      break;
+    }
+  }
+   
+  
 }
 
 void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
@@ -192,7 +242,7 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
   }
 
   if( ui_timeout <= 0 ) {
-    led_app = orchardAppByName("Blinkies!");
+    led_app = orchardAppByName("Badge");
     if( led_app != NULL )
       orchardAppRun(led_app);
   }
