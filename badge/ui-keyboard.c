@@ -14,6 +14,7 @@ static GListener	gl;
 static GHandle		ghConsole;
 static GHandle		ghKeyboard;
 static font_t		font;
+static uint8_t		pos;
 
 static uint8_t handle_input (char * name, uint8_t * pos, uint8_t max,
 	GEventKeyboard * pk, GConsoleObject * cons)
@@ -57,12 +58,8 @@ static uint8_t handle_input (char * name, uint8_t * pos, uint8_t max,
 static void keyboard_start (OrchardAppContext *context)
 {
 	GWidgetInit wi;
-	GEvent * pe;
- 	GEventKeyboard * pk;
-	GConsoleObject * cons;
-	char * name;
-	uint8_t max;
-	uint8_t pos;
+
+	(void)context;
 
 	gwinSetDefaultStyle (&WhiteWidgetStyle, FALSE);
 	font = gdispOpenFont ("Roman_SD12");
@@ -81,7 +78,8 @@ static void keyboard_start (OrchardAppContext *context)
 	gwinSetBgColor (ghConsole, Blue);
 	gwinShow (ghConsole);
 	gwinClear (ghConsole);
-	gwinPrintf (ghConsole, "Type in your name, press ENTER when done\n\n");
+	gwinPrintf (ghConsole, "%s\n\n",
+		context->instance->uicontext->itemlist[0]);
 
 	/* Draw the keyboard widget */
 	wi.g.show = TRUE;
@@ -101,33 +99,42 @@ static void keyboard_start (OrchardAppContext *context)
 	geventAttachSource (&gl, gwinKeyboardGetEventSource (ghKeyboard),
 		GLISTEN_KEYTRANSITIONS | GLISTEN_KEYUP);
 
-	cons = (GConsoleObject *)ghConsole;
-	pos = 0;
+	geventRegisterCallback (&gl, orchardAppUgfxCallback, &gl);
 
-	name = (char *)context->instance->uicontext->itemlist;
-	max = context->instance->uicontext->total;
+	pos = 0;
 
 	gwinPutChar (ghConsole, '_');
 
-	while (1) {
-		pe = geventEventWait (&gl, TIME_INFINITE);
-		if (pe->type == GEVENT_KEYBOARD)
-			pk = (GEventKeyboard *)pe;
-		else
-			continue;
-		if (handle_input (name, &pos, max, pk, cons) != 0)
-			break;
-	}
-
-	chEvtBroadcast(&ui_completed);
 	return;
 }
 
 static void keyboard_event(OrchardAppContext *context,
 	const OrchardAppEvent *event)
 {
+ 	GEventKeyboard * pk;
+	GConsoleObject * cons;
+	GEvent * pe;
+	char * name;
+	uint8_t max;
+
 	(void)context;
-	(void)event;
+
+	if (event->type != ugfxEvent)
+		return;
+
+	pe = event->ugfx.pEvent;
+
+	if (pe->type == GEVENT_KEYBOARD)
+		pk = (GEventKeyboard *)pe;
+	else
+		return;
+
+	name = (char *)context->instance->uicontext->itemlist[1];
+	max = context->instance->uicontext->total;
+	cons = (GConsoleObject *)ghConsole;
+
+	if (handle_input (name, &pos, max, pk, cons) != 0)
+		chEvtBroadcast(&ui_completed);
 
 	return;  
 }
@@ -136,6 +143,7 @@ static void keyboard_exit(OrchardAppContext *context)
 {
 	(void)context;
 
+	geventRegisterCallback (&gl, NULL, NULL);
 	gwinDestroy (ghConsole);
 	gwinDestroy (ghKeyboard);
 	gdispCloseFont (font);

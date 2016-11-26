@@ -1,6 +1,8 @@
 #ifndef __ORCHARD_EVENTS__
 #define __ORCHARD_EVENTS__
 
+#include "gfx.h"
+
 /* Orchard event wrappers.
    These simplify the ChibiOS eventing system.  To use, initialize the event
    table, hook an event, and then dispatch events.
@@ -84,6 +86,7 @@ typedef enum _OrchardAppEventType {
   uiEvent,
   radioEvent,
   touchEvent,
+  ugfxEvent
 } OrchardAppEventType;
 
 /* ------- */
@@ -121,6 +124,11 @@ typedef struct _OrchardAppKeyEvent {
   uint8_t   flags;
 } OrchardAppKeyEvent;
 
+typedef struct _OrchardAppUgfxEvent {
+  GListener * pListener;
+  GEvent * pEvent;
+} OrchardAppUgfxEvent;
+
 /* ------- */
 
 typedef enum _OrchardAppLifeEventFlag {
@@ -156,6 +164,7 @@ typedef struct _OrchardAppEvent {
     OrchardAppTimerEvent  timer;
     OrchardUiEvent        ui;
     OrchardTouchEvent     touch;
+    OrchardAppUgfxEvent   ugfx;
   } ;
 } OrchardAppEvent;
 

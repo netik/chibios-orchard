@@ -24,7 +24,11 @@ static void name_start(OrchardAppContext *context)
 	memset (name, 0, sizeof(name));
 
 	keyboardUi = getUiByName("keyboard");
-	keyboardUiContext.itemlist = (const char **)name;
+	keyboardUiContext.itemlist = (const char **)chHeapAlloc(NULL,
+            sizeof(char *) * 2);
+	keyboardUiContext.itemlist[0] =
+		"Type in your name, press ENTER when done";
+	keyboardUiContext.itemlist[1] = name;
 	keyboardUiContext.total = 30;
 	if (keyboardUi != NULL) {
     		context->instance->uicontext = &keyboardUiContext;
@@ -44,13 +48,17 @@ void name_event(OrchardAppContext *context, const OrchardAppEvent *event)
 
 	(void)context;
 
+	keyboardUi = getUiByName("keyboard");
+
+	if (event->type == ugfxEvent)
+		keyboardUi->event (context, event);
+
 	if (event->type == appEvent && event->app.event == appTerminate)
 		return;
 
 	if (event->type == uiEvent) {
 		if ((event->ui.code == uiComplete) &&
 		    (event->ui.flags == uiOK)) {
-			keyboardUi = getUiByName("keyboard");
 			keyboardUi->exit (context);
 			chprintf(stream, "NAME: %s\r\n", name);
 			f_unlink ("USER.TXT");
@@ -67,6 +75,9 @@ void name_event(OrchardAppContext *context, const OrchardAppEvent *event)
 static void name_exit(OrchardAppContext *context)
 {
 	(void)context;
+
+	chHeapFree (keyboardUiContext.itemlist);
+
 	return;
 }
 

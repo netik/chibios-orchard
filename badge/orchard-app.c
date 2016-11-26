@@ -70,6 +70,26 @@ static void run_launcher(void *arg) {
 }
 #endif
 
+void orchardAppUgfxCallback (void * arg, GEvent * pe)
+{
+  GListener * gl;
+  OrchardAppEvent evt;
+
+  (void)pe;
+
+  gl = (GListener *)arg;
+
+  evt.type = ugfxEvent;
+  evt.ugfx.pListener = gl;
+  evt.ugfx.pEvent = pe;
+
+  instance.app->event (instance.context, &evt);
+  geventEventComplete (gl);
+
+  return;
+}
+
+
 static void ui_complete_cleanup(eventid_t id) {
   (void)id;
   OrchardAppEvent evt;

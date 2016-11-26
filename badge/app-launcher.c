@@ -86,9 +86,7 @@ static void redraw_list(struct launcher_list *list) {
   uint8_t visible_apps;
   uint8_t app_modulus;
   uint8_t max_list;
-  int32_t ui_timeout;
 
-  ui_timeout = (BLINKY_DEFAULT_DELAY - (chVTGetSystemTime() - last_ui_time)) / 1000;
   chsnprintf(tmp, sizeof(tmp), "%d of %d apps", list->selected + 1, list->total);
 
   gdispFillArea(0, 0, gdispGetWidth(), gdispGetHeight() / 2, Black);
@@ -161,7 +159,6 @@ static uint32_t launcher_init(OrchardAppContext *context) {
 static void launcher_start(OrchardAppContext *context) {
 
   struct launcher_list *list = (struct launcher_list *)context->priv;
-  GEvent* pe;  
   const OrchardApp *current;
 
   /* Rebuild the app list */
@@ -184,69 +181,45 @@ static void launcher_start(OrchardAppContext *context) {
   // maybe all of this should live in a standard ugfx handler that lives in tier1?
   geventListenerInit(&gl);
   gwinAttachListener(&gl);
-   
-  while(1) {
-    // Get an Event
-    pe = geventEventWait(&gl, TIME_INFINITE);
+  geventRegisterCallback (&gl, orchardAppUgfxCallback, &gl);
 
-    switch(pe->type) {
-    case GEVENT_GWIN_BUTTON:
-      if (((GEventGWinButton*)pe)->gwin == ghButton1) {
-	list->selected--;
-	if (list->selected >= list->total)
-	  list->selected = 0;
-      }
-      if (((GEventGWinButton*)pe)->gwin == ghButton2) {
-	list->selected++;
-	if (list->selected >= list->total)
-	  list->selected = list->total-1;
-      }
-
-      if (((GEventGWinButton*)pe)->gwin == ghButton3) {
-	orchardAppRun(list->items[list->selected].entry);
-	return;
-      }
-
-      redraw_list(list);
-      break;
-    default:
-      break;
-    }
-  }
-   
-  
+  return;
 }
 
 void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
-  struct launcher_list *list = (struct launcher_list *)context->priv;
-  int32_t ui_timeout;
-  const OrchardApp *led_app;
+	GEvent * pe;
+	struct launcher_list *list = (struct launcher_list *)context->priv;
 
-  ui_timeout = (BLINKY_DEFAULT_DELAY - (chVTGetSystemTime() - last_ui_time)) / 1000;
+	if (event->type == ugfxEvent) {
+		pe = event->ugfx.pEvent;
 
-  if (event->type == keyEvent) {
-    last_ui_time = chVTGetSystemTime();
-    if ((event->key.flags == keyDown) && (event->key.code == keyCW)) {
-      list->selected++;
-      if (list->selected >= list->total)
-        list->selected = 0;
-    }
-    else if ((event->key.flags == keyDown) && (event->key.code == keyCCW)) {
-      list->selected--;
-      if (list->selected >= list->total)
-        list->selected = list->total - 1;
-    }
-    else if ((event->key.flags == keyDown) && (event->key.code == keySelect)) {
-      orchardAppRun(list->items[list->selected].entry);
-    }
-    redraw_list(list);
-  }
+		switch(pe->type) {
+		case GEVENT_GWIN_BUTTON:
+			if (((GEventGWinButton*)pe)->gwin == ghButton1) {
+				list->selected--;
+				if (list->selected >= list->total)
+					list->selected = 0;
+			}
 
-  if( ui_timeout <= 0 ) {
-    led_app = orchardAppByName("Badge");
-    if( led_app != NULL )
-      orchardAppRun(led_app);
-  }
+			if (((GEventGWinButton*)pe)->gwin == ghButton2) {
+				list->selected++;
+				if (list->selected >= list->total)
+				list->selected = list->total-1;
+			}
+
+			if (((GEventGWinButton*)pe)->gwin == ghButton3) {
+				orchardAppRun(list->items[list->selected].entry);
+				return;
+      			}
+
+      			redraw_list(list);
+			break;
+		default:
+			break;
+		}
+	}
+
+	return;
 }
 
 static void launcher_exit(OrchardAppContext *context) {
@@ -257,6 +230,7 @@ static void launcher_exit(OrchardAppContext *context) {
    gwinDestroy (ghButton2);
    gwinDestroy (ghButton3);
 
+  geventRegisterCallback (&gl, NULL, NULL);
 }
 
 /* the app labelled as app_1 is always the launcher. changing this

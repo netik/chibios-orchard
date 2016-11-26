@@ -25,15 +25,17 @@ extern event_source_t orchard_app_terminated;
 // Emitted to the system after a UI dialog is completed
 extern event_source_t ui_completed;
 
-void orchardAppInit(void);
-void orchardAppRestart(void);
-void orchardAppWatchdog(void);
-const OrchardApp *orchardAppByName(const char *name);
-void orchardAppRun(const OrchardApp *app);
-void orchardAppExit(void);
-void orchardAppTimer(const OrchardAppContext *context,
+extern void orchardAppInit(void);
+extern void orchardAppRestart(void);
+extern void orchardAppWatchdog(void);
+extern const OrchardApp *orchardAppByName(const char *name);
+extern void orchardAppRun(const OrchardApp *app);
+extern void orchardAppExit(void);
+extern void orchardAppTimer(const OrchardAppContext *context,
                      uint32_t usecs,
                      bool repeating);
+extern void orchardAppUgfxCallback (void * arg, GEvent * pe);
+
 void friendsSort(void);
 const char **friendsGet(void);
 void friendsLock(void);
