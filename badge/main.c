@@ -174,6 +174,11 @@ static void print_mcu_info(void) {
   chprintf(stream, "CPU clock: %dMHz bus clock: %dMHz\r\n",
      (KINETIS_SYSCLK_FREQUENCY / 1000000),
      (KINETIS_BUSCLK_FREQUENCY / 1000000));
+
+  chprintf(stream, "UDID 0x");
+  chprintf(stream, "%08x", SIM->UIDMH);
+  chprintf(stream, "%08x", SIM->UIDML);
+  chprintf(stream, "%08x\r\n",SIM->UIDL);
 }
 
 /*
@@ -221,7 +226,7 @@ int main(void)
   /* init the shell and show our banners */
   orchardShellInit();
   chprintf(stream, SHELL_BANNER);
-  chprintf(stream, "\r\n     ()==[:::::::::::::> build %s\r\n\r\n\r\n", gitversion);
+  chprintf(stream, "\r\n     ()==[:::::::::::::> build %s\r\n\r\n", gitversion);
   print_mcu_info();
 
   /* start the engines */

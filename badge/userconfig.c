@@ -26,6 +26,7 @@ static void init_config(struct userconfig *config) {
   config->lastcombat = 0; // how long since combat started
 
   // TODO: config->netid determination
+  // we need a unique identifier per device. How?
 
   /* stats, dunno if we will use */
   config->level = 1;
