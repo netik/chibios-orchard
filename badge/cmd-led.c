@@ -18,6 +18,8 @@
 #include "orchard.h"
 #include "orchard-shell.h"
 
+#include "userconfig.h"
+
 extern void (*current_fx)(void);
 
 extern struct FXENTRY fxlist[];
@@ -30,7 +32,8 @@ static void led_stop(BaseSequentialStream *chp) {
 static void led_run(BaseSequentialStream *chp, int argc, char *argv[]) {
 
   uint8_t pattern;
-  
+  userconfig *config = getConfig();
+    
   if (argc != 2) {
     chprintf(chp, "No pattern specified\r\n");
     return;
@@ -46,11 +49,15 @@ static void led_run(BaseSequentialStream *chp, int argc, char *argv[]) {
   ledResetPattern();
   
   chprintf(chp, "pattern changed to %s...\r\n", fxlist[pattern-1].name);
+
+  config->led_pattern = pattern-1;
+  configSave(config);
 }
 
 static void led_dim(BaseSequentialStream *chp, int argc, char *argv[]) {
 
   int8_t level;
+  userconfig *config = getConfig();
 
   if (argc != 2) {
     chprintf(chp, "level?\r\n");
@@ -60,12 +67,16 @@ static void led_dim(BaseSequentialStream *chp, int argc, char *argv[]) {
   level = strtoul(argv[1], NULL, 0);
 
   if ((level < 0) || (level > 7)) {
-    chprintf(chp, "Invaild level.\r\n");
+    chprintf(chp, "Invaild level. Must be 0 to 7.\r\n");
     return;
   }
 
   ledSetBrightness(level);
   chprintf(chp, "level now %d.\r\n", level);
+
+  config->led_shift = level;
+  configSave(config);
+
 }
 
 

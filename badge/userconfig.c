@@ -58,7 +58,8 @@ static void init_config(userconfig *config) {
   config->damage = 0;
   config->is_crit = 0;
 
-  config->led_shift = 0;
+  config->led_pattern = 9;
+  config->led_shift = 4;
 }
 
 void configStart(void) {
@@ -80,9 +81,11 @@ void configStart(void) {
   } else {
     chprintf(stream, "Config OK!\r\n");
   }
+
+  memcpy(&config_cache, config, sizeof(userconfig));
 }
 
-
-const struct userconfig *getConfig(void) {
+struct userconfig *getConfig(void) {
+  // returns volitale config
   return &config_cache;
 }

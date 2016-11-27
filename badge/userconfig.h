@@ -3,7 +3,7 @@
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0
-#define CONFIG_VERSION    1
+#define CONFIG_VERSION    2
 #define CONFIG_NAME_MAXLEN 16
 
 typedef enum _player_type {
@@ -42,8 +42,11 @@ typedef struct userconfig {
   uint8_t damage;
   uint8_t is_crit;
 
+  uint8_t led_pattern;
   uint8_t led_shift;
 } userconfig;
 
 extern void configStart(void);
-extern const userconfig *getConfig(void);
+extern void configSave(userconfig *);
+extern userconfig *getConfig(void);
+

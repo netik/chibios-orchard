@@ -8,6 +8,8 @@
 #include "stdlib.h"
 #include "orchard-ui.h"
 
+#include "userconfig.h"
+
 #include <string.h>
 #include <math.h>
 
@@ -423,10 +425,17 @@ static THD_FUNCTION(effects_thread, arg) {
 }
 
 void effectsStart(void) {
+  const userconfig *config;
+
+  // init running params
   fx_index = 0;
-  current_fx = &anim_triangle;
+
+  // set user config
+  config = getConfig();
+  current_fx = fxlist[config->led_pattern].function;
+  led_brightshift = config->led_shift; // start at 1/2 power
   (*current_fx)();
-  led_brightshift = 4; // start at 1/2 power
+
   ledExitRequest = 0;
   ledsOff = 0;
 
