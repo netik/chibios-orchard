@@ -27,7 +27,8 @@ void oledSDFail(void) {
 		      font, White, justifyCenter);
 
   gdispCloseFont (font);  
-  font = gdispOpenFont ("DejaVuSans24");
+
+  font = gdispOpenFont ("DejaVuSans32");
   
   gdispDrawStringBox (0, 0, gdispGetWidth(),
 		      gdispGetFontMetric(font, fontHeight),

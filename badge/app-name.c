@@ -6,9 +6,11 @@
 
 #include <string.h>
 
+#include "userconfig.h"
+
 struct OrchardUiContext keyboardUiContext;
 
-static char name[32];
+static char name[CONFIG_NAME_MAXLEN];
 
 static uint32_t name_init(OrchardAppContext *context)
 {
@@ -29,7 +31,7 @@ static void name_start(OrchardAppContext *context)
 	keyboardUiContext.itemlist[0] =
 		"Type in your name, press ENTER when done";
 	keyboardUiContext.itemlist[1] = name;
-	keyboardUiContext.total = 30;
+	keyboardUiContext.total = CONFIG_NAME_MAXLEN-2;
 	if (keyboardUi != NULL) {
     		context->instance->uicontext = &keyboardUiContext;
     		context->instance->ui = keyboardUi;
@@ -43,9 +45,8 @@ static void name_start(OrchardAppContext *context)
 void name_event(OrchardAppContext *context, const OrchardAppEvent *event)
 {
 	const OrchardUi * keyboardUi;
-	FIL fp;
-	UINT bw;
-
+	userconfig *config = getConfig();
+	  
 	(void)context;
 
 	keyboardUi = getUiByName("keyboard");
@@ -60,11 +61,10 @@ void name_event(OrchardAppContext *context, const OrchardAppEvent *event)
 		if ((event->ui.code == uiComplete) &&
 		    (event->ui.flags == uiOK)) {
 			keyboardUi->exit (context);
-			chprintf(stream, "NAME: %s\r\n", name);
-			f_unlink ("USER.TXT");
-			f_open (&fp, "USER.TXT", FA_WRITE | FA_CREATE_NEW);
-			f_write (&fp, name, strlen(name), &bw);
-			f_close (&fp);
+
+			strncpy(config->name, name, CONFIG_NAME_MAXLEN);
+			configSave(config);
+
 			orchardAppExit ();
 		}
 	}

@@ -14,7 +14,26 @@ Defcon 25 Unofficial Badge Team\r\n \
 \r\n\
 John Adams (hw,sw)\r\n \
 Bill Paul (hw,sw)\r\n \
-Egan Hirvelda (game mechanics)\r\n\r\n"
+Egan Hirvelda (game mechanics)\r\n \
+Matthew (graphics,art)\r\n\r\n"
 
-#define IMG_SPLASH "SPQR.RGB"
-#define IMG_SPLASH_DISPLAY_TIME 4000
+// defining this here because I don't want to keep looking it up
+// and I want to save calls to getwidth/height
+#define SCREEN_WIDTH  320
+#define SCREEN_HEIGHT 240
+
+// Remember! Filenames must be in old school dos format (8x3)
+#define IMG_SPLASH        "SPQR.RGB"
+#define IMG_GUARD         "GUARD_01.RGB"
+#define IMG_GUARD_IDLE_L  "GUARD_02.RGB"
+#define IMG_GUARD_IDLE_R  "grdr02.rgb"
+
+#define IMG_SPLASH_DISPLAY_TIME 1000
+
+#define POS_PLAYER1_X  0
+#define POS_PLAYER1_Y  40
+
+#define POS_PLAYER2_X  180
+#define POS_PLAYER2_Y  40
+
+#define POS_FLOOR_Y    210
