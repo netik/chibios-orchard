@@ -26,7 +26,7 @@ static uint8_t handle_input (char * name, uint8_t * pos, uint8_t max,
 
 	cons->cx = 0;
 	gdispGFillArea (ghConsole->display, cons->cx, cons->cy,
-	    gdispGetWidth(), gdispGetFontMetric (font, fontHeight), Blue);
+	    gdispGetWidth(), gdispGetFontMetric (font, fontHeight), Black);
 
 	switch (pk->c[0]) {
 	case GKEY_BACKSPACE:
@@ -61,7 +61,7 @@ static void keyboard_start (OrchardAppContext *context)
 
 	(void)context;
 
-	font = gdispOpenFont ("Roman_SD12");
+	font = gdispOpenFont ("UI2");
 	gwinSetDefaultFont (font);
 
 	/* Draw the console/text entry widget */
@@ -73,8 +73,8 @@ static void keyboard_start (OrchardAppContext *context)
 	wi.g.width = gdispGetWidth();
 	wi.g.height = gdispGetHeight() / 2;
 	ghConsole = gwinConsoleCreate (0, &wi.g);
-	gwinSetColor (ghConsole, White);
-	gwinSetBgColor (ghConsole, Blue);
+	gwinSetColor (ghConsole, Yellow);
+	gwinSetBgColor (ghConsole, Black);
 	gwinShow (ghConsole);
 	gwinClear (ghConsole);
 	gwinPrintf (ghConsole, "%s\n\n",
@@ -91,7 +91,6 @@ static void keyboard_start (OrchardAppContext *context)
 	gwinShow (ghKeyboard);
 
 	/* Wait for events */
-
 	geventListenerInit (&gl);
 	gwinAttachListener (&gl);
 

@@ -131,6 +131,7 @@ static void default_radio_handler(KW01_PKT * pkt)
 }
 
 static void print_mcu_info(void) {
+  userconfig *config = getConfig();
   uint32_t sdid = SIM->SDID;
   const char *famid[] = {
     "KL0%d (low-end)",
@@ -176,10 +177,10 @@ static void print_mcu_info(void) {
      (KINETIS_SYSCLK_FREQUENCY / 1000000),
      (KINETIS_BUSCLK_FREQUENCY / 1000000));
 
-  chprintf(stream, "UDID: 0x");
+  chprintf(stream, "HW UDID 0x");
   chprintf(stream, "%08x", SIM->UIDMH);
   chprintf(stream, "%08x", SIM->UIDML);
-  chprintf(stream, "%08x\r\n",SIM->UIDL);
+  chprintf(stream, "%08x / netid: %08x\r\n",SIM->UIDL, config->netid);
 }
 
 /*
@@ -226,9 +227,9 @@ int main(void)
   orchardShellInit();
   chprintf(stream, SHELL_BANNER);
   chprintf(stream, "\r\n     ()==[:::::::::::::> build %s\r\n\r\n", gitversion);
-  print_mcu_info();
 
   configStart();
+  print_mcu_info();
 
   ledStart(16, led_fb);
   effectsStart();

@@ -40,29 +40,31 @@ static void draw_launcher_buttons(void) {
   gwinWidgetClearInit(&wi);
   gwinWidgetClearInit(&wi2);
   gwinWidgetClearInit(&wi3);
+  gwinSetDefaultStyle(&BlackWidgetStyle, FALSE);
   
   wi.g.show = TRUE;
   wi2.g.show = TRUE;
   wi3.g.show = TRUE;
 
   // Apply the button parameters
+  gwinSetDefaultFont(gdispOpenFont("augustus36"));
   wi.g.width = 80;
-  wi.g.height = 30;
-  wi.g.y = totalheight - 40;
+  wi.g.height = 50;
+  wi.g.y = totalheight - 50;
   wi.g.x = 2;
   wi.text = "";
   wi.customDraw = gwinButtonDraw_ArrowUp;
   
   wi2.g.width = 80;
-  wi2.g.height = 30;
-  wi2.g.y = totalheight - 40;
+  wi2.g.height = 50;
+  wi2.g.y = totalheight - 50;
   wi2.g.x = (width / 2)  - 40 ;
   wi2.text = "";
   wi2.customDraw = gwinButtonDraw_ArrowDown;
 
   wi3.g.width = 80;
-  wi3.g.height = 30;
-  wi3.g.y = totalheight - 40;
+  wi3.g.height = 50;
+  wi3.g.y = totalheight - 50;
   wi3.g.x = width - 80;
   wi3.text = "Go";
   
