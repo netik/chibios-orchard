@@ -1,32 +1,46 @@
 #include "ch.h"
 #include "hal.h"
 #include "orchard.h"
+#include "shell.h"
+#include "chprintf.h"
 
 #include "flash.h"
 #include "userconfig.h"
-
+#include "orchard-shell.h"
 #include <string.h>
 
 static userconfig config_cache;
 
-void configSave(void) {
+void configSave(userconfig *newConfig) {
+  int8_t ret;
+  uint8_t *config;
+  
+  config = (uint8_t *)CONFIG_FLASH_ADDR;
+  //  memcpy(config, newConfig, sizeof(userconfig) );
+
+  flashErase(CONFIG_FLASH_SECTOR_BASE,1);
+  ret = flashProgram( (uint8_t *) newConfig, config, sizeof(userconfig) );
+
+  if (ret == F_ERR_NOTBLANK) {
+    chprintf(stream, "ERROR (%d): Unable to save config to flash.\r\n", ret);
+  } else {
+    chprintf(stream, "Config saved.\r\n");
+  }
 }
 
-static void init_config(struct userconfig *config) {
+static void init_config(userconfig *config) {
 
   config->signature = CONFIG_SIGNATURE;
   config->version = CONFIG_VERSION;
 
   memset(config->name, 0, CONFIG_NAME_MAXLEN);
+
   /* reset here */
   config->won = 0;
   config->lost = 0;
   config->p_type = p_pleeb;
   config->in_combat = 0;
   config->lastcombat = 0; // how long since combat started
-
-  // TODO: config->netid determination
-  // we need a unique identifier per device. How?
 
   /* stats, dunno if we will use */
   config->level = 1;
@@ -48,22 +62,26 @@ static void init_config(struct userconfig *config) {
 }
 
 void configStart(void) {
-  const struct userconfig *config;
+  const userconfig *config;
 
-  config = (const struct userconfig *) CONFIG_BLOCK;
+  config = (const userconfig *) CONFIG_FLASH_ADDR;
 
   if ( config->signature != CONFIG_SIGNATURE ) {
+    chprintf(stream, "Config not found, Initializing!\r\n");
     init_config(&config_cache);
     config = &config_cache;
+    configSave(&config_cache);
     // write to flash
   } else if ( config->version != CONFIG_VERSION ) {
+    chprintf(stream, "Config found, but wrong version.\r\n");
     init_config(&config_cache);
     config = &config_cache;
-    // reset and write to flash
+    configSave(&config_cache);
+  } else {
+    chprintf(stream, "Config OK!\r\n");
   }
-
-  memcpy( &config_cache, config, sizeof(userconfig) ); // copy configuration to volatile cache
 }
+
 
 const struct userconfig *getConfig(void) {
   return &config_cache;

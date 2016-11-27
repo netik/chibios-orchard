@@ -6,8 +6,6 @@
 #include "orchard.h"
 #include "orchard-app.h"
 
-#include "storage.h"
-
 extern const OrchardApp *orchard_app_list;
 
 struct launcher_list_item {
@@ -34,7 +32,7 @@ static void draw_launcher_buttons(void) {
   GWidgetInit  wi, wi2, wi3;
   coord_t width;
   coord_t totalheight;
-
+  
   width = gdispGetWidth();
   totalheight = gdispGetHeight();
   
@@ -52,13 +50,15 @@ static void draw_launcher_buttons(void) {
   wi.g.height = 30;
   wi.g.y = totalheight - 40;
   wi.g.x = 2;
-  wi.text = "Up";
+  wi.text = "";
+  wi.customDraw = gwinButtonDraw_ArrowUp;
   
   wi2.g.width = 80;
   wi2.g.height = 30;
   wi2.g.y = totalheight - 40;
   wi2.g.x = (width / 2)  - 40 ;
-  wi2.text = "Down";
+  wi2.text = "";
+  wi2.customDraw = gwinButtonDraw_ArrowDown;
 
   wi3.g.width = 80;
   wi3.g.height = 30;

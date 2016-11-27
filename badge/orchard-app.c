@@ -11,7 +11,6 @@
 #include "orchard-ui.h"
 #include "paging.h"
 #include "led.h"
-#include "storage.h"
 #include "radio.h"
 
 #include "shell.h" // for friend testing function

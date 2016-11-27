@@ -1,9 +1,10 @@
+#define CONFIG_FLASH_ADDR 0x1e000
+#define CONFIG_FLASH_SECTOR_BASE 120
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
-#define CONFIG_BLOCK      0x1e000
-#define CONFIG_OFFSET     0
-#define CONFIG_VERSION    0
 
-#define CONFIG_NAME_MAXLEN   16
+#define CONFIG_OFFSET     0
+#define CONFIG_VERSION    1
+#define CONFIG_NAME_MAXLEN 16
 
 typedef enum _player_type {
   p_pleeb,
@@ -21,10 +22,11 @@ typedef struct userconfig {
   
   uint8_t in_combat; 
   uint16_t lastcombat; // how long since combat started
-  
+
+  /* unique network ID determined from use of lower 64 bits of SIM-UID */
   uint16_t netid;
 
-  /* stats, dunno if we will use */
+  /* todo: determine which stats are relevant to the game (egan) */
   uint16_t hp;
   uint16_t xp;
   uint16_t gold;
@@ -43,9 +45,5 @@ typedef struct userconfig {
   uint8_t led_shift;
 } userconfig;
 
-void configStart(void);
-
-const userconfig *getConfig(void);
-
-void configFlush(void); // call on power-down to flush config state
-void configLazyFlush(void);  // call periodically to sync state, but only when dirty
+extern void configStart(void);
+extern const userconfig *getConfig(void);

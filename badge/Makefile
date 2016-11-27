@@ -115,6 +115,7 @@ LDSCRIPT= $(STARTUPLD)/KL16Z128.ld
 #       app-launcher.c \
 
 CSRC = main.c \
+       userconfig.c \
        orchard-shell.c \
        orchard-app.c \
        orchard-ui.c \

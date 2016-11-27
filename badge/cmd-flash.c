@@ -97,7 +97,7 @@ void cmd_flashtest(BaseSequentialStream *chp, int argc, char *argv[]) {
   
   chprintf(chp, "Flash test routine.\n\r");
   for( i = 0; i < TESTSIZE; i++ ) {
-    testdat[i] = (uint8_t) 0x12 /*rand()*/;
+    testdat[i] = (uint8_t) 0x66 /*rand()*/;
   }
 
   chprintf(chp, "Before programming: \n\r" );
@@ -111,4 +111,19 @@ void cmd_flashtest(BaseSequentialStream *chp, int argc, char *argv[]) {
   chprintf(chp, "Reference data: \n\r" );
   dump( testdat, TESTSIZE );
 }
+
 orchard_command("flashtest", cmd_flashtest);
+
+void cmd_flashdump(BaseSequentialStream *chp, int argc, char *argv[]) {
+  uint8_t *dest;
+  
+  if (argc != 1) {
+    chprintf(chp, "Usage: flashdump <hex address>\r\n");
+    return;
+  }
+  dest = (uint8_t *) strtoul(argv[0], NULL, 16);
+  
+  chprintf(chp, "Currently: \n\r" );
+  dump( dest, 48 );
+}
+orchard_command("flashdump", cmd_flashdump);
