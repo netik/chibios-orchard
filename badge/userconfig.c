@@ -29,37 +29,46 @@ void configSave(userconfig *newConfig) {
 }
 
 static void init_config(userconfig *config) {
-
+  /* please keep these in the same order as userconfig.h
+   * so it's easier to maintain.  */
   config->signature = CONFIG_SIGNATURE;
   config->version = CONFIG_VERSION;
 
+  /* this is a very, very naive approach to uniqueness, but it might work. */
+  /* an alternate approach would be to store all 80 bits, but then our radio */
+  /* packets would be huge. */
+  config->netid = SIM->UIDML ^ SIM->UIDL;
+  
+  config->led_pattern = 8;
+  config->led_shift = 4;
+  config->sound_enabled = 1;
+
+  config->p_type = p_pleeb;  
   memset(config->name, 0, CONFIG_NAME_MAXLEN);
 
   /* reset here */
   config->won = 0;
   config->lost = 0;
-  config->p_type = p_pleeb;
-  config->in_combat = 0;
-  config->lastcombat = 0; // how long since combat started
 
+  config->lastcombat = 0; // how long since combat started
+  config->in_combat = 0;
+  
   /* stats, dunno if we will use */
-  config->level = 1;
   config->hp = 1000;
   config->xp = 0;
   config->gold = 500;
+  config->level = 1;
   
   config->str = 0;
   config->ac = 0;
   config->dex = 0;
+
   config->won = 0;
   config->lost = 0;
   
   /* these fields are only used during attack-response */
   config->damage = 0;
   config->is_crit = 0;
-
-  config->led_pattern = 9;
-  config->led_shift = 4;
 }
 
 void configStart(void) {

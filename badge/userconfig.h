@@ -3,7 +3,7 @@
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0
-#define CONFIG_VERSION    2
+#define CONFIG_VERSION    4
 #define CONFIG_NAME_MAXLEN 16
 
 typedef enum _player_type {
@@ -13,18 +13,27 @@ typedef enum _player_type {
   p_casear
 } player_type;
 
+/* if you change the userconfig struct, update CONFIG_VERSION
+ * above
+ */
 typedef struct userconfig {
   uint32_t  signature;
   uint32_t  version;
 
+  /* unique network ID determined from use of lower 64 bits of SIM-UID */
+  uint32_t netid;
+
+  /* hw config */
+  uint8_t led_pattern;
+  uint8_t led_shift;
+  uint8_t sound_enabled;
+  
+  /* game */
   player_type p_type;
   char name[CONFIG_NAME_MAXLEN];
   
-  uint8_t in_combat; 
   uint16_t lastcombat; // how long since combat started
-
-  /* unique network ID determined from use of lower 64 bits of SIM-UID */
-  uint16_t netid;
+  uint8_t in_combat; 
 
   /* todo: determine which stats are relevant to the game (egan) */
   uint16_t hp;
@@ -35,15 +44,14 @@ typedef struct userconfig {
   uint8_t str;
   uint8_t ac;
   uint8_t dex;
+
+  /* long-term counters */
   uint16_t won;
   uint16_t lost;
   
   /* these fields are only used during attack-response */
   uint8_t damage;
   uint8_t is_crit;
-
-  uint8_t led_pattern;
-  uint8_t led_shift;
 } userconfig;
 
 extern void configStart(void);

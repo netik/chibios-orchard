@@ -13,7 +13,7 @@
 void oledSDFail(void) {
   font_t font;
 
-  font = gdispOpenFont ("UI1");
+  font = gdispOpenFont ("UI2");
   gwinSetDefaultFont (font);
   
   gdispDrawStringBox (0, 210, gdispGetWidth(),
@@ -52,7 +52,7 @@ void oledOrchardBanner(void)
 	  gdispImageClose (&myImage);
 	}
 
-	font = gdispOpenFont ("UI1");
+        font = gdispOpenFont ("UI2");
 	gwinSetDefaultFont (font);
 	
 	gdispDrawStringBox (0, 210, gdispGetWidth(),

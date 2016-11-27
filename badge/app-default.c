@@ -61,8 +61,8 @@ static void redraw_badge(void) {
   putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER1_Y);
   gdispDrawThickLine(0, POS_FLOOR_Y, 320, POS_FLOOR_Y, White, 2, FALSE);
 
-  fontLG = gdispOpenFont ("DejaVuSans32");
-  fontSM = gdispOpenFont ("DejaVuSans20");
+  fontLG = gdispOpenFont ("augustus36");
+  fontSM = gdispOpenFont ("DejaVuSans32");
   coord_t leftpos = 165;
 
   gdispDrawStringBox (leftpos,
