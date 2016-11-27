@@ -173,11 +173,11 @@ static void print_mcu_info(void) {
                    (sdid >> 12) & 15,
                    (sdid >> 7) & 31,
                    pins[(sdid >> 0) & 15]);
-  chprintf(stream, "CPU clock: %dMHz Bus clock: %dMHz   ",
+  chprintf(stream, "CPU clock: %dMHz Bus clock: %dMHz\r\n",
      (KINETIS_SYSCLK_FREQUENCY / 1000000),
      (KINETIS_BUSCLK_FREQUENCY / 1000000));
 
-  chprintf(stream, "HW UDID 0x");
+  chprintf(stream, "HW UDID: 0x");
   chprintf(stream, "%08x", SIM->UIDMH);
   chprintf(stream, "%08x", SIM->UIDML);
   chprintf(stream, "%08x / netid: %08x\r\n",SIM->UIDL, config->netid);
