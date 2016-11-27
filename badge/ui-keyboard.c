@@ -61,7 +61,6 @@ static void keyboard_start (OrchardAppContext *context)
 
 	(void)context;
 
-	gwinSetDefaultStyle (&WhiteWidgetStyle, FALSE);
 	font = gdispOpenFont ("Roman_SD12");
 	gwinSetDefaultFont (font);
 
@@ -82,14 +81,14 @@ static void keyboard_start (OrchardAppContext *context)
 		context->instance->uicontext->itemlist[0]);
 
 	/* Draw the keyboard widget */
-	wi.g.show = TRUE;
+	wi.g.show = FALSE;
 	wi.g.x = 0;
 	wi.g.y = gdispGetHeight() / 2;
 	wi.g.width = gdispGetWidth();
 	wi.g.height = gdispGetHeight() / 2;
-	gwinSetColor (ghConsole, White);
-	gwinSetBgColor (ghConsole, Blue);
 	ghKeyboard = gwinKeyboardCreate (0, &wi);
+	gwinSetStyle (ghKeyboard, &WhiteWidgetStyle);
+	gwinShow (ghKeyboard);
 
 	/* Wait for events */
 
@@ -144,6 +143,7 @@ static void keyboard_exit(OrchardAppContext *context)
 	(void)context;
 
 	geventRegisterCallback (&gl, NULL, NULL);
+	geventDetachSource (&gl, NULL);
 	gwinDestroy (ghConsole);
 	gwinDestroy (ghKeyboard);
 	gdispCloseFont (font);

@@ -119,6 +119,7 @@ void default_event(OrchardAppContext *context, const OrchardAppEvent *event) {
 static void default_exit(OrchardAppContext *context) {
   (void)context;
   gwinDestroy (ghExitButton);
+  geventDetachSource (&glBadge, NULL);
   geventRegisterCallback (&glBadge, NULL, NULL);
   return;
 }

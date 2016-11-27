@@ -229,11 +229,12 @@ static void launcher_exit(OrchardAppContext *context) {
 
   (void)context;
 
-   gwinDestroy (ghButton1);
-   gwinDestroy (ghButton2);
-   gwinDestroy (ghButton3);
+  gwinDestroy (ghButton1);
+  gwinDestroy (ghButton2);
+  gwinDestroy (ghButton3);
 
   geventRegisterCallback (&gl, NULL, NULL);
+  geventDetachSource (&gl, NULL);
 }
 
 /* the app labelled as app_1 is always the launcher. changing this
