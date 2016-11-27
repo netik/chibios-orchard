@@ -12,6 +12,9 @@
 
 #include "userconfig.h"
 
+static GHandle ghExitButton;
+static GListener glBadge;
+
 static int putImageFile(char *name, int16_t x, int16_t y);
 
 static int putImageFile(char *name, int16_t x, int16_t y) {
@@ -31,6 +34,21 @@ static int putImageFile(char *name, int16_t x, int16_t y) {
     return(0);
   }    
 
+}
+static void draw_badge_buttons(void) {
+  GWidgetInit wi;
+  coord_t totalheight = gdispGetHeight();
+  
+  // Apply some default values for GWIN
+  gwinWidgetClearInit(&wi);
+  wi.g.show = TRUE;
+  wi.g.width = 80;
+  wi.g.height = 30;
+  wi.g.y = totalheight - 40;
+  wi.g.x = 2;
+  wi.text = "<--";
+
+  ghExitButton = gwinButtonCreate(NULL, &wi);
 }
 
 static void redraw_badge(void) {
@@ -54,11 +72,15 @@ static void redraw_badge(void) {
 		      config->name,
 		      fontLG, Yellow, justifyRight);
 
+  char tmp[20];
+  chsnprintf(tmp, sizeof(tmp), "LEVEL %d", config->level);
+
+  /* Level */
   gdispDrawStringBox (leftpos,
 		      50,
 		      gdispGetWidth() - leftpos,
 		      gdispGetFontMetric(fontSM, fontHeight),
-		      "LEVEL 10",
+		      tmp,
 		      fontSM, Yellow, justifyRight);
 }
 
@@ -67,16 +89,37 @@ static uint32_t default_init(OrchardAppContext *context) {
   return 0;
 }
 
-static uint32_t default_start(OrchardAppContext *context) {
+static void default_start(OrchardAppContext *context) {
+  (void)context;
   redraw_badge();
-  return 0;
+  draw_badge_buttons();
+  
+  geventListenerInit(&glBadge);
+  gwinAttachListener(&glBadge);
+  geventRegisterCallback (&glBadge, orchardAppUgfxCallback, &glBadge);
 }
 
 void default_event(OrchardAppContext *context, const OrchardAppEvent *event) {
+  (void)context;
+  GEvent * pe;
+  if (event->type == ugfxEvent) {
+    pe = event->ugfx.pEvent;
 
+    switch(pe->type) {
+    case GEVENT_GWIN_BUTTON:
+      if (((GEventGWinButton*)pe)->gwin == ghExitButton) {
+	orchardAppExit();
+	return;
+      }
+      break;
+    }
+  }
 }
 
 static void default_exit(OrchardAppContext *context) {
+  (void)context;
+  gwinDestroy (ghExitButton);
+  geventRegisterCallback (&glBadge, NULL, NULL);
   return;
 }
 

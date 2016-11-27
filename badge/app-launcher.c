@@ -181,8 +181,7 @@ static void launcher_start(OrchardAppContext *context) {
 
   redraw_list(list);
 
-  // jna: this is really not the best place for this but I don't know where else it can go?
-  // maybe all of this should live in a standard ugfx handler that lives in tier1?
+  // set up our local listener
   geventListenerInit(&gl);
   gwinAttachListener(&gl);
   geventRegisterCallback (&gl, orchardAppUgfxCallback, &gl);
