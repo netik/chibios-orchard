@@ -2,6 +2,7 @@
 #define __ORCHARD_EVENTS__
 
 #include "gfx.h"
+#include "radio.h"
 
 /* Orchard event wrappers.
    These simplify the ChibiOS eventing system.  To use, initialize the event
@@ -129,6 +130,10 @@ typedef struct _OrchardAppUgfxEvent {
   GEvent * pEvent;
 } OrchardAppUgfxEvent;
 
+typedef struct _OrchardAppRadioEvent {
+   KW01_PKT * pPkt;
+} OrchardAppRadioEvent;
+
 /* ------- */
 
 typedef enum _OrchardAppLifeEventFlag {
@@ -165,6 +170,7 @@ typedef struct _OrchardAppEvent {
     OrchardUiEvent        ui;
     OrchardTouchEvent     touch;
     OrchardAppUgfxEvent   ugfx;
+    OrchardAppRadioEvent  radio;
   } ;
 } OrchardAppEvent;
 
