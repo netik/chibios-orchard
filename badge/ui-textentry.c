@@ -26,7 +26,7 @@ static void textentry_redraw(void) {
   str[0] = '\0'; str[1] = '\0';
   
   orchardGfxStart();
-  font = gdispOpenFont(FONT_BITMAP);
+  font = gdispOpenFont(FONT_TEXTENTRY);
   width = gdispGetWidth();
   height = gdispGetHeight();
   

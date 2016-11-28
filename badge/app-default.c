@@ -63,7 +63,7 @@ static void redraw_badge(void) {
   gdispDrawThickLine(0, POS_FLOOR_Y, 320, POS_FLOOR_Y, White, 2, FALSE);
 
   fontLG = gdispOpenFont (FONT_LG);
-  fontSM = gdispOpenFont (FONT_BITMAP);
+  fontSM = gdispOpenFont (FONT_SM);
 
   gdispDrawStringBox (0,0,
 		      gdispGetWidth(),

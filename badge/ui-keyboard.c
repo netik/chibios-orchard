@@ -63,7 +63,7 @@ static void keyboard_start (OrchardAppContext *context)
 
 	(void)context;
 
-	font = gdispOpenFont (FONT_BITMAP);
+	font = gdispOpenFont (FONT_KEYBOARD);
 	gwinSetDefaultFont (font);
 
 	/* Draw the console/text entry widget */

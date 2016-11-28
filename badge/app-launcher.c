@@ -7,6 +7,8 @@
 #include "orchard-app.h"
 #include "fontlist.h"
 
+#include "userconfig.h"
+
 extern const OrchardApp *orchard_app_list;
 
 struct launcher_list_item {
@@ -90,10 +92,12 @@ static void redraw_list(struct launcher_list *list) {
   uint8_t app_modulus;
   uint8_t max_list;
 
+  userconfig *config = getConfig();
+
   chsnprintf(tmp, sizeof(tmp), "%d of %d apps", list->selected + 1, list->total);
   //gdispFillArea(0, 0, gdispGetWidth(), gdispGetHeight() / 2, Black);
   // draw title bar
-  font = gdispOpenFont(FONT_BITMAP);
+  font = gdispOpenFont(FONT_SM);
   width = gdispGetWidth();
   height = gdispGetFontMetric(font, fontHeight);
   header_height = height;
@@ -104,7 +108,7 @@ static void redraw_list(struct launcher_list *list) {
                      tmp, font, Black, justifyLeft);
   //  chsnprintf(tmp, sizeof(tmp), "%d %d%%", ui_timeout, ggStateofCharge());
   gdispDrawStringBox(0, 0, width, height,
-                     tmp, font, Black, justifyRight);
+                     config->name, font, Black, justifyRight);
 
   // draw app list
   width = gdispGetWidth();

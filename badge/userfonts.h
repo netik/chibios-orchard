@@ -4,6 +4,6 @@
  * 
  * Be sure to update "fontlist.h" with the short names to keep us sane.
  */
-#include "font-augustus18.h"
-#include "font-augustus36.h"
 #include "font-slkscr14.h"
+#include "font-jupiterpro16.h"
+#include "font-jupiterpro36.h"
