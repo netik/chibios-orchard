@@ -39,6 +39,13 @@
 #define KW01_PKT_HDRLEN 3
 #define KW01_PKT_HANDLERS_MAX 4
 
+/* Radio message types */
+
+#define RADIO_PROTOCOL_CHAT	1	/* Send message to 1 badge */
+#define RADIO_PROTOCOL_SHOUT	2	/* Broadcast message to all badges */
+#define RADIO_PROTOCOL_PING	3	/* Solicit ping ID from badges */
+#define RADIO_PROTOCOL_BATTLE	4	/* Fight! */
+
 /*
  * Only the first byte of the packet header definition is defined
  * by the hardware. The length field is not actually transmitted but must

@@ -35,6 +35,7 @@ extern void orchardAppTimer(const OrchardAppContext *context,
                      uint32_t usecs,
                      bool repeating);
 extern void orchardAppUgfxCallback (void * arg, GEvent * pe);
+extern void orchardAppRadioCallback (KW01_PKT * pkt);
 
 void friendsSort(void);
 const char **friendsGet(void);

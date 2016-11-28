@@ -88,13 +88,25 @@ void orchardAppUgfxCallback (void * arg, GEvent * pe)
   return;
 }
 
+void orchardAppRadioCallback (KW01_PKT * pkt)
+{
+  OrchardAppEvent evt;
+  evt.type = radioEvent;
+  evt.radio.pPkt = pkt;
+
+  instance.app->event (instance.context, &evt);
+
+  return;
+}
 
 static void ui_complete_cleanup(eventid_t id) {
   (void)id;
   OrchardAppEvent evt;
-  
+ 
+#ifdef notdef 
   // unhook the UI patch so key & dial events pass into the app
   instance.ui = NULL;
+#endif
 
   evt.type = uiEvent;
   evt.ui.code = uiComplete;
@@ -268,6 +280,7 @@ static THD_FUNCTION(orchard_app_thread, arg) {
   evtTableUnhook(orchard_app_events, timer_expired, timer_event);
   evtTableUnhook(orchard_app_events, orchard_app_terminate, terminate);
   evtTableUnhook(orchard_app_events, ui_completed, ui_complete_cleanup);
+
   /* Atomically broadcasting the event source and terminating the thread,
      there is not a chSysUnlock() because the thread terminates upon return.*/
   chSysLock();

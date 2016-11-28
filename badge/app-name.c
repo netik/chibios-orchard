@@ -1,14 +1,10 @@
 #include "orchard-app.h"
 #include "orchard-ui.h"
-
-#include "ff.h"
-#include "ffconf.h"
+#include "userconfig.h"
 
 #include <string.h>
 
-#include "userconfig.h"
-
-struct OrchardUiContext keyboardUiContext;
+static struct OrchardUiContext keyboardUiContext;
 
 static char name[CONFIG_NAME_MAXLEN];
 
@@ -49,7 +45,7 @@ void name_event(OrchardAppContext *context, const OrchardAppEvent *event)
 	  
 	(void)context;
 
-	keyboardUi = getUiByName("keyboard");
+	keyboardUi = context->instance->ui;
 
 	if (event->type == ugfxEvent)
 		keyboardUi->event (context, event);

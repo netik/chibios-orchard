@@ -129,6 +129,8 @@ CSRC = main.c \
        cmd-reset.c \
        app-launcher.c \
        app-name.c \
+       app-notify.c \
+       app-shout.c \
        app-default.c \
        $(wildcard ui-*.c) \
        sound.c \

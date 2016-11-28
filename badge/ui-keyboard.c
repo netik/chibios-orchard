@@ -22,11 +22,13 @@ static uint8_t handle_input (char * name, uint8_t * pos, uint8_t max,
 	GEventKeyboard * pk, GConsoleObject * cons)
 {
 	uint8_t r;
+	uint8_t y;
 
 	if (pk->bytecount == 0)
 		return (0);
 
 	cons->cx = 0;
+	y = cons->cy;
 	gdispGFillArea (ghConsole->display, cons->cx, cons->cy,
 	    gdispGetWidth(), gdispGetFontMetric (font, fontHeight), Black);
 
@@ -35,6 +37,7 @@ static uint8_t handle_input (char * name, uint8_t * pos, uint8_t max,
 		(*pos)--;
 		name[*pos] = 0x0;
 		gwinPrintf (ghConsole, "%s_", name);
+		cons->cy = y;
 		r = 0;
 		break;
 	case GKEY_ENTER:
@@ -50,6 +53,7 @@ static uint8_t handle_input (char * name, uint8_t * pos, uint8_t max,
 			(*pos)++;
 		}
 		gwinPrintf (ghConsole, "%s_", name);
+		cons->cy = y;
 		r = 0;
 		break;
 	}
