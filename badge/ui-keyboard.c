@@ -5,6 +5,8 @@
 
 #include <string.h>
 
+#include "fontlist.h"
+
 /*
  * We need two widgets: a console and the keyboard.
  * We also need one listener object for detecting keypresses
@@ -61,7 +63,7 @@ static void keyboard_start (OrchardAppContext *context)
 
 	(void)context;
 
-	font = gdispOpenFont ("UI2");
+	font = gdispOpenFont (FONT_BITMAP);
 	gwinSetDefaultFont (font);
 
 	/* Draw the console/text entry widget */

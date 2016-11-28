@@ -9,6 +9,7 @@
 #include "radio.h"
 #include "orchard-ui.h"
 #include "images.h"
+#include "fontlist.h"
 
 #include "userconfig.h"
 
@@ -61,13 +62,11 @@ static void redraw_badge(void) {
   putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER1_Y);
   gdispDrawThickLine(0, POS_FLOOR_Y, 320, POS_FLOOR_Y, White, 2, FALSE);
 
-  fontLG = gdispOpenFont ("augustus36");
-  fontSM = gdispOpenFont ("DejaVuSans32");
-  coord_t leftpos = 165;
+  fontLG = gdispOpenFont (FONT_LG);
+  fontSM = gdispOpenFont (FONT_BITMAP);
 
-  gdispDrawStringBox (leftpos,
-		      gdispGetHeight() / 2 - (gdispGetFontMetric(fontLG, fontHeight) / 2),
-		      gdispGetWidth() - leftpos,
+  gdispDrawStringBox (0,0,
+		      gdispGetWidth(),
 		      gdispGetFontMetric(fontLG, fontHeight),
 		      config->name,
 		      fontLG, Yellow, justifyRight);
@@ -76,9 +75,9 @@ static void redraw_badge(void) {
   chsnprintf(tmp, sizeof(tmp), "LEVEL %d", config->level);
 
   /* Level */
-  gdispDrawStringBox (leftpos,
-		      50,
-		      gdispGetWidth() - leftpos,
+  gdispDrawStringBox (0,
+		      gdispGetFontMetric(fontLG, fontHeight) + 2,
+		      gdispGetWidth(),
 		      gdispGetFontMetric(fontSM, fontHeight),
 		      tmp,
 		      fontSM, Yellow, justifyRight);

@@ -10,10 +10,12 @@
 #include "gfx.h"
 #include "images.h"
 #include "buildtime.h"
+#include "fontlist.h"
+
 void oledSDFail(void) {
   font_t font;
 
-  font = gdispOpenFont ("UI2");
+  font = gdispOpenFont (FONT_SYS);
   gwinSetDefaultFont (font);
   
   gdispDrawStringBox (0, 210, gdispGetWidth(),
@@ -28,7 +30,7 @@ void oledSDFail(void) {
 
   gdispCloseFont (font);  
 
-  font = gdispOpenFont ("DejaVuSans32");
+  font = gdispOpenFont (FONT_LG_SANS);
   
   gdispDrawStringBox (0, 0, gdispGetWidth(),
 		      gdispGetFontMetric(font, fontHeight),
@@ -52,7 +54,7 @@ void oledOrchardBanner(void)
 	  gdispImageClose (&myImage);
 	}
 
-        font = gdispOpenFont ("UI2");
+        font = gdispOpenFont (FONT_SYS);
 	gwinSetDefaultFont (font);
 	
 	gdispDrawStringBox (0, 210, gdispGetWidth(),

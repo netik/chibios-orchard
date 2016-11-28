@@ -5,6 +5,7 @@
 #include "chprintf.h"
 #include "orchard.h"
 #include "orchard-app.h"
+#include "fontlist.h"
 
 extern const OrchardApp *orchard_app_list;
 
@@ -47,7 +48,7 @@ static void draw_launcher_buttons(void) {
   wi3.g.show = TRUE;
 
   // Apply the button parameters
-  gwinSetDefaultFont(gdispOpenFont("augustus36"));
+  gwinSetDefaultFont(gdispOpenFont(FONT_LG));
   wi.g.width = 80;
   wi.g.height = 50;
   wi.g.y = totalheight - 50;
@@ -92,7 +93,7 @@ static void redraw_list(struct launcher_list *list) {
   chsnprintf(tmp, sizeof(tmp), "%d of %d apps", list->selected + 1, list->total);
   //gdispFillArea(0, 0, gdispGetWidth(), gdispGetHeight() / 2, Black);
   // draw title bar
-  font = gdispOpenFont("UI2");
+  font = gdispOpenFont(FONT_BITMAP);
   width = gdispGetWidth();
   height = gdispGetFontMetric(font, fontHeight);
   header_height = height;

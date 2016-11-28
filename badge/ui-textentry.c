@@ -1,6 +1,8 @@
 #include "orchard-app.h"
 #include "orchard-events.h"
 #include "orchard-ui.h"
+#include "fontlist.h"
+
 #include <string.h>
 
 static const char entry_list[] = "abcdefghijklmnopqrstuvwxyz 0123456789.,!?;:-)(=\\_/<>~|@#$%^&*{}[]";
@@ -24,7 +26,7 @@ static void textentry_redraw(void) {
   str[0] = '\0'; str[1] = '\0';
   
   orchardGfxStart();
-  font = gdispOpenFont("fixed_5x8");
+  font = gdispOpenFont(FONT_BITMAP);
   width = gdispGetWidth();
   height = gdispGetHeight();
   
