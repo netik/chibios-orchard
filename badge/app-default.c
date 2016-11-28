@@ -43,11 +43,11 @@ static void draw_badge_buttons(void) {
   // Apply some default values for GWIN
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
-  wi.g.width = 80;
-  wi.g.height = 30;
+  wi.g.width = 40;
+  wi.g.height = 40;
   wi.g.y = totalheight - 40;
-  wi.g.x = 2;
-  wi.text = "<--";
+  wi.g.x = gdispGetWidth() - 40;
+  wi.text = "*";
 
   ghExitButton = gwinButtonCreate(NULL, &wi);
 }
@@ -63,24 +63,71 @@ static void redraw_badge(void) {
   gdispDrawThickLine(0, POS_FLOOR_Y, 320, POS_FLOOR_Y, White, 2, FALSE);
 
   fontLG = gdispOpenFont (FONT_LG);
-  fontSM = gdispOpenFont (FONT_SM);
+  fontSM = gdispOpenFont (FONT_FIXED);
 
-  gdispDrawStringBox (0,0,
+  uint16_t ypos = 0; // cursor, so if we move or add things we don't have to rethink this
+  uint16_t lmargin = 140; // cursor, so if we move or add things we don't have to rethink this
+  gdispDrawStringBox (0,
+		      ypos,
 		      gdispGetWidth(),
 		      gdispGetFontMetric(fontLG, fontHeight),
 		      config->name,
 		      fontLG, Yellow, justifyRight);
 
   char tmp[20];
+  char tmp2[40];
   chsnprintf(tmp, sizeof(tmp), "LEVEL %d", config->level);
-
+  
   /* Level */
+  ypos = ypos + gdispGetFontMetric(fontLG, fontHeight);
   gdispDrawStringBox (0,
-		      gdispGetFontMetric(fontLG, fontHeight) + 2,
+		      ypos,
 		      gdispGetWidth(),
 		      gdispGetFontMetric(fontSM, fontHeight),
 		      tmp,
 		      fontSM, Yellow, justifyRight);
+
+  /* XP */
+  ypos = ypos + gdispGetFontMetric(fontSM, fontHeight) + 4;
+  gdispDrawThickLine(165, ypos, 320, ypos, White, 2, FALSE);
+  ypos = ypos + 10;
+  
+  chsnprintf(tmp2, sizeof(tmp2), " XP: %3d GOLD: %3d", config->xp, config->gold);
+  gdispDrawStringBox (lmargin,
+		      ypos,
+		      gdispGetWidth(),
+		      gdispGetFontMetric(fontSM, fontHeight),
+		      tmp2,
+		      fontSM, Yellow, justifyLeft);
+
+  /* won/los */
+  ypos = ypos + gdispGetFontMetric(fontSM, fontHeight) + 2;
+  chsnprintf(tmp2, sizeof(tmp2), "WON: %3d LOST: %3d", config->won, config->lost);
+  gdispDrawStringBox (lmargin,
+		      ypos,
+		      gdispGetWidth(),
+		      gdispGetFontMetric(fontSM, fontHeight),
+		      tmp2,
+		      fontSM, Yellow, justifyLeft);
+
+  /* stats */
+  ypos = ypos + gdispGetFontMetric(fontSM, fontHeight) + 20;
+  chsnprintf(tmp2, sizeof(tmp2), " SPR: %2d   STR: %2d", config->spr, config->str);
+  gdispDrawStringBox (lmargin,
+		      ypos,
+		      gdispGetWidth(),
+		      gdispGetFontMetric(fontSM, fontHeight),
+		      tmp2,
+		      fontSM, Yellow, justifyLeft);
+
+  ypos = ypos + gdispGetFontMetric(fontSM, fontHeight) + 2;
+  chsnprintf(tmp2, sizeof(tmp2), " DEF: %2d   DEX: %2d", config->def, config->dex);
+  gdispDrawStringBox (lmargin,
+		      ypos,
+		      gdispGetWidth(),
+		      gdispGetFontMetric(fontSM, fontHeight),
+		      tmp2,
+		      fontSM, Yellow, justifyLeft);
 }
 
 static uint32_t default_init(OrchardAppContext *context) {

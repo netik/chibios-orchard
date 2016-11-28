@@ -4,6 +4,8 @@
 #define FONT_SM           "Jupiter_Pro_2561316"
 #define FONT_XS           "UI2"
 
+#define FONT_FIXED        "fixed_10x20"
+
 #define FONT_KEYBOARD     "UI2"
 #define FONT_TEXTENTRY    "UI2"
 

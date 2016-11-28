@@ -3,7 +3,7 @@
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0
-#define CONFIG_VERSION    4
+#define CONFIG_VERSION    6
 #define CONFIG_NAME_MAXLEN 16
 
 typedef enum _player_type {
@@ -40,9 +40,10 @@ typedef struct userconfig {
   uint16_t xp;
   uint16_t gold;
   uint8_t level;
-  
+
+  uint8_t spr;
   uint8_t str;
-  uint8_t ac;
+  uint8_t def;
   uint8_t dex;
 
   /* long-term counters */

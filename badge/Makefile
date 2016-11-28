@@ -130,6 +130,7 @@ CSRC = main.c \
        app-launcher.c \
        app-name.c \
        app-default.c \
+       app-setup.c \
        $(wildcard ui-*.c) \
        sound.c \
        led.c \

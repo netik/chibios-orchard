@@ -10,7 +10,8 @@
 #include <string.h>
 
 static userconfig config_cache;
-
+static int randomint(int max);
+  
 void configSave(userconfig *newConfig) {
   int8_t ret;
   uint8_t *config;
@@ -26,6 +27,29 @@ void configSave(userconfig *newConfig) {
   } else {
     chprintf(stream, "Config saved.\r\n");
   }
+}
+
+static int four_d_six(void) {
+  /* this seems stupid, for a computer. */
+  int a[5];
+  int tot = 0;
+  int lowest = 4;
+  a[4] = 6;
+  
+  for (int i=0; i<4; i++)  {
+    a[i] = randomint(6);
+    if (a[i] < a[lowest]) { lowest = i; };
+  }
+  
+  for (int i=0; i<4; i++)  {
+    if (i != lowest) { tot = tot + a[i]; } 
+  }
+ 
+  return tot;
+}
+
+int randomint(int max) {
+  return rand() % max;
 }
 
 static void init_config(userconfig *config) {
@@ -59,9 +83,10 @@ static void init_config(userconfig *config) {
   config->gold = 500;
   config->level = 1;
   
-  config->str = 0;
-  config->ac = 0;
-  config->dex = 0;
+  config->spr = four_d_six();
+  config->str = four_d_six();
+  config->def = four_d_six();
+  config->dex = four_d_six();
 
   config->won = 0;
   config->lost = 0;
