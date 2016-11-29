@@ -101,8 +101,8 @@ static THD_FUNCTION(pwmThread, arg) {
 		userconfig *config = getConfig();
 		
 		if (config->sound_enabled == 0) {
-		  play = 0;
-		  pTune = NULL;
+			play = 0;
+			pTune = NULL;
 		}
 		
 		while (play) {
