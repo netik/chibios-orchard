@@ -67,6 +67,7 @@
 
 #include "tpm.h"
 #include "kinetis_tpm.h"
+#include "userconfig.h"
 
 static THD_WORKING_AREA(waPwmThread, 0);
 
@@ -97,6 +98,13 @@ static THD_FUNCTION(pwmThread, arg) {
 
 	while (1) {
 		chThdSleep (TIME_INFINITE);
+		userconfig *config = getConfig();
+		
+		if (config->sound_enabled == 0) {
+		  play = 0;
+		  pTune = NULL;
+		}
+		
 		while (play) {
 			p = pTune;
 			while (1) {

@@ -17,6 +17,7 @@
 
 #include "orchard.h"
 #include "orchard-shell.h"
+#include "userconfig.h"
 
 #include "sound.h"
 
@@ -28,13 +29,20 @@ static void buzzer_stop(BaseSequentialStream *chp) {
 static void buzzer_tone(BaseSequentialStream *chp, int argc, char *argv[]) {
 
   uint16_t freq;
-
+  userconfig *config = getConfig();
+  
   if (argc != 2) {
     chprintf(chp, "No frequency specified\r\n");
     return;
   }
-
+  
   freq = strtoul(argv[1], NULL, 0);
+  
+  if (config->sound_enabled == 0) {
+    chprintf(chp, "Sound is disabled. Please re-enable in setup!\r\n");
+    return;
+  }
+
   chprintf(chp, "play frequency %d...\r\n", freq);
   pwmToneStart(freq);
 }
@@ -42,7 +50,12 @@ static void buzzer_tone(BaseSequentialStream *chp, int argc, char *argv[]) {
 static void buzzer_play(BaseSequentialStream *chp, int argc, char *argv[]) {
 
   uint16_t selection;
-
+  userconfig *config = getConfig();  
+  if (config->sound_enabled == 0) {
+    chprintf(chp, "Sound is disabled. Please re-enable in setup!\r\n");
+    return;
+  }
+  
   if (argc != 2) {
     chprintf(chp, "No song specified\r\n");
     return;
