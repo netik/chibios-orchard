@@ -20,8 +20,6 @@
 
 #include "userconfig.h"
 
-extern void (*current_fx)(void);
-
 extern struct FXENTRY fxlist[];
 
 static void led_stop(BaseSequentialStream *chp) {
@@ -40,17 +38,15 @@ static void led_run(BaseSequentialStream *chp, int argc, char *argv[]) {
   }
 
   pattern = strtoul(argv[1], NULL, 0);
-  if ((pattern < 1) || (pattern > FX_COUNT)) {
+  if ((pattern < 1) || (pattern > LED_PATTERN_COUNT)) {
     chprintf(chp, "Invaild pattern #!\r\n");
     return;
   }
 
-  current_fx = fxlist[pattern-1].function;
+  config->led_pattern = pattern-1;
   ledResetPattern();
   
   chprintf(chp, "pattern changed to %s...\r\n", fxlist[pattern-1].name);
-
-  config->led_pattern = pattern-1;
   configSave(config);
 }
 
@@ -83,7 +79,7 @@ static void led_dim(BaseSequentialStream *chp, int argc, char *argv[]) {
 static void led_list(BaseSequentialStream *chp) {
   chprintf(chp, "\r\nAvailable LED Patterns\r\n");
 
-  for (int i=0; i <FX_COUNT; i++) {
+  for (int i=0; i < LED_PATTERN_COUNT; i++) {
     chprintf(chp, "%2d) %s\r\n", i+1, fxlist[i].name);
   }
 }

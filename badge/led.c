@@ -13,9 +13,6 @@
 #include <string.h>
 #include <math.h>
 
-/* Function pointer to the current, running animation */
-void (*current_fx)(void);
-
 /* these keep track of the animation position and are used selectively
    by the algorithms */
 static int16_t fx_index = 0;           // fx index 
@@ -402,8 +399,10 @@ static THD_WORKING_AREA(waEffectsThread, 256);
 static THD_FUNCTION(effects_thread, arg) {
   (void)arg;
   chRegSetThreadName("LED effects");
-  
+
   while (!ledsOff) {
+    userconfig *config = getConfig();
+
     // transmit the actual framebuffer to the LED chain
     chSysLock();
     ledUpdate(led_config.fb, led_config.pixel_count);
@@ -414,7 +413,7 @@ static THD_FUNCTION(effects_thread, arg) {
     chThdSleepMilliseconds(EFFECTS_REDRAW_MS);
     
     // re-render the internal framebuffer animations
-    (*current_fx)();
+    fxlist[config->led_pattern].function();
     
     if( ledExitRequest ) {
       // force one full cycle through an update on request to force LEDs off
@@ -429,17 +428,16 @@ static THD_FUNCTION(effects_thread, arg) {
 }
 
 void effectsStart(void) {
-  const userconfig *config;
+  userconfig *config = getConfig();
 
   // init running params
   fx_index = 0;
 
   // set user config
   config = getConfig();
-  current_fx = fxlist[config->led_pattern].function;
   led_brightshift = config->led_shift; // start at 1/2 power
-  (*current_fx)();
-
+  (*fxlist[config->led_pattern].function)();
+  
   ledExitRequest = 0;
   ledsOff = 0;
 

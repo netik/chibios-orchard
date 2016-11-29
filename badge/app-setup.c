@@ -21,7 +21,7 @@ static GHandle ghCheckSound;
 static GHandle ghLabel1;
 static GHandle ghLabelPattern;
 static GHandle ghButtonPatDn;
-static GHandle gnButtonPatUp;
+static GHandle ghButtonPatUp;
 static GHandle ghLabel3;
 static GHandle ghLabel4;
 static GHandle ghLabelDim;
@@ -33,8 +33,7 @@ static GHandle ghButtonCancel;
 static void draw_setup_buttons(void) {
   userconfig *config = getConfig();
   GWidgetInit wi;
-  coord_t totalheight = gdispGetHeight();
-  font_t fontSM = gdispOpenFont (FONT_FIXED);
+  font_t fontSM = gdispOpenFont (FONT_SM);
   char tmp[3];
   
   gwinSetDefaultFont(fontSM);
@@ -48,7 +47,6 @@ static void draw_setup_buttons(void) {
   wi.g.height = 20;
   wi.text = "Enabled";
   wi.customDraw = gwinCheckboxDraw_CheckOnLeft;
-  wi.customParam = 0;
   ghCheckSound = gwinCheckboxCreate(0, &wi);
   gwinCheckboxCheck(ghCheckSound, TRUE);
 
@@ -61,7 +59,6 @@ static void draw_setup_buttons(void) {
   wi.g.height = 20;
   wi.text = "LED Pattern";
   ghLabel1 = gwinLabelCreate(0, &wi);
-  gwinLabelSetBorder(ghLabel1, FALSE);
 
   // create button widget: ghButtonOK
   gwinWidgetClearInit(&wi);
@@ -83,11 +80,10 @@ static void draw_setup_buttons(void) {
   wi.g.y = 30;
   wi.g.width = 200;
   wi.g.height = 20;
-  chsnprintf(tmp, sizeof(tmp), "%d", config->led_pattern);
+  chsnprintf(tmp, sizeof(tmp), "%d", config->led_pattern+1);
   wi.text = tmp;
   wi.customParam = 0;
   ghLabelPattern = gwinLabelCreate(0, &wi);
-  gwinLabelSetBorder(ghLabelPattern, TRUE);
 
   // create button widget: ghButtonPatDn
   gwinWidgetClearInit(&wi);
@@ -100,7 +96,7 @@ static void draw_setup_buttons(void) {
   wi.customDraw = gwinButtonDraw_ArrowUp;
   ghButtonPatDn = gwinButtonCreate(0, &wi);
 
-  // create button widget: gnButtonPatUp
+  // create button widget: ghButtonPatUp
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
   wi.g.x = 270;
@@ -109,7 +105,7 @@ static void draw_setup_buttons(void) {
   wi.g.height = 20;
   wi.text = "";
   wi.customDraw = gwinButtonDraw_ArrowDown;
-  gnButtonPatUp = gwinButtonCreate(0, &wi);
+  ghButtonPatUp = gwinButtonCreate(0, &wi);
 
   // Create label widget: ghLabel3
   gwinWidgetClearInit(&wi);
@@ -120,7 +116,6 @@ static void draw_setup_buttons(void) {
   wi.g.height = 20;
   wi.text = "Sound";
   ghLabel3 = gwinLabelCreate(0, &wi);
-  gwinLabelSetBorder(ghLabel3, FALSE);
 
   // Create label widget: ghLabel4
   gwinWidgetClearInit(&wi);
@@ -131,7 +126,6 @@ static void draw_setup_buttons(void) {
   wi.g.height = 20;
   wi.text = "LED Dim";
   ghLabel4 = gwinLabelCreate(0, &wi);
-  gwinLabelSetBorder(ghLabel4, FALSE);
 
   // Create label widget: ghLabelDim
   gwinWidgetClearInit(&wi);
@@ -143,7 +137,6 @@ static void draw_setup_buttons(void) {
   chsnprintf(tmp, sizeof(tmp), "%d", config->led_shift);
   wi.text = tmp;
   ghLabelDim = gwinLabelCreate(0, &wi);
-  gwinLabelSetBorder(ghLabelDim, TRUE);
 
   // create button widget: ghButtonDimUp
   gwinWidgetClearInit(&wi);
@@ -197,7 +190,8 @@ void setup_event(OrchardAppContext *context, const OrchardAppEvent *event) {
   GEvent * pe;
   userconfig *config = getConfig();
   char tmp[3];
-
+  (void)context;
+  
   if (event->type == ugfxEvent) {
     pe = event->ugfx.pEvent;
 
@@ -224,6 +218,16 @@ void setup_event(OrchardAppContext *context, const OrchardAppEvent *event) {
           ledSetBrightness(config->led_shift);
         }
 
+        if (((GEventGWinButton*)pe)->gwin == ghButtonPatDn) {
+	  config->led_pattern++;
+          if (config->led_pattern >= LED_PATTERN_COUNT) config->led_pattern = 0;
+        }
+
+        if (((GEventGWinButton*)pe)->gwin == ghButtonPatUp) {
+          config->led_pattern--;
+          if (config->led_pattern == 255) config->led_pattern = LED_PATTERN_COUNT - 1;
+        }
+
       // update ui
       chsnprintf(tmp, sizeof(tmp), "%d", config->led_shift);;
       gwinSetText(ghLabelDim, tmp, TRUE);
@@ -243,7 +247,7 @@ static void setup_exit(OrchardAppContext *context) {
   gwinDestroy(ghLabel1);
   gwinDestroy(ghLabelPattern);
   gwinDestroy(ghButtonPatDn);
-  gwinDestroy(gnButtonPatUp);
+  gwinDestroy(ghButtonPatUp);
   gwinDestroy(ghLabel3);
   gwinDestroy(ghLabel4);
   gwinDestroy(ghLabelDim);
