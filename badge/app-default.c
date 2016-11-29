@@ -145,7 +145,8 @@ static void default_start(OrchardAppContext *context) {
   geventRegisterCallback (&glBadge, orchardAppUgfxCallback, &glBadge);
 }
 
-void default_event(OrchardAppContext *context, const OrchardAppEvent *event) {
+static void default_event(OrchardAppContext *context,
+	const OrchardAppEvent *event) {
   (void)context;
   GEvent * pe;
   if (event->type == ugfxEvent) {

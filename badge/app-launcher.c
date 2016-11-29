@@ -22,9 +22,6 @@ struct launcher_list {
   struct launcher_list_item items[0];
 };
 
-static uint32_t last_ui_time = 0;
-#define BLINKY_DEFAULT_DELAY 5000 // in milliseconds
-
 // Buttons
 static GHandle ghButton1, ghButton2, ghButton3;
 static GListener gl;
@@ -150,8 +147,18 @@ static void redraw_list(struct launcher_list *list) {
 static uint32_t launcher_init(OrchardAppContext *context) {
 
   (void)context;
-  unsigned int total_apps = 0;
+
+  gdispClear(Black);
+  draw_launcher_buttons();
+
+  return (0);
+}
+
+static void launcher_start(OrchardAppContext *context) {
+
+  struct launcher_list *list;
   const OrchardApp *current;
+  unsigned int total_apps = 0;
 
   /* Rebuild the app list */
   current = orchard_app_list;
@@ -160,17 +167,10 @@ static uint32_t launcher_init(OrchardAppContext *context) {
     current++;
   }
 
-  gdispClear(Black);
-  draw_launcher_buttons();
+  list = chHeapAlloc (NULL, sizeof(struct launcher_list) +
+    + (total_apps * sizeof(struct launcher_list_item)) );
 
-  return sizeof(struct launcher_list)
-       + (total_apps * sizeof(struct launcher_list_item));
-}
-
-static void launcher_start(OrchardAppContext *context) {
-
-  struct launcher_list *list = (struct launcher_list *)context->priv;
-  const OrchardApp *current;
+  context->priv = list;
 
   /* Rebuild the app list */
   current = orchard_app_list;
@@ -183,8 +183,6 @@ static void launcher_start(OrchardAppContext *context) {
   }
 
   list->selected = 1;
-
-  last_ui_time = chVTGetSystemTime();
 
   redraw_list(list);
 
@@ -234,14 +232,16 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
 
 static void launcher_exit(OrchardAppContext *context) {
 
-  (void)context;
-
   gwinDestroy (ghButton1);
   gwinDestroy (ghButton2);
   gwinDestroy (ghButton3);
 
   geventRegisterCallback (&gl, NULL, NULL);
   geventDetachSource (&gl, NULL);
+
+  chHeapFree (context->priv);
+  context->priv = NULL;
+
 }
 
 /* the app labelled as app_1 is always the launcher. changing this

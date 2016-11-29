@@ -30,14 +30,25 @@
 			{ "Sym", 0, GVKEY_LOCKSET, 4 },					// \010 (8)	= Change to Symbols
 			{ "aA", 0, GVKEY_LOCKSET, 0 },					// \011 (9)	= Change to Lower Alpha
 	};
+
+	/*
+	 * At least with GCC 6, some of the keyboard tables seem to end
+	 * up in the data section even though they're declared static
+	 * and const. This eats up some RAM. to avoid this, we forcibly
+	 * tag the offending arrays so that they'll be placed in the
+	 * read-only data section.
+	 */
+
+#define RO	__attribute__((section(".rodata")))
+
 	static const char Eng1Set0Row3[] = "\004  .\006\006";
 	static const char Eng1Set1Row0[] = "QWERTYUIOP";
 	static const char Eng1Set1Row1[] = "ASDFGHJKL";
-	static const char *Eng1Set0[] = { "qwertyuiop",	"asdfghjkl",	"\001zxcvbnm\005",	Eng1Set0Row3,		0 };
-	static const char *Eng1Set1[] = { Eng1Set1Row0,	Eng1Set1Row1,	"\002ZXCVBNM\005",	Eng1Set0Row3,		0 };
-	static const char *Eng1Set2[] = { Eng1Set1Row0,	Eng1Set1Row1,	"\003ZXCVBNM\005",	Eng1Set0Row3,		0 };
-	static const char *Eng1Set3[] = { "+-*/",		"@789",			"\007456",		"\010123",			"\01100.",	0 };
-	static const char *Eng1Set4[] = { "#$%^&*()",	"~`:;\"'{}",	"<>?/\\|[]",	"\011\004,!  .@",	0 };
+	RO static const char *Eng1Set0[] = { "qwertyuiop",	"asdfghjkl",	"\001zxcvbnm\005",	Eng1Set0Row3,		0 };
+	RO static const char *Eng1Set1[] = { Eng1Set1Row0,	Eng1Set1Row1,	"\002ZXCVBNM\005",	Eng1Set0Row3,		0 };
+	RO static const char *Eng1Set2[] = { Eng1Set1Row0,	Eng1Set1Row1,	"\003ZXCVBNM\005",	Eng1Set0Row3,		0 };
+	RO static const char *Eng1Set3[] = { "+-*/",		"@789",			"\007456",		"\010123",			"\01100.",	0 };
+	RO static const char *Eng1Set4[] = { "#$%^&*()",	"~`:;\"'{}",	"<>?/\\|[]",	"\011\004,!  .@",	0 };
 	static const GVKeySet Eng1Sets[] = { Eng1Set0, Eng1Set1, Eng1Set2, Eng1Set3, Eng1Set4, 0 };
 	const GVKeyTable VirtualKeyboard_English1 = { Eng1SKeys, Eng1Sets };
 #endif // GWIN_NEED_KEYBOARD_ENGLISH1

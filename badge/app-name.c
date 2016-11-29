@@ -4,48 +4,49 @@
 
 #include <string.h>
 
-static struct OrchardUiContext keyboardUiContext;
-
-static char name[CONFIG_NAME_MAXLEN];
-
 static uint32_t name_init(OrchardAppContext *context)
 {
 	(void)context;
+
+	/*
+	 * We don't want any extra stack space allocated for us.
+	 * We'll use the heap.
+	 */
 
 	return (0);
 }
 
 static void name_start(OrchardAppContext *context)
 {
-	const OrchardUi * keyboardUi;
+	OrchardUiContext * keyboardUiContext;
+	userconfig * config;
 
-	memset (name, 0, sizeof(name));
+	config = getConfig();
+	memset (config->name, 0, CONFIG_NAME_MAXLEN);
 
-	keyboardUi = getUiByName("keyboard");
-	keyboardUiContext.itemlist = (const char **)chHeapAlloc(NULL,
+	keyboardUiContext = chHeapAlloc(NULL, sizeof(OrchardUiContext));
+	keyboardUiContext->itemlist = (const char **)chHeapAlloc(NULL,
             sizeof(char *) * 2);
-	keyboardUiContext.itemlist[0] =
+	keyboardUiContext->itemlist[0] =
 		"Type in your name, press ENTER when done";
-	keyboardUiContext.itemlist[1] = name;
-	keyboardUiContext.total = CONFIG_NAME_MAXLEN-2;
-	if (keyboardUi != NULL) {
-    		context->instance->uicontext = &keyboardUiContext;
-    		context->instance->ui = keyboardUi;
-	}
+	keyboardUiContext->itemlist[1] = config->name;
+	keyboardUiContext->total = CONFIG_NAME_MAXLEN - 1;
 
-	keyboardUi->start (context);
+    	context->instance->ui = getUiByName("keyboard");
+	context->instance->uicontext = keyboardUiContext;
+	context->instance->ui->start (context);
 
 	return;
 }
 
-void name_event(OrchardAppContext *context, const OrchardAppEvent *event)
+static void name_event(OrchardAppContext *context,
+	const OrchardAppEvent *event)
 {
 	const OrchardUi * keyboardUi;
-	userconfig *config = getConfig();
+	userconfig * config;
 	  
-	(void)context;
-
 	keyboardUi = context->instance->ui;
+	config = getConfig();
 
 	if (event->type == ugfxEvent)
 		keyboardUi->event (context, event);
@@ -57,10 +58,7 @@ void name_event(OrchardAppContext *context, const OrchardAppEvent *event)
 		if ((event->ui.code == uiComplete) &&
 		    (event->ui.flags == uiOK)) {
 			keyboardUi->exit (context);
-
-			strncpy(config->name, name, CONFIG_NAME_MAXLEN);
-			configSave(config);
-
+			configSave (config);
 			orchardAppExit ();
 		}
 	}
@@ -70,13 +68,10 @@ void name_event(OrchardAppContext *context, const OrchardAppEvent *event)
 
 static void name_exit(OrchardAppContext *context)
 {
-	(void)context;
-
-	chHeapFree (keyboardUiContext.itemlist);
+    	chHeapFree (context->instance->uicontext->itemlist);
+    	chHeapFree (context->instance->uicontext);
 
 	return;
 }
 
 orchard_app("Set your name", name_init, name_start, name_event, name_exit);
-
-

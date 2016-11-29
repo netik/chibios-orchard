@@ -7,22 +7,23 @@
 
 #include <string.h>
 
-static struct OrchardUiContext keyboardUiContext;
-
 static uint32_t shout_init (OrchardAppContext *context)
 {
 	(void)context;
+
+	/*
+	 * We don't want any extra stack space allocated for us.
+	 * We'll use the heap.
+	 */
 
 	return (0);
 }
 
 static void shout_start (OrchardAppContext *context)
 {
-	const OrchardUi * keyboardUi;
+	OrchardUiContext * keyboardUiContext;
 	userconfig * config;
 	KW01_PKT * pkt;
-
-	(void)context;
 
 	/*
 	 * Save some RAM by re-using the payload buffer in the
@@ -38,33 +39,29 @@ static void shout_start (OrchardAppContext *context)
 	config = getConfig ();
 	memcpy (pkt->kw01_payload, &config->netid, sizeof(config->netid));
 
-	keyboardUi = getUiByName("keyboard");
-	keyboardUiContext.itemlist = (const char **)chHeapAlloc(NULL,
+        keyboardUiContext = chHeapAlloc(NULL, sizeof(OrchardUiContext));
+	keyboardUiContext->itemlist = (const char **)chHeapAlloc(NULL,
 		sizeof(char *) * 2);
-	keyboardUiContext.itemlist[0] =
+	keyboardUiContext->itemlist[0] =
                 "Shout something, press ENTER when done";
-	keyboardUiContext.itemlist[1] = (char *)(pkt->kw01_payload +
+	keyboardUiContext->itemlist[1] = (char *)(pkt->kw01_payload +
 		sizeof(config->netid));
-	keyboardUiContext.total = KRADIO1.kw01_maxlen - KW01_PKT_HDRLEN -
+	keyboardUiContext->total = KRADIO1.kw01_maxlen - KW01_PKT_HDRLEN -
 		sizeof(config->netid);
-	if (keyboardUi != NULL) {
-		context->instance->uicontext = &keyboardUiContext;
-		context->instance->ui = keyboardUi;
-	}
 
-        keyboardUi->start (context);
+	context->instance->ui = getUiByName ("keyboard");
+	context->instance->uicontext = keyboardUiContext;
+        context->instance->ui->start (context);
 
 	return;
 }
 
-void shout_event (OrchardAppContext *context,
+static void shout_event (OrchardAppContext *context,
 	const OrchardAppEvent *event)
 {
 	const OrchardUi * keyboardUi;
 	KW01_PKT * pkt;
 	font_t font;
-
-	(void)context;
 
 	pkt = &KRADIO1.kw01_pkt;
 
@@ -90,7 +87,7 @@ void shout_event (OrchardAppContext *context,
 				KRADIO1.kw01_maxlen - KW01_PKT_HDRLEN,
 				pkt->kw01_payload);
 
-			/* Print a confirmation message */
+			/* Display a confirmation message */
 
 			font = gdispOpenFont(FONT_SM);
 			gdispDrawStringBox (0, (gdispGetHeight() / 2) -
@@ -113,9 +110,8 @@ void shout_event (OrchardAppContext *context,
 
 static void shout_exit (OrchardAppContext *context)
 {
-	(void)context;
-
-	chHeapFree (keyboardUiContext.itemlist);
+	chHeapFree (context->instance->uicontext->itemlist);
+	chHeapFree (context->instance->uicontext);
 
 	return;
 }

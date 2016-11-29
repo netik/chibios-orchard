@@ -14,23 +14,25 @@
 #include "userconfig.h"
 #include "gfx.h"
 
-static GListener glSetup;
 
 // GHandles
-static GHandle ghCheckSound;
-static GHandle ghLabel1;
-static GHandle ghLabelPattern;
-static GHandle ghButtonPatDn;
-static GHandle ghButtonPatUp;
-static GHandle ghLabel3;
-static GHandle ghLabel4;
-static GHandle ghLabelDim;
-static GHandle ghButtonDimUp;
-static GHandle ghButtonDimDn;
-static GHandle ghButtonOK;
-static GHandle ghButtonCancel;
+typedef struct _SetupHandles {
+	GHandle ghCheckSound;
+	GHandle ghLabel1;
+	GHandle ghLabelPattern;
+	GHandle ghButtonPatDn;
+	GHandle ghButtonPatUp;
+	GHandle ghLabel3;
+	GHandle ghLabel4;
+	GHandle ghLabelDim;
+	GHandle ghButtonDimUp;
+	GHandle ghButtonDimDn;
+	GHandle ghButtonOK;
+	GHandle ghButtonCancel;
+	GListener glSetup;
+} SetupHandles;
 
-static void draw_setup_buttons(void) {
+static void draw_setup_buttons(SetupHandles * p) {
   userconfig *config = getConfig();
   GWidgetInit wi;
   font_t fontSM = gdispOpenFont (FONT_SM);
@@ -47,8 +49,8 @@ static void draw_setup_buttons(void) {
   wi.g.height = 20;
   wi.text = " Enable Sounds";
   wi.customDraw = gwinCheckboxDraw_CheckOnLeft;
-  ghCheckSound = gwinCheckboxCreate(0, &wi);
-  gwinCheckboxCheck(ghCheckSound, config->sound_enabled);
+  p->ghCheckSound = gwinCheckboxCreate(0, &wi);
+  gwinCheckboxCheck(p->ghCheckSound, config->sound_enabled);
 
   // Create label widget: ghLabel1
   gwinWidgetClearInit(&wi);
@@ -58,7 +60,7 @@ static void draw_setup_buttons(void) {
   wi.g.width = 180;
   wi.g.height = 20;
   wi.text = "LED Pattern";
-  ghLabel1 = gwinLabelCreate(0, &wi);
+  p->ghLabel1 = gwinLabelCreate(0, &wi);
 
   // create button widget: ghButtonOK
   gwinWidgetClearInit(&wi);
@@ -71,7 +73,7 @@ static void draw_setup_buttons(void) {
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
   wi.customStyle = 0;
-  ghButtonOK = gwinButtonCreate(0, &wi);
+  p->ghButtonOK = gwinButtonCreate(0, &wi);
 
   // Create label widget: ghLabelPattern
   gwinWidgetClearInit(&wi);
@@ -83,7 +85,7 @@ static void draw_setup_buttons(void) {
   chsnprintf(tmp, sizeof(tmp), "%d", config->led_pattern+1);
   wi.text = tmp;
   wi.customParam = 0;
-  ghLabelPattern = gwinLabelCreate(0, &wi);
+  p->ghLabelPattern = gwinLabelCreate(0, &wi);
 
   // create button widget: ghButtonPatDn
   gwinWidgetClearInit(&wi);
@@ -94,7 +96,7 @@ static void draw_setup_buttons(void) {
   wi.g.height = 40;
   wi.text = "";
   wi.customDraw = gwinButtonDraw_ArrowUp;
-  ghButtonPatDn = gwinButtonCreate(0, &wi);
+  p->ghButtonPatDn = gwinButtonCreate(0, &wi);
 
   // create button widget: ghButtonPatUp
   gwinWidgetClearInit(&wi);
@@ -105,7 +107,7 @@ static void draw_setup_buttons(void) {
   wi.g.height = 40;
   wi.text = "";
   wi.customDraw = gwinButtonDraw_ArrowDown;
-  ghButtonPatUp = gwinButtonCreate(0, &wi);
+  p->ghButtonPatUp = gwinButtonCreate(0, &wi);
 
 
   // Create label widget: ghLabel4
@@ -116,7 +118,7 @@ static void draw_setup_buttons(void) {
   wi.g.width = 180;
   wi.g.height = 20;
   wi.text = "LED Brightness";
-  ghLabel4 = gwinLabelCreate(0, &wi);
+  p->ghLabel4 = gwinLabelCreate(0, &wi);
 
   // Create label widget: ghLabelDim
   gwinWidgetClearInit(&wi);
@@ -127,7 +129,7 @@ static void draw_setup_buttons(void) {
   wi.g.height = 20;
   chsnprintf(tmp, sizeof(tmp), "%d", ( 8 - config->led_shift ));
   wi.text = tmp;
-  ghLabelDim = gwinLabelCreate(0, &wi);
+  p->ghLabelDim = gwinLabelCreate(0, &wi);
 
   // create button widget: ghButtonDimUp
   gwinWidgetClearInit(&wi);
@@ -138,7 +140,7 @@ static void draw_setup_buttons(void) {
   wi.g.height = 40;
   wi.text = "";
   wi.customDraw = gwinButtonDraw_ArrowUp;
-  ghButtonDimUp = gwinButtonCreate(0, &wi);
+  p->ghButtonDimUp = gwinButtonCreate(0, &wi);
 
   // create button widget: ghButtonDimDn
   gwinWidgetClearInit(&wi);
@@ -149,7 +151,7 @@ static void draw_setup_buttons(void) {
   wi.g.height = 40;
   wi.text = "";
   wi.customDraw = gwinButtonDraw_ArrowDown;
-  ghButtonDimDn = gwinButtonCreate(0, &wi);
+  p->ghButtonDimDn = gwinButtonCreate(0, &wi);
 
   // create button widget: ghButtonCancel
   gwinWidgetClearInit(&wi);
@@ -159,7 +161,7 @@ static void draw_setup_buttons(void) {
   wi.g.width = 140;
   wi.g.height = 40;
   wi.text = "Cancel";
-  ghButtonCancel = gwinButtonCreate(0, &wi);
+  p->ghButtonCancel = gwinButtonCreate(0, &wi);
 }
 
 static uint32_t setup_init(OrchardAppContext *context) {
@@ -168,20 +170,29 @@ static uint32_t setup_init(OrchardAppContext *context) {
 }
 
 static void setup_start(OrchardAppContext *context) {
+  SetupHandles * p;
+
   (void)context;
   gdispClear (Black);
-  draw_setup_buttons();
 
-  geventListenerInit(&glSetup);
-  gwinAttachListener(&glSetup);
-  geventRegisterCallback (&glSetup, orchardAppUgfxCallback, &glSetup);
+  p = chHeapAlloc (NULL, sizeof(SetupHandles));
+
+  draw_setup_buttons(p);
+  context->priv = p;
+
+  geventListenerInit(&p->glSetup);
+  gwinAttachListener(&p->glSetup);
+  geventRegisterCallback (&p->glSetup, orchardAppUgfxCallback, &p->glSetup);
 }
 
-void setup_event(OrchardAppContext *context, const OrchardAppEvent *event) {
+static void setup_event(OrchardAppContext *context,
+	const OrchardAppEvent *event) {
   GEvent * pe;
   userconfig *config = getConfig();
   char tmp[3];
-  (void)context;
+  SetupHandles * p;
+
+  p = context->priv;
   
   if (event->type == ugfxEvent) {
     pe = event->ugfx.pEvent;
@@ -189,40 +200,40 @@ void setup_event(OrchardAppContext *context, const OrchardAppEvent *event) {
     switch(pe->type) {
 
     case GEVENT_GWIN_CHECKBOX:
-      if (((GEventGWinCheckbox*)pe)->gwin == ghCheckSound) {
+      if (((GEventGWinCheckbox*)pe)->gwin == p->ghCheckSound) {
 	// The state of our checkbox has changed
 	config->sound_enabled = ((GEventGWinCheckbox*)pe)->isChecked;
       }
       break;
     case GEVENT_GWIN_BUTTON:
-        if (((GEventGWinButton*)pe)->gwin == ghButtonCancel) {
+        if (((GEventGWinButton*)pe)->gwin == p->ghButtonCancel) {
      	  orchardAppExit();
         }
 
-        if (((GEventGWinButton*)pe)->gwin == ghButtonOK) {
+        if (((GEventGWinButton*)pe)->gwin == p->ghButtonOK) {
      	  orchardAppExit();
           configSave(config);
         }
 
-        if (((GEventGWinButton*)pe)->gwin == ghButtonDimDn) {
+        if (((GEventGWinButton*)pe)->gwin == p->ghButtonDimDn) {
           config->led_shift++;
           if (config->led_shift > 7) config->led_shift = 0;
           ledSetBrightness(config->led_shift);
         }
 
-        if (((GEventGWinButton*)pe)->gwin == ghButtonDimUp) {
+        if (((GEventGWinButton*)pe)->gwin == p->ghButtonDimUp) {
           config->led_shift--;
           if (config->led_shift == 255) config->led_shift = 7;
           ledSetBrightness(config->led_shift);
         }
 
-        if (((GEventGWinButton*)pe)->gwin == ghButtonPatDn) {
+        if (((GEventGWinButton*)pe)->gwin == p->ghButtonPatDn) {
 	  config->led_pattern++;
 	  ledResetPattern();
           if (config->led_pattern >= LED_PATTERN_COUNT) config->led_pattern = 0;
         }
 
-        if (((GEventGWinButton*)pe)->gwin == ghButtonPatUp) {
+        if (((GEventGWinButton*)pe)->gwin == p->ghButtonPatUp) {
           config->led_pattern--;
 	  ledResetPattern();
           if (config->led_pattern == 255) config->led_pattern = LED_PATTERN_COUNT - 1;
@@ -230,9 +241,9 @@ void setup_event(OrchardAppContext *context, const OrchardAppEvent *event) {
 
       // update ui
       chsnprintf(tmp, sizeof(tmp), "%d",(  8 - config->led_shift ) );
-      gwinSetText(ghLabelDim, tmp, TRUE);
+      gwinSetText(p->ghLabelDim, tmp, TRUE);
       chsnprintf(tmp, sizeof(tmp), "%d", config->led_pattern + 1);
-      gwinSetText(ghLabelPattern, tmp, TRUE);
+      gwinSetText(p->ghLabelPattern, tmp, TRUE);
 
       break;
     }
@@ -241,25 +252,30 @@ void setup_event(OrchardAppContext *context, const OrchardAppEvent *event) {
 }
 
 static void setup_exit(OrchardAppContext *context) {
-  (void)context;
+  SetupHandles * p;
 
-  gwinDestroy(ghCheckSound);
-  gwinDestroy(ghLabel1);
-  gwinDestroy(ghLabelPattern);
-  gwinDestroy(ghButtonPatDn);
-  gwinDestroy(ghButtonPatUp);
-  gwinDestroy(ghLabel3);
-  gwinDestroy(ghLabel4);
-  gwinDestroy(ghLabelDim);
-  gwinDestroy(ghButtonDimUp);
-  gwinDestroy(ghButtonDimDn);
-  gwinDestroy(ghButtonOK);
-  gwinDestroy(ghButtonCancel);
+  p = context->priv;
+
+  gwinDestroy(p->ghCheckSound);
+  gwinDestroy(p->ghLabel1);
+  gwinDestroy(p->ghLabelPattern);
+  gwinDestroy(p->ghButtonPatDn);
+  gwinDestroy(p->ghButtonPatUp);
+  gwinDestroy(p->ghLabel3);
+  gwinDestroy(p->ghLabel4);
+  gwinDestroy(p->ghLabelDim);
+  gwinDestroy(p->ghButtonDimUp);
+  gwinDestroy(p->ghButtonDimDn);
+  gwinDestroy(p->ghButtonOK);
+  gwinDestroy(p->ghButtonCancel);
   
-  geventDetachSource (&glSetup, NULL);
-  geventRegisterCallback (&glSetup, NULL, NULL);
+  geventDetachSource (&p->glSetup, NULL);
+  geventRegisterCallback (&p->glSetup, NULL, NULL);
+
+  chHeapFree (context->priv);
+  context->priv = NULL;
+
   return;
 }
 
 orchard_app("Setup", setup_init, setup_start, setup_event, setup_exit);
-
