@@ -229,6 +229,8 @@ int main(void)
   chprintf(stream, "\r\n     ()==[:::::::::::::> build %s\r\n\r\n", gitversion);
 
   configStart();
+  userconfig *config = getConfig();
+
   print_mcu_info();
 
   ledStart(16, led_fb);
@@ -349,7 +351,10 @@ XF  else
   
 #endif
   /* we're goood */
-  //  playStartupSong();
+
+  if (config->sound_enabled) { 
+    playStartupSong();
+  }
   orchardShellRestart();
 
   /* Initialize uGfx */
@@ -358,7 +363,10 @@ XF  else
   /* Draw a banner... */
   uiStart();
   oledOrchardBanner();
-  chThdSleepMilliseconds(IMG_SPLASH_DISPLAY_TIME);
+  if (config->sound_enabled) {
+    chThdSleepMilliseconds(IMG_SPLASH_DISPLAY_TIME);
+  } else 
+    chThdSleepMilliseconds(IMG_SPLASH_NO_SOUND_DISPLAY_TIME);
 
   /* run apps */
   orchardAppInit();
