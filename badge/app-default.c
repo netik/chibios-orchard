@@ -36,6 +36,15 @@ static int putImageFile(char *name, int16_t x, int16_t y) {
   }    
 
 }
+
+void noRender(GWidgetObject* gw, void* param)
+{
+  (void)gw;
+  (void)param;
+
+  return;
+}
+
 static void draw_badge_buttons(void) {
   GWidgetInit wi;
   coord_t totalheight = gdispGetHeight();
@@ -47,7 +56,8 @@ static void draw_badge_buttons(void) {
   wi.g.height = 40;
   wi.g.y = totalheight - 40;
   wi.g.x = gdispGetWidth() - 40;
-  wi.text = "*";
+  wi.text = "";
+  wi.customDraw = noRender;
 
   ghExitButton = gwinButtonCreate(NULL, &wi);
 }
@@ -60,7 +70,7 @@ static void redraw_badge(void) {
   gdispClear(Black);
 
   putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER1_Y);
-  gdispDrawThickLine(0, POS_FLOOR_Y, 320, POS_FLOOR_Y, White, 2, FALSE);
+  putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
 
   fontLG = gdispOpenFont (FONT_LG);
   fontSM = gdispOpenFont (FONT_FIXED);
