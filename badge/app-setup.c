@@ -122,9 +122,9 @@ static void draw_setup_buttons(void) {
   wi.g.show = TRUE;
   wi.g.x = 10;
   wi.g.y = 70;
-  wi.g.width = 120;
+  wi.g.width = 200;
   wi.g.height = 20;
-  wi.text = "LED Dim";
+  wi.text = "LED Brightness";
   ghLabel4 = gwinLabelCreate(0, &wi);
 
   // Create label widget: ghLabelDim
@@ -134,7 +134,7 @@ static void draw_setup_buttons(void) {
   wi.g.y = 90;
   wi.g.width = 200;
   wi.g.height = 20;
-  chsnprintf(tmp, sizeof(tmp), "%d", config->led_shift);
+  chsnprintf(tmp, sizeof(tmp), "%d", ( 8 - config->led_shift ));
   wi.text = tmp;
   ghLabelDim = gwinLabelCreate(0, &wi);
 
@@ -206,13 +206,13 @@ void setup_event(OrchardAppContext *context, const OrchardAppEvent *event) {
           configSave(config);
         }
 
-        if (((GEventGWinButton*)pe)->gwin == ghButtonDimUp) {
+        if (((GEventGWinButton*)pe)->gwin == ghButtonDimDn) {
           config->led_shift++;
           if (config->led_shift > 7) config->led_shift = 0;
           ledSetBrightness(config->led_shift);
         }
 
-        if (((GEventGWinButton*)pe)->gwin == ghButtonDimDn) {
+        if (((GEventGWinButton*)pe)->gwin == ghButtonDimUp) {
           config->led_shift--;
           if (config->led_shift == 255) config->led_shift = 7;
           ledSetBrightness(config->led_shift);
@@ -220,18 +220,20 @@ void setup_event(OrchardAppContext *context, const OrchardAppEvent *event) {
 
         if (((GEventGWinButton*)pe)->gwin == ghButtonPatDn) {
 	  config->led_pattern++;
+	  ledResetPattern();
           if (config->led_pattern >= LED_PATTERN_COUNT) config->led_pattern = 0;
         }
 
         if (((GEventGWinButton*)pe)->gwin == ghButtonPatUp) {
           config->led_pattern--;
+	  ledResetPattern();
           if (config->led_pattern == 255) config->led_pattern = LED_PATTERN_COUNT - 1;
         }
 
       // update ui
-      chsnprintf(tmp, sizeof(tmp), "%d", config->led_shift);;
+      chsnprintf(tmp, sizeof(tmp), "%d",(  8 - config->led_shift ) );
       gwinSetText(ghLabelDim, tmp, TRUE);
-      chsnprintf(tmp, sizeof(tmp), "%d", config->led_pattern);
+      chsnprintf(tmp, sizeof(tmp), "%d", config->led_pattern + 1);
       gwinSetText(ghLabelPattern, tmp, TRUE);
 
       break;
