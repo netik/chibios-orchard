@@ -14,12 +14,12 @@
 #include <string.h>
 
 static const float calibrationData[] = {
-	0.09437,		// ax
-	-0.00239,		// bx
-	-19.68127,		// cx
-	0.00104,		// ay
-	0.07062,		// by
-	-29.25399		// cy
+	-0.07121,		// ax
+	-0.00238,		// bx
+	271.50784,		// cx
+	-0.00010,		// ay
+	0.09193,		// by
+	-17.79266		// cy
 };
  
 bool_t LoadMouseCalibration(unsigned instance, void *data, size_t sz)
@@ -34,12 +34,12 @@ bool_t LoadMouseCalibration(unsigned instance, void *data, size_t sz)
 }
 
 // Resolution and Accuracy Settings
-#define GMOUSE_MCU_PEN_CALIBRATE_ERROR		20
-#define GMOUSE_MCU_PEN_CLICK_ERROR		20
+#define GMOUSE_MCU_PEN_CALIBRATE_ERROR		35
+#define GMOUSE_MCU_PEN_CLICK_ERROR		40
 #define GMOUSE_MCU_PEN_MOVE_ERROR		20
-#define GMOUSE_MCU_FINGER_CALIBRATE_ERROR	14
-#define GMOUSE_MCU_FINGER_CLICK_ERROR		18
-#define GMOUSE_MCU_FINGER_MOVE_ERROR		14
+#define GMOUSE_MCU_FINGER_CALIBRATE_ERROR	35
+#define GMOUSE_MCU_FINGER_CLICK_ERROR		40
+#define GMOUSE_MCU_FINGER_MOVE_ERROR		20
 #define GMOUSE_MCU_Z_MIN		0	/* The minimum Z reading */
 #define GMOUSE_MCU_Z_MAX		4096	/* The maximum Z reading */
 
@@ -70,14 +70,8 @@ static bool_t init_board(GMouse *m, unsigned driverinstance) {
 static bool_t read_xyz(GMouse *m, GMouseReading *prd) {
 	(void)m;
 
-	/*
-	 * Note: we flip the X and Y axis readings because the
-	 * screen is being used in landscape mode and the touch
-	 * controller assumes portrait mode.
-	 */
-
-	prd->y = xptGet (XPT_CHAN_X);
-	prd->x = xptGet (XPT_CHAN_Y);
+	prd->x = xptGet (XPT_CHAN_X);
+	prd->y = xptGet (XPT_CHAN_Y);
 	prd->z = xptGet (XPT_CHAN_Z1);
 
 	return (TRUE);
