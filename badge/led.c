@@ -41,20 +41,6 @@ static void anim_solid_color(void);
 static void anim_triangle(void);
 static void anim_one_hue_pulse(void);
 
-/* Update FX_COUNT in led.h if you make changes here */
-struct FXENTRY fxlist[] = {
-  {"ColorBounce", anim_color_bounce_fade},
-  {"Dot (White)", anim_dot},
-  {"Larsen Scanner", anim_larsen},
-  {"Police (Solid)", anim_police_all},
-  {"Police (Dots)", anim_police_dots},
-  {"Rainbow Fade", anim_rainbow_fade},
-  {"Rainbow Loop", anim_rainbow_loop},
-  {"Green Spiral", anim_solid_color},
-  {"Yellow Triangle", anim_triangle},
-  {"Random Hue Pulse", anim_one_hue_pulse}
-};
-
 // stock colors
 const RgbColor roygbiv[7] = { {255, 0, 0},
 			      {255, 80, 0},
@@ -68,6 +54,24 @@ static uint8_t ledsOff = 0;
 
 extern void ledUpdate(uint8_t *fb, uint32_t len);
 static void ledSetRGB(void *ptr, int x, uint8_t r, uint8_t g, uint8_t b);
+
+
+/* Update FX_COUNT in led.h if you make changes here */
+const struct FXENTRY fxlist[] = {
+  {"ColorBounce", anim_color_bounce_fade},
+  {"Dot (White)", anim_dot},
+  {"Larsen Scanner", anim_larsen},
+  {"Police (Solid)", anim_police_all},
+  {"Police (Dots)", anim_police_dots},
+  {"Rainbow Fade", anim_rainbow_fade},
+  {"Rainbow Loop", anim_rainbow_loop},
+  {"Green Spiral", anim_solid_color},
+  {"Yellow Triangle", anim_triangle},
+  {"Random Hue Pulse", anim_one_hue_pulse}
+};
+
+
+
 
 void ledClear(void);
 
