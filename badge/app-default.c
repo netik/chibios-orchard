@@ -36,6 +36,15 @@ static int putImageFile(char *name, int16_t x, int16_t y) {
   }    
 
 }
+
+void noRender(GWidgetObject* gw, void* param)
+{
+  (void)gw;
+  (void)param;
+
+  return;
+}
+
 static void draw_badge_buttons(void) {
   GWidgetInit wi;
   coord_t totalheight = gdispGetHeight();
@@ -47,7 +56,8 @@ static void draw_badge_buttons(void) {
   wi.g.height = 40;
   wi.g.y = totalheight - 40;
   wi.g.x = gdispGetWidth() - 40;
-  wi.text = "*";
+  wi.text = "";
+  wi.customDraw = noRender;
 
   ghExitButton = gwinButtonCreate(NULL, &wi);
 }
