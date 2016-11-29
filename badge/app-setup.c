@@ -48,7 +48,7 @@ static void draw_setup_buttons(void) {
   wi.text = "Enabled";
   wi.customDraw = gwinCheckboxDraw_CheckOnLeft;
   ghCheckSound = gwinCheckboxCreate(0, &wi);
-  gwinCheckboxCheck(ghCheckSound, TRUE);
+  gwinCheckboxCheck(ghCheckSound, config->sound_enabled);
 
   // Create label widget: ghLabel1
   gwinWidgetClearInit(&wi);
@@ -196,7 +196,14 @@ void setup_event(OrchardAppContext *context, const OrchardAppEvent *event) {
     pe = event->ugfx.pEvent;
 
     switch(pe->type) {
-      case GEVENT_GWIN_BUTTON:
+
+    case GEVENT_GWIN_CHECKBOX:
+      if (((GEventGWinCheckbox*)pe)->gwin == ghCheckSound) {
+	// The state of our checkbox has changed
+	config->sound_enabled = ((GEventGWinCheckbox*)pe)->isChecked;
+      }
+      break;
+    case GEVENT_GWIN_BUTTON:
         if (((GEventGWinButton*)pe)->gwin == ghButtonCancel) {
      	  orchardAppExit();
         }
