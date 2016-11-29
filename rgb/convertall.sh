@@ -10,3 +10,4 @@ do
     mv jpg/`basename $i .jpg`.rgb rgb/
 done
 
+cp rgb/*.rgb /Volumes/DR-60D

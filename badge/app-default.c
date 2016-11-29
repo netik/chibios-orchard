@@ -60,8 +60,8 @@ static void redraw_badge(void) {
   gdispClear(Black);
 
   putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER1_Y);
-  putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
-  
+  gdispDrawThickLine(0, POS_FLOOR_Y, 320, POS_FLOOR_Y, White, 2, FALSE);
+
   fontLG = gdispOpenFont (FONT_LG);
   fontSM = gdispOpenFont (FONT_FIXED);
 

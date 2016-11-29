@@ -42,10 +42,10 @@ static void draw_setup_buttons(void) {
   // create checkbox widget: ghCheckSound
   wi.g.show = TRUE;
   wi.g.x = 10;
-  wi.g.y = 150;
-  wi.g.width = 120;
+  wi.g.y = 140;
+  wi.g.width = 200;
   wi.g.height = 20;
-  wi.text = "Enabled";
+  wi.text = " Enable Sounds";
   wi.customDraw = gwinCheckboxDraw_CheckOnLeft;
   ghCheckSound = gwinCheckboxCreate(0, &wi);
   gwinCheckboxCheck(ghCheckSound, config->sound_enabled);
@@ -55,7 +55,7 @@ static void draw_setup_buttons(void) {
   wi.g.show = TRUE;
   wi.g.x = 10;
   wi.g.y = 10;
-  wi.g.width = 120;
+  wi.g.width = 180;
   wi.g.height = 20;
   wi.text = "LED Pattern";
   ghLabel1 = gwinLabelCreate(0, &wi);
@@ -88,10 +88,10 @@ static void draw_setup_buttons(void) {
   // create button widget: ghButtonPatDn
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
-  wi.g.x = 220;
-  wi.g.y = 30;
-  wi.g.width = 40;
-  wi.g.height = 20;
+  wi.g.x = 200;
+  wi.g.y = 10;
+  wi.g.width = 50;
+  wi.g.height = 40;
   wi.text = "";
   wi.customDraw = gwinButtonDraw_ArrowUp;
   ghButtonPatDn = gwinButtonCreate(0, &wi);
@@ -100,29 +100,20 @@ static void draw_setup_buttons(void) {
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
   wi.g.x = 270;
-  wi.g.y = 30;
-  wi.g.width = 40;
-  wi.g.height = 20;
+  wi.g.y = 10;
+  wi.g.width = 50;
+  wi.g.height = 40;
   wi.text = "";
   wi.customDraw = gwinButtonDraw_ArrowDown;
   ghButtonPatUp = gwinButtonCreate(0, &wi);
 
-  // Create label widget: ghLabel3
-  gwinWidgetClearInit(&wi);
-  wi.g.show = TRUE;
-  wi.g.x = 10;
-  wi.g.y = 130;
-  wi.g.width = 120;
-  wi.g.height = 20;
-  wi.text = "Sound";
-  ghLabel3 = gwinLabelCreate(0, &wi);
 
   // Create label widget: ghLabel4
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
   wi.g.x = 10;
   wi.g.y = 70;
-  wi.g.width = 200;
+  wi.g.width = 180;
   wi.g.height = 20;
   wi.text = "LED Brightness";
   ghLabel4 = gwinLabelCreate(0, &wi);
@@ -141,10 +132,10 @@ static void draw_setup_buttons(void) {
   // create button widget: ghButtonDimUp
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
-  wi.g.x = 220;
-  wi.g.y = 90;
-  wi.g.width = 40;
-  wi.g.height = 20;
+  wi.g.x = 200;
+  wi.g.y = 70;
+  wi.g.width = 50;
+  wi.g.height = 40;
   wi.text = "";
   wi.customDraw = gwinButtonDraw_ArrowUp;
   ghButtonDimUp = gwinButtonCreate(0, &wi);
@@ -153,9 +144,9 @@ static void draw_setup_buttons(void) {
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
   wi.g.x = 270;
-  wi.g.y = 90;
-  wi.g.width = 40;
-  wi.g.height = 20;
+  wi.g.y = 70;
+  wi.g.width = 50;
+  wi.g.height = 40;
   wi.text = "";
   wi.customDraw = gwinButtonDraw_ArrowDown;
   ghButtonDimDn = gwinButtonCreate(0, &wi);

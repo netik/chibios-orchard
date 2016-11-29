@@ -33,9 +33,9 @@ Matthew (graphics,art)\r\n\r\n"
 #define IMG_SPLASH_NO_SOUND_DISPLAY_TIME 1000
 
 #define POS_PLAYER1_X  0
-#define POS_PLAYER1_Y  40
+#define POS_PLAYER1_Y  45
 
 #define POS_PLAYER2_X  180
-#define POS_PLAYER2_Y  40
+#define POS_PLAYER2_Y  45
 
 #define POS_FLOOR_Y    200
