@@ -2,8 +2,6 @@
 #include "orchard-ui.h"
 #include "userconfig.h"
 
-#include <string.h>
-
 static uint32_t name_init(OrchardAppContext *context)
 {
 	(void)context;
@@ -22,7 +20,6 @@ static void name_start(OrchardAppContext *context)
 	userconfig * config;
 
 	config = getConfig();
-	memset (config->name, 0, CONFIG_NAME_MAXLEN);
 
 	keyboardUiContext = chHeapAlloc(NULL, sizeof(OrchardUiContext));
 	keyboardUiContext->itemlist = (const char **)chHeapAlloc(NULL,

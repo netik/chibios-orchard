@@ -107,7 +107,8 @@ static void keyboard_start (OrchardAppContext *context)
 
 	pos = 0;
 
-	gwinPutChar (ghConsole, '_');
+	gwinPrintf (ghConsole, "%s_",
+		context->instance->uicontext->itemlist[1]);
 
 	return;
 }
