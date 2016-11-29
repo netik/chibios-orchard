@@ -27,9 +27,10 @@ Matthew (graphics,art)\r\n\r\n"
 #define IMG_GUARD         "GUARD_01.RGB"
 #define IMG_GUARD_IDLE_L  "GUARD_02.RGB"
 #define IMG_GUARD_IDLE_R  "grdr02.rgb"
+#define IMG_GROUND        "ground.rgb"
 
-#define IMG_SPLASH_DISPLAY_TIME          1000
-#define IMG_SPLASH_NO_SOUND_DISPLAY_TIME 3000
+#define IMG_SPLASH_DISPLAY_TIME          5000 // longer if music playing
+#define IMG_SPLASH_NO_SOUND_DISPLAY_TIME 1000
 
 #define POS_PLAYER1_X  0
 #define POS_PLAYER1_Y  40
@@ -37,4 +38,4 @@ Matthew (graphics,art)\r\n\r\n"
 #define POS_PLAYER2_X  180
 #define POS_PLAYER2_Y  40
 
-#define POS_FLOOR_Y    210
+#define POS_FLOOR_Y    200

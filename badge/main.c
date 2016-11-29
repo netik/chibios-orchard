@@ -363,10 +363,12 @@ XF  else
   /* Draw a banner... */
   uiStart();
   oledOrchardBanner();
-  if (config->sound_enabled) {
+
+  if (config->sound_enabled == 1) {
     chThdSleepMilliseconds(IMG_SPLASH_DISPLAY_TIME);
-  } else 
+  } else {
     chThdSleepMilliseconds(IMG_SPLASH_NO_SOUND_DISPLAY_TIME);
+  }
 
   /* run apps */
   orchardAppInit();
