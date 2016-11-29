@@ -105,10 +105,9 @@ static void keyboard_start (OrchardAppContext *context)
 
 	geventRegisterCallback (&gl, orchardAppUgfxCallback, &gl);
 
-	pos = 0;
-
 	gwinPrintf (ghConsole, "%s_",
 		context->instance->uicontext->itemlist[1]);
+	pos = strlen (context->instance->uicontext->itemlist[1]);
 
 	return;
 }
