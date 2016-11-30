@@ -22,6 +22,7 @@ typedef struct OrchardUiContext {
   unsigned int selected;
   unsigned int total;
   const char **itemlist;
+  void * priv;
 } OrchardUiContext;
 
 typedef struct _OrchardUi {

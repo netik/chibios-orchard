@@ -22,7 +22,6 @@ typedef struct _SetupHandles {
 	GHandle ghLabelPattern;
 	GHandle ghButtonPatDn;
 	GHandle ghButtonPatUp;
-	GHandle ghLabel3;
 	GHandle ghLabel4;
 	GHandle ghLabelDim;
 	GHandle ghButtonDimUp;
@@ -261,7 +260,6 @@ static void setup_exit(OrchardAppContext *context) {
   gwinDestroy(p->ghLabelPattern);
   gwinDestroy(p->ghButtonPatDn);
   gwinDestroy(p->ghButtonPatUp);
-  gwinDestroy(p->ghLabel3);
   gwinDestroy(p->ghLabel4);
   gwinDestroy(p->ghLabelDim);
   gwinDestroy(p->ghButtonDimUp);

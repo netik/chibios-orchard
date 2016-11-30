@@ -14,13 +14,12 @@
 /*lint -save -e9075 [8.4] All symbols are invoked from asm context.*/
 
 void **HARDFAULT_PSP;
-void *stack_pointer asm("sp");
 
 void HardFault_Handler(void) {
 /*lint -restore*/
   // Hijack the process stack pointer to make backtrace work
   asm("mrs %0, psp" : "=r"(HARDFAULT_PSP) : :);
-  stack_pointer = HARDFAULT_PSP;
+  asm("msr msp, %0" : : "r" (HARDFAULT_PSP) : );
 
   /* Break into the debugger */
   asm("bkpt #0");

@@ -12,31 +12,36 @@
  * We also need one listener object for detecting keypresses
  */
 
-static GListener	gl;
-static GHandle		ghConsole;
-static GHandle		ghKeyboard;
-static font_t		font;
-static uint8_t		pos;
+typedef struct _KeyboardHandles {
+	GListener	gl;
+	GHandle		ghConsole;
+	GHandle		ghKeyboard;
+	font_t		font;
+	uint8_t		pos;
+} KeyboardHandles;
 
-static uint8_t handle_input (char * name, uint8_t * pos, uint8_t max,
-	GEventKeyboard * pk, GConsoleObject * cons)
+static uint8_t handle_input (char * name, uint8_t max,
+	GEventKeyboard * pk, KeyboardHandles * p)
 {
+	GConsoleObject * cons;
 	uint8_t r;
 	uint8_t y;
 
 	if (pk->bytecount == 0)
 		return (0);
 
+	cons = (GConsoleObject *)p->ghConsole;
+
 	cons->cx = 0;
 	y = cons->cy;
-	gdispGFillArea (ghConsole->display, cons->cx, cons->cy,
-	    gdispGetWidth(), gdispGetFontMetric (font, fontHeight), Black);
+	gdispGFillArea (p->ghConsole->display, cons->cx, cons->cy,
+	    gdispGetWidth(), gdispGetFontMetric (p->font, fontHeight), Black);
 
 	switch (pk->c[0]) {
 	case GKEY_BACKSPACE:
-		(*pos)--;
-		name[*pos] = 0x0;
-		gwinPrintf (ghConsole, "%s_", name);
+		p->pos--;
+		name[p->pos] = 0x0;
+		gwinPrintf (p->ghConsole, "%s_", name);
 		cons->cy = y;
 		r = 0;
 		break;
@@ -44,15 +49,15 @@ static uint8_t handle_input (char * name, uint8_t * pos, uint8_t max,
 		r = 1;
 		break;
 	default:
-		if (*pos == max) {
+		if (p->pos == max) {
 			pwmToneStart (400);
 			chThdSleepMilliseconds (100);
 			pwmToneStop ();
 		} else {
-			name[*pos] = pk->c[0];
-			(*pos)++;
+			name[p->pos] = pk->c[0];
+			p->pos++;
 		}
-		gwinPrintf (ghConsole, "%s_", name);
+		gwinPrintf (p->ghConsole, "%s_", name);
 		cons->cy = y;
 		r = 0;
 		break;
@@ -63,12 +68,16 @@ static uint8_t handle_input (char * name, uint8_t * pos, uint8_t max,
 
 static void keyboard_start (OrchardAppContext *context)
 {
+	KeyboardHandles * p;
+	OrchardUiContext * ctx;
 	GWidgetInit wi;
 
-	(void)context;
+	ctx = context->instance->uicontext;
+	ctx->priv = chHeapAlloc (NULL, sizeof(KeyboardHandles));
+	p = ctx->priv;
 
-	font = gdispOpenFont (FONT_KEYBOARD);
-	gwinSetDefaultFont (font);
+	p->font = gdispOpenFont (FONT_KEYBOARD);
+	gwinSetDefaultFont (p->font);
 
 	/* Draw the console/text entry widget */
 
@@ -78,12 +87,12 @@ static void keyboard_start (OrchardAppContext *context)
 	wi.g.y = 0;
 	wi.g.width = gdispGetWidth();
 	wi.g.height = gdispGetHeight() / 2;
-	ghConsole = gwinConsoleCreate (0, &wi.g);
-	gwinSetColor (ghConsole, Yellow);
-	gwinSetBgColor (ghConsole, Black);
-	gwinShow (ghConsole);
-	gwinClear (ghConsole);
-	gwinPrintf (ghConsole, "%s\n\n",
+	p->ghConsole = gwinConsoleCreate (0, &wi.g);
+	gwinSetColor (p->ghConsole, Yellow);
+	gwinSetBgColor (p->ghConsole, Black);
+	gwinShow (p->ghConsole);
+	gwinClear (p->ghConsole);
+	gwinPrintf (p->ghConsole, "%s\n\n",
 		context->instance->uicontext->itemlist[0]);
 
 	/* Draw the keyboard widget */
@@ -92,22 +101,21 @@ static void keyboard_start (OrchardAppContext *context)
 	wi.g.y = gdispGetHeight() / 2;
 	wi.g.width = gdispGetWidth();
 	wi.g.height = gdispGetHeight() / 2;
-	ghKeyboard = gwinKeyboardCreate (0, &wi);
-	gwinSetStyle (ghKeyboard, &WhiteWidgetStyle);
-	gwinShow (ghKeyboard);
+	p->ghKeyboard = gwinKeyboardCreate (0, &wi);
+	gwinSetStyle (p->ghKeyboard, &WhiteWidgetStyle);
+	gwinShow (p->ghKeyboard);
 
 	/* Wait for events */
-	geventListenerInit (&gl);
-	gwinAttachListener (&gl);
+	geventListenerInit (&p->gl);
+	gwinAttachListener (&p->gl);
 
-	geventAttachSource (&gl, gwinKeyboardGetEventSource (ghKeyboard),
+	geventAttachSource (&p->gl, gwinKeyboardGetEventSource (p->ghKeyboard),
 		GLISTEN_KEYTRANSITIONS | GLISTEN_KEYUP);
 
-	geventRegisterCallback (&gl, orchardAppUgfxCallback, &gl);
+	geventRegisterCallback (&p->gl, orchardAppUgfxCallback, &p->gl);
 
-	gwinPrintf (ghConsole, "%s_",
-		context->instance->uicontext->itemlist[1]);
-	pos = strlen (context->instance->uicontext->itemlist[1]);
+	gwinPrintf (p->ghConsole, "%s_", ctx->itemlist[1]);
+	p->pos = strlen (ctx->itemlist[1]);
 
 	return;
 }
@@ -116,12 +124,12 @@ static void keyboard_event(OrchardAppContext *context,
 	const OrchardAppEvent *event)
 {
  	GEventKeyboard * pk;
-	GConsoleObject * cons;
+	KeyboardHandles * p;
 	GEvent * pe;
 	char * name;
 	uint8_t max;
 
-	(void)context;
+	p = context->instance->uicontext->priv;
 
 	if (event->type != ugfxEvent)
 		return;
@@ -135,25 +143,30 @@ static void keyboard_event(OrchardAppContext *context,
 
 	name = (char *)context->instance->uicontext->itemlist[1];
 	max = context->instance->uicontext->total;
-	cons = (GConsoleObject *)ghConsole;
 
-	if (handle_input (name, &pos, max, pk, cons) != 0)
-		chEvtBroadcast(&ui_completed);
+	if (handle_input (name, max, pk, p) != 0)
+		chEvtBroadcast (&ui_completed);
 
 	return;  
 }
 
 static void keyboard_exit(OrchardAppContext *context)
 {
-	(void)context;
+	KeyboardHandles * p;
 
-	geventRegisterCallback (&gl, NULL, NULL);
-	geventDetachSource (&gl, NULL);
-	gwinDestroy (ghConsole);
-	gwinDestroy (ghKeyboard);
-	gdispCloseFont (font);
+	p = context->instance->uicontext->priv;
+
+	geventRegisterCallback (&p->gl, NULL, NULL);
+	geventDetachSource (&p->gl, NULL);
+	gwinDestroy (p->ghConsole);
+	gwinDestroy (p->ghKeyboard);
+
+	gdispCloseFont (p->font);
 
 	gdispClear (Black);
+
+	chHeapFree (p);
+	context->instance->uicontext->priv = NULL;
 
 	return;
 }
