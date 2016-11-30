@@ -3,8 +3,8 @@
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0
-#define CONFIG_VERSION    6
-#define CONFIG_NAME_MAXLEN 16
+#define CONFIG_VERSION    7
+#define CONFIG_NAME_MAXLEN 10
 
 typedef enum _player_type {
   p_pleeb,

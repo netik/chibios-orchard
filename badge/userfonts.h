@@ -4,6 +4,7 @@
  * 
  * Be sure to update "fontlist.h" with the short names to keep us sane.
  */
-#include "font-slkscr14.h"
+
 #include "font-jupiterpro16.h"
 #include "font-jupiterpro36.h"
+#include "font-manteka20.h"

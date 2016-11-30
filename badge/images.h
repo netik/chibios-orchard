@@ -38,4 +38,8 @@ Matthew (graphics,art)\r\n\r\n"
 #define POS_PLAYER2_X  180
 #define POS_PLAYER2_Y  45
 
+// used for enemy selection and stats when buttons on screen
+#define POS_PCENTER_X  30
+#define POS_PCENTER_Y  45
+
 #define POS_FLOOR_Y    200

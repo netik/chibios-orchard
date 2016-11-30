@@ -37,7 +37,7 @@ static int putImageFile(char *name, int16_t x, int16_t y) {
 
 }
 
-void noRender(GWidgetObject* gw, void* param)
+static void noRender(GWidgetObject* gw, void* param)
 {
   (void)gw;
   (void)param;
@@ -76,7 +76,7 @@ static void redraw_badge(void) {
   fontSM = gdispOpenFont (FONT_FIXED);
 
   uint16_t ypos = 0; // cursor, so if we move or add things we don't have to rethink this
-  uint16_t lmargin = 140; // cursor, so if we move or add things we don't have to rethink this
+  uint16_t lmargin = 130; // cursor, so if we move or add things we don't have to rethink this
   gdispDrawStringBox (0,
 		      ypos,
 		      gdispGetWidth(),
@@ -99,11 +99,19 @@ static void redraw_badge(void) {
 
   /* XP */
   ypos = ypos + gdispGetFontMetric(fontSM, fontHeight) + 4;
-  gdispDrawThickLine(165, ypos, 320, ypos, White, 2, FALSE);
+  gdispDrawThickLine(135, ypos, 320, ypos, Red, 2, FALSE);
   ypos = ypos + 10;
   
-  chsnprintf(tmp2, sizeof(tmp2), " XP: %3d GOLD: %3d", config->xp, config->gold);
+  chsnprintf(tmp2, sizeof(tmp2), "XP: %3d", config->xp);
   gdispDrawStringBox (lmargin,
+		      ypos,
+		      gdispGetWidth(),
+		      gdispGetFontMetric(fontSM, fontHeight),
+		      tmp2,
+		      fontSM, Yellow, justifyLeft);
+
+  chsnprintf(tmp2, sizeof(tmp2), "GOLD: %3d", config->gold);
+  gdispDrawStringBox (lmargin + 90,
 		      ypos,
 		      gdispGetWidth(),
 		      gdispGetFontMetric(fontSM, fontHeight),
@@ -112,8 +120,15 @@ static void redraw_badge(void) {
 
   /* won/los */
   ypos = ypos + gdispGetFontMetric(fontSM, fontHeight) + 2;
-  chsnprintf(tmp2, sizeof(tmp2), "WON: %3d LOST: %3d", config->won, config->lost);
+  chsnprintf(tmp2, sizeof(tmp2), "WON: %3d", config->won);
   gdispDrawStringBox (lmargin,
+		      ypos,
+		      gdispGetWidth(),
+		      gdispGetFontMetric(fontSM, fontHeight),
+		      tmp2,
+		      fontSM, Yellow, justifyLeft);
+   chsnprintf(tmp2, sizeof(tmp2), "LOST: %3d", config->lost);
+  gdispDrawStringBox (lmargin + 90,
 		      ypos,
 		      gdispGetWidth(),
 		      gdispGetFontMetric(fontSM, fontHeight),
@@ -122,8 +137,15 @@ static void redraw_badge(void) {
 
   /* stats */
   ypos = ypos + gdispGetFontMetric(fontSM, fontHeight) + 20;
-  chsnprintf(tmp2, sizeof(tmp2), " SPR: %2d   STR: %2d", config->spr, config->str);
+  chsnprintf(tmp2, sizeof(tmp2), "SPR: %2d", config->spr);
   gdispDrawStringBox (lmargin,
+		      ypos,
+		      gdispGetWidth(),
+		      gdispGetFontMetric(fontSM, fontHeight),
+		      tmp2,
+		      fontSM, Yellow, justifyLeft);
+  chsnprintf(tmp2, sizeof(tmp2), "STR: %2d", config->str);
+  gdispDrawStringBox (lmargin + 90,
 		      ypos,
 		      gdispGetWidth(),
 		      gdispGetFontMetric(fontSM, fontHeight),
@@ -131,8 +153,15 @@ static void redraw_badge(void) {
 		      fontSM, Yellow, justifyLeft);
 
   ypos = ypos + gdispGetFontMetric(fontSM, fontHeight) + 2;
-  chsnprintf(tmp2, sizeof(tmp2), " DEF: %2d   DEX: %2d", config->def, config->dex);
+  chsnprintf(tmp2, sizeof(tmp2), "DEF: %2d", config->def);
   gdispDrawStringBox (lmargin,
+		      ypos,
+		      gdispGetWidth(),
+		      gdispGetFontMetric(fontSM, fontHeight),
+		      tmp2,
+		      fontSM, Yellow, justifyLeft);
+  chsnprintf(tmp2, sizeof(tmp2), "DEX: %2d", config->dex);
+  gdispDrawStringBox (lmargin + 90,
 		      ypos,
 		      gdispGetWidth(),
 		      gdispGetFontMetric(fontSM, fontHeight),

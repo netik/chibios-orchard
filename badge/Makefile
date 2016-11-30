@@ -129,6 +129,7 @@ CSRC = main.c \
        cmd-reset.c \
        app-launcher.c \
        app-name.c \
+       app-fight.c \
        app-notify.c \
        app-shout.c \
        app-default.c \

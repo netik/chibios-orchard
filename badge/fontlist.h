@@ -4,10 +4,11 @@
 #define FONT_SM           "Jupiter_Pro_2561316"
 #define FONT_XS           "UI2"
 
-#define FONT_FIXED        "fixed_10x20"
+// was: fixed_10x20
+#define FONT_FIXED        "manteka20"
 
-#define FONT_KEYBOARD     "UI2"
-#define FONT_TEXTENTRY    "UI2"
-
+// was: UI2
+#define FONT_KEYBOARD     "fixed_10x20"
+#define FONT_TEXTENTRY    "fixed_10x20"
 
 #define FONT_SYS          FONT_XS

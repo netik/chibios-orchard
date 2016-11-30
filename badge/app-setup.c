@@ -175,7 +175,6 @@ static void setup_start(OrchardAppContext *context) {
   gdispClear (Black);
 
   p = chHeapAlloc (NULL, sizeof(SetupHandles));
-
   draw_setup_buttons(p);
   context->priv = p;
 

@@ -98,14 +98,14 @@ static void redraw_list(struct launcher_list *list) {
   width = gdispGetWidth();
   height = gdispGetFontMetric(font, fontHeight);
   header_height = height;
-  gdispFillArea(0, 0, width, height, White);
+  gdispFillArea(0, 0, width, height, Green);
 
   //  chsnprintf(tmp, sizeof(tmp), "%s", family->name);
   gdispDrawStringBox(0, 0, width, height,
-                     tmp, font, Black, justifyLeft);
+                     tmp, font, White, justifyLeft);
   //  chsnprintf(tmp, sizeof(tmp), "%d %d%%", ui_timeout, ggStateofCharge());
   gdispDrawStringBox(0, 0, width, height,
-                     config->name, font, Black, justifyRight);
+                     config->name, font, White, justifyRight);
 
   // draw app list
   width = gdispGetWidth();
