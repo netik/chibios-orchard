@@ -39,7 +39,7 @@
 	 * read-only data section.
 	 */
 
-#define RO	__attribute__((section(".text")))
+#define RO	__attribute__((section(".chibi_list.dummy")))
 
 	static const char Eng1Set0Row3[] = "\004  .\006\006";
 	static const char Eng1Set1Row0[] = "QWERTYUIOP";
