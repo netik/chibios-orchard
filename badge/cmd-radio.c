@@ -83,6 +83,7 @@ static void radio_dump(BaseSequentialStream *chp, int argc, char *argv[]) {
   print_hex_offset(chp, buf, count, 0, addr);
 }
 
+#ifdef KW01_RADIO_HWFILTER
 static void radio_addr(BaseSequentialStream *chp, int argc, char *argv[]) {
 
   unsigned int addr;
@@ -101,6 +102,7 @@ static void radio_addr(BaseSequentialStream *chp, int argc, char *argv[]) {
   radioAddressSet(radioDriver, addr);
   chprintf(chp, "Set radio address to %d\r\n", addr);
 }
+#endif /* KW01_RADIO_HWFILTER */
 
 static void
 radio_temperature (BaseSequentialStream *chp)
@@ -135,8 +137,10 @@ static void cmd_radio(BaseSequentialStream *chp, int argc, char *argv[]) {
     radio_set(chp, argc, argv);
   else if (!strcasecmp(argv[0], "dump"))
     radio_dump(chp, argc, argv);
+#ifdef KW01_RADIO_HWFILTER
   else if (!strcasecmp(argv[0], "addr"))
     radio_addr(chp, argc, argv);
+#endif /* KW01_RADIO_HWFILTER */
   else if (!strcasecmp(argv[0], "temperature"))
     radio_temperature (chp);
   else
