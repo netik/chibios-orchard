@@ -91,6 +91,10 @@
 #include "orchard.h"
 #include "orchard-events.h"
 
+#ifndef KW01_RADIO_HWFILTER
+#include "userconfig.h"
+#endif
+
 #if KINETIS_MCG_MODE == KINETIS_MCG_MODE_FEI
 #define KW01_HARD_RESET
 #endif /* KINETIS_MCG_MODE_FEI */
@@ -310,7 +314,7 @@ radioReset (RADIODriver * radio)
 
  	/* Now wait for the chip to get its brains in order. */
 
-        chThdSleepMilliseconds (20);
+	chThdSleepMilliseconds (20);
 
 	return;
 }
@@ -596,7 +600,11 @@ radioStart (SPIDriver * sp)
 
 	radioWrite (radio, KW01_PKTCONF1, KW01_FORMAT_VARIABLE |
 		    KW01_DCFREE_WHITENING | KW01_PKTCONF1_CRCON |
+#ifdef KW01_RADIO_HWFILTER
 		    KW01_AFILT_UCASTBCAST);
+#else
+		    KW01_AFILT_NONE);
+#endif
 
 	radio->kw01_flags = KW01_FLAG_AFILT;
 	radio->kw01_maxlen = KW01_PKT_MAXLEN;
@@ -617,10 +625,12 @@ radioStart (SPIDriver * sp)
 
 	radioWrite (radio, KW01_PALEVEL, KW01_PALEVEL_PA0 | KW01_TXPWR(31));
 
+#ifdef KW01_RADIO_HWFILTER
 	/* Set node and broadcast address */
 
 	radioAddressSet (radio, 1);
 	radioWrite (radio, KW01_BCASTADDR, 0xFF);
+#endif
 
 	/* Set antenna impedance, enable RX AGC, */
 
@@ -899,6 +909,7 @@ radioRead (RADIODriver * radio, uint8_t addr)
 	return (val);
 }
 
+#ifdef KW01_RADIO_HWFILTER
 /******************************************************************************
 *
 * radioAddressGet - get the radio node address
@@ -938,6 +949,7 @@ radioAddressSet (RADIODriver * radio, uint8_t addr)
 	radioWrite (radio, KW01_NODEADDR, addr);
 	return;
 }
+#endif
 
 /******************************************************************************
 *
@@ -1004,12 +1016,18 @@ radioHandlerSet (RADIODriver * radio, uint8_t prot, KW01_PKT_FUNC handler)
 */
 
 int
+#ifdef KW01_RADIO_HWFILTER
 radioSend (RADIODriver * radio, uint8_t dest, uint8_t prot,
            uint8_t len, const void *payload)
+#else
+radioSend (RADIODriver * radio, uint32_t dest, uint8_t prot,
+           uint8_t len, const void *payload)
+#endif
 {
 	KW01_PKT_HDR hdr;
 	uint8_t reg;
 	unsigned int i;
+	userconfig * config;
 
 	/* Don't send more data than will fit in the FIFO. */
 
@@ -1026,7 +1044,12 @@ radioSend (RADIODriver * radio, uint8_t dest, uint8_t prot,
 		return (-1);
 	}
 
+#ifdef KW01_RADIO_HWFILTER
 	hdr.kw01_src = radioSpiRead (radio, KW01_NODEADDR);
+#else
+	config = getConfig ();
+	hdr.kw01_src = config->netid;
+#endif
 	hdr.kw01_dst = dest;
 	hdr.kw01_prot = prot;
 
