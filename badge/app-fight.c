@@ -174,9 +174,10 @@ static void redraw_enemy_select(void) {
   font_t fontFF, fontSM;
   const userconfig *config = getConfig();
   user **enemies = enemiesGet();
-  
-  gdispClear(Black);
 
+  // blank out the center
+  gdispFillArea(31,22,260,POS_FLOOR_Y,Red);
+    
   putImageFile(IMG_GUARD_IDLE_L, POS_PCENTER_X, POS_PCENTER_Y);
   putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
 
@@ -229,6 +230,7 @@ static void fight_start(OrchardAppContext *context) {
   (void)context;
   if (enemyCount() > 0) { 
     current_fight_state = ENEMY_SELECT;
+    gdispClear(Black);
     redraw_enemy_select();
   } else {
     // punt if no enemies
