@@ -31,6 +31,8 @@ typedef struct _SetupHandles {
 	GListener glSetup;
 } SetupHandles;
 
+static uint32_t last_ui_time = 0;
+
 static void draw_setup_buttons(SetupHandles * p) {
   userconfig *config = getConfig();
   GWidgetInit wi;
@@ -171,8 +173,11 @@ static uint32_t setup_init(OrchardAppContext *context) {
 static void setup_start(OrchardAppContext *context) {
   SetupHandles * p;
 
-  (void)context;
   gdispClear (Black);
+
+  // fires once a second for updates. 
+  orchardAppTimer(context, 1000, true);
+  last_ui_time = chVTGetSystemTime();
 
   p = chHeapAlloc (NULL, sizeof(SetupHandles));
   draw_setup_buttons(p);
@@ -191,12 +196,16 @@ static void setup_event(OrchardAppContext *context,
   SetupHandles * p;
 
   p = context->priv;
-  
-  if (event->type == ugfxEvent) {
+  if (event->type == timerEvent) {
+    if( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) {
+      orchardAppRun(orchardAppByName("Badge"));
+    }
+    return;
+  } else if (event->type == ugfxEvent) {
     pe = event->ugfx.pEvent;
-
+    
     switch(pe->type) {
-
+      
     case GEVENT_GWIN_CHECKBOX:
       if (((GEventGWinCheckbox*)pe)->gwin == p->ghCheckSound) {
 	// The state of our checkbox has changed
