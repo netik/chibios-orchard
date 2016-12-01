@@ -92,13 +92,15 @@ static thread_t * pThread;
 
 static THD_FUNCTION(pwmThread, arg) {
 	PWM_NOTE * p;
+	userconfig *config;
+
 	(void)arg;
 
 	chRegSetThreadName ("pwm");
+	config = getConfig();
 
 	while (1) {
 		chThdSleep (TIME_INFINITE);
-		userconfig *config = getConfig();
 		
 		if (config->sound_enabled == 0) {
 			play = 0;
