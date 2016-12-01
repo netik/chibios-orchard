@@ -10,6 +10,7 @@
 #include "userconfig.h"
 
 extern const OrchardApp *orchard_app_list;
+static uint32_t last_ui_time = 0;
 
 struct launcher_list_item {
   const char        *name;
@@ -195,43 +196,54 @@ static void launcher_start(OrchardAppContext *context) {
   gwinAttachListener(&list->gl);
   geventRegisterCallback (&list->gl, orchardAppUgfxCallback, &list->gl);
 
+  // set up our idle timer
+  orchardAppTimer(context, 1000, true);
+  last_ui_time = chVTGetSystemTime();
+  
   return;
 }
 
 void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
-	GEvent * pe;
-	struct launcher_list *list = (struct launcher_list *)context->priv;
-
-	if (event->type == ugfxEvent) {
-		pe = event->ugfx.pEvent;
-
-		switch(pe->type) {
-		case GEVENT_GWIN_BUTTON:
-			if (((GEventGWinButton*)pe)->gwin == list->ghButton1) {
-				list->selected--;
-				if (list->selected >= list->total)
-					list->selected = 0;
-			}
-
-			if (((GEventGWinButton*)pe)->gwin == list->ghButton2) {
-				list->selected++;
-				if (list->selected >= list->total)
-				list->selected = list->total-1;
-			}
-
-			if (((GEventGWinButton*)pe)->gwin == list->ghButton3) {
-				orchardAppRun(list->items[list->selected].entry);
-				return;
-      			}
-
-      			redraw_list(list);
-			break;
-		default:
-			break;
-		}
+  GEvent * pe;
+  struct launcher_list *list = (struct launcher_list *)context->priv;
+  
+  if( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) {
+    orchardAppRun(orchardAppByName("Badge"));
+  }
+  else
+    if (event->type == ugfxEvent) {
+      pe = event->ugfx.pEvent;
+      
+      switch(pe->type) {
+      case GEVENT_GWIN_BUTTON:
+	if (((GEventGWinButton*)pe)->gwin == list->ghButton1) {
+	  last_ui_time = chVTGetSystemTime();
+	  list->selected--;
+	  
+	  if (list->selected >= list->total)
+	    list->selected = 0;
 	}
-
-	return;
+	
+	if (((GEventGWinButton*)pe)->gwin == list->ghButton2) {
+	  last_ui_time = chVTGetSystemTime();
+	  list->selected++;
+	  if (list->selected >= list->total)
+	    list->selected = list->total-1;
+	}
+	
+	if (((GEventGWinButton*)pe)->gwin == list->ghButton3) {
+	  orchardAppRun(list->items[list->selected].entry);
+	  return;
+	}
+	
+	redraw_list(list);
+	break;
+      default:
+	break;
+      }
+    }
+  
+  return;
 }
 
 static void launcher_exit(OrchardAppContext *context) {

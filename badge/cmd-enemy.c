@@ -36,7 +36,7 @@ orchard_command("enemylist", cmd_enemylist);
 
 void cmd_enemyadd(BaseSequentialStream *chp, int argc, char *argv[]) {
   user **enemies;
-  uint8_t i,ic,hp,level;
+  uint16_t i,ic,hp,level;
 
   if (argc != 5) {
     chprintf(chp, "Usage: enemyadd <index> <name> <incombat> <hp> <level>\r\n");
