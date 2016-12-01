@@ -404,7 +404,7 @@ void enemy_cleanup(void) {
   osalMutexUnlock(&enemies_mutex);
 }
 
-int friend_comp(const void *a, const void *b) {
+int enemy_comp(const void *a, const void *b) {
   char *mya;
   char *myb;
   
@@ -425,7 +425,7 @@ int friend_comp(const void *a, const void *b) {
 
 void enemiesSort(void) {
   osalMutexLock(&enemies_mutex);
-  qsort(enemies, MAX_ENEMIES, sizeof(char *), friend_comp);
+  qsort(enemies, MAX_ENEMIES, sizeof(char *), enemy_comp);
   osalMutexUnlock(&enemies_mutex);
 }
 

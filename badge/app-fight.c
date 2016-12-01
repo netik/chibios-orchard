@@ -32,13 +32,13 @@ typedef enum _fight_state {
 } fight_state;
 
 static fight_state current_fight_state;
+static int current_enemy = 0;
 
 static int putImageFile(char *name, int16_t x, int16_t y);
 
 static int putImageFile(char *name, int16_t x, int16_t y) {
-
   gdispImage img;
-    
+
   if (gdispImageOpenFile (&img, name) == GDISP_IMAGE_ERR_OK) {
     gdispImageDraw (&img,
 		    x, y,
@@ -51,7 +51,6 @@ static int putImageFile(char *name, int16_t x, int16_t y) {
     chprintf(stream, "\r\ncan't load image %s!!\r\n", name);
     return(0);
   }    
-
 }
 
 static void noRender(GWidgetObject* gw, void* param)
@@ -101,10 +100,25 @@ static void draw_buttons(FightHandles *p) {
   p->ghExitButton = gwinButtonCreate(NULL, &wi);
 }
 
+static void redraw_no_enemies(void) {
+  font_t fontFF;
+  gdispClear(Black);
+  fontFF = gdispOpenFont (FONT_FIXED);
+
+  gdispDrawStringBox (0,
+		      (gdispGetHeight() / 2) - (gdispGetFontMetric(fontFF, fontHeight) / 2),
+		      gdispGetWidth(),
+		      gdispGetFontMetric(fontFF, fontHeight),
+		      "NO ENEMIES NEARBY!",
+		      fontFF, Red, justifyCenter);
+  
+}
+
 static void redraw_enemy_select(void) {
   // enemy selection screen
   font_t fontFF, fontSM;
   const userconfig *config = getConfig();
+  user **enemies = enemiesGet();
   
   gdispClear(Black);
 
@@ -127,7 +141,7 @@ static void redraw_enemy_select(void) {
   // slightly above the middle
 
   char tmp[40];
-  chsnprintf(tmp, sizeof(tmp), "LEVEL %d", 10);
+  chsnprintf(tmp, sizeof(tmp), "LEVEL %d", enemies[current_enemy]->level);
   ypos = (gdispGetHeight() / 2) - 60;
   xpos = (gdispGetWidth() / 2) + 10;
   
@@ -135,15 +149,17 @@ static void redraw_enemy_select(void) {
 		      ypos,
 		      gdispGetWidth() - xpos,
 		      gdispGetFontMetric(fontFF, fontHeight),
-		      config->name,
+		      enemies[current_enemy]->name,
 		      fontFF, Yellow, justifyLeft);
-  ypos = ypos + 20;
+  // level
+  ypos = ypos + 25;
   gdispDrawStringBox (xpos,
 		      ypos,
 		      gdispGetWidth() - xpos,
 		      gdispGetFontMetric(fontFF, fontHeight),
 		      tmp,
 		      fontFF, Yellow, justifyLeft);
+
 }
 
 
@@ -156,8 +172,15 @@ static void fight_start(OrchardAppContext *context) {
   FightHandles *p;
   
   (void)context;
-  current_fight_state = ENEMY_SELECT;
-  redraw_enemy_select();
+  if (enemyCount() > 0) { 
+    current_fight_state = ENEMY_SELECT;
+    redraw_enemy_select();
+  } else {
+    // punt if no enemies
+    redraw_no_enemies();
+    chThdSleepMilliseconds(1000);
+    orchardAppExit();
+  }
 
   p = chHeapAlloc (NULL, sizeof(FightHandles));
   draw_buttons(p);

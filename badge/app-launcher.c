@@ -98,7 +98,7 @@ static void redraw_list(struct launcher_list *list) {
   width = gdispGetWidth();
   height = gdispGetFontMetric(font, fontHeight);
   header_height = height;
-  gdispFillArea(0, 0, width, height, Green);
+  gdispFillArea(0, 0, width, height, Red);
 
   //  chsnprintf(tmp, sizeof(tmp), "%s", family->name);
   gdispDrawStringBox(0, 0, width, height,

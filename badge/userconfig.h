@@ -68,7 +68,7 @@ typedef struct userconfig {
 
 typedef struct _user {
   /* this is a shortened form of userdata for transmission */
-  /* it is a mere 24 bytes */
+  /* appx 32 bytes */
   uint8_t priority;
   uint32_t netid;  
   char name[CONFIG_NAME_MAXLEN];
