@@ -153,7 +153,7 @@ static uint8_t prevEnemy() {
     ce--;
     distance++;
     if (ce < 0) {
-      ce = MAX_ENEMIES;
+      ce = MAX_ENEMIES-1;
     }
   } while ( (enemies[ce] == NULL) && (distance < MAX_ENEMIES) );
 		   
@@ -176,7 +176,7 @@ static void redraw_enemy_select(void) {
   user **enemies = enemiesGet();
 
   // blank out the center
-  gdispFillArea(31,22,260,POS_FLOOR_Y,Red);
+  gdispFillArea(31,22,260,POS_FLOOR_Y-22,Black);
     
   putImageFile(IMG_GUARD_IDLE_L, POS_PCENTER_X, POS_PCENTER_Y);
   putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
