@@ -34,7 +34,10 @@ typedef enum _fight_state {
 static fight_state current_fight_state;
 static int current_enemy = 0;
 
+/* prototypes */
 static int putImageFile(char *name, int16_t x, int16_t y);
+static uint8_t prevEnemy(void);
+static uint8_t nextEnemy(void);
 
 static int putImageFile(char *name, int16_t x, int16_t y) {
   gdispImage img;
@@ -112,6 +115,58 @@ static void redraw_no_enemies(void) {
 		      "NO ENEMIES NEARBY!",
 		      fontFF, Red, justifyCenter);
   
+}
+
+static uint8_t nextEnemy() {
+  /* walk the list looking for an enemy. */
+  user **enemies = enemiesGet();
+  int8_t ce = current_enemy;
+  uint8_t distance = 0;
+  
+  do { 
+    ce++;
+    distance++;
+    if (ce > MAX_ENEMIES-1) {
+      ce = 0;
+    }
+  } while ( (enemies[ce] == NULL) && (distance < MAX_ENEMIES) );
+		   
+  if (enemies[ce] != NULL) {
+    current_enemy = ce;
+    return TRUE;
+  } else {
+    // we failed, so time to die.
+    redraw_no_enemies();
+    chThdSleepMilliseconds(1000);
+    orchardAppExit();
+    return FALSE;
+  }
+}
+
+static uint8_t prevEnemy() {
+  /* walk the list looking for an enemy. */
+  user **enemies = enemiesGet();
+  int8_t ce = current_enemy;
+  uint8_t distance = 0;
+  
+  do { 
+    ce--;
+    distance++;
+    if (ce < 0) {
+      ce = MAX_ENEMIES;
+    }
+  } while ( (enemies[ce] == NULL) && (distance < MAX_ENEMIES) );
+		   
+  if (enemies[ce] != NULL) {
+    current_enemy = ce;
+    return TRUE;
+  } else {
+    // we failed, so time to die.
+    redraw_no_enemies();
+    chThdSleepMilliseconds(1000);
+    orchardAppExit();
+    return FALSE;
+  }
 }
 
 static void redraw_enemy_select(void) {
@@ -204,6 +259,18 @@ static void fight_event(OrchardAppContext *context,
     case GEVENT_GWIN_BUTTON:
       if (((GEventGWinButton*)pe)->gwin == p->ghExitButton) {
 	orchardAppExit();
+	return;
+      }
+      if (((GEventGWinButton*)pe)->gwin == p->ghNextEnemy) {
+	if (nextEnemy()) { 
+	  redraw_enemy_select();
+	}
+	return;
+      }
+      if (((GEventGWinButton*)pe)->gwin == p->ghPrevEnemy) {
+	if (prevEnemy()) { 
+	  redraw_enemy_select();
+	}
 	return;
       }
       break;
