@@ -79,7 +79,7 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.g.show = TRUE;
   wi.g.x = 10;
   wi.g.y = 30;
-  wi.g.width = 200;
+  wi.g.width = 80;
   wi.g.height = 20;
   chsnprintf(tmp, sizeof(tmp), "%d", config->led_pattern+1);
   wi.text = tmp;
@@ -124,7 +124,7 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.g.show = TRUE;
   wi.g.x = 10;
   wi.g.y = 90;
-  wi.g.width = 200;
+  wi.g.width = 80;
   wi.g.height = 20;
   chsnprintf(tmp, sizeof(tmp), "%d", ( 8 - config->led_shift ));
   wi.text = tmp;
