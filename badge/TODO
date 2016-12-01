@@ -5,13 +5,13 @@ TODO! things to figure out
 1. Restore event hooks for: -- DONE
 
    radio
-   touch
-   key down events       
+   touch - DONE
+   key down events 
    orientation events
 
    ... in orchard-app.c 
 
-2. UI-List UI wiedge
+2. UI-List UI wiedge - DONE 
 
 3. UI - Keyboard/passing of touch events, up/down selectors -- DONE
 
@@ -20,17 +20,17 @@ TODO! things to figure out
 5. FLASH STORAGE of LED, Name, and Stats  -- DONE
     -- dimming - store dim status in status/conf page
        
-6. Game protocol and Game
+6. Game protocol and Game - IN PROGRESS
    Restore event system first.
 
 7. Launcher doesn't work. why? -- DONE
    (first app loaded is launcher but it comes up with a bogus number of apps.)
 
-8. Game graphics ( can be done last ) -- in progress
+8. Game graphics ( can be done last ) -- IN PROGRESS
 
-9. TIMERS - reset the UI if it is stuck
+9. TIMERS - Go back to the badge screen from the launcher if timeout
 
-10. Status / setup screen
+10. Status / setup screen  -- DONE
     -- ability to show ID
 
 11. Automatic jump to name page if not conf'd
@@ -46,7 +46,7 @@ TODO! things to figure out
 
 13. App switching - I am fairly certain app switching is now functional because the dispatcher works. Needs test.  -- DONE
 
-14. Our startup app is going to be the main app not the launcher. Launcher is secondary.
+14. Our startup app is going to be the main app not the launcher. Launcher is secondary. (see #9 above)
 
 15. Splash screen spqr, whatever. -- DONE
 

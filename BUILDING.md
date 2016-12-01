@@ -3,28 +3,32 @@ netik's build notes
 I am building on a Mac Pro (OSX 10.11) and Bill is using freeBSD.
 
 Bill's link - https://people.freebsd.org/~wpaul/w00t/badge/
-Pin usage   -
 
 1. Update submodules... (ugfx, etc...)
 
   git submodule update --init --recursive
 
-1. Install the gcc arm compiler.
+  Note that we're using our own slightly modified version of ugfx. 
+
+2. Install the gcc arm compiler.
 
   cd /usr/local
   wget https://launchpad.net/gcc-arm-embedded/5.0/5-2016-q3-update/+download/gcc-arm-none-eabi-5_4-2016q3-20160926-mac.tar.bz2
   tar xjf gcc-arm-none-eabi-5_4-2016q3-20160926-mac.tar.bz2   
   ln -s gcc-arm-none-eabi-5_4-2016q3-20160926-mac.tar.bz2 cortex-m0
+
+  Or, better, install the gnu arm toolchain. Much less work.
+  Go to:  https://launchpad.net/gcc-arm-embedded/+download
   
 2. make sure you are using right compilers...
 
- export PATH=/usr/local/cortex-m0/bin:$PATH
- export CFLAGS="-I/usr/local/cortex-m0/include -L/usr/local/cortex-m0/lib"
+  export PATH=/usr/local/cortex-m0/bin:$PATH
+  export CFLAGS="-I/usr/local/cortex-m0/include -L/usr/local/cortex-m0/lib"
 
 3. Make
 
- cd badge
- make clean; make
+  cd badge
+  make clean; make
 
 4. Start openOCD (assumes you have it installed ...)
 ( See also: https://people.freebsd.org/~wpaul/w00t/badge/freedom_board.txt )
@@ -33,6 +37,18 @@ The version of OpenOCD that I build has support for this device. I used
 the following command to connect to it. Run this in one window. 
 
 /usr/local/cortex-m0/bin/openocd -f interface/cmsis-dap.cfg -f target/klx.cfg
+
+On my Mac Pro I could not get CMSIS-DAP to work over USB AT ALL. It failed miserably.
+
+I am using an Olimex debugger now directly to the SWD headers. See
+Appendix A at the bottom of this document for help.
+
+The run commnad for on Mac OS with the GNU ARM Toolchain is:
+  /usr/local/bin/openocd -f interface/ftdi/olimex-arm-usb-ocd-h.cfg \
+  /Applications/GNU\ ARM\ Eclipse/OpenOCD/0.10.0-201610281609-dev/bin/openocd \
+    -f interface/ftdi/olimex-arm-usb-ocd-h.cfg \
+    -f interface/ftdi/olimex-arm-jtag-swd.cfg \
+    -f target/klx.cfg -c "gdb_flash_program enable" -c "gdb_breakpoint_override hard"
 
 Note: to talk directly to the device via JTAG/SWD header with the Olimex
 debugger, use this command:
@@ -60,17 +76,26 @@ xPSR: 0x81000000 pc: 0x0000904c psp: 0x1ffffbd0
 >
 
 6. Push code to device
-  cd badge/build
-  
-  % arm-none-eabi-gdb
-  (gdb) target remote localhost:3333
+  cd badge
+  (cd build; /usr/local/cortex-m0/bin/arm-none-eabi-gdb -iex "target remote localhost:3333; load" badge.elf  )
   (gdb) load badge.elf
+  (gdb) c
+
+  Code should run!
+
+7. Get a shell
+
+If you have the Olimex debugger plugged in, and a USB cable plugged
+into the development board, you should see a shell at
+
+```sudo cu -s 115200 -l /dev/cu.usbmodem41412```
   
-7. Profit!
+8. 
 
 Appendix A: Programming tools.
 
-If you are using the freescale KW01 demo board, you'll need the following to talk to it via SWD
+If you are using the freescale KW01 demo board, you'll need the
+following to talk to it via SWD
 
 Olimex ARM-USB-OCH-H JTAG debugger ($50):
 http://www.mouser.com/ProductDetail/Olimex-Ltd/ARM-USB-OCD-H
