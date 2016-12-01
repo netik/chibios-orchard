@@ -1,42 +1,36 @@
-TODO! things to figure out
 --------------------------
-0. FONTS - need 8bit font or otherwise.
+1. Get Orientation switch and make orientation work.
 
-1. Restore event hooks for: -- DONE
-
-   radio
-   touch - DONE
-   key down events 
-   orientation events
-
-   ... in orchard-app.c 
-
-2. UI-List UI wiedge - DONE 
-
-3. UI - Keyboard/passing of touch events, up/down selectors -- DONE
-
-4. Name Entry -- DONE
-
-5. FLASH STORAGE of LED, Name, and Stats  -- DONE
-    -- dimming - store dim status in status/conf page
-       
-6. Game protocol and Game - IN PROGRESS
+2. Game protocol and Game - IN PROGRESS
    Restore event system first.
 
-7. Launcher doesn't work. why? -- DONE
-   (first app loaded is launcher but it comes up with a bogus number of apps.)
+2a. Screen: "VS" after enemy select
 
-8. Game graphics ( can be done last ) -- IN PROGRESS
+2b. Game: Restrict players if xp or level too high
 
-9. TIMERS - Go back to the badge screen from the launcher if timeout
+2c. Game: Provide means to earn XP if no other players around
 
-10. Status / setup screen  -- DONE
-    -- ability to show ID
+2d. Game: hit/block animations with damage indicated
 
-11. Automatic jump to name page if not conf'd
+2e. Game: More sounds
 
-12. ENTROPY - maybe use time of every touch to roll more entropy into
-    the system, or an accel chip?
+2f. Screen: 'Select one block and one attack'
+
+2g. Screen: End of Fight You, End of Fight Them, Timeout
+
+2h. Game/Debug: Check radio protocol and make enemy simulator
+    (enemysim)
+
+3. Casear Game Mechanics
+
+4. Gold / Economy Mechanics
+
+3. Game graphics ( can be done last ) -- IN PROGRESS
+
+4. Automatic jump to name page if not conf'd
+
+5. ENTROPY - maybe use time of every touch to roll more entropy into
+   the system, or an accel chip?
 
   if ( config reg is not set ) {
     jump to name entry app
@@ -44,15 +38,13 @@ TODO! things to figure out
     jump to game
   }
 
-13. App switching - I am fairly certain app switching is now functional because the dispatcher works. Needs test.  -- DONE
+6. (bonus) Cryptix: Need puzzle / konami code, whatev
 
-14. Our startup app is going to be the main app not the launcher. Launcher is secondary. (see #9 above)
-
-15. Splash screen spqr, whatever. -- DONE
+7. (bonus) Video/Movie/Frames:
 
 HW NEEDS
 -------------
-1. Battery + charging, amperage testing
+1. Battery + Charging, amperage tests
 
 2. Board layout
 
