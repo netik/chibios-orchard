@@ -204,6 +204,6 @@ static void fight_exit(OrchardAppContext *context) {
   return;
 }
 
-orchard_app("FIGHT", fight_init, fight_start, fight_event, fight_exit);
+orchard_app("FIGHT", 0, fight_init, fight_start, fight_event, fight_exit);
 
 

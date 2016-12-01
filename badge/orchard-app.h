@@ -10,6 +10,9 @@
 #include "orchard-ui.h"
 #include "orchard-events.h"
 
+#define APP_FLAG_HIDDEN		0x00000001
+#define APP_FLAG_AUTOINIT	0x00000002
+
 struct _OrchardApp;
 typedef struct _OrchardApp OrchardApp;
 struct _OrchardAppContext;
@@ -53,6 +56,7 @@ typedef struct _OrchardAppContext {
 
 typedef struct _OrchardApp {
   char *name;
+  uint32_t flags;
   uint32_t (*init)(OrchardAppContext *context);
   void (*start)(OrchardAppContext *context);
   void (*event)(OrchardAppContext *context, const OrchardAppEvent *event);
@@ -80,15 +84,15 @@ typedef struct orchard_app_instance {
 
 #define orchard_apps() (const OrchardApp *)&start[4]
 
-#define orchard_app(_name, _init, _start, _event, _exit)                        \
+#define orchard_app(_name, _flags, _init, _start, _event, _exit)                        \
   const OrchardApp _orchard_app_list_##_init##_start##_event##_exit           \
   __attribute__((used, aligned(4), section(".chibi_list_app_2_" # _event # _start # _init # _exit))) =  \
-     { _name, _init, _start, _event, _exit }
+     { _name, _flags, _init, _start, _event, _exit }
 
 #define orchard_app_end()                                                     \
   const OrchardApp _orchard_app_list_final                                    \
   __attribute__((used, aligned(4), section(".chibi_list_app_3_end"))) =     \
-     { NULL, NULL, NULL, NULL, NULL }
+     { NULL, 0, NULL, NULL, NULL, NULL }
 
 #define ORCHARD_APP_PRIO (LOWPRIO + 2)
 

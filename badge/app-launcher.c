@@ -162,7 +162,8 @@ static void launcher_start(OrchardAppContext *context) {
   /* Rebuild the app list */
   current = orchard_app_list;
   while (current->name) {
-    total_apps++;
+    if ((current->flags & APP_FLAG_HIDDEN) == 0)
+      total_apps++;
     current++;
   }
 
@@ -177,9 +178,11 @@ static void launcher_start(OrchardAppContext *context) {
   current = orchard_app_list;
   list->total = 0;
   while (current->name) {
-    list->items[list->total].name = current->name;
-    list->items[list->total].entry = current;
-    list->total++;
+    if ((current->flags & APP_FLAG_HIDDEN) == 0) {
+        list->items[list->total].name = current->name;
+        list->items[list->total].entry = current;
+        list->total++;
+    }
     current++;
   }
 
@@ -255,6 +258,7 @@ static void launcher_exit(OrchardAppContext *context) {
 const OrchardApp _orchard_app_list_launcher
 __attribute__((used, aligned(4), section(".chibi_list_app_1_launcher"))) = {
   "Launcher", 
+  APP_FLAG_HIDDEN,
   launcher_init,
   launcher_start,
   launcher_event,
