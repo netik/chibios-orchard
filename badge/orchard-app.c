@@ -13,42 +13,37 @@
 #include "led.h"
 #include "radio.h"
 
-#include "shell.h" // for friend testing function
-#include "orchard-shell.h" // for friend testing function
+#include "shell.h" // for enemy testing function
+#include "orchard-shell.h" // for enemy testing function
+#include "userconfig.h"
 
 orchard_app_start();
 orchard_app_end();
 
 const OrchardApp *orchard_app_list;
-#ifdef notyet
-static virtual_timer_t run_launcher_timer;
-static bool run_launcher_timer_engaged;
+static virtual_timer_t run_launcher_timer;  // this timer resets us back to the launcher if the user is idle. 
+static bool run_launcher_timer_engaged;     // if the timer is engaged
 #define RUN_LAUNCHER_TIMEOUT MS2ST(500)
-#endif
 
 orchard_app_instance instance;  // the one and in fact only instance of any orchard app
-
-#define DWELL_THRESH  500  // time to spend in one state before direction intent is null
 
 event_source_t orchard_app_terminated;
 event_source_t orchard_app_terminate;
 event_source_t timer_expired;
 event_source_t ui_completed;
 
-#define COLLECT_INTERVAL 50  // time to collect events for multi-touch gesture
-#define TRACK_INTERVAL 1  // trackpad debounce in ms
-
-#ifdef notyet
-static char *friends[MAX_FRIENDS]; // array of pointers to friends' names; first byte is priority metric
-#define FRIENDS_INIT_CREDIT  4  // defines how long a friend record stays around before expiration
-// max level of credit a friend can have; defines how long a record can stay around
-// once a friend goes away. Roughly equal to
+// defines how long a enemy record stays around before expiration
+// max level of credit a enemy can have; defines how long a record can stay around
+// once a enemy goes away. Roughly equal to
 // 2 * (PING_MIN_INTERVAL + PING_RAND_INTERVAL / 2 * MAX_CREDIT) milliseconds
-#define FRIENDS_MAX_CREDIT   12
-#define FRIENDS_SORT_HYSTERESIS 4 
+#define ENEMIES_INIT_CREDIT  4
+#define ENEMIES_MAX_CREDIT   12
+#define ENEMIES_SORT_HYSTERESIS 4
 
-mutex_t friend_mutex;
-#endif
+// lock/unlock this mutex before touching the enemies list!
+mutex_t enemies_mutex;
+static user *enemies[MAX_ENEMIES]; // array of pointers to enemy structures
+
 
 static uint8_t ui_override = 0;
 
@@ -329,12 +324,121 @@ void orchardAppInit(void) {
   //  chVTReset(&ping_timer);
   //  chVTSet(&ping_timer, MS2ST(PING_MIN_INTERVAL + rand() % PING_RAND_INTERVAL), run_ping, NULL);
 
-#ifdef notyet
-  for( i = 0; i < MAX_FRIENDS; i++ ) {
-    friends[i] = NULL;
+  // initalize the seen-enemies list
+  for( int i = 0; i < MAX_ENEMIES; i++ ) {
+    enemies[i] = NULL;
   }
-  osalMutexObjectInit(&friend_mutex);
-#endif
+  osalMutexObjectInit(&enemies_mutex);
+
+}
+
+// enemy handling routines
+uint8_t enemyCount(void) {
+  int i;
+  uint8_t count = 0;
+  
+  osalMutexLock(&enemies_mutex);
+  for( i = 0; i < MAX_ENEMIES; i++ ) {
+    if( enemies[i] != NULL )
+      count++;
+  }
+  osalMutexUnlock(&enemies_mutex);
+  return count;
+}
+
+user *enemy_lookup(char *name) {
+  // return an enemy record by name (bad?)
+  osalMutexLock(&enemies_mutex);
+  for( int i = 0; i < MAX_ENEMIES; i++ ) {
+    if (enemies[i] != NULL) {
+      if (strcmp(enemies[i]->name, name) == 0) {
+	osalMutexUnlock(&enemies_mutex);
+	return enemies[i];
+      }
+    }
+  }
+
+  osalMutexUnlock(&enemies_mutex);
+  return NULL;
+}
+
+user *enemy_add(char *name) {
+  user *record;
+  uint32_t i;
+
+  record = enemy_lookup(name);
+  if( record != NULL )
+    return record;  // enemy already exists, don't add it again
+
+  osalMutexLock(&enemies_mutex);
+  for( i = 0; i < MAX_ENEMIES; i++ ) {
+    if( enemies[i] == NULL ) {
+      enemies[i] = (user *) chHeapAlloc(NULL, sizeof(user));
+      enemies[i]->priority = ENEMIES_INIT_CREDIT;
+      strncpy(enemies[i]->name, name, CONFIG_NAME_MAXLEN);
+      osalMutexUnlock(&enemies_mutex);
+      return enemies[i];
+    }
+  }
+  osalMutexUnlock(&enemies_mutex);
+
+  // if we got here, we couldn't add the enemy because we ran out of space
+  return NULL;
+}
+
+// to be called periodically to decrement credits and de-alloc enemies we haven't seen in a while
+void enemy_cleanup(void) {
+  uint32_t i;
+
+  osalMutexLock(&enemies_mutex);
+  for( i = 0; i < MAX_ENEMIES; i++ ) {
+    if( enemies[i] == NULL )
+      continue;
+
+    enemies[i]->priority--;
+    if( enemies[i]->priority == 0 ) {
+      chHeapFree(enemies[i]);
+      enemies[i] = NULL;
+    }
+  }
+  osalMutexUnlock(&enemies_mutex);
+}
+
+int friend_comp(const void *a, const void *b) {
+  char *mya;
+  char *myb;
+  
+  mya = ((user *)a)->name;
+  myb = ((user *)b)->name;
+
+  if( mya == NULL && myb == NULL )
+    return 0;
+
+  if( mya == NULL )
+    return 1;
+
+  if( myb == NULL )
+    return -1;
+
+  return strncmp(mya, myb, CONFIG_NAME_MAXLEN );
+}
+
+void enemiesSort(void) {
+  osalMutexLock(&enemies_mutex);
+  qsort(enemies, MAX_ENEMIES, sizeof(char *), friend_comp);
+  osalMutexUnlock(&enemies_mutex);
+}
+
+void enemiesLock(void) {
+  osalMutexLock(&enemies_mutex);
+}
+
+void enemiesUnlock(void) {
+  osalMutexUnlock(&enemies_mutex);
+}
+
+user **enemiesGet(void) {
+  return (user **) enemies;   // you shouldn't modify this record outside of here, hence const
 }
 
 void orchardAppRestart(void) {

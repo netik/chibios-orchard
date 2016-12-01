@@ -1,3 +1,11 @@
+#ifndef __USERCONFIG_H__
+#define __USERCONFIG_H__
+/* userconfig.h
+ * 
+ * anything that has to do with long term storage of users
+ * goes in here 
+ */
+
 #define CONFIG_FLASH_ADDR 0x1e000
 #define CONFIG_FLASH_SECTOR_BASE 120
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
@@ -5,6 +13,8 @@
 #define CONFIG_OFFSET     0
 #define CONFIG_VERSION    7
 #define CONFIG_NAME_MAXLEN 10
+
+#define ENEMIES_INIT_CREDIT 4
 
 typedef enum _player_type {
   p_pleeb,
@@ -55,7 +65,20 @@ typedef struct userconfig {
   uint8_t is_crit;
 } userconfig;
 
+
+typedef struct _user {
+  /* this is a shortened form of userdata for transmission */
+  /* it is a mere 24 bytes */
+  uint8_t priority;
+  uint32_t netid;  
+  char name[CONFIG_NAME_MAXLEN];
+  uint8_t in_combat;
+  uint16_t hp;
+  uint8_t level;
+} user;
+
 extern void configStart(void);
 extern void configSave(userconfig *);
 extern userconfig *getConfig(void);
 
+#endif

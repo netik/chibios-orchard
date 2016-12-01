@@ -9,6 +9,7 @@
 #include "gfx.h"
 #include "orchard-ui.h"
 #include "orchard-events.h"
+#include "userconfig.h"
 
 struct _OrchardApp;
 typedef struct _OrchardApp OrchardApp;
@@ -37,13 +38,14 @@ extern void orchardAppTimer(const OrchardAppContext *context,
 extern void orchardAppUgfxCallback (void * arg, GEvent * pe);
 extern void orchardAppRadioCallback (KW01_PKT * pkt);
 
-void friendsSort(void);
-const char **friendsGet(void);
-void friendsLock(void);
-void friendsUnlock(void);
-uint8_t friendCount(void);
-uint8_t getMutationRate(void);
-#define MAX_FRIENDS  50   // max # of friends to track
+void enemiesSort(void);
+void enemiesLock(void);
+void enemiesUnlock(void);
+uint8_t enemyCount(void);
+
+user **enemiesGet(void);
+
+#define MAX_ENEMIES  16   // max # of enemies to track
 
 typedef struct _OrchardAppContext {
   struct orchard_app_instance *instance;

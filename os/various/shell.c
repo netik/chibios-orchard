@@ -35,6 +35,7 @@
  */
 event_source_t shell_terminated;
 
+static uint8_t cmdcnt;
 static char *_strtok(char *str, const char *delim, char **saveptr) {
   char *token;
   if (str)
@@ -58,10 +59,16 @@ static void usage(BaseSequentialStream *chp, char *p) {
 }
 
 static void list_commands(BaseSequentialStream *chp, const ShellCommand *scp) {
-
   while (scp->sc_name != NULL) {
-    chprintf(chp, "%s ", scp->sc_name);
+    chprintf(chp, "%-10s ", scp->sc_name);
     scp++;
+    cmdcnt++; // filthy hack - track commands listed across invocations
+    if (cmdcnt > 5) {
+      chprintf(chp, "\r\n    ", scp->sc_name);
+      cmdcnt = 0;
+    } else {
+      cmdcnt++;
+    }
   }
 }
 
@@ -174,7 +181,12 @@ static THD_FUNCTION(shell_thread, p) {
           usage(chp, "help");
           continue;
         }
-        chprintf(chp, "Commands: help exit ");
+
+        chprintf(chp, "Commands:\r\n");
+
+	chprintf(chp, "    %-10s ", "help");
+	chprintf(chp, "%-10s ", "exit");
+	cmdcnt = 2;
         list_commands(chp, local_commands);
         if (scp != NULL)
           list_commands(chp, scp);

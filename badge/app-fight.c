@@ -116,7 +116,6 @@ static void redraw_enemy_select(void) {
   
   uint16_t ypos = 0; // cursor, so if we move or add things we don't have to rethink this
   uint16_t xpos = 0; // cursor, so if we move or add things we don't have to rethink this
-  uint16_t lmargin = 140; // cursor, so if we move or add things we don't have to rethink this
 
   gdispDrawStringBox (0,
 		      ypos,
