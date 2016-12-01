@@ -25,7 +25,7 @@ static void name_start(OrchardAppContext *context)
 	keyboardUiContext->itemlist = (const char **)chHeapAlloc(NULL,
             sizeof(char *) * 2);
 	keyboardUiContext->itemlist[0] =
-		"Type in your name, press ENTER when done";
+		"Type in your name,\npress ENTER when done";
 	keyboardUiContext->itemlist[1] = config->name;
 	keyboardUiContext->total = CONFIG_NAME_MAXLEN - 1;
 
@@ -71,4 +71,4 @@ static void name_exit(OrchardAppContext *context)
 	return;
 }
 
-orchard_app("Set your name", name_init, name_start, name_event, name_exit);
+orchard_app("Set your name", 0, name_init, name_start, name_event, name_exit);

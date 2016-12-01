@@ -17,16 +17,16 @@ struct launcher_list_item {
 };
 
 struct launcher_list {
+  GHandle ghButton1;
+  GHandle ghButton2;
+  GHandle ghButton3;
+  GListener gl;
   unsigned int selected;
   unsigned int total;
   struct launcher_list_item items[0];
 };
 
-// Buttons
-static GHandle ghButton1, ghButton2, ghButton3;
-static GListener gl;
-
-static void draw_launcher_buttons(void) {
+static void draw_launcher_buttons(struct launcher_list * l) {
   
   /* draw up down pushbuttons */
   GWidgetInit  wi, wi2, wi3;
@@ -69,9 +69,9 @@ static void draw_launcher_buttons(void) {
   wi3.text = "Go";
   
   // Create the actual button
-  ghButton1 = gwinButtonCreate(NULL, &wi);
-  ghButton2 = gwinButtonCreate(NULL, &wi2);
-  ghButton3 = gwinButtonCreate(NULL, &wi3);
+  l->ghButton1 = gwinButtonCreate(NULL, &wi);
+  l->ghButton2 = gwinButtonCreate(NULL, &wi2);
+  l->ghButton3 = gwinButtonCreate(NULL, &wi3);
   
 }
 
@@ -149,7 +149,6 @@ static uint32_t launcher_init(OrchardAppContext *context) {
   (void)context;
 
   gdispClear(Black);
-  draw_launcher_buttons();
 
   return (0);
 }
@@ -163,7 +162,8 @@ static void launcher_start(OrchardAppContext *context) {
   /* Rebuild the app list */
   current = orchard_app_list;
   while (current->name) {
-    total_apps++;
+    if ((current->flags & APP_FLAG_HIDDEN) == 0)
+      total_apps++;
     current++;
   }
 
@@ -172,13 +172,17 @@ static void launcher_start(OrchardAppContext *context) {
 
   context->priv = list;
 
+  draw_launcher_buttons(list);
+
   /* Rebuild the app list */
   current = orchard_app_list;
   list->total = 0;
   while (current->name) {
-    list->items[list->total].name = current->name;
-    list->items[list->total].entry = current;
-    list->total++;
+    if ((current->flags & APP_FLAG_HIDDEN) == 0) {
+        list->items[list->total].name = current->name;
+        list->items[list->total].entry = current;
+        list->total++;
+    }
     current++;
   }
 
@@ -187,9 +191,9 @@ static void launcher_start(OrchardAppContext *context) {
   redraw_list(list);
 
   // set up our local listener
-  geventListenerInit(&gl);
-  gwinAttachListener(&gl);
-  geventRegisterCallback (&gl, orchardAppUgfxCallback, &gl);
+  geventListenerInit(&list->gl);
+  gwinAttachListener(&list->gl);
+  geventRegisterCallback (&list->gl, orchardAppUgfxCallback, &list->gl);
 
   return;
 }
@@ -203,19 +207,19 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
 
 		switch(pe->type) {
 		case GEVENT_GWIN_BUTTON:
-			if (((GEventGWinButton*)pe)->gwin == ghButton1) {
+			if (((GEventGWinButton*)pe)->gwin == list->ghButton1) {
 				list->selected--;
 				if (list->selected >= list->total)
 					list->selected = 0;
 			}
 
-			if (((GEventGWinButton*)pe)->gwin == ghButton2) {
+			if (((GEventGWinButton*)pe)->gwin == list->ghButton2) {
 				list->selected++;
 				if (list->selected >= list->total)
 				list->selected = list->total-1;
 			}
 
-			if (((GEventGWinButton*)pe)->gwin == ghButton3) {
+			if (((GEventGWinButton*)pe)->gwin == list->ghButton3) {
 				orchardAppRun(list->items[list->selected].entry);
 				return;
       			}
@@ -231,13 +235,16 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
 }
 
 static void launcher_exit(OrchardAppContext *context) {
+  struct launcher_list *list;
 
-  gwinDestroy (ghButton1);
-  gwinDestroy (ghButton2);
-  gwinDestroy (ghButton3);
+  list = (struct launcher_list *)context->priv;
 
-  geventRegisterCallback (&gl, NULL, NULL);
-  geventDetachSource (&gl, NULL);
+  gwinDestroy (list->ghButton1);
+  gwinDestroy (list->ghButton2);
+  gwinDestroy (list->ghButton3);
+
+  geventRegisterCallback (&list->gl, NULL, NULL);
+  geventDetachSource (&list->gl, NULL);
 
   chHeapFree (context->priv);
   context->priv = NULL;
@@ -251,6 +258,7 @@ static void launcher_exit(OrchardAppContext *context) {
 const OrchardApp _orchard_app_list_launcher
 __attribute__((used, aligned(4), section(".chibi_list_app_1_launcher"))) = {
   "Launcher", 
+  APP_FLAG_HIDDEN,
   launcher_init,
   launcher_start,
   launcher_event,

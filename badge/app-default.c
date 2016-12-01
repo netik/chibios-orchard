@@ -13,8 +13,10 @@
 
 #include "userconfig.h"
 
-static GHandle ghExitButton;
-static GListener glBadge;
+typedef struct _DefaultHandles {
+	GHandle ghExitButton;
+	GListener glBadge;
+} DefaultHandles;
 
 static int putImageFile(char *name, int16_t x, int16_t y);
 
@@ -45,7 +47,7 @@ static void noRender(GWidgetObject* gw, void* param)
   return;
 }
 
-static void draw_badge_buttons(void) {
+static void draw_badge_buttons(DefaultHandles * p) {
   GWidgetInit wi;
   coord_t totalheight = gdispGetHeight();
   
@@ -59,7 +61,7 @@ static void draw_badge_buttons(void) {
   wi.text = "";
   wi.customDraw = noRender;
 
-  ghExitButton = gwinButtonCreate(NULL, &wi);
+  p->ghExitButton = gwinButtonCreate(NULL, &wi);
 }
 
 static void redraw_badge(void) {
@@ -175,25 +177,33 @@ static uint32_t default_init(OrchardAppContext *context) {
 }
 
 static void default_start(OrchardAppContext *context) {
-  (void)context;
+  DefaultHandles * p;
+
+  p = chHeapAlloc (NULL, sizeof(DefaultHandles));
+
+  context->priv = p;
+
   redraw_badge();
-  draw_badge_buttons();
+  draw_badge_buttons(p);
   
-  geventListenerInit(&glBadge);
-  gwinAttachListener(&glBadge);
-  geventRegisterCallback (&glBadge, orchardAppUgfxCallback, &glBadge);
+  geventListenerInit(&p->glBadge);
+  gwinAttachListener(&p->glBadge);
+  geventRegisterCallback (&p->glBadge, orchardAppUgfxCallback, &p->glBadge);
 }
 
 static void default_event(OrchardAppContext *context,
 	const OrchardAppEvent *event) {
-  (void)context;
+  DefaultHandles * p;
   GEvent * pe;
+
+  p = context->priv;
+
   if (event->type == ugfxEvent) {
     pe = event->ugfx.pEvent;
 
     switch(pe->type) {
     case GEVENT_GWIN_BUTTON:
-      if (((GEventGWinButton*)pe)->gwin == ghExitButton) {
+      if (((GEventGWinButton*)pe)->gwin == p->ghExitButton) {
 	orchardAppExit();
 	return;
       }
@@ -203,13 +213,17 @@ static void default_event(OrchardAppContext *context,
 }
 
 static void default_exit(OrchardAppContext *context) {
-  (void)context;
-  gwinDestroy (ghExitButton);
-  geventDetachSource (&glBadge, NULL);
-  geventRegisterCallback (&glBadge, NULL, NULL);
+  DefaultHandles * p;
+
+  p = context->priv;
+  gwinDestroy (p->ghExitButton);
+  geventDetachSource (&p->glBadge, NULL);
+  geventRegisterCallback (&p->glBadge, NULL, NULL);
+  chHeapFree (context->priv);
+  context->priv = NULL;
+
   return;
 }
 
-orchard_app("Badge", default_init, default_start, default_event, default_exit);
-
-
+orchard_app("Badge", 0, default_init, default_start,
+	default_event, default_exit);

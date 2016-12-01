@@ -43,7 +43,7 @@ static void shout_start (OrchardAppContext *context)
 	keyboardUiContext->itemlist = (const char **)chHeapAlloc(NULL,
 		sizeof(char *) * 2);
 	keyboardUiContext->itemlist[0] =
-                "Shout something, press ENTER when done";
+                "Shout something,\npress ENTER when done";
 	keyboardUiContext->itemlist[1] = (char *)(pkt->kw01_payload +
 		sizeof(config->netid));
 	keyboardUiContext->total = KRADIO1.kw01_maxlen - KW01_PKT_HDRLEN -
@@ -116,4 +116,4 @@ static void shout_exit (OrchardAppContext *context)
 	return;
 }
 
-orchard_app("Radio shout", shout_init, shout_start, shout_event, shout_exit);
+orchard_app("Radio shout", 0, shout_init, shout_start, shout_event, shout_exit);
