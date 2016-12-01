@@ -5,9 +5,6 @@ static uint32_t notify_init(OrchardAppContext *context)
 {
 	(void)context;
 
-	radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_SHOUT,
-		orchardAppRadioCallback);
-chprintf(stream, "notify called...\r\n");
 	return (0);
 }
 
@@ -34,12 +31,8 @@ static void notify_exit(OrchardAppContext *context)
 {
 	(void)context;
 
-	radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_SHOUT, NULL);
-
 	return;
 }
 
 orchard_app("Radio notification", APP_FLAG_HIDDEN, notify_init, notify_start,
 		notify_event, notify_exit);
-
-

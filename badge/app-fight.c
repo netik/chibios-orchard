@@ -172,7 +172,6 @@ static uint8_t prevEnemy() {
 static void redraw_enemy_select(void) {
   // enemy selection screen
   font_t fontFF, fontSM;
-  const userconfig *config = getConfig();
   user **enemies = enemiesGet();
 
   // blank out the center

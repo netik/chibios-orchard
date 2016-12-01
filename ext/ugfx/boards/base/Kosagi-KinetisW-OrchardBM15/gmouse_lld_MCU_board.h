@@ -34,12 +34,12 @@ bool_t LoadMouseCalibration(unsigned instance, void *data, size_t sz)
 }
 
 // Resolution and Accuracy Settings
-#define GMOUSE_MCU_PEN_CALIBRATE_ERROR		35
-#define GMOUSE_MCU_PEN_CLICK_ERROR		40
-#define GMOUSE_MCU_PEN_MOVE_ERROR		20
-#define GMOUSE_MCU_FINGER_CALIBRATE_ERROR	35
-#define GMOUSE_MCU_FINGER_CLICK_ERROR		40
-#define GMOUSE_MCU_FINGER_MOVE_ERROR		20
+#define GMOUSE_MCU_PEN_CALIBRATE_ERROR		14
+#define GMOUSE_MCU_PEN_CLICK_ERROR		1
+#define GMOUSE_MCU_PEN_MOVE_ERROR		1
+#define GMOUSE_MCU_FINGER_CALIBRATE_ERROR	14
+#define GMOUSE_MCU_FINGER_CLICK_ERROR		18
+#define GMOUSE_MCU_FINGER_MOVE_ERROR		14
 #define GMOUSE_MCU_Z_MIN		0	/* The minimum Z reading */
 #define GMOUSE_MCU_Z_MAX		4096	/* The maximum Z reading */
 
