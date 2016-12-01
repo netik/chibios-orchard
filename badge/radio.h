@@ -35,8 +35,13 @@
 
 #define KW01_DELAY 1000
 #define KW01_PKT_MAXLEN 66	/* Max packet size (FIFO size) */
-#define KW01_PKT_AES_MAXLEN 48	/* Max packet size with AES and filtering on */
+#ifdef KW01_RADIO_HWFILTER
 #define KW01_PKT_HDRLEN 3
+#define KW01_PKT_AES_MAXLEN 48	/* Max packet size with AES and filtering on */
+#else
+#define KW01_PKT_HDRLEN 9
+#define KW01_PKT_AES_MAXLEN 66	/* Max packet size with AES and filtering off */
+#endif
 #define KW01_PKT_HANDLERS_MAX 4
 
 /* Radio message types */
@@ -56,8 +61,13 @@
  */
 
 typedef struct kw01_pkt_hdr {
+#ifdef KW01_RADIO_HWFILTER
 	uint8_t		kw01_dst;	/* Destination node */
 	uint8_t		kw01_src;	/* Source node */
+#else
+	uint32_t	kw01_dst;	/* Destination node */
+	uint32_t	kw01_src;	/* Source node */
+#endif
 	uint8_t		kw01_prot;	/* Protocol type */
 } KW01_PKT_HDR;
 
@@ -98,8 +108,13 @@ extern void radioWrite (RADIODriver *, uint8_t, uint8_t);
 extern void radioDump (RADIODriver *, uint8_t addr, void *bfr, int count);
 extern void radioAcquire (RADIODriver *);
 extern void radioRelease (RADIODriver *);
+#ifdef KW01_RADIO_HWFILTER
 extern int radioSend(RADIODriver *, uint8_t dest, uint8_t prot,
 			uint8_t len, const void *payload);
+#else
+extern int radioSend(RADIODriver *, uint32_t dest, uint8_t prot,
+			uint8_t len, const void *payload);
+#endif
 
 extern int radioFrequencySet (RADIODriver *, uint32_t freq);
 extern int radioDeviationSet (RADIODriver *, uint32_t freq);
@@ -107,8 +122,10 @@ extern int radioBitrateSet (RADIODriver *, uint32_t freq);
 extern uint32_t radioFrequencyGet (RADIODriver *);
 extern uint32_t radioDeviationGet (RADIODriver *);
 extern uint32_t radioBitrateGet (RADIODriver *);
+#ifdef KW01_RADIO_HWFILTER
 extern uint8_t radioAddressGet (RADIODriver *);
 extern void radioAddressSet (RADIODriver *, uint8_t);
+#endif /* KW01_RADIO_HWFILTER */
 extern int radioNetworkSet (RADIODriver *, const uint8_t *, uint8_t);
 extern int radioNetworkGet (RADIODriver *, uint8_t *, uint8_t *);
 extern int radioTemperatureGet (RADIODriver *);
