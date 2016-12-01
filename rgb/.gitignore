@@ -1,3 +1,6 @@
 hdr.dSYM
 *.o
 hdr
+rgbhdr
+rgbhdr.dSYM/
+
