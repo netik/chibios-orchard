@@ -70,8 +70,10 @@
 * XPT_CHAN_X		X axis position
 * XPT_CHAN_Y		Y axis position
 * XPT_CHAN_Z1           Z1 pressure sense
+* XPT_CHAN_Z2           Z2 pressure sense
 * XPT_CHAN_VBAT		battery voltage
-* XPT_CHAN_TEMP         temperature sensor
+* XPT_CHAN_TEMP0        temperature sensor
+* XPT_CHAN_TEMP1        temperature sensor
 *
 * The chip is kept powered down between readings to conserve power.
 *
@@ -85,7 +87,7 @@ uint16_t xptGet (uint8_t cmd)
 	uint16_t	val;
  	uint8_t		br;
 
-	reg = cmd | XPT_CTL_SDREF | XPT_CTL_START;
+	reg = cmd | XPT_CTL_START;
 
 	spiAcquireBus (&SPID2);
 	br = SPID2.spi->BR;
@@ -133,11 +135,13 @@ void xptTest(void)
 {
 	uint16_t	v;
 	uint16_t	z1;
+	uint16_t	z2;
 
 	while (1) {
 		z1 = xptGet (XPT_CHAN_Z1);
-		if (z1 > 10) {
-			chprintf (stream, "press(%d): ", z1);
+		z2 = xptGet (XPT_CHAN_Z2);
+		if ((z2 - z1) < 3500) {
+			chprintf (stream, "press(%d:%d): ", z1, z2);
 			v = xptGet (XPT_CHAN_X);
 			chprintf (stream, "X: %d ", v);
 			v = xptGet (XPT_CHAN_Y);
