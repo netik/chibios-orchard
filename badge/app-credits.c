@@ -150,12 +150,14 @@ static void credits_exit(OrchardAppContext *context)
 
 	p = context->priv;
 
-	geventRegisterCallback (&p->gl, NULL, NULL);
-	geventDetachSource (&p->gl, NULL);
-	gwinDestroy (p->ghExitButton);
+	if (p != NULL) {
+		geventRegisterCallback (&p->gl, NULL, NULL);
+		geventDetachSource (&p->gl, NULL);
+		gwinDestroy (p->ghExitButton);
 
-	chHeapFree (p);
-	context->priv = NULL;
+		chHeapFree (p);
+		context->priv = NULL;
+	}
 
 	return;
 }
