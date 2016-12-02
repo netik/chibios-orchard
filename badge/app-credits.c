@@ -2,8 +2,8 @@
 #include "orchard-ui.h"
 #include "ff.h"
 #include "ffconf.h"
-
 #include "board_ILI9341.h"
+
 #define ILI9341_VSDEF	0x33
 #define ILI9341_VSADD	0x37
 
@@ -17,6 +17,20 @@ typedef struct gdisp_image {
         uint8_t                 gdi_fmt_hi;
         uint8_t                 gdi_fmt_lo;
 } GDISP_IMAGE;
+
+typedef struct _CreditsHandles {
+	GHandle		ghExitButton;
+	GListener	gl;
+	uint8_t		stop;
+} CreditsHandles;
+
+static void noRender(GWidgetObject* gw, void* param)
+{
+	(void)gw;
+	(void)param;
+
+	return;
+}
 
 static void scrollArea (uint16_t TFA, uint16_t BFA)
 {
@@ -59,13 +73,33 @@ static void credits_start(OrchardAppContext *context)
  	UINT br;
 	GDISP_IMAGE hdr;
 	uint16_t h;
-	(void)context;
 	pixel_t * buf;
+	CreditsHandles * p;
+	GWidgetInit wi;
 
 	if (f_open (&f, "credits.rgb", FA_READ) != FR_OK) {
 		orchardAppExit ();
 		return;
 	}
+
+	p = chHeapAlloc (NULL, sizeof(CreditsHandles));
+	context->priv = p;
+
+	gwinWidgetClearInit(&wi);
+	wi.g.show = TRUE;
+	wi.g.width = gdispGetWidth();
+	wi.g.height = gdispGetHeight();
+  	wi.g.y = 0;
+  	wi.g.x = 0;
+  	wi.text = "";
+ 	wi.customDraw = noRender;
+
+	p->ghExitButton = gwinButtonCreate (NULL, &wi);
+	geventListenerInit (&p->gl);
+	gwinAttachListener (&p->gl);
+	geventRegisterCallback (&p->gl, orchardAppUgfxCallback, &p->gl);
+
+	p->stop = 0;
 
 	f_read (&f, &hdr, sizeof(hdr), &br);
 	h = hdr.gdi_height_hi << 8 | hdr.gdi_height_lo;
@@ -75,6 +109,8 @@ static void credits_start(OrchardAppContext *context)
 	scrollArea (0, 0);
 	pos = 319;
 	for (i = 0; i < h; i++) {
+		if (p->stop)
+			break;
 		f_read (&f, buf, sizeof(pixel_t) * 240, &br);
 		gdispBlitAreaEx (pos, 0, 1, 240, 0, 0, 1, buf);
 		pos++;
@@ -88,7 +124,8 @@ static void credits_start(OrchardAppContext *context)
 	chHeapFree (buf);
 	f_close (&f);
 
-	chThdSleepMilliseconds (800);
+	if (p->stop == 0)
+		chThdSleepMilliseconds (800);
 
 	orchardAppExit ();
 
@@ -97,15 +134,28 @@ static void credits_start(OrchardAppContext *context)
 
 void credits_event(OrchardAppContext *context, const OrchardAppEvent *event)
 {
-	(void)context;
-	(void)event;
+	CreditsHandles * p;
+
+        if (event->type == ugfxEvent) {
+		p = context->priv;
+		p->stop = 1;
+	}
 
 	return;
 }
 
 static void credits_exit(OrchardAppContext *context)
 {
-	(void)context;
+	CreditsHandles * p;
+
+	p = context->priv;
+
+	geventRegisterCallback (&p->gl, NULL, NULL);
+	geventDetachSource (&p->gl, NULL);
+	gwinDestroy (p->ghExitButton);
+
+	chHeapFree (p);
+	context->priv = NULL;
 
 	return;
 }
