@@ -1,7 +1,7 @@
 # DEFCON 25 SPQR Badge
 
 ## Building the code
-I am building on a Mac Pro (OSX 10.11) and Bill is using freeBSD.
+I am building on a Mac Pro (OSX 10.11) and Bill is using FreeBSD.
 
 Bill has a bunch of docs, datasheets, and scripts here, but you probably won't need them. 
 https://people.freebsd.org/~wpaul/w00t/badge/
