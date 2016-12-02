@@ -32,7 +32,7 @@ static void noRender(GWidgetObject* gw, void* param)
 	return;
 }
 
-static void scrollArea (uint16_t TFA, uint16_t BFA)
+static void scrollAreaSet (uint16_t TFA, uint16_t BFA)
 {
 	acquire_bus (NULL);
 	write_index (NULL, ILI9341_VSDEF);
@@ -76,6 +76,7 @@ static void credits_start(OrchardAppContext *context)
 	pixel_t * buf;
 	CreditsHandles * p;
 	GWidgetInit wi;
+	orientation_t o;
 
 	if (f_open (&f, "credits.rgb", FA_READ) != FR_OK) {
 		orchardAppExit ();
@@ -85,7 +86,7 @@ static void credits_start(OrchardAppContext *context)
 	p = chHeapAlloc (NULL, sizeof(CreditsHandles));
 	context->priv = p;
 
-	gwinWidgetClearInit(&wi);
+	gwinWidgetClearInit (&wi);
 	wi.g.show = TRUE;
 	wi.g.width = gdispGetWidth();
 	wi.g.height = gdispGetHeight();
@@ -104,20 +105,23 @@ static void credits_start(OrchardAppContext *context)
 	f_read (&f, &hdr, sizeof(hdr), &br);
 	h = hdr.gdi_height_hi << 8 | hdr.gdi_height_lo;
 
-	buf = chHeapAlloc (NULL, sizeof(pixel_t) * 240);
+	buf = chHeapAlloc (NULL, sizeof(pixel_t) * gdispGetHeight ());
 
-	scrollArea (0, 0);
-	pos = 319;
+	o = gdispGetOrientation();
+
+	scrollAreaSet (0, 0);
+	pos = gdispGetWidth() - 1;
 	for (i = 0; i < h; i++) {
 		if (p->stop)
 			break;
-		f_read (&f, buf, sizeof(pixel_t) * 240, &br);
-		gdispBlitAreaEx (pos, 0, 1, 240, 0, 0, 1, buf);
+		f_read (&f, buf, sizeof(pixel_t) * gdispGetHeight (), &br);
+		gdispBlitAreaEx (pos, 0, 1, gdispGetHeight (), 0, 0, 1, buf);
 		pos++;
-		if (pos == 320)
+		if (pos == gdispGetWidth ())
 			pos = 0;
-		scroll (pos);
-		chThdSleepMilliseconds (10);
+		scroll (o == GDISP_ROTATE_90 ?
+			(gdispGetWidth() - 1) - pos : pos);
+		chThdSleepMilliseconds (15);
 	}
 
 	scroll (0);
