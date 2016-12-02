@@ -44,8 +44,9 @@
 #endif
 #define KW01_PKT_HANDLERS_MAX 4
 
-/* Radio message types */
+#define RADIO_BROADCAST_ADDRESS 0xFFFFFFFF
 
+/* Radio message types */
 #define RADIO_PROTOCOL_CHAT	1	/* Send message to 1 badge */
 #define RADIO_PROTOCOL_SHOUT	2	/* Broadcast message to all badges */
 #define RADIO_PROTOCOL_PING	3	/* Solicit ping ID from badges */

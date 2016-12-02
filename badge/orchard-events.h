@@ -74,7 +74,6 @@ extern event_source_t gpiox_rdy;
 
 // BM radio protocol events
 extern event_source_t radio_page;
-extern event_source_t radio_sex;
 extern event_source_t radio_app;
 
 void orchardEventsStart(void);

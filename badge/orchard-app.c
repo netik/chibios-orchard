@@ -21,16 +21,24 @@ orchard_app_start();
 orchard_app_end();
 
 const OrchardApp *orchard_app_list;
-static virtual_timer_t run_launcher_timer;  // this timer resets us back to the launcher if the user is idle. 
-static bool run_launcher_timer_engaged;     // if the timer is engaged
-#define RUN_LAUNCHER_TIMEOUT MS2ST(500)
 
-orchard_app_instance instance;  // the one and in fact only instance of any orchard app
+/* the one and in fact only instance of any orchard app */
+orchard_app_instance instance;  
 
+/* orchard event sources */
 event_source_t orchard_app_terminated;
 event_source_t orchard_app_terminate;
 event_source_t timer_expired;
 event_source_t ui_completed;
+
+/* Enemy ping/pong handling ------------------------------------------------*/
+#define PING_MIN_INTERVAL  3000 // base time between pings
+
+static virtual_timer_t ping_timer;
+static event_source_t ping_timeout;  // fires when ping_timer is ping'd
+static uint8_t cleanup_state = 0;    // cleans up every other ping
+void enemy_cleanup(void);            // reaps the list every other ping
+/* end ping handling */
 
 // defines how long a enemy record stays around before expiration
 // max level of credit a enemy can have; defines how long a record can stay around
@@ -43,26 +51,78 @@ event_source_t ui_completed;
 // lock/unlock this mutex before touching the enemies list!
 mutex_t enemies_mutex;
 static user *enemies[MAX_ENEMIES]; // array of pointers to enemy structures
-
+/* END Enemy ping/pong handling --------------------------------------------*/
 
 static uint8_t ui_override = 0;
 
 #define MAIN_MENU_MASK  ((1 << 11) | (1 << 0))
 #define MAIN_MENU_VALUE ((1 << 11) | (1 << 0))
 
-#ifdef notyet
-static void run_launcher(void *arg) {
+static void run_ping(void *arg) {
   (void)arg;
-
+  chprintf(stream, "DEBUG: run_ping\r\n");
   chSysLockFromISR();
-  /* Launcher is the first app in the list */
-  instance.next_app = orchard_app_list;
-  instance.thr->p_flags |= CH_FLAG_TERMINATE;
-  chEvtBroadcastI(&orchard_app_terminate);
-  run_launcher_timer_engaged = false;
-  chSysUnlockFromISR();
+  chEvtBroadcastI(&ping_timeout);
+  chVTSetI(&ping_timer, MS2ST(PING_MIN_INTERVAL), run_ping, NULL);
+  chSysUnlockFromISR(); 
 }
-#endif
+
+void enemy_cleanup(void) {
+/* Called periodically to decrement credits and de-alloc enemies
+ * we haven't seen in a while 
+ */
+  uint32_t i;
+
+  osalMutexLock(&enemies_mutex);
+  for( i = 0; i < MAX_ENEMIES; i++ ) {
+    if( enemies[i] == NULL )
+      continue;
+
+    enemies[i]->priority--;
+    if( enemies[i]->priority == 0 ) {
+      chHeapFree(enemies[i]);
+      enemies[i] = NULL;
+    }
+  }
+  osalMutexUnlock(&enemies_mutex);
+}
+
+
+static void handle_ping_timeout(eventid_t id) {
+  (void) id;
+
+  KW01_PKT * pkt;
+  userconfig *config = getConfig();
+  pkt = &KRADIO1.kw01_pkt;
+  memset (pkt->kw01_payload, 0, sizeof(pkt->kw01_payload));
+  
+  /* time to send a ping. */
+  /* build packet */
+  user upkt;
+  upkt.priority = 4;
+  upkt.netid = config->netid;
+  strncpy(upkt.name, config->name, CONFIG_NAME_MAXLEN);
+  upkt.in_combat = config->in_combat;
+  upkt.hp = config->hp;
+  upkt.level = config->level;
+
+  memcpy(pkt->kw01_payload, &upkt, sizeof(upkt));
+	 
+  radioSend (&KRADIO1, RADIO_BROADCAST_ADDRESS,  RADIO_PROTOCOL_PING,
+	     KRADIO1.kw01_maxlen - KW01_PKT_HDRLEN,
+	     pkt);
+  
+  // cleanup every other ping we send, to make sure friends that are
+  // nearby build up credit over time to max credits
+
+  // if the system is unstable, tweak this parameter to reduce the
+  // clean-up rate
+  if( cleanup_state ) {
+    enemy_cleanup();
+    chEvtBroadcast(&radio_app);
+  }
+  cleanup_state = !cleanup_state;
+}
 
 void orchardAppUgfxCallback (void * arg, GEvent * pe)
 {
@@ -110,6 +170,14 @@ static void ui_complete_cleanup(eventid_t id) {
   instance.app->event(instance.context, &evt);  
 }
 
+static void radio_app_event(eventid_t id) {
+  (void)id;
+  OrchardAppEvent evt;
+
+  evt.type = radioEvent;
+  if( !ui_override )
+    instance.app->event(instance.context, &evt);
+}
 
 static void terminate(eventid_t id) {
 
@@ -219,7 +287,8 @@ static THD_FUNCTION(orchard_app_thread, arg) {
 
   chRegSetThreadName("Orchard App");
 
-  evtTableInit(orchard_app_events, 4);
+  evtTableInit(orchard_app_events, 6);
+  evtTableHook(orchard_app_events, radio_app, radio_app_event);
   evtTableHook(orchard_app_events, ui_completed, ui_complete_cleanup);
   evtTableHook(orchard_app_events, orchard_app_terminate, terminate);
   evtTableHook(orchard_app_events, timer_expired, timer_event);
@@ -269,13 +338,11 @@ static THD_FUNCTION(orchard_app_thread, arg) {
     instance->app = orchard_app_list;
   instance->next_app = NULL;
 
-  //  chVTReset(&run_launcher_timer);
-  //  run_launcher_timer_engaged = false;
-
   evtTableUnhook(orchard_app_events, timer_expired, timer_event);
   evtTableUnhook(orchard_app_events, orchard_app_terminate, terminate);
   evtTableUnhook(orchard_app_events, ui_completed, ui_complete_cleanup);
-
+  evtTableUnhook(orchard_app_events, radio_app, radio_app_event);
+  
   /* Atomically broadcasting the event source and terminating the thread,
      there is not a chSysUnlock() because the thread terminates upon return.*/
   chSysLock();
@@ -284,45 +351,20 @@ static THD_FUNCTION(orchard_app_thread, arg) {
 }
 
 void orchardAppInit(void) {
-#ifdef notyet
-  int i;
-#endif
+
   orchard_app_list = orchard_apps();
   instance.app = orchard_app_list;
   chEvtObjectInit(&orchard_app_terminated);
   chEvtObjectInit(&orchard_app_terminate);
   chEvtObjectInit(&timer_expired);
+  chEvtObjectInit(&ping_timeout);
   chEvtObjectInit(&ui_completed);
   chVTReset(&instance.timer);
-
-  /* Hook this outside of the app-specific runloop, so it runs even if
-     the app isn't listening for events.*/
-  //  evtTableHook(orchard_events, captouch_changed, poke_run_launcher_timer);
-
-  // usb detection and charge state management is also meta to the apps
-  // sequence of events:
-  // 0. timer chargecheck_timer is set for CHARGECHECK_INTERVAL
-  // 1. timer chargecheck_timer times out, and run_chargecheck callback is executed
-  // 2. run_chargecheck callback issues a chargecheck_timeout event and re-schedules itself
-  // 3. event sytsem receives chargecheck_timeout event and  dispatches handle_chargecheck_timeout
-  // 4. handle_chargecheck_timeout issues an analogUpdateUsbStatus() call and exits
-  // 5. analogUpdateUsbStatus() eventually results in a usbdet_rdy event
-  // 6. usbdet_rdy event dispatches into the handle_charge_state event handler
-  // 7. handle_charge_state runs all the logic for managing charge state
-
-  // Steps 0-7 create a periodic timer that polls the USB D+/D- pin state so we can
-  // make a determination of how to correctly set the charger/boost state
-  // It's complicated because both the timer and the D+/D- detetion are asynchronous
-  // and you have to use events to poke operations that can't happen in interrupt contexts!
-  //  evtTableHook(orchard_events, usbdet_rdy, handle_charge_state);
-  //  evtTableHook(orchard_events, chargecheck_timeout, handle_chargecheck_timeout);
-
+  // set up our ping timer
+  chVTReset(&ping_timer);
   //  evtTableHook(orchard_events, radio_page, handle_radio_page);
-  //  evtTableHook(orchard_events, ping_timeout, handle_ping_timeout);
-
-  // these calls break the system, don't do them yet. 
-  //  chVTReset(&ping_timer);
-  //  chVTSet(&ping_timer, MS2ST(PING_MIN_INTERVAL + rand() % PING_RAND_INTERVAL), run_ping, NULL);
+  evtTableHook(orchard_events, ping_timeout, handle_ping_timeout);
+  chVTSet(&ping_timer, MS2ST(PING_MIN_INTERVAL), run_ping, NULL);  // todo: randomize this
 
   // initalize the seen-enemies list
   for( int i = 0; i < MAX_ENEMIES; i++ ) {
@@ -384,24 +426,6 @@ user *enemy_add(char *name) {
 
   // if we got here, we couldn't add the enemy because we ran out of space
   return NULL;
-}
-
-// to be called periodically to decrement credits and de-alloc enemies we haven't seen in a while
-void enemy_cleanup(void) {
-  uint32_t i;
-
-  osalMutexLock(&enemies_mutex);
-  for( i = 0; i < MAX_ENEMIES; i++ ) {
-    if( enemies[i] == NULL )
-      continue;
-
-    enemies[i]->priority--;
-    if( enemies[i]->priority == 0 ) {
-      chHeapFree(enemies[i]);
-      enemies[i] = NULL;
-    }
-  }
-  osalMutexUnlock(&enemies_mutex);
 }
 
 int enemy_comp(const void *a, const void *b) {

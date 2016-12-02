@@ -5,11 +5,7 @@
 #include "orchard-events.h"
 
 event_source_t rf_pkt_rdy;
-
-#ifdef notdef
-event_source_t mic_rdy;
-event_source_t usbdet_rdy;
-#endif
+event_source_t radio_app;
 
 /*
  * On the Freescale KW019032 board:
@@ -27,11 +23,7 @@ static const EXTConfig ext_config = {
 void orchardEventsStart(void) {
 
   chEvtObjectInit(&rf_pkt_rdy);
-
-#ifdef notdef
-  chEvtObjectInit(&mic_rdy);
-  chEvtObjectInit(&usbdet_rdy);
-#endif
+  chEvtObjectInit(&radio_app);
 
   extStart(&EXTD1, &ext_config);
 }

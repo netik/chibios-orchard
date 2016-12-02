@@ -93,7 +93,6 @@ void cmd_enemysim(BaseSequentialStream *chp, int argc, char *argv[]) {
   (void) argc;
   (void) argv;
 
-  //  char enemylist[16][CONFIG_NAME_MAXLEN];
   // todo: generate some names...
   // generate some packets... 
   while(!should_stop()) {
