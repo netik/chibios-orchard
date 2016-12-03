@@ -91,10 +91,9 @@ void enemy_cleanup(void) {
 static void handle_ping_timeout(eventid_t id) {
   (void) id;
 
-  KW01_PKT * pkt;
+  KW01_PKT pkt;
   userconfig *config = getConfig();
-  pkt = &KRADIO1.kw01_pkt;
-  memset (pkt->kw01_payload, 0, sizeof(pkt->kw01_payload));
+  memset (pkt.kw01_payload, 0, sizeof(pkt.kw01_payload));
   
   /* time to send a ping. */
   /* build packet */
@@ -106,11 +105,11 @@ static void handle_ping_timeout(eventid_t id) {
   upkt.hp = config->hp;
   upkt.level = config->level;
 
-  memcpy(pkt->kw01_payload, &upkt, sizeof(upkt));
+  memcpy(pkt.kw01_payload, &upkt, sizeof(upkt));
 	 
   radioSend (&KRADIO1, RADIO_BROADCAST_ADDRESS,  RADIO_PROTOCOL_PING,
 	     KRADIO1.kw01_maxlen - KW01_PKT_HDRLEN,
-	     pkt);
+	     &pkt);
   
   // cleanup every other ping we send, to make sure friends that are
   // nearby build up credit over time to max credits

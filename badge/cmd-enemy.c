@@ -92,18 +92,31 @@ void cmd_enemysim(BaseSequentialStream *chp, int argc, char *argv[]) {
   (void) chp;
   (void) argc;
   (void) argv;
-
+  user **enemies;
+  enemies = enemiesGet();
+    osalMutexLock(&enemies_mutex);
+    for (int i=0; i< MAX_ENEMIES; i++) {
+    if (enemies[i] == NULL) {
+      enemies[i] = (user *) chHeapAlloc(NULL, sizeof(user));
+      enemies[i]->priority = 100;
+      enemies[i]->in_combat = 0;
+      enemies[i]->hp = 1337;
+      enemies[i]->level = rand() % 9 + 1;
+      //      char tmp[15];
+      //      sprintf(tmp, "test-%d", i);
+      //      strncpy(enemies[i]->name, tmp, CONFIG_NAME_MAXLEN);
+    }
+    osalMutexUnlock(&enemies_mutex);
+  }
   // todo: generate some names...
   // generate some packets... 
-  while(!should_stop()) {
-    //    i = rand() & 0xF; // maybe we should do it in-order to guarantee all addresses are pinged?
-    // jna : TBD !
+  //  while(!should_stop()) {
     //    radioAcquire(radioDriver);
     //    radioSend(radioDriver, RADIO_BROADCAST_ADDRESS, radio_prot_ping,
     //	      strlen(enemylist[i]) + 1, enemylist[i]);
     //    radioRelease(radioDriver);
-    chThdSleepMilliseconds((5000 + rand() % 2000) / 16); // simulate timeouts
-  }
+  //    chThdSleepMilliseconds((5000 + rand() % 2000) / 16); // simulate timeouts
+  ///  }
 }
 orchard_command("enemysim", cmd_enemysim);
 
