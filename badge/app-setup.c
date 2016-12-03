@@ -208,44 +208,46 @@ static void setup_event(OrchardAppContext *context,
       
     case GEVENT_GWIN_CHECKBOX:
       if (((GEventGWinCheckbox*)pe)->gwin == p->ghCheckSound) {
+	last_ui_time = chVTGetSystemTime();
 	// The state of our checkbox has changed
 	config->sound_enabled = ((GEventGWinCheckbox*)pe)->isChecked;
       }
       break;
     case GEVENT_GWIN_BUTTON:
-        if (((GEventGWinButton*)pe)->gwin == p->ghButtonCancel) {
-     	  orchardAppExit();
-        }
-
-        if (((GEventGWinButton*)pe)->gwin == p->ghButtonOK) {
+      last_ui_time = chVTGetSystemTime();
+      if (((GEventGWinButton*)pe)->gwin == p->ghButtonCancel) {
+	orchardAppExit();
+      }
+      
+      if (((GEventGWinButton*)pe)->gwin == p->ghButtonOK) {
      	  orchardAppExit();
           configSave(config);
-        }
-
-        if (((GEventGWinButton*)pe)->gwin == p->ghButtonDimDn) {
-          config->led_shift++;
-          if (config->led_shift > 7) config->led_shift = 0;
-          ledSetBrightness(config->led_shift);
-        }
-
-        if (((GEventGWinButton*)pe)->gwin == p->ghButtonDimUp) {
-          config->led_shift--;
-          if (config->led_shift == 255) config->led_shift = 7;
-          ledSetBrightness(config->led_shift);
-        }
-
-        if (((GEventGWinButton*)pe)->gwin == p->ghButtonPatDn) {
-	  config->led_pattern++;
-	  ledResetPattern();
-          if (config->led_pattern >= LED_PATTERN_COUNT) config->led_pattern = 0;
-        }
-
-        if (((GEventGWinButton*)pe)->gwin == p->ghButtonPatUp) {
-          config->led_pattern--;
-	  ledResetPattern();
-          if (config->led_pattern == 255) config->led_pattern = LED_PATTERN_COUNT - 1;
-        }
-
+      }
+      
+      if (((GEventGWinButton*)pe)->gwin == p->ghButtonDimDn) {
+	config->led_shift++;
+	if (config->led_shift > 7) config->led_shift = 0;
+	ledSetBrightness(config->led_shift);
+      }
+      
+      if (((GEventGWinButton*)pe)->gwin == p->ghButtonDimUp) {
+	config->led_shift--;
+	if (config->led_shift == 255) config->led_shift = 7;
+	ledSetBrightness(config->led_shift);
+      }
+      
+      if (((GEventGWinButton*)pe)->gwin == p->ghButtonPatDn) {
+	config->led_pattern++;
+	ledResetPattern();
+	if (config->led_pattern >= LED_PATTERN_COUNT) config->led_pattern = 0;
+      }
+      
+      if (((GEventGWinButton*)pe)->gwin == p->ghButtonPatUp) {
+	config->led_pattern--;
+	ledResetPattern();
+	if (config->led_pattern == 255) config->led_pattern = LED_PATTERN_COUNT - 1;
+      }
+      
       // update ui
       chsnprintf(tmp, sizeof(tmp), "%d",(  8 - config->led_shift ) );
       gwinSetText(p->ghLabelDim, tmp, TRUE);

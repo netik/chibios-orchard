@@ -60,7 +60,7 @@ static uint8_t ui_override = 0;
 
 static void run_ping(void *arg) {
   (void)arg;
-  chprintf(stream, "DEBUG: run_ping\r\n");
+  //  chprintf(stream, "DEBUG: run_ping\r\n");
   chSysLockFromISR();
   chEvtBroadcastI(&ping_timeout);
   chVTSetI(&ping_timer, MS2ST(PING_MIN_INTERVAL), run_ping, NULL);
