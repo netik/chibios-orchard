@@ -32,7 +32,8 @@ CFLAGS+=  -mcpu=cortex-m0plus -Os -ggdb -fomit-frame-pointer		\
 
 updater: $(OBJS)
 	$(CC) $(OBJS) -ggdb -nostdlib -Wl,-Tlink.lds,--gc-sections	\
-	-flto -nostartfiles -o $@ -lc_nano -lnosys -lgcc
+	-mcpu=cortex-m0plus -msoft-float -mthumb -flto 			\
+	-nostartfiles -o $@ -lgcc
 	$(OBJCOPY) -O binary $@ updater.bin
 
 clean:
