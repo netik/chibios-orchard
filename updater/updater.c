@@ -80,6 +80,13 @@
  * previous RAM contents remain, but are ignored. The is kept small
  * in order to fit in about 5KB of memory so that it will fit in RAM
  * with enough space left over for some data buffers and the stack.
+ *
+ * The memory map when the updater runs is shown below:
+ *
+ * 0x1FFF_F800			stack
+ * 0x2000_0000			FatFs structure
+ * 0x2000_1000			1024-byte data buffer
+ * 0x2000_1400			Start of updater binary
  */
 
 #include "ch.h"
@@ -99,7 +106,7 @@
  * boundary.
  */
 
-__attribute__((aligned(0x100))) isr vectors[48];
+__attribute__((aligned(0x100))) isr vectors[16 + CORTEX_NUM_VECTORS];
 
 isr * origvectors = (isr *)0;
 
@@ -140,12 +147,12 @@ int updater (void)
 	 * get a stack trace.
 	 */
 
-	for (i = 0; i < 48; i++)
+	for (i = 0; i < 16 + CORTEX_NUM_VECTORS; i++)
 		vectors[i] = origvectors[i];
 
 	/* Turn off all IRQs. */
 
-	for (i = 0; i < 32; i++)
+	for (i = 0; i < CORTEX_NUM_VECTORS; i++)
 		nvicDisableVector (i);
 
 	/* Now shift the vector table location. */
@@ -168,14 +175,18 @@ int updater (void)
 
 	flashStart ();
 
-	/* Initialize ahd mount the SD card */
+	/*
+	 * Initialize and mount the SD card
+	 * If this fails, turn on the red LED to signal a problem
+	 * to the user.
+	 */
 
-	mmc_disk_initialize ();
-
-	f_mount (fs, "0:", 1);
-
-	if (f_open (&f, "BADGE.BIN", FA_READ) != FR_OK)
+	if (mmc_disk_initialize () != FR_OK ||
+	    f_mount (fs, "0:", 1) != FR_OK ||
+	    f_open (&f, "BADGE.BIN", FA_READ) != FR_OK) {
+		palClearPad (GPIOE, 16);
 		while (1) {}
+	}
 
 	while (1) {
 		f_read (&f, src, UPDATE_SIZE, &br);
