@@ -126,7 +126,9 @@ static void cmd_radio(BaseSequentialStream *chp, int argc, char *argv[]) {
     chprintf(chp, "   get [addr]           Get a SPI register\r\n");
     chprintf(chp, "   set [addr] [val]     Set a SPI register\r\n");
     chprintf(chp, "   dump [addr] [count]  Dump a set of SPI registers\r\n");
+#ifdef KW01_RADIO_HWFILTER
     chprintf(chp, "   addr [addr]          Set radio node address\r\n");
+#endif /* KW01_RADIO_HWFILTER */
     chprintf(chp, "   temperature          Read radio temperature\r\n");
     return;
   }

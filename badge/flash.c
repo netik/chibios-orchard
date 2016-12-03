@@ -29,10 +29,12 @@ const pFLASHCOMMANDSEQUENCE g_FlashLaunchCommand = FlashCommandSequence;
 #ifdef FLASH_USE_RAM
 static void callback(void);
 extern uint32_t RelocateFunction(uint32_t dest, uint32_t size, uint32_t src);
-#endif
 
 // Freescale's Flash Standard Software Driver Structure
+static FLASH_SSD_CONFIG flashSSDConfig =
+#else
 static const FLASH_SSD_CONFIG flashSSDConfig =
+#endif
 {
     FTFx_REG_BASE,          /* FTFx control register base */
     P_FLASH_BASE,           /* base address of PFlash block */

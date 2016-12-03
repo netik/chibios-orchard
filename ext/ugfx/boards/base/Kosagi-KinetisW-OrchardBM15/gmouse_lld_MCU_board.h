@@ -14,12 +14,12 @@
 #include <string.h>
 
 static const float calibrationData[] = {
-	-0.07121,		// ax
-	-0.00238,		// bx
-	271.50784,		// cx
-	-0.00010,		// ay
-	0.09193,		// by
-	-17.79266		// cy
+	-0.06661,		// ax
+	0.00031,		// bx
+	260.26651,		// cx
+	-0.00079,		// ay
+	0.08950,		// by
+	-13.79760		// cy
 };
  
 bool_t LoadMouseCalibration(unsigned instance, void *data, size_t sz)
@@ -43,7 +43,7 @@ bool_t LoadMouseCalibration(unsigned instance, void *data, size_t sz)
 #define GMOUSE_MCU_Z_MIN		0	/* The minimum Z reading */
 #define GMOUSE_MCU_Z_MAX		4096	/* The maximum Z reading */
 
-#define GMOUSE_MCU_Z_TOUCHON		150	/*
+#define GMOUSE_MCU_Z_TOUCHON		500	/*
 						 * Values between this and
 						 * Z_MAX are definitely pressed
 						 */
@@ -68,11 +68,21 @@ static bool_t init_board(GMouse *m, unsigned driverinstance) {
 }
 
 static bool_t read_xyz(GMouse *m, GMouseReading *prd) {
+	uint16_t z1;
+	uint16_t z2;
+
 	(void)m;
 
 	prd->x = xptGet (XPT_CHAN_X);
 	prd->y = xptGet (XPT_CHAN_Y);
-	prd->z = xptGet (XPT_CHAN_Z1);
+
+	z1 = xptGet (XPT_CHAN_Z1);
+	z2 = xptGet (XPT_CHAN_Z2);
+
+	if ((z2 - z1) < 3500)
+		prd->z = 4095 - (z2 - z1);
+	else
+		prd->z = 0;
 
 	return (TRUE);
 }

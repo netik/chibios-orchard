@@ -1,0 +1,2 @@
+
+typedef void (*isr)(void);

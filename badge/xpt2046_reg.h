@@ -56,6 +56,6 @@
 #define XPT_CHAN_Z2		0x40	/* Z2 position */
 #define XPT_CHAN_X		0x50	/* X position */
 #define XPT_CHAN_AUX		0x60	/* Aux input */
-#define XPT_CHAN_TEMP		0x70	/* Temperature */
+#define XPT_CHAN_TEMP1		0x70	/* Temperature */
 
 #endif /* _XPT2046_REG_H_ */

@@ -131,7 +131,7 @@ static void default_radio_handler(KW01_PKT * pkt)
 }
 
 static void print_mcu_info(void) {
-  userconfig *config = getConfig();
+  userconfig * config;
   uint32_t sdid = SIM->SDID;
   const char *famid[] = {
     "KL0%d (low-end)",
@@ -161,6 +161,8 @@ static void print_mcu_info(void) {
     80,
   };
 
+  config = getConfig();
+
   if (((sdid >> 20) & 15) != 1) {
     chprintf(stream, "Device is not Kinetis KL-series\r\n");
     return;
@@ -188,6 +190,7 @@ static void print_mcu_info(void) {
  */
 int main(void)
 {
+  userconfig * config;
   /*
    * System initializations.
    * - HAL initialization, this also initializes the configured device drivers
@@ -228,8 +231,9 @@ int main(void)
   chprintf(stream, SHELL_BANNER);
   chprintf(stream, "\r\n     ()==[:::::::::::::> build %s\r\n\r\n", gitversion);
 
+  flashStart();
   configStart();
-  userconfig *config = getConfig();
+  config = getConfig();
 
   print_mcu_info();
 
@@ -237,7 +241,6 @@ int main(void)
   effectsStart();
 
   /* start the engines */
-  flashStart();
   pwmInit();
   spiStart(&SPID1, &spi1_config);
   orchardEventsStart();
