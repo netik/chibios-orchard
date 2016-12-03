@@ -36,6 +36,6 @@ updater: $(OBJS)
 	$(OBJCOPY) -O binary $@ updater.bin
 
 clean:
-	rm updater *.o *.bin
+	rm -f updater *.o *.bin
 
 all: updater
