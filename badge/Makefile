@@ -112,8 +112,6 @@ LDSCRIPT= $(STARTUPLD)/KL16Z128.ld
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
 
-#       app-launcher.c \
-
 CSRC = main.c \
        userconfig.c \
        orchard-shell.c \
@@ -132,6 +130,7 @@ CSRC = main.c \
        app-name.c \
        app-fight.c \
        app-notify.c \
+       app-update.c \
        app-credits.c \
        app-shout.c \
        app-default.c \
