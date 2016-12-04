@@ -95,7 +95,7 @@
 
 
 /* KL16 32pin  */
-#define KINETIS_EXT_PORTA_WIDTH                 32
+#define KINETIS_EXT_PORTA_WIDTH                 0
 #define KINETIS_EXT_PORTB_WIDTH                 0 /* PORTB can't generate IRQ */
 #define KINETIS_EXT_PORTC_WIDTH                 32
 #define KINETIS_EXT_PORTD_WIDTH                 32

@@ -51,10 +51,12 @@ typedef struct _OrchardUi {
 
 #define TEXTENTRY_MAXLEN  19  // maximum length of any entered text, not including null char
 
-const OrchardUi *getUiByName(const char *name);
+extern const OrchardUi *getUiByName(const char *name);
 
-void uiStart(void);
-void orchardGfxStart(void);
-void orchardGfxEnd(void);
+extern void uiStart(void);
+extern void orchardGfxStart(void);
+extern void orchardGfxEnd(void);
+
+extern void noRender (GWidgetObject * gw, void * param);
 
 #endif /* __ORCHARD_UI_H__ */

@@ -20,6 +20,7 @@
 #include "pit.h"
 #include "tpm.h"
 #include "sound.h"
+#include "rand.h"
 
 #include "shell.h"
 #include "chprintf.h"
@@ -232,13 +233,7 @@ int main(void)
   chprintf(stream, "\r\n     ()==[:::::::::::::> build %s\r\n\r\n", gitversion);
 
   flashStart();
-  configStart();
-  config = getConfig();
-
   print_mcu_info();
-
-  ledStart(16, led_fb);
-  effectsStart();
 
   /* start the engines */
   pwmInit();
@@ -353,7 +348,23 @@ XF  else
   }
   
 #endif
+
+  /*
+   * Note: we have to wait until here to initialize the random seed
+   * because we need to poll the touch controller and that requires
+   * SPI channel 1 to be enabled. The userconfig module requires
+   * rand(), so we have wait until after setting the seed before
+   * calling configStart().
+   */
+
+  randInit ();
+
   /* we're goood */
+
+  configStart ();
+  config = getConfig ();
+  ledStart (16, led_fb);
+  effectsStart ();
 
   if (config->sound_enabled) { 
     playStartupSong();

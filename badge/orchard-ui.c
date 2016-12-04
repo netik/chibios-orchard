@@ -35,3 +35,12 @@ void orchardGfxEnd(void) {
   osalMutexUnlock(&orchard_gfxMutex);
   
 }
+
+void noRender(GWidgetObject* gw, void* param)
+{
+        (void)gw;
+        (void)param;
+
+        return;
+}
+

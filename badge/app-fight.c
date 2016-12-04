@@ -129,14 +129,6 @@ static int putImageFile(char *name, int16_t x, int16_t y) {
   }    
 }
 
-static void noRender(GWidgetObject* gw, void* param)
-{
-  (void)gw;
-  (void)param;
-
-  return;
-}
-
 static void draw_buttons(FightHandles *p) { 
   GWidgetInit wi;
   coord_t totalheight = gdispGetHeight();

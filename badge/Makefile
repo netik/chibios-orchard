@@ -135,7 +135,8 @@ CSRC = main.c \
        app-shout.c \
        app-default.c \
        app-setup.c \
-       $(wildcard ui-*.c) \
+       ui-keyboard.c \
+       rand.c \
        sound.c \
        led.c \
        oled.c \
@@ -269,7 +270,7 @@ ULIBDIR =
 
 # List all user libraries here
 #ULIBS = lib/armv6-m-libgcc.a lib/libc-nano-armv6-m.a
-ULIBS = -lc_nano -lnosys -lgcc -lm # -lm_nano
+ULIBS = -lc_nano -lnosys -lm -lgcc
 
 #
 # End of user defines

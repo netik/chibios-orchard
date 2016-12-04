@@ -16,6 +16,8 @@
 
 #include "hal.h"
 #include "radio_reg.h"
+#include "pit.h"
+#include "pit_reg.h"
 
 #define RADIO_REG_DIOMAPPING2   (0x26)
 #define RADIO_CLK_DIV1          (0x00)
@@ -199,6 +201,21 @@ static void early_usleep(int usec) {
  *          and before any other initialization.
  */
 void __early_init(void) {
+  PITDriver * pit;
+
+  /*
+   * Enable the second PIT so that we can use it to count how many
+   * cycles it takes to boot. This tends to vary so we can use it
+   * as a source of entropy. We do not enable interrupts for this.
+   * Only the first PIT will be used with interrupts enabled as
+   * a delay timer for the FatFs code.
+   */
+
+  SIM->SCGC6 |= SIM_SCGC6_PIT;
+  pit = &PIT1;
+  pit->pit_base = (uint8_t *)PIT_BASE;
+  CSR_WRITE_4(pit, PIT_LDVAL1, 0xFFFFFFFF);
+  CSR_WRITE_4(pit, PIT_TCTRL1, PIT_TCTRL_TEN);
 
 #if KINETIS_MCG_MODE == KINETIS_MCG_MODE_PEE
 
