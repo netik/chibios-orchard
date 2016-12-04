@@ -12,7 +12,7 @@
  * @defgroup Progressbar Progressbar
  * @ingroup Widgets
  *
- * @details		Create progressbars with different styles
+ * @brief		ProgressBar widget.
  *
  * @pre			GFX_USE_GWIN must be set to TRUE in your gfxconf.h
  * @pre			GWIN_NEED_PROGRESSBAR must be set to TRUE in your gfxconf.h
@@ -147,7 +147,7 @@ void gwinProgressbarDecrement(GHandle gh);
   */
 #define gwinProgressbarReset(gh)			gwinProgressbarSetPosition(gh, ((GProgressbarObject *)(gh))->min)
 
-#if GWIN_PROGRESSBAR_AUTO
+#if GWIN_PROGRESSBAR_AUTO || defined(__DOXYGEN__)
 	/**
 	 * @brief	Automatically increments the progress bar
 	 *
@@ -176,29 +176,49 @@ void gwinProgressbarDecrement(GHandle gh);
 #endif /* GWIN_PROGRESSBAR_AUTO */
 
 /**
- * @brief	Some custom progressbar drawing routines
- * @details	These function may be passed to @p gwinSetCustomDraw() to get different progressbar drawing styles
+ * @defgroup Renderings_Progressbar Renderings
  *
- * @param[in] gw			The widget (which must be a progressbar)
- * @param[in] param			A parameter passed in from the user
+ * @brief				Built-in rendering functions for the progressbar widget.
  *
- * @note				In your custom progressbar drawing function you may optionally call this
+ * @details				These function may be passed to @p gwinSetCustomDraw() to get different progressbar drawing styles.
+ *
+ * @note				In your custom progressbar drawing function you may optionally call these
  * 						standard functions and then draw your extra details on top.
- * @note				The standard functions below ignore the param parameter except for @p gwinProgressbarDraw_Image().
- * @note				The image custom draw function  @p gwinProgressbarDraw_Image() uses param to pass in the gdispImage pointer.
- * 						The image must be already opened before calling  @p gwinSetCustomDraw(). The image is tiled to fill
- * 						the active area of the progressbar. The normal colors apply to the border and inactive area and the dividing line
- * 						between the active and inactive areas.
- * 						No checking is done to compare the dimensions of the progressbar to the size of the image.
- * 						Note text is drawn on top of the image.
  * @note				These custom drawing routines don't have to worry about setting clipping as the framework
  * 						sets clipping to the object window prior to calling these routines.
  *
- * @api
  * @{
  */
+
+/**
+ * @brief				The default rendering function for the progressbar widget
+ *
+ * @param[in] gw		The widget object (must be a progressbar object)
+ * @param[in] param		A parameter passed in from the user. Ignored by this function.
+ *
+ * @api
+ */
 void gwinProgressbarDraw_Std(GWidgetObject *gw, void *param);
-void gwinProgressbarDraw_Image(GWidgetObject *gw, void *param);
+
+#if GDISP_NEED_IMAGE || defined(__DOXYGEN__)
+	/**
+	 * @brief				Renders a progressbar using an image.
+	 *
+	 * @param[in] gw		The widget object (must be a progressbar handle)
+	 * @param[in] param		A parameter passed in from the user. Must be an image handle. See note below.
+	 *
+	 * @note				The image must be already opened before calling  @p gwinSetCustomDraw().
+	 * @note				The image is tiled to fill the active area of the progressbar. The normal colors
+	 *						apply to the border and inactive area and the dividing line between the active
+	 *						and inactive areas. No checking is done to compare the dimensions of the progressbar
+	 *						to the size of the image. Note text is drawn on top of the image.
+	 *
+	 * @pre					GDISP_NEED_IMAGE must be set to TRUE
+	 *
+	 * @api
+	 */
+	void gwinProgressbarDraw_Image(GWidgetObject *gw, void *param);
+#endif /* GDISP_NEED_IMAGE */
 /** @} */
 
 #ifdef __cplusplus

@@ -10,8 +10,8 @@
 #if GFX_USE_GDISP
 
 #define GDISP_DRIVER_VMT			GDISPVMT_SSD2119
-#include "drivers/gdisp/SSD2119/gdisp_lld_config.h"
-#include "src/gdisp/gdisp_driver.h"
+#include "gdisp_lld_config.h"
+#include "../../../src/gdisp/gdisp_driver.h"
 
 #include "board_SSD2119.h"
 
@@ -38,7 +38,7 @@
 	#define GDISP_NO_DMA_FROM_STACK	FALSE
 #endif
 
-#include "drivers/gdisp/SSD2119/ssd2119.h"
+#include "ssd2119.h"
 
 /*===========================================================================*/
 /* Driver local functions.                                                   */

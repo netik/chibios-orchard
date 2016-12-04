@@ -49,13 +49,14 @@
 /* Our custom yellow style */
 static const GWidgetStyle YellowWidgetStyle = {
 	Yellow,							// window background
+	HTML2COLOR(0x800000),			// focus
 
 	// enabled color set
 	{
 		HTML2COLOR(0x0000FF),		// text
 		HTML2COLOR(0x404040),		// edge
 		HTML2COLOR(0xE0E0E0),		// fill
-		HTML2COLOR(0xE0E0E0),		// progress - inactive area
+		HTML2COLOR(0x00E000)		// progress - active area
 	},
 
 	// disabled color set
@@ -63,7 +64,7 @@ static const GWidgetStyle YellowWidgetStyle = {
 		HTML2COLOR(0xC0C0C0),		// text
 		HTML2COLOR(0x808080),		// edge
 		HTML2COLOR(0xE0E0E0),		// fill
-		HTML2COLOR(0xC0E0C0),		// progress - active area
+		HTML2COLOR(0xC0E0C0)		// progress - active area
 	},
 
 	// pressed color set
@@ -72,7 +73,7 @@ static const GWidgetStyle YellowWidgetStyle = {
 		HTML2COLOR(0x404040),		// edge
 		HTML2COLOR(0x808080),		// fill
 		HTML2COLOR(0x00E000),		// progress - active area
-	},
+	}
 };
 
 /* The variables we need */

@@ -9,7 +9,7 @@
  * The virtual string file
  ********************************************************/
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GFILE && GFILE_NEED_STRINGS
 
@@ -22,12 +22,18 @@ static int StringRead(GFILE *f, void *buf, int size) {
 	int		res;
 	char	*p;
 
+	if (!f->obj)
+		return 0;
+	
 	p = ((char *)f->obj) + f->pos;
 	for(res = 0; res < size && *p; res++, p++, buf = ((char *)buf)+1)
 		((char *)buf)[0] = *p;
 	return res;
 }
 static int StringWrite(GFILE *f, const void *buf, int size) {
+	if (!f->obj)
+		return 0;
+	
 	if ((f->flags & GFILEFLG_APPEND)) {
 		while(((char *)f->obj)[f->pos])
 			f->pos++;
@@ -50,7 +56,7 @@ static const GFILEVMT StringVMT = {
 };
 
 static void gfileOpenStringFromStaticGFILE(GFILE *f, char *str) {
-	if ((f->flags & GFILEFLG_TRUNC))
+	if ((f->flags & GFILEFLG_TRUNC) && str)
 		str[0] = 0;
 	f->vmt = &StringVMT;
 	f->obj = str;
@@ -62,7 +68,7 @@ GFILE *gfileOpenString(char *str, const char *mode) {
 	GFILE	*f;
 
 	// Get an empty file and set the flags
-	if (!(f = _gfileFindSlot(mode)))
+	if (!str || !(f = _gfileFindSlot(mode)))
 		return 0;
 
 	// File is open - fill in all the details

@@ -26,24 +26,21 @@
 #if GFX_USE_OS_RAW32
 
 /*===========================================================================*/
-/* Special Macros just for a Raw implementation                              */
-/*===========================================================================*/
-
-/**
- * @brief	Set the maximum size of the heap.
- * @note	If set to 0 then the C runtime library malloc() and free() are used.
- */
-#ifndef GOS_RAW_HEAP_SIZE
-	#define GOS_RAW_HEAP_SIZE	0
-#endif
-
-/*===========================================================================*/
 /* Type definitions                                                          */
 /*===========================================================================*/
 
 typedef unsigned char	bool_t;
 
-#if !defined(_STDINT_H) && !defined(__stdint_h)
+#if __STDC_VERSION__ >= 199901L
+	#include <stdint.h>
+#elif defined(__GNUC__) || defined(__GNUG__)
+	typedef __INT8_TYPE__	int8_t;
+	typedef __UINT8_TYPE__	uint8_t;
+	typedef __INT16_TYPE__	int16_t;
+	typedef __UINT16_TYPE__	uint16_t;
+	typedef __INT32_TYPE__	int32_t;
+	typedef __UINT32_TYPE__	uint32_t;
+#else
 	typedef signed char		int8_t;
 	typedef unsigned char	uint8_t;
 	typedef signed short	int16_t;
@@ -52,75 +49,32 @@ typedef unsigned char	bool_t;
 	typedef unsigned int	uint32_t;
 #endif
 
-#if !defined (__need_size_t) && !defined (_STDDEF_H_) && !defined(__stddef_h)
+#if defined(__STDC__)
+	#include <stddef.h>
+#else
 	typedef uint32_t		size_t;
 #endif
-
-typedef uint32_t		delaytime_t;
-typedef uint32_t		systemticks_t;
-typedef short			semcount_t;
-typedef int				threadreturn_t;
-typedef int				threadpriority_t;
-
-#define DECLARE_THREAD_FUNCTION(fnName, param)	threadreturn_t fnName(void *param)
-#define DECLARE_THREAD_STACK(name, sz)			uint8_t name[sz];
-
-#define TIME_IMMEDIATE				0
-#define TIME_INFINITE				((delaytime_t)-1)
-#define MAX_SEMAPHORE_COUNT			0x7FFF
-#define LOW_PRIORITY				0
-#define NORMAL_PRIORITY				1
-#define HIGH_PRIORITY				2
-
-typedef struct {
-	semcount_t		cnt;
-	semcount_t		limit;
-} gfxSem;
-
-typedef uint32_t		gfxMutex;
-typedef void *			gfxThreadHandle;
-
-#define gfxThreadClose(thread)
-#define gfxMutexDestroy(pmutex)
-#define gfxSemDestroy(psem)
-#define gfxSemCounter(psem)			((psem)->cnt)
-#define gfxSemCounterI(psem)		((psem)->cnt)
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	#if GOS_RAW_HEAP_SIZE != 0
-		void gfxAddHeapBlock(void *ptr, size_t sz);
-	#endif
-
 	void gfxHalt(const char *msg);
 	void gfxExit(void);
-	void *gfxAlloc(size_t sz);
-	void *gfxRealloc(void *ptr, size_t oldsz, size_t newsz);
-	void gfxFree(void *ptr);
-	void gfxYield(void);
-	void gfxSleepMilliseconds(delaytime_t ms);
-	void gfxSleepMicroseconds(delaytime_t ms);
-	systemticks_t gfxSystemTicks(void);
-	systemticks_t gfxMillisecondsToTicks(delaytime_t ms);
-	void gfxSystemLock(void);
-	void gfxSystemUnlock(void);
-	void gfxMutexInit(gfxMutex *pmutex);
-	void gfxMutexEnter(gfxMutex *pmutex);
-	void gfxMutexExit(gfxMutex *pmutex);
-	void gfxSemInit(gfxSem *psem, semcount_t val, semcount_t limit);
-	bool_t gfxSemWait(gfxSem *psem, delaytime_t ms);
-	bool_t gfxSemWaitI(gfxSem *psem);
-	void gfxSemSignal(gfxSem *psem);
-	void gfxSemSignalI(gfxSem *psem);
-	gfxThreadHandle gfxThreadCreate(void *stackarea, size_t stacksz, threadpriority_t prio, DECLARE_THREAD_FUNCTION((*fn),p), void *param);
-	threadreturn_t gfxThreadWait(gfxThreadHandle thread);
-	gfxThreadHandle gfxThreadMe(void);
 
 #ifdef __cplusplus
 }
 #endif
+
+/*===========================================================================*/
+/* Use the generic thread handling and heap handling                         */
+/*===========================================================================*/
+
+#define GOS_NEED_X_THREADS	TRUE
+#define GOS_NEED_X_HEAP		TRUE
+
+#include "gos_x_threads.h"
+#include "gos_x_heap.h"
 
 #endif /* GFX_USE_OS_RAW32 */
 #endif /* _GOS_RAW32_H */

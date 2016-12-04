@@ -46,7 +46,7 @@
  *			#define EINK_WRITECOUNT			4
  */
 
-static inline void init_board(GDisplay *g) {
+static GFXINLINE void init_board(GDisplay *g) {
 	(void) g;
 }
 
@@ -54,57 +54,57 @@ static void eink_delay(int us) {
 	(void) us;
 }
 
-static inline void setpower_vdd(GDisplay *g, bool_t on) {
+static GFXINLINE void setpower_vdd(GDisplay *g, bool_t on) {
 	(void) g;
 	(void) on;
 }
 
-static inline void setpower_vneg(GDisplay *g, bool_t on) {
+static GFXINLINE void setpower_vneg(GDisplay *g, bool_t on) {
 	(void) g;
 	(void) on;
 }
 
-static inline void setpower_vpos(GDisplay *g, bool_t on) {
+static GFXINLINE void setpower_vpos(GDisplay *g, bool_t on) {
 	(void) g;
 	(void) on;
 }
 
-static inline void setpin_le(GDisplay *g, bool_t on) {
+static GFXINLINE void setpin_le(GDisplay *g, bool_t on) {
 	(void) g;
 	(void) on;
 }
 
-static inline void setpin_oe(GDisplay *g, bool_t on) {
+static GFXINLINE void setpin_oe(GDisplay *g, bool_t on) {
 	(void) g;
 	(void) on;
 }
 
-static inline void setpin_cl(GDisplay *g, bool_t on) {
+static GFXINLINE void setpin_cl(GDisplay *g, bool_t on) {
 	(void) g;
 	(void) on;
 }
 
-static inline void setpin_sph(GDisplay *g, bool_t on) {
+static GFXINLINE void setpin_sph(GDisplay *g, bool_t on) {
 	(void) g;
 	(void) on;
 }
 
-static inline void setpins_data(GDisplay *g, uint8_t value) {
+static GFXINLINE void setpins_data(GDisplay *g, uint8_t value) {
 	(void) g;
 	(void) value;
 }
 
-static inline void setpin_ckv(GDisplay *g, bool_t on) {
+static GFXINLINE void setpin_ckv(GDisplay *g, bool_t on) {
 	(void) g;
 	(void) on;
 }
 
-static inline void setpin_gmode(GDisplay *g, bool_t on) {
+static GFXINLINE void setpin_gmode(GDisplay *g, bool_t on) {
 	(void) g;
 	(void) on;
 }
 
-static inline void setpin_spv(GDisplay *g, bool_t on) {
+static GFXINLINE void setpin_spv(GDisplay *g, bool_t on) {
 	(void) g;
 	(void) on;
 }

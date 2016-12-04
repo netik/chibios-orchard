@@ -5,54 +5,20 @@
  *              http://ugfx.org/license.html
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GDISP && GDISP_NEED_IMAGE && GDISP_NEED_IMAGE_BMP
 
-/**
- * Helper Routines Needed
- */
-void *gdispImageAlloc(gdispImage *img, size_t sz);
-void gdispImageFree(gdispImage *img, void *ptr, size_t sz);
+#include "gdisp_image_support.h"
 
 /**
  * How big a pixel array to allocate for blitting (in pixels)
  * Bigger is faster but uses more RAM.
  * This must be greater than 40 bytes and 32 pixels as we read our headers into this space as well
  */
-#define BLIT_BUFFER_SIZE	32
+#define BLIT_BUFFER_SIZE_BMP	32
 
-/*
- * Determining endianness as at compile time is not guaranteed or compiler portable.
- * We use the best test we can. If we can't guarantee little endianness we do things the
- * hard way.
- */
-#define GUARANTEED_LITTLE_ENDIAN	(!defined(SAFE_ENDIAN) && !defined(SAFE_ALIGNMENT) && (\
-		(defined(__BYTE_ORDER__)&&(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)) \
-		|| defined(__LITTLE_ENDIAN__) \
-		|| defined(__LITTLE_ENDIAN) \
-		|| defined(_LITTLE_ENDIAN) \
-/*		|| (1 == *(unsigned char *)&(const int){1})*/ \
-		))
-
-
-/* This is a runtime test */
-static const uint8_t	dwordOrder[4]	= { 1, 2, 3, 4 };
-
-#define isWordLittleEndian()	(*(uint16_t *)&dwordOrder == 0x0201)
-#define isDWordLittleEndian()	(*(uint32_t *)&dwordOrder == 0x04030201)
-
-#if GUARANTEED_LITTLE_ENDIAN
-	/* These are fast routines for guaranteed little endian machines */
-	#define CONVERT_FROM_WORD_LE(w)
-	#define CONVERT_FROM_DWORD_LE(dw)
-#else
-	/* These are slower routines for when little endianness cannot be guaranteed at compile time */
-	#define CONVERT_FROM_WORD_LE(w)		{ if (!isWordLittleEndian()) w = ((((uint16_t)(w))>>8)|(((uint16_t)(w))<<8)); }
-	#define CONVERT_FROM_DWORD_LE(dw)	{ if (!isDWordLittleEndian()) dw = (((uint32_t)(((const uint8_t *)(&dw))[0]))|(((uint32_t)(((const uint8_t *)(&dw))[1]))<<8)|(((uint32_t)(((const uint8_t *)(&dw))[2]))<<16)|(((uint32_t)(((const uint8_t *)(&dw))[3]))<<24)); }
-#endif
-
-typedef struct gdispImagePrivate {
+typedef struct gdispImagePrivate_BMP {
 	uint8_t		bmpflags;
 		#define BMP_V2				0x01		// Version 2 (old) header format
 		#define BMP_V4				0x02		// Version 4 (alpha support) header format
@@ -83,24 +49,27 @@ typedef struct gdispImagePrivate {
 #endif
 	size_t		frame0pos;
 	pixel_t		*frame0cache;
-	pixel_t		buf[BLIT_BUFFER_SIZE];
-	} gdispImagePrivate;
+	pixel_t		buf[BLIT_BUFFER_SIZE_BMP];
+	} gdispImagePrivate_BMP;
 
 void gdispImageClose_BMP(gdispImage *img) {
-	if (img->priv) {
+	gdispImagePrivate_BMP *priv;
+
+	priv = (gdispImagePrivate_BMP *)img->priv;
+	if (priv) {
 #if GDISP_NEED_IMAGE_BMP_1 || GDISP_NEED_IMAGE_BMP_4 || GDISP_NEED_IMAGE_BMP_4_RLE || GDISP_NEED_IMAGE_BMP_8 || GDISP_NEED_IMAGE_BMP_8_RLE
-		if (img->priv->palette)
-			gdispImageFree(img, (void *)img->priv->palette, img->priv->palsize*sizeof(color_t));
+		if (priv->palette)
+			gdispImageFree(img, (void *)priv->palette, priv->palsize*sizeof(color_t));
 #endif
-		if (img->priv->frame0cache)
-			gdispImageFree(img, (void *)img->priv->frame0cache, img->width*img->height*sizeof(pixel_t));
-		gdispImageFree(img, (void *)img->priv, sizeof(gdispImagePrivate));
+		if (priv->frame0cache)
+			gdispImageFree(img, (void *)priv->frame0cache, img->width*img->height*sizeof(pixel_t));
+		gdispImageFree(img, (void *)priv, sizeof(gdispImagePrivate_BMP));
 		img->priv = 0;
 	}
 }
 
 gdispImageError gdispImageOpen_BMP(gdispImage *img) {
-	gdispImagePrivate *priv;
+	gdispImagePrivate_BMP *priv;
 	uint8_t		hdr[2];
 	uint16_t	aword;
 	uint32_t	adword;
@@ -123,11 +92,11 @@ gdispImageError gdispImageOpen_BMP(gdispImage *img) {
 	img->flags = 0;
 
 	/* Allocate our private area */
-	if (!(img->priv = (gdispImagePrivate *)gdispImageAlloc(img, sizeof(gdispImagePrivate))))
+	if (!(img->priv = gdispImageAlloc(img, sizeof(gdispImagePrivate_BMP))))
 		return GDISP_IMAGE_ERR_NOMEMORY;
 
 	/* Initialise the essential bits in the private area */
-	priv = img->priv;
+	priv = (gdispImagePrivate_BMP *)img->priv;
 	priv->frame0cache = 0;
 	priv->bmpflags = 0;
 #if GDISP_NEED_IMAGE_BMP_1 || GDISP_NEED_IMAGE_BMP_4 || GDISP_NEED_IMAGE_BMP_4_RLE || GDISP_NEED_IMAGE_BMP_8 || GDISP_NEED_IMAGE_BMP_8_RLE
@@ -141,41 +110,37 @@ gdispImageError gdispImageOpen_BMP(gdispImage *img) {
 	/* Get the offset to the bitmap data */
 	if (gfileRead(img->f, &priv->frame0pos, 4) != 4)
 		goto baddatacleanup;
-	CONVERT_FROM_DWORD_LE(priv->frame0pos);
+	gdispImageMakeLE32(priv->frame0pos);
 
 	/* Process the BITMAPCOREHEADER structure */
 
 	/* Get the offset to the colour data */
 	if (gfileRead(img->f, &offsetColorTable, 4) != 4)
 		goto baddatacleanup;
-	CONVERT_FROM_DWORD_LE(offsetColorTable);
+	gdispImageMakeLE32(offsetColorTable);
 	offsetColorTable += 14;						// Add the size of the BITMAPFILEHEADER
 
 	// Detect our bitmap version
 	if (offsetColorTable == 12+14) {
-		img->priv->bmpflags |= BMP_V2;
+		priv->bmpflags |= BMP_V2;
 
 		// Read the header
 		if (gfileRead(img->f, priv->buf, 12-4) != 12-4)
 			goto baddatacleanup;
 		// Get the width
-		img->width = *(uint16_t *)(((uint8_t *)priv->buf)+0);
-		CONVERT_FROM_WORD_LE(img->width);
+		img->width = gdispImageGetAlignedLE16(priv->buf, 0);
 		// Get the height
-		img->height = *(uint16_t *)(((uint8_t *)priv->buf)+2);
-		CONVERT_FROM_WORD_LE(img->height);
+		img->height = gdispImageGetAlignedLE16(priv->buf, 2);
 		if (img->height < 0) {
-			img->priv->bmpflags |= BMP_TOP_TO_BOTTOM;
+			priv->bmpflags |= BMP_TOP_TO_BOTTOM;
 			img->height = -img->height;
 		}
 		// Get the planes
-		aword = *(uint16_t *)(((uint8_t *)priv->buf)+4);
-		CONVERT_FROM_WORD_LE(aword);
+		aword = gdispImageGetAlignedLE16(priv->buf, 4);
 		if (aword != 1)
 			goto unsupportedcleanup;
 		// Get the bits per pixel
-		aword = *(uint16_t *)(((uint8_t *)priv->buf)+6);
-		CONVERT_FROM_WORD_LE(aword);
+		aword = gdispImageGetAlignedLE16(priv->buf, 6);
 		switch(aword) {
 #if GDISP_NEED_IMAGE_BMP_1
 		case 1:
@@ -208,14 +173,12 @@ gdispImageError gdispImageOpen_BMP(gdispImage *img) {
 		if (gfileRead(img->f, priv->buf, 40-4) != 40-4)
 			goto baddatacleanup;
 		// Get the width
-		adword = *(uint32_t *)(((uint8_t *)priv->buf)+0);
-		CONVERT_FROM_DWORD_LE(adword);
+		adword = gdispImageGetAlignedLE32(priv->buf, 0);
 		if (adword > 32768)				// This also picks up negative values
 			goto unsupportedcleanup;
 		img->width = adword;
 		// Get the height
-		adword = *(uint32_t *)(((uint8_t *)priv->buf)+4);
-		CONVERT_FROM_DWORD_LE(adword);
+		adword = gdispImageGetAlignedLE32(priv->buf, 4);
 		if ((int32_t)adword < 0) {		// Negative test
 			priv->bmpflags |= BMP_TOP_TO_BOTTOM;
 			adword = -adword;
@@ -224,13 +187,11 @@ gdispImageError gdispImageOpen_BMP(gdispImage *img) {
 			goto unsupportedcleanup;
 		img->height = adword;
 		// Get the planes
-		aword = *(uint16_t *)(((uint8_t *)priv->buf)+8);
-		CONVERT_FROM_WORD_LE(aword);
+		aword = gdispImageGetAlignedLE16(priv->buf, 8);
 		if (aword != 1)
 			goto unsupportedcleanup;
 		// Get the bits per pixel
-		aword = *(uint16_t *)(((uint8_t *)priv->buf)+10);
-		CONVERT_FROM_WORD_LE(aword);
+		aword = gdispImageGetAlignedLE16(priv->buf, 10);
 		switch(aword) {
 #if GDISP_NEED_IMAGE_BMP_1
 		case 1:
@@ -263,8 +224,7 @@ gdispImageError gdispImageOpen_BMP(gdispImage *img) {
 		}
 		priv->bitsperpixel = aword;
 		// Get the compression
-		adword = *(uint32_t *)(((uint8_t *)priv->buf)+12);
-		CONVERT_FROM_DWORD_LE(adword);
+		adword = gdispImageGetAlignedLE32(priv->buf, 12);
 		switch(adword) {
 		case 0:					// BI_RGB - uncompressed
 			break;
@@ -297,8 +257,7 @@ gdispImageError gdispImageOpen_BMP(gdispImage *img) {
 		priv->bitsperpixel = aword;
 #if GDISP_NEED_IMAGE_BMP_1 || GDISP_NEED_IMAGE_BMP_4 || GDISP_NEED_IMAGE_BMP_4_RLE || GDISP_NEED_IMAGE_BMP_8 || GDISP_NEED_IMAGE_BMP_8_RLE
 		// Get the actual colors used
-		adword = *(uint32_t *)(((uint8_t *)priv->buf)+28);
-		CONVERT_FROM_DWORD_LE(adword);
+		adword = gdispImageGetAlignedLE32(priv->buf, 28);
 		if (adword && adword < priv->palsize)
 			priv->palsize = adword;
 #endif
@@ -332,14 +291,14 @@ gdispImageError gdispImageOpen_BMP(gdispImage *img) {
 	if (priv->bmpflags & BMP_COMP_MASK) {
 		gfileSetPos(img->f, offsetColorTable);
 		if (gfileRead(img->f, &priv->maskred, 4) != 4) goto baddatacleanup;
-		CONVERT_FROM_DWORD_LE(priv->maskred);
+		gdispImageMakeLE32(priv->maskred);
 		if (gfileRead(img->f, &priv->maskgreen, 4) != 4) goto baddatacleanup;
-		CONVERT_FROM_DWORD_LE(priv->maskgreen);
+		gdispImageMakeLE32(priv->maskgreen);
 		if (gfileRead(img->f, &priv->maskblue, 4) != 4) goto baddatacleanup;
-		CONVERT_FROM_DWORD_LE(priv->maskblue);
+		gdispImageMakeLE32(priv->maskblue);
 		if (priv->bmpflags & BMP_V4) {
 			if (gfileRead(img->f, &priv->maskalpha, 4) != 4) goto baddatacleanup;
-			CONVERT_FROM_DWORD_LE(priv->maskalpha);
+			gdispImageMakeLE32(priv->maskalpha);
 		} else
 			priv->maskalpha = 0;
 	} else if (priv->bitsperpixel == 16) {
@@ -401,11 +360,11 @@ unsupportedcleanup:
 }
 
 static coord_t getPixels(gdispImage *img, coord_t x) {
-	gdispImagePrivate *	priv;
+	gdispImagePrivate_BMP *	priv;
 	color_t *			pc;
 	coord_t				len;
 
-	priv = img->priv;
+	priv = (gdispImagePrivate_BMP *)img->priv;
 	pc = priv->buf;
 	len = 0;
 
@@ -416,11 +375,11 @@ static coord_t getPixels(gdispImage *img, coord_t x) {
 		uint8_t		b[4];
 		uint8_t		m;
 
-			priv = img->priv;
+			priv = (gdispImagePrivate_BMP *)img->priv;
 			pc = priv->buf;
 			len = 0;
 
-			while(x < img->width && len <= BLIT_BUFFER_SIZE-32) {
+			while(x < img->width && len <= BLIT_BUFFER_SIZE_BMP-32) {
 				if (gfileRead(img->f, &b, 4) != 4)
 					return 0;
 
@@ -450,7 +409,7 @@ static coord_t getPixels(gdispImage *img, coord_t x) {
 
 			while(x < img->width) {
 				if (priv->bmpflags & BMP_RLE_ENC) {
-					while (priv->rlerun && len <= BLIT_BUFFER_SIZE-2 && x < img->width) {
+					while (priv->rlerun && len <= BLIT_BUFFER_SIZE_BMP-2 && x < img->width) {
 						*pc++ = priv->palette[priv->rlecode >> 4];
 						priv->rlerun--;
 						len++;
@@ -465,7 +424,7 @@ static coord_t getPixels(gdispImage *img, coord_t x) {
 					if (priv->rlerun)			// Return if we have more run to do
 						return len;
 				} else if (priv->bmpflags & BMP_RLE_ABS) {
-					while (priv->rlerun && len <= BLIT_BUFFER_SIZE-2 && x < img->width) {
+					while (priv->rlerun && len <= BLIT_BUFFER_SIZE_BMP-2 && x < img->width) {
 						if (gfileRead(img->f, &b, 1) != 1)
 							return 0;
 						*pc++ = priv->palette[b[0] >> 4];
@@ -525,7 +484,7 @@ static coord_t getPixels(gdispImage *img, coord_t x) {
 		{
 			uint8_t		b[4];
 
-			while(x < img->width && len <= BLIT_BUFFER_SIZE-8) {
+			while(x < img->width && len <= BLIT_BUFFER_SIZE_BMP-8) {
 				if (gfileRead(img->f, &b, 4) != 4)
 					return 0;
 
@@ -556,7 +515,7 @@ static coord_t getPixels(gdispImage *img, coord_t x) {
 
 			while(x < img->width) {
 				if (priv->bmpflags & BMP_RLE_ENC) {
-					while (priv->rlerun && len < BLIT_BUFFER_SIZE && x < img->width) {
+					while (priv->rlerun && len < BLIT_BUFFER_SIZE_BMP && x < img->width) {
 						*pc++ = priv->palette[priv->rlecode];
 						priv->rlerun--;
 						len++;
@@ -565,7 +524,7 @@ static coord_t getPixels(gdispImage *img, coord_t x) {
 					if (priv->rlerun)			// Return if we have more run to do
 						return len;
 				} else if (priv->bmpflags & BMP_RLE_ABS) {
-					while (priv->rlerun && len < BLIT_BUFFER_SIZE && x < img->width) {
+					while (priv->rlerun && len < BLIT_BUFFER_SIZE_BMP && x < img->width) {
 						if (gfileRead(img->f, &b, 1) != 1)
 							return 0;
 						*pc++ = priv->palette[b[0]];
@@ -619,7 +578,7 @@ static coord_t getPixels(gdispImage *img, coord_t x) {
 		{
 			uint8_t		b[4];
 
-			while(x < img->width && len <= BLIT_BUFFER_SIZE-4) {
+			while(x < img->width && len <= BLIT_BUFFER_SIZE_BMP-4) {
 				if (gfileRead(img->f, &b, 4) != 4)
 					return 0;
 
@@ -641,11 +600,11 @@ static coord_t getPixels(gdispImage *img, coord_t x) {
 		uint16_t	w[2];
 		color_t		r, g, b;
 
-			while(x < img->width && len <= BLIT_BUFFER_SIZE-2) {
+			while(x < img->width && len <= BLIT_BUFFER_SIZE_BMP-2) {
 				if (gfileRead(img->f, &w, 4) != 4)
 					return 0;
-				CONVERT_FROM_WORD_LE(w[0]);
-				CONVERT_FROM_WORD_LE(w[1]);
+				gdispImageMakeLE16(w[0]);
+				gdispImageMakeLE16(w[1]);
 				if (priv->shiftred < 0)
 					r = (color_t)((w[0] & priv->maskred) << -priv->shiftred);
 				else
@@ -686,7 +645,7 @@ static coord_t getPixels(gdispImage *img, coord_t x) {
 		{
 		uint8_t		b[3];
 
-			while(x < img->width && len < BLIT_BUFFER_SIZE) {
+			while(x < img->width && len < BLIT_BUFFER_SIZE_BMP) {
 				if (gfileRead(img->f, &b, 3) != 3)
 					return 0;
 				*pc++ = RGB2COLOR(b[2], b[1], b[0]);
@@ -709,10 +668,10 @@ static coord_t getPixels(gdispImage *img, coord_t x) {
 		uint32_t	dw;
 		color_t		r, g, b;
 
-			while(x < img->width && len < BLIT_BUFFER_SIZE) {
+			while(x < img->width && len < BLIT_BUFFER_SIZE_BMP) {
 				if (gfileRead(img->f, &dw, 4) != 4)
 					return 0;
-				CONVERT_FROM_DWORD_LE(dw);
+				gdispImageMakeLE32(dw);
 				if (priv->shiftred < 0)
 					r = (color_t)((dw & priv->maskred) << -priv->shiftred);
 				else
@@ -740,14 +699,14 @@ static coord_t getPixels(gdispImage *img, coord_t x) {
 }
 
 gdispImageError gdispImageCache_BMP(gdispImage *img) {
-	gdispImagePrivate *	priv;
+	gdispImagePrivate_BMP *	priv;
 	color_t *			pcs;
 	color_t *			pcd;
 	coord_t				pos, x, y;
 	size_t				len;
 
 	/* If we are already cached - just return OK */
-	priv = img->priv;
+	priv = (gdispImagePrivate_BMP *)img->priv;
 	if (priv->frame0cache)
 		return GDISP_IMAGE_ERR_OK;
 
@@ -763,6 +722,8 @@ gdispImageError gdispImageCache_BMP(gdispImage *img) {
 	priv->rlerun = 0;
 	priv->rlecode = 0;
 #endif
+
+	pcs = priv->buf;				// This line is just to prevent a compiler warning.
 
 	if (priv->bmpflags & BMP_TOP_TO_BOTTOM) {
 		for(y = 0, pcd = priv->frame0cache; y < img->height; y++) {
@@ -796,11 +757,11 @@ gdispImageError gdispImageCache_BMP(gdispImage *img) {
 }
 
 gdispImageError gdispGImageDraw_BMP(GDisplay *g, gdispImage *img, coord_t x, coord_t y, coord_t cx, coord_t cy, coord_t sx, coord_t sy) {
-	gdispImagePrivate *	priv;
+	gdispImagePrivate_BMP *	priv;
 	coord_t				mx, my;
 	coord_t				pos, len, st;
 
-	priv = img->priv;
+	priv = (gdispImagePrivate_BMP *)img->priv;
 
 	/* Check some reasonableness */
 	if (sx >= img->width || sy >= img->height) return GDISP_IMAGE_ERR_OK;

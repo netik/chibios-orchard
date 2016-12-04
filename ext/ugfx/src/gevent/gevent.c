@@ -5,7 +5,7 @@
  *              http://ugfx.org/license.html
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GEVENT || defined(__DOXYGEN__)
 
@@ -71,7 +71,7 @@ void geventListenerInit(GListener *pl) {
 	pl->flags = 0;
 }
 
-bool_t geventAttachSource(GListener *pl, GSourceHandle gsh, unsigned flags) {
+bool_t geventAttachSource(GListener *pl, GSourceHandle gsh, uint32_t flags) {
 	GSourceListener *psl, *pslfree;
 
 	// Safety first

@@ -20,7 +20,7 @@
 
 #define GDISP_DRIVER_VMT			GDISPVMT_SSD1351
 #include "gdisp_lld_config.h"
-#include "src/gdisp/gdisp_driver.h"
+#include "../../../src/gdisp/gdisp_driver.h"
 
 #include "board_SSD1351.h"
 
@@ -117,8 +117,6 @@ LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
 	write_reg(g, 0xB6, 0x01); // set second pre-charge period - 1 DCLKs
 	write_cmd(g, 0xAF); // sleep mode OFF (display on)
 	write_cmd(g, 0x5C); // write to RAM
-
-	release_bus(g);
 
     // Finish Init
     post_init_board(g);

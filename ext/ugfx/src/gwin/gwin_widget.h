@@ -12,6 +12,8 @@
  * @defgroup Widget Widget
  * @ingroup Widgets
  *
+ * @brief		The basic widget implementation (base class).
+ *
  * @details		A widget is a Window that supports interacting with the user
  * 				via an input device such as a mouse or toggle buttons. It is the
  * 				base class for widgets such as buttons and sliders.
@@ -33,10 +35,10 @@ struct GWidgetObject;
  * @{
  */
 typedef struct GColorSet {
-	color_t			text;				// @< The text color
-	color_t			edge;				// @< The edge color
-	color_t			fill;				// @< The fill color
-	color_t			progress;			// @< The color of progress bars
+	color_t			text;				/**< The text color */
+	color_t			edge;				/**< The edge color */
+	color_t			fill;				/**< The fill color */
+	color_t			progress;			/**< The color of progress bars */
 } GColorSet;
 /** @} */
 
@@ -48,10 +50,11 @@ typedef struct GColorSet {
  * @{
  */
 typedef struct GWidgetStyle {
-	color_t			background;			// @< The window background color
-	GColorSet		enabled;			// @< The colors when enabled
-	GColorSet		disabled;			// @< The colors when disabled
-	GColorSet		pressed;			// @< The colors when pressed
+	color_t			background;			/**< The window background color */
+	color_t			focus;				/**< The color when a widget is focused */
+	GColorSet		enabled;			/**< The colors when enabled */
+	GColorSet		disabled;			/**< The colors when disabled */
+	GColorSet		pressed;			/**< The colors when pressed */
 } GWidgetStyle;
 /** @} */
 
@@ -92,13 +95,13 @@ typedef uint16_t	WidgetTag;
  * @{
  */
 typedef struct GWidgetInit {
-	GWindowInit					g;						// @< The GWIN initializer
-	const char *				text;					// @< The initial text
-	CustomWidgetDrawFunction	customDraw;				// @< A custom draw function - use NULL for the standard
-	void *						customParam;			// @< A parameter for the custom draw function (default = NULL)
-	const GWidgetStyle *		customStyle;			// @< A custom style to use - use NULL for the default style
+	GWindowInit					g;						/**< The GWIN initializer */
+	const char *				text;					/**< The initial text */
+	CustomWidgetDrawFunction	customDraw;				/**< A custom draw function - use NULL for the standard */
+	void *						customParam;			/**< A parameter for the custom draw function (default = NULL) */
+	const GWidgetStyle *		customStyle;			/**< A custom style to use - use NULL for the default style */
 	#if GWIN_WIDGET_TAGS || defined(__DOXYGEN__)
-		WidgetTag				tag;					// @< The tag to associate with the widget
+		WidgetTag				tag;					/**< The tag to associate with the widget */
 	#endif
 } GWidgetInit;
 /** @} */
@@ -113,13 +116,13 @@ typedef struct GWidgetInit {
  * @{
  */
 typedef struct GWidgetObject {
-	GWindowObject				g;					// @< This is still a GWIN
-	const char *				text;				// @< The widget text
-	CustomWidgetDrawFunction	fnDraw;				// @< The current draw function
-	void *						fnParam;			// @< A parameter for the current draw function
-	const GWidgetStyle *		pstyle;				// @< The current widget style colors
+	GWindowObject				g;					/**< This is still a GWIN */
+	const char *				text;				/**< The widget text */
+	CustomWidgetDrawFunction	fnDraw;				/**< The current draw function */
+	void *						fnParam;			/**< A parameter for the current draw function */
+	const GWidgetStyle *		pstyle;				/**< The current widget style colors */
 	#if GWIN_WIDGET_TAGS || defined(__DOXYGEN__)
-		WidgetTag				tag;				// @< The widget tag
+		WidgetTag				tag;				/**< The widget tag */
 	#endif
 } GWidgetObject;
 /** @} */
@@ -144,10 +147,10 @@ typedef struct GWidgetObject {
  * @{
  */
 typedef struct GEventGWin {
-	GEventType		type;				// The type of this event
-	GHandle			gwin;				// The gwin window handle
+	GEventType		type;						/**< The type of this event */
+	GHandle			gwin;						/**< The gwin window handle */
 	#if GWIN_NEED_WIDGET && GWIN_WIDGET_TAGS
-		WidgetTag	tag;				// The tag (if applicable)
+		WidgetTag	tag;						/**< The tag (if applicable) */
 	#endif
 } GEventGWin;
 /** @} */
@@ -227,6 +230,35 @@ void gwinSetText(GHandle gh, const char *text, bool_t useAlloc);
  * @api
  */
 const char *gwinGetText(GHandle gh);
+
+#if (GFX_USE_GFILE && GFILE_NEED_PRINTG && GFILE_NEED_STRINGS) || defined(__DOXYGEN__)
+	/**
+	 * @brief   Set the text of a widget using a printf style format.
+	 * @pre		GFX_USE_GFILE, GFILE_NEED_PRINTG and GFILE_NEED_STRINGS must all be TRUE
+	 *
+	 * @param[in] gh		The widget handle
+	 * @param[in] fmt		The format string using a printf/g syntax. See @p vsnprintg()
+	 * @param[in] ...		The printg paramters.
+	 *
+	 * @note				The widget is automatically redrawn
+	 * @note				Non-widgets will ignore this call.
+	 * @note				The memory for the text is always allocated by this function.
+	 *
+	 * @api
+	 */
+	void gwinPrintg(GHandle gh, const char * fmt,...);
+#endif
+
+/**
+ * @brief	Check whether a handles is a widget handle or not
+ *
+ * @param[in] gh		The handle to check.
+ *
+ * @return	TRUE if the passed handle is a widget handle. FALSE otherwise.
+ *
+ * @api
+ */
+bool_t gwinIsWidget(GHandle gh);
 
 #if GWIN_WIDGET_TAGS || defined(__DOXYGEN__)
 	/**
@@ -344,6 +376,36 @@ bool_t gwinAttachListener(GListener *pl);
 	bool_t gwinAttachDial(GHandle gh, uint16_t role, uint16_t instance);
 #endif
 
+#if (GFX_USE_GINPUT && GINPUT_NEED_KEYBOARD) || GWIN_NEED_KEYBOARD || defined(__DOXYGEN__)
+	/**
+	 * @brief	Set the keyboard focus to a specific window
+	 * @return	Returns TRUE if the focus could be set to that window
+	 *
+	 * @param[in] gh	The window
+	 *
+	 * @note	Passing NULL will remove the focus from any window.
+	 * @note	Only visible enabled widgets are capable of getting the focus.
+	 *
+	 * @api
+	 */
+	bool_t gwinSetFocus(GHandle gh);
+
+	/**
+	 * @brief	Get the widget that is currently in focus
+	 *
+	 * @details	The widget that is currently in focus is the widget that
+	 *			receives mouse and keyboard events.
+	 *
+	 * @return	The handle of the widget that is currently in focus. May be NULL.
+	 *
+	 * @api
+	 */
+	GHandle gwinGetFocus(void);
+#else
+	#define gwinGetFocus()		(0)
+	#define gwinSetFocus(gh)	(FALSE)
+#endif
+
 #ifdef __cplusplus
 }
 #endif
@@ -379,6 +441,10 @@ bool_t gwinAttachListener(GListener *pl);
 
 #if GWIN_NEED_KEYBOARD || defined(__DOXYGEN__)
 	#include "gwin_keyboard.h"
+#endif
+
+#if GWIN_NEED_TEXTEDIT || defined(__DOXYGEN__)
+	#include "gwin_textedit.h"
 #endif
 
 #endif /* _GWIDGET_H */

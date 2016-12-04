@@ -43,6 +43,22 @@
 GTimer				gt;
 gfxThreadHandle		thd;
 
+#if defined(WIN32)
+	#include <windows.h>
+
+	static DWORD nres;
+
+	// On Win32 don't use the C library fprintf or write as they crash.
+	// Maybe we just need to add the multi-thread C library options to the compile.
+	// Instead we use the Win32 API directly as that always works.
+	#define DEBUGWRITE(str)		WriteFile(GetStdHandle(STD_ERROR_HANDLE), str, strlen(str), &nres, 0)
+#else
+	#warning "You must alter this demo to define a DEBUGWRITE macro for your platform."
+	#warning "Be careful of using C library functions as they sometimes crash if they are not expecting stack changes (if possible use a multi-thread aware C library)"
+	#warning "You might flash LED's instead if that is better for your platform."
+	#error "--"
+#endif
+
 /*
  * Thread function
  * Prints a message
@@ -54,7 +70,7 @@ threadreturn_t Thread_function(void* param)
 
 	/* Execute this until we shall be terminated */
 	while (*doExit == FALSE) {
-		printf("Message from Thread\r\n");
+		DEBUGWRITE("Message from Thread\n");
 		gfxSleepMilliseconds(500);
 	}
 
@@ -72,7 +88,7 @@ void timerCallback(void* param)
 	bool_t* threadExit = (bool_t*)param;
 	
 	/* Ask the Thread to fall over the end */
-	printf("Closing thread!\r\n");
+	DEBUGWRITE("Closing thread!\n");
 	*threadExit = TRUE;
 }
 
@@ -91,14 +107,15 @@ int main(void)
 	/* Create a static thread from the default heap with normal priority.
 	 * We pass a the parameter to the thread which tells the thread whether to return or not
 	 */
-	thd = gfxThreadCreate(NULL, 128, NORMAL_PRIORITY, Thread_function, (void*)&exitThread);
+	thd = gfxThreadCreate(NULL, 2048, NORMAL_PRIORITY, Thread_function, (void*)&exitThread);
 
 	/* Start the timer. The callback function will be called once after 2000ms
-	 * We will pass the thread handle as a parameter so the timer can ask the thread to termite
+	 * We will pass the thread handle as a parameter so the timer can ask the thread to terminate
 	 */
 	gtimerStart(&gt, timerCallback, (void*)&exitThread, FALSE, 2000);
 
 	while(TRUE) {
+		DEBUGWRITE("Message from main!\n");
 		gfxSleepMilliseconds(500);
 	}   
 }

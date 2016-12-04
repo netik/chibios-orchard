@@ -22,7 +22,7 @@
 #ifndef _GINPUT_H
 #define _GINPUT_H
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GINPUT || defined(__DOXYGEN__)
 

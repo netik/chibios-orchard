@@ -10,8 +10,8 @@
 #if GFX_USE_GDISP
 
 #define GDISP_DRIVER_VMT		GDISPVMT_PCD8544
-#include "drivers/gdisp/PCD8544/gdisp_lld_config.h"
-#include "src/gdisp/gdisp_driver.h"
+#include "gdisp_lld_config.h"
+#include "../../../src/gdisp/gdisp_driver.h"
 #include "board_PCD8544.h"
 
 /*===========================================================================*/
@@ -26,7 +26,7 @@
 
 #define GDISP_FLG_NEEDFLUSH		(GDISP_FLG_DRIVER << 0)
 
-#include "drivers/gdisp/PCD8544/PCD8544.h"
+#include "PCD8544.h"
 
 /*===========================================================================*/
 /* Driver local routines.                                                    */

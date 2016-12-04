@@ -5,7 +5,7 @@
  *              http://ugfx.org/license.html
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 #include <string.h>
 
 #if GFX_USE_OS_FREERTOS
@@ -24,9 +24,10 @@
 
 void _gosInit(void)
 {
-	#if !GFX_NO_OS_INIT
-		#error "GOS: Operating System initialization for FreeRTOS is not yet implemented in uGFX. Please set GFX_NO_OS_INIT to TRUE in your gfxconf.h"
-	#else
+	#if !GFX_OS_NO_INIT
+		#error "GOS: Operating System initialization for FreeRTOS is not yet implemented in uGFX. Please set GFX_OS_NO_INIT to TRUE in your gfxconf.h"
+	#endif
+	#if !GFX_OS_INIT_NO_WARNING
 		#warning "GOS: Operating System initialization has been turned off. Make sure you call vTaskStartScheduler() before gfxInit() in your application!"
 	#endif
 }

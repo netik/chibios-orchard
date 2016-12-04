@@ -3,5 +3,5 @@ GFXSRC  +=	$(GFXLIB)/boards/base/STM32F429i-Discovery/stm32f429i_discovery_sdram
 			$(GFXLIB)/boards/base/STM32F429i-Discovery/stm32f4xx_fmc.c
 
 GFXDEFS += -DGFX_USE_OS_CHIBIOS=TRUE
-include $(GFXLIB)/drivers/gdisp/STM32F429iDiscovery/driver.mk
+include $(GFXLIB)/drivers/gdisp/STM32LTDC/driver.mk
 include $(GFXLIB)/drivers/ginput/touch/STMPE811/driver.mk

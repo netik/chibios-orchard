@@ -44,6 +44,7 @@
 /* Features for the GDISP sub-system. */
 #define GDISP_NEED_VALIDATION	TRUE
 #define GDISP_NEED_CLIP			TRUE
+#define GDISP_NEED_MULTITHREAD	TRUE
 
 /* Features for the GWIN subsystem. */
 #define GWIN_NEED_WINDOWMANAGER	TRUE

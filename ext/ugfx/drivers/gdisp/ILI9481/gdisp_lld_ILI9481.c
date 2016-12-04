@@ -19,8 +19,8 @@
 #endif
 
 #define GDISP_DRIVER_VMT			GDISPVMT_ILI9481
-#include "drivers/gdisp/ILI9481/gdisp_lld_config.h"
-#include "src/gdisp/gdisp_driver.h"
+#include "gdisp_lld_config.h"
+#include "../../../src/gdisp/gdisp_driver.h"
 
 #include "board_ILI9481.h"
 
@@ -248,7 +248,7 @@ LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
 				write_reg(g, 0x0010, 0x0000);	/* leave sleep mode */
 				release_bus(g);
 				if (g->g.Powermode != powerSleep)
-					gdisp_lld_init();
+					gdisp_lld_init(g);
 				break;
 			case powerSleep:
 				acquire_bus(g);

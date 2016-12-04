@@ -24,21 +24,21 @@
  *
  *	Returns TRUE on success, FALSE on failure
  */
-static inline bool_t init_board(GMouse* m, unsigned driverinstance) {
+static GFXINLINE bool_t init_board(GMouse* m, unsigned driverinstance) {
 
 }
 
 /**
  *	Acquire the bus
  */
-static inline void aquire_bus(GMouse* m) {
+static GFXINLINE void aquire_bus(GMouse* m) {
 
 }
 
 /**
  *	Release the bus
  */
-static inline void release_bus(GMouse* m) {
+static GFXINLINE void release_bus(GMouse* m) {
 
 }
 
@@ -47,7 +47,7 @@ static inline void release_bus(GMouse* m) {
  *
  *	Return the second byte read in case of interest
  */
-static inline uint8_t write_command(GMouse* m, uint8_t command, uint8_t value) {
+static GFXINLINE uint8_t write_command(GMouse* m, uint8_t command, uint8_t value) {
 }
 
 /**
@@ -55,14 +55,14 @@ static inline uint8_t write_command(GMouse* m, uint8_t command, uint8_t value) {
  *
  *	Return the byte read in case of interest
  */
-static inline uint8_t gfintWriteCommand(GMouse* m, uint8_t command) {
+static GFXINLINE uint8_t gfintWriteCommand(GMouse* m, uint8_t command) {
 }
 
 /*
  *	Read 2 bytes as 16-bit value (command to read must have been sent previously)
  *	Note: Analog value is in bits 15..4, tags (reading status) in bits 3..0
  */
-static inline uint16_t read_value(GMouse* m) {
+static GFXINLINE uint16_t read_value(GMouse* m) {
 
 }
 

@@ -10,27 +10,27 @@
 #define _GFXCONF_H
 
 /* The operating system to use. One of these must be defined - preferably in your Makefile */
-//#define GFX_USE_OS_CHIBIOS	FALSE
-//#define GFX_USE_OS_WIN32		FALSE
-//#define GFX_USE_OS_LINUX		FALSE
-//#define GFX_USE_OS_OSX		FALSE
+//#define GFX_USE_OS_CHIBIOS            FALSE
+//#define GFX_USE_OS_WIN32              FALSE
+//#define GFX_USE_OS_LINUX              FALSE
+//#define GFX_USE_OS_OSX                FALSE
 
 /* GFX sub-systems to turn on */
-#define GFX_USE_GDISP			TRUE
+#define GFX_USE_GDISP                   TRUE
 
 /* Features for the GDISP sub-system. */
-#define GDISP_NEED_VALIDATION	        FALSE
-#define GDISP_NEED_CLIP			FALSE
-#define GDISP_NEED_TEXT			FALSE
-#define GDISP_NEED_CIRCLE		TRUE
-#define GDISP_NEED_ELLIPSE		FALSE
-#define GDISP_NEED_ARC			FALSE
-#define GDISP_NEED_SCROLL		FALSE
-#define GDISP_NEED_PIXELREAD	        FALSE
-#define GDISP_NEED_CONTROL		FALSE
-#define GDISP_NEED_MULTITHREAD       	FALSE
-#define GDISP_NEED_ASYNC		FALSE
-#define GDISP_NEED_MSGAPI		FALSE
+#define GDISP_NEED_VALIDATION           FALSE
+#define GDISP_NEED_CLIP                 FALSE
+#define GDISP_NEED_TEXT                 FALSE
+#define GDISP_NEED_CIRCLE               TRUE
+#define GDISP_NEED_ELLIPSE              FALSE
+#define GDISP_NEED_ARC                  FALSE
+#define GDISP_NEED_SCROLL               FALSE
+#define GDISP_NEED_PIXELREAD            FALSE
+#define GDISP_NEED_CONTROL              FALSE
+#define GDISP_NEED_MULTITHREAD          FALSE
+#define GDISP_NEED_ASYNC                FALSE
+#define GDISP_NEED_MSGAPI               FALSE
 
 /* Builtin Fonts */
 #define GDISP_INCLUDE_FONT_SMALL        FALSE

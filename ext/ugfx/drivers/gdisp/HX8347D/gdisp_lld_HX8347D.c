@@ -10,8 +10,8 @@
 #if GFX_USE_GDISP
 
 #define GDISP_DRIVER_VMT			GDISPVMT_HX8347D
-#include "drivers/gdisp/HX8347D/gdisp_lld_config.h"
-#include "src/gdisp/gdisp_driver.h"
+#include "gdisp_lld_config.h"
+#include "../../../src/gdisp/gdisp_driver.h"
 
 #include "board_HX8347D.h"
 
@@ -36,11 +36,11 @@
 /* Driver local functions.                                                   */
 /*===========================================================================*/
 
-#include "drivers/gdisp/HX8347D/HX8347D.h"
+#include "HX8347D.h"
 
 #define write_reg(g, reg, data)		{ write_index(g, reg); write_data(g, data); }
 
-static inline void set_viewport(GDisplay* g) {
+static GFXINLINE void set_viewport(GDisplay* g) {
 	write_reg(g, HX8347D_REG_SCL, g->p.x);
 	write_reg(g, HX8347D_REG_SCH, g->p.x >> 8);
 	write_reg(g, HX8347D_REG_ECL, g->p.x + g->p.cx -1);

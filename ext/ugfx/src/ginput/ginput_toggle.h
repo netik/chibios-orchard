@@ -7,10 +7,11 @@
 
 /**
  * @file    src/ginput/ginput_toggle.h
- * @brief   GINPUT GFX User Input subsystem header file.
  *
  * @defgroup Toggle Toggle
  * @ingroup GINPUT
+ *
+ * @brief   Sub-Module to handle physical controls that provide provide a digital value (on/off, pressed/released, 1/0, ...).
  *
  * @details	GINPUT allows it to interface toggle buttons easily to your
  *			application.

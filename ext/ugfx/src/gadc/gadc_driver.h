@@ -9,15 +9,18 @@
  * @file    src/gadc/gadc_driver.h
  * @brief   GADC - Periodic ADC driver header file.
  *
- * @defgroup Driver Driver
+ * @defgroup GADC_Driver Driver
  * @ingroup GADC
+ *
+ * @brief Driver interface for the GADC module.
+ *
  * @{
  */
 
 #ifndef _GADC_LLD_H
 #define _GADC_LLD_H
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GADC || defined(__DOXYGEN__)
 

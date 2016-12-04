@@ -11,11 +11,15 @@
  * @defgroup	Containers Containers
  * @ingroup 	GWIN
  *
- * @details		Containers are a "super-class" of a widget. Containers can have
- *				children windows which they can place within their borders. Containers
+ * @brief		Containers are used to group together other windows and widgets.
+ *
+ * @details		Containers are a "super-class" of @ref Widgets. Containers can have
+ *				children @ref Windows which they can place within their borders. Containers
  *				control the visibility and enabled state of their children. By making
  *				a container invisible you make all its children invisible. Similiarly
  *				with the enabled state.
+ *
+ *				For the common window API, please see @ref Container.
  *
  * @pre			GFX_USE_GWIN must be set to TRUE in your gfxconf.h
  */

@@ -20,7 +20,7 @@
 #if GINPUT_NEED_MOUSE //|| defined(__DOXYGEN__)
 
 // Include the GDRIVER infrastructure
-#include "src/gdriver/gdriver.h"
+#include "../gdriver/gdriver.h"
 
 typedef struct GMouseReading {
 	coord_t		x, y, z;

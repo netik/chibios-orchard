@@ -5,7 +5,7 @@
  *              http://ugfx.org/license.html
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GMISC
 
@@ -75,7 +75,7 @@ void gmiscMatrixFloat2DApplyRotation(MatrixFloat2D *dst, const MatrixFloat2D *sr
 		s = fsin(angle);
 		c = fcos(angle);
 	#else
-		c = angle*M_PI/180;
+		c = angle*GFX_PI/180;
 		s = sin(c);
 		c = cos(c);
 	#endif

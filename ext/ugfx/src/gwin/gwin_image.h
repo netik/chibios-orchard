@@ -12,6 +12,8 @@
  * @defgroup ImageBox ImageBox
  * @ingroup Widgets
  *
+ * @brief		ImageBox widget. Used to display images within the @p GWIN widget system.
+ *
  * @details		GWIN allos it to create an image widget. The widget
  *				takes no user input.
  *

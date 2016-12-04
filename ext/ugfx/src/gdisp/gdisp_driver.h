@@ -19,7 +19,7 @@
 #if GFX_USE_GDISP
 
 // Include the GDRIVER infrastructure
-#include "src/gdriver/gdriver.h"
+#include "../gdriver/gdriver.h"
 
 // Are we currently compiling the driver itself?
 #if defined(GDISP_DRIVER_VMT)
@@ -408,7 +408,7 @@ typedef struct GDISPVMT {
 	extern "C" {
 	#endif
 
-	// Should the driver routines should be static or not
+	// Should the driver routines be static or not
 	#if USE_VMT
 		#define LLDSPEC         static
 	#else
@@ -872,7 +872,7 @@ typedef struct GDISPVMT {
 			#define LLDRGB2COLOR_G(g)		(((LLDCOLOR_TYPE)((g) & (0xFF & ~((1<<(8-LLDCOLOR_BITS_G))-1)))) << (LLDCOLOR_BITS_G+LLDCOLOR_SHIFT_G-8))
 		#else // LLDCOLOR_BITS_G + LLDCOLOR_SHIFT_G < 8
 			#define LLDGREEN_OF(c)			(((c) & (((1<<LLDCOLOR_BITS_G)-1) << LLDCOLOR_SHIFT_G)) << (8-(LLDCOLOR_BITS_G+LLDCOLOR_SHIFT_G)))
-			#define LLDRGB2COLOR_G(g)		(((LLDCOLOR_TYPE)((g) & (0xFF & ~((1<<(8-LLDCOLOR_BITS_G))-1)))) >> (8-(LLDCOLOR_BITS_LLDG+COLOR_SHIFT_G)))
+			#define LLDRGB2COLOR_G(g)		(((LLDCOLOR_TYPE)((g) & (0xFF & ~((1<<(8-LLDCOLOR_BITS_G))-1)))) >> (8-(LLDCOLOR_BITS_G+LLDCOLOR_SHIFT_G)))
 		#endif
 		#if LLDCOLOR_BITS_B + LLDCOLOR_SHIFT_B == 8
 			#define LLDBLUE_OF(c)			((c) & (((1<<LLDCOLOR_BITS_B)-1) << LLDCOLOR_SHIFT_B))
@@ -882,7 +882,7 @@ typedef struct GDISPVMT {
 			#define LLDRGB2COLOR_B(b)		(((LLDCOLOR_TYPE)((b) & (0xFF & ~((1<<(8-LLDCOLOR_BITS_B))-1)))) << (LLDCOLOR_BITS_B+LLDCOLOR_SHIFT_B-8))
 		#else // LLDCOLOR_BITS_B + LLDCOLOR_SHIFT_B < 8
 			#define LLDBLUE_OF(c)			(((c) & (((1<<LLDCOLOR_BITS_B)-1) << LLDCOLOR_SHIFT_B)) << (8-(LLDCOLOR_BITS_B+LLDCOLOR_SHIFT_B)))
-			#define LLDRGB2COLOR_B(b)		(((COLOR_TYPE)((b) & (0xFF & ~((1<<(8-LLDCOLOR_BITS_B))-1)))) >> (8-(LLDCOLOR_BITS_B+LLDCOLOR_SHIFT_B)))
+			#define LLDRGB2COLOR_B(b)		(((LLDCOLOR_TYPE)((b) & (0xFF & ~((1<<(8-LLDCOLOR_BITS_B))-1)))) >> (8-(LLDCOLOR_BITS_B+LLDCOLOR_SHIFT_B)))
 		#endif
 		#define LLDLUMA_OF(c)				((LLDRED_OF(c)+((uint16_t)LLDGREEN_OF(c)<<1)+LLDBLUE_OF(c))>>2)
 		#define LLDEXACT_RED_OF(c)			(((uint16_t)(((c)>>LLDCOLOR_SHIFT_R)&((1<<LLDCOLOR_BITS_R)-1))*255)/((1<<LLDCOLOR_BITS_R)-1))

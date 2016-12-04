@@ -10,7 +10,7 @@
  * @brief	GWIN label widget header file
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GWIN && GWIN_NEED_LABEL
 
@@ -19,11 +19,6 @@
 // macros to assist in data type conversions
 #define gh2obj					((GLabelObject *)gh)
 #define gw2obj					((GLabelObject *)gw)
-
-// flags for the GLabelObject
-#define GLABEL_FLG_WAUTO		(GWIN_FIRST_CONTROL_FLAG << 0)
-#define GLABEL_FLG_HAUTO		(GWIN_FIRST_CONTROL_FLAG << 1)
-#define GLABEL_FLG_BORDER		(GWIN_FIRST_CONTROL_FLAG << 2)
 
 // simple: single line with no wrapping
 static coord_t getwidth(const char *text, font_t font, coord_t maxwidth) {
@@ -40,22 +35,25 @@ static coord_t getheight(const char *text, font_t font, coord_t maxwidth) {
 	return gdispGetFontMetric(font, fontHeight);
 }
 
-static void gwinLabelDefaultDraw(GWidgetObject *gw, void *param);
-
 static const gwidgetVMT labelVMT = {
 	{
-		"Label",				// The class name
-		sizeof(GLabelObject),	// The object size
-		_gwidgetDestroy,		// The destroy routine
-		_gwidgetRedraw, 		// The redraw routine
-		0,						// The after-clear routine
+		"Label",					// The class name
+		sizeof(GLabelObject),		// The object size
+		_gwidgetDestroy,			// The destroy routine
+		_gwidgetRedraw, 			// The redraw routine
+		0,							// The after-clear routine
 	},
-	gwinLabelDefaultDraw,		// default drawing routine
+	gwinLabelDrawJustifiedLeft,		// default drawing routine
 	#if GINPUT_NEED_MOUSE
 		{
 			0,						// Process mose down events (NOT USED)
 			0,						// Process mouse up events (NOT USED)
 			0,						// Process mouse move events (NOT USED)
+		},
+	#endif
+	#if GINPUT_NEED_KEYBOARD || GWIN_NEED_KEYBOARD
+		{
+			0						// Process keyboard key down events
 		},
 	#endif
 	#if GINPUT_NEED_TOGGLE
@@ -131,10 +129,9 @@ void gwinLabelSetBorder(GHandle gh, bool_t border) {
 	}
 #endif // GWIN_LABEL_ATTRIBUTE
 
-static void gwinLabelDefaultDraw(GWidgetObject *gw, void *param) {
+static void gwinLabelDraw(GWidgetObject *gw, justify_t justify) {
 	coord_t				w, h;
 	color_t				c;
-	(void)				param;
 
 	// is it a valid handle?
 	if (gw->g.vmt != (gwinVMT *)&labelVMT)
@@ -160,12 +157,12 @@ static void gwinLabelDefaultDraw(GWidgetObject *gw, void *param) {
 
 	#if GWIN_LABEL_ATTRIBUTE
 		if (gw2obj->attr) {
-			gdispGFillStringBox(gw->g.display, gw->g.x, gw->g.y, gw2obj->tab, h, gw2obj->attr, gw->g.font, c, gw->pstyle->background, justifyLeft);
-			gdispGFillStringBox(gw->g.display, gw->g.x + gw2obj->tab, gw->g.y, w-gw2obj->tab, h, gw->text, gw->g.font, c, gw->pstyle->background, justifyLeft);
+			gdispGFillStringBox(gw->g.display, gw->g.x, gw->g.y, gw2obj->tab, h, gw2obj->attr, gw->g.font, c, gw->pstyle->background, justify);
+			gdispGFillStringBox(gw->g.display, gw->g.x + gw2obj->tab, gw->g.y, w-gw2obj->tab, h, gw->text, gw->g.font, c, gw->pstyle->background, justify);
 		} else
-			gdispGFillStringBox(gw->g.display, gw->g.x, gw->g.y, w, h, gw->text, gw->g.font, c, gw->pstyle->background, justifyLeft);
+			gdispGFillStringBox(gw->g.display, gw->g.x, gw->g.y, w, h, gw->text, gw->g.font, c, gw->pstyle->background, justify);
 	#else
-		gdispGFillStringBox(gw->g.display, gw->g.x, gw->g.y, w, h, gw->text, gw->g.font, c, gw->pstyle->background, justifyLeft);
+		gdispGFillStringBox(gw->g.display, gw->g.x, gw->g.y, w, h, gw->text, gw->g.font, c, gw->pstyle->background, justify);
 	#endif
 
 	// render the border (if any)
@@ -173,4 +170,24 @@ static void gwinLabelDefaultDraw(GWidgetObject *gw, void *param) {
 		gdispGDrawBox(gw->g.display, gw->g.x, gw->g.y, w, h, (gw->g.flags & GWIN_FLG_SYSENABLED) ? gw->pstyle->enabled.edge : gw->pstyle->disabled.edge);
 }
 
+void gwinLabelDrawJustifiedLeft(GWidgetObject *gw, void *param) {
+	(void)param;
+	
+	gwinLabelDraw(gw, justifyLeft);
+}
+
+void gwinLabelDrawJustifiedRight(GWidgetObject *gw, void *param) {
+	(void)param;
+	
+	gwinLabelDraw(gw, justifyRight);
+}
+
+void gwinLabelDrawJustifiedCenter(GWidgetObject *gw, void *param) {
+	(void)param;
+	
+	gwinLabelDraw(gw, justifyCenter);
+}
+
+#undef gh2obj
+#undef gw2obj
 #endif // GFX_USE_GWIN && GFX_NEED_LABEL

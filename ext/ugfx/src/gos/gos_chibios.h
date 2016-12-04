@@ -39,14 +39,14 @@
 #if !defined(TRUE)
 	#define TRUE        -1
 #endif
-#if CH_KERNEL_MAJOR == 3
+#if (CH_KERNEL_MAJOR == 3) || (CH_KERNEL_MAJOR == 4)
 	typedef char	bool_t;
 #endif
 
 typedef systime_t	delaytime_t;
 typedef systime_t	systemticks_t;
 typedef cnt_t		semcount_t;
-typedef void		threadreturn_t;
+typedef msg_t		threadreturn_t;
 typedef tprio_t		threadpriority_t;
 
 #define MAX_SEMAPHORE_COUNT			((semcount_t)(((unsigned long)((semcount_t)(-1))) >> 1))
@@ -56,6 +56,7 @@ typedef tprio_t		threadpriority_t;
 
 #define DECLARE_THREAD_STACK(name, sz)			WORKING_AREA(name, sz)
 #define DECLARE_THREAD_FUNCTION(fnName, param)	threadreturn_t fnName(void *param)
+#define THREAD_RETURN(retval)					return retval
 
 #if CH_KERNEL_MAJOR == 2
 	typedef struct {
@@ -65,7 +66,7 @@ typedef tprio_t		threadpriority_t;
 
 	typedef Mutex		gfxMutex;
 	typedef Thread*		gfxThreadHandle;
-#elif CH_KERNEL_MAJOR == 3
+#elif (CH_KERNEL_MAJOR == 3) || (CH_KERNEL_MAJOR == 4)
 	#undef DECLARE_THREAD_STACK
 	#define DECLARE_THREAD_STACK(a, b)  THD_WORKING_AREA(a, b)
 	
@@ -93,14 +94,15 @@ extern "C" {
 	#define gfxMutexInit(pmutex)		chMtxInit(pmutex)
 	#define gfxMutexExit(pmutex)		chMtxUnlock()
 	#define gfxExit()					chSysHalt()
-#elif CH_KERNEL_MAJOR == 3
+	#define gfxHalt(msg)				{ chDbgPanic(msg); chSysHalt(); }
+#elif (CH_KERNEL_MAJOR == 3) || (CH_KERNEL_MAJOR == 4)
 	#define gfxSystemTicks()			chVTGetSystemTimeX()
 	#define gfxMutexInit(pmutex)		chMtxObjectInit(pmutex)
 	#define gfxMutexExit(pmutex)		chMtxUnlock(pmutex)
 	#define gfxExit()					osalSysHalt("gfx_exit")
+#define gfxHalt(msg)					{ chSysHalt(msg); }
 #endif
 
-#define gfxHalt(msg)				{ chDbgPanic(msg); chSysHalt(); }
 #define gfxAlloc(sz)				chHeapAlloc(0, sz)
 #define gfxFree(ptr)				chHeapFree(ptr)
 #define gfxYield()					chThdYield()
@@ -118,8 +120,13 @@ bool_t gfxSemWait(gfxSem *psem, delaytime_t ms);
 bool_t gfxSemWaitI(gfxSem *psem);
 void gfxSemSignal(gfxSem *psem);
 void gfxSemSignalI(gfxSem *psem);
+#if (CH_KERNEL_MAJOR == 2) || (CH_KERNEL_MAJOR == 3)
 #define gfxSemCounterI(psem)		((psem)->sem.s_cnt)
 #define gfxSemCounter(psem)			((psem)->sem.s_cnt)
+#elif (CH_KERNEL_MAJOR == 4)
+#define gfxSemCounterI(psem)		((psem)->sem.cnt)
+#define gfxSemCounter(psem)			((psem)->sem.cnt)
+#endif
 gfxThreadHandle gfxThreadCreate(void *stackarea, size_t stacksz, threadpriority_t prio, DECLARE_THREAD_FUNCTION((*fn),p), void *param);
 #define gfxThreadWait(thread)		chThdWait(thread)
 #define gfxThreadMe()				chThdSelf()

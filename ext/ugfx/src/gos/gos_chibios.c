@@ -5,7 +5,7 @@
  *              http://ugfx.org/license.html
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_OS_CHIBIOS
 
@@ -20,7 +20,7 @@
 		#error "GOS: CH_USE_SEMAPHORES must be defined in chconf.h"
 	#endif
 	
-#elif CH_KERNEL_MAJOR == 3
+#elif (CH_KERNEL_MAJOR == 3) || (CH_KERNEL_MAJOR == 4)
 
 	#if !CH_CFG_USE_MUTEXES
 		#error "GOS: CH_CFG_USE_MUTEXES must be defined in chconf.h"
@@ -35,20 +35,20 @@
 
 void _gosInit(void)
 {
-	#if !GFX_NO_OS_INIT
+	#if !GFX_OS_NO_INIT
 		/* Don't Initialize if the user already has */
 		#if CH_KERNEL_MAJOR == 2
 			if (!chThdSelf()) {
 				halInit();
 				chSysInit();
 			}
-		#elif CH_KERNEL_MAJOR == 3
+		#elif (CH_KERNEL_MAJOR == 3) || (CH_KERNEL_MAJOR == 4)
 			if (!chThdGetSelfX()) {
 				halInit();
 				chSysInit();
 			}
 		#endif
-	#else
+	#elif !GFX_OS_INIT_NO_WARNING
 		#warning "GOS: Operating System initialization has been turned off. Make sure you call halInit() and chSysInit() before gfxInit() in your application!"
 	#endif
 }
@@ -102,7 +102,7 @@ void gfxSemInit(gfxSem *psem, semcount_t val, semcount_t limit)
 	
 	#if CH_KERNEL_MAJOR == 2
 		chSemInit(&psem->sem, val);
-	#elif CH_KERNEL_MAJOR == 3
+	#elif (CH_KERNEL_MAJOR == 3) || (CH_KERNEL_MAJOR == 4)
 		chSemObjectInit(&psem->sem, val);
 	#endif
 }
@@ -120,7 +120,7 @@ bool_t gfxSemWait(gfxSem *psem, delaytime_t ms)
 		case TIME_INFINITE:		chSemWait(&psem->sem);	return TRUE;
 		default:				return chSemWaitTimeout(&psem->sem, MS2ST(ms)) != RDY_TIMEOUT;
 		}
-	#elif CH_KERNEL_MAJOR == 3
+	#elif (CH_KERNEL_MAJOR == 3) || (CH_KERNEL_MAJOR == 4)
 		switch(ms) {
 		case TIME_IMMEDIATE:	return chSemWaitTimeout(&psem->sem, TIME_IMMEDIATE) != MSG_TIMEOUT;
 		case TIME_INFINITE:		chSemWait(&psem->sem);	return TRUE;
@@ -158,13 +158,17 @@ gfxThreadHandle gfxThreadCreate(void *stackarea, size_t stacksz, threadpriority_
 {
 	if (!stackarea) {
 		if (!stacksz) stacksz = 256;
-		return chThdCreateFromHeap(0, stacksz, prio, fn, param);
+#if (CH_KERNEL_MAJOR == 2) || (CH_KERNEL_MAJOR == 3)
+		return chThdCreateFromHeap(0, stacksz, prio, (tfunc_t)fn, param);
+#elif CH_KERNEL_MAJOR == 4
+		return chThdCreateFromHeap(0, stacksz, "ugfx", prio, (tfunc_t)fn, param);
+#endif
 	}
 
 	if (!stacksz)
 		return 0;
 
-	return chThdCreateStatic(stackarea, stacksz, prio, fn, param);
+	return chThdCreateStatic(stackarea, stacksz, prio, (tfunc_t)fn, param);
 }
 
 #endif /* GFX_USE_OS_CHIBIOS */

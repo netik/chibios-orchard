@@ -10,10 +10,10 @@
 #if GFX_USE_GINPUT && GINPUT_NEED_MOUSE
 
 #define GMOUSE_DRIVER_VMT		GMOUSEVMT_MAX11802
-#include "src/ginput/ginput_driver_mouse.h"
+#include "../../../../src/ginput/ginput_driver_mouse.h"
 
 // Hardware definitions
-#include "drivers/ginput/touch/MAX11802/max11802.h"
+#include "max11802.h"
 
 // Get the hardware interface
 #include "gmouse_lld_MAX11802_board.h"

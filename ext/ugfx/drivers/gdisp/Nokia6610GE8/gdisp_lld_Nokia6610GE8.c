@@ -51,8 +51,8 @@
 #endif
 
 #define GDISP_DRIVER_VMT			GDISPVMT_Nokia6610GE8
-#include "drivers/gdisp/Nokia6610GE8/gdisp_lld_config.h"
-#include "src/gdisp/gdisp_driver.h"
+#include "gdisp_lld_config.h"
+#include "../../../src/gdisp/gdisp_driver.h"
 
 #include "board_Nokia6610GE8.h"
 
@@ -60,7 +60,7 @@
 /* Driver local definitions.                                                 */
 /*===========================================================================*/
 
-#include "drivers/gdisp/Nokia6610GE8/GE8.h"
+#include "GE8.h"
 
 #define GDISP_SCAN_LINES			132
 
@@ -129,7 +129,7 @@
 #define write_cmd4(g, cmd, d1, d2, d3, d4)	{ write_index(g, cmd); write_data4(g, d1, d2, d3, d4); }
 
 #if GDISP_HARDWARE_DRAWPIXEL
-	static inline void set_viewpoint(GDisplay* g) {
+	static GFXINLINE void set_viewpoint(GDisplay* g) {
 		#if GDISP_NOKIA_ORIENTATION && GDISP_NEED_CONTROL
 			switch(g->g.Orientation) {
 			default:
@@ -158,7 +158,7 @@
 	}
 #endif
 
-static inline void set_viewport(GDisplay* g) {
+static GFXINLINE void set_viewport(GDisplay* g) {
 	#if GDISP_NOKIA_ORIENTATION && GDISP_NEED_CONTROL
 		switch(g->g.Orientation) {
 		default:

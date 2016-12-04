@@ -10,7 +10,7 @@
  * @brief   GWIN sub-system radio button code
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GWIN && GWIN_NEED_RADIO
 
@@ -20,9 +20,6 @@
 #define GRADIO_TOP_FADE			50		// (GRADIO_TOP_FADE/255)% fade to white for top of tab/button
 #define GRADIO_BOTTOM_FADE		25		// (GRADIO_BOTTOM_FADE/255)% fade to black for bottom of tab/button
 #define GRADIO_OUTLINE_FADE		128		// (GRADIO_OUTLINE_FADE/255)% fade to background for active tab edge
-
-// Our pressed state
-#define GRADIO_FLG_PRESSED		(GWIN_FIRST_CONTROL_FLAG<<0)
 
 // Send the button event
 static void SendRadioEvent(GWidgetObject *gw) {
@@ -49,7 +46,7 @@ static void SendRadioEvent(GWidgetObject *gw) {
 
 #if GINPUT_NEED_MOUSE
 	// A mouse down has occurred over the button
-	static void MouseDown(GWidgetObject *gw, coord_t x, coord_t y) {
+	static void RadioMouseDown(GWidgetObject *gw, coord_t x, coord_t y) {
 		(void) x; (void) y;
 
 		gwinRadioPress((GHandle)gw);
@@ -58,18 +55,18 @@ static void SendRadioEvent(GWidgetObject *gw) {
 
 #if GINPUT_NEED_TOGGLE
 	// A toggle on has occurred
-	static void ToggleOn(GWidgetObject *gw, uint16_t role) {
+	static void RadioToggleOn(GWidgetObject *gw, uint16_t role) {
 		(void) role;
 
 		gwinRadioPress((GHandle)gw);
 	}
 
-	static void ToggleAssign(GWidgetObject *gw, uint16_t role, uint16_t instance) {
+	static void RadioToggleAssign(GWidgetObject *gw, uint16_t role, uint16_t instance) {
 		(void) role;
 		((GRadioObject *)gw)->toggle = instance;
 	}
 
-	static uint16_t ToggleGet(GWidgetObject *gw, uint16_t role) {
+	static uint16_t RadioToggleGet(GWidgetObject *gw, uint16_t role) {
 		(void) role;
 		return ((GRadioObject *)gw)->toggle;
 	}
@@ -87,18 +84,23 @@ static const gwidgetVMT radioVMT = {
 	gwinRadioDraw_Radio,		// The default drawing routine
 	#if GINPUT_NEED_MOUSE
 		{
-			MouseDown,				// Process mouse down events
+			RadioMouseDown,			// Process mouse down events
 			0,						// Process mouse up events (NOT USED)
 			0,						// Process mouse move events (NOT USED)
+		},
+	#endif
+	#if GINPUT_NEED_KEYBOARD || GWIN_NEED_KEYBOARD
+		{
+			0						// Process keyboard events
 		},
 	#endif
 	#if GINPUT_NEED_TOGGLE
 		{
 			1,						// 1 toggle role
-			ToggleAssign,			// Assign Toggles
-			ToggleGet,				// Get Toggles
+			RadioToggleAssign,		// Assign Toggles
+			RadioToggleGet,			// Get Toggles
 			0,						// Process toggle off events (NOT USED)
-			ToggleOn,				// Process toggle on events
+			RadioToggleOn,				// Process toggle on events
 		},
 	#endif
 	#if GINPUT_NEED_DIAL

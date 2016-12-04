@@ -9,15 +9,18 @@
  * @file    src/gaudio/gaudio_driver_play.h
  * @brief   GAUDIO - Audio play driver header file.
  *
- * @defgroup Driver Driver
+ * @defgroup GAUDIO_Driver_Playback Driver Playback
  * @ingroup GAUDIO
+ *
+ * @brief Playback driver interface for the GAUDIO module.
+ *
  * @{
  */
 
 #ifndef _GAUDIO_PLAY_LLD_H
 #define _GAUDIO_PLAY_LLD_H
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if (GFX_USE_GAUDIO && GAUDIO_NEED_PLAY) || defined(__DOXYGEN__)
 

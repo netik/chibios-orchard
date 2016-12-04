@@ -36,7 +36,7 @@
  * pointer to the default glyph.
  */
 static const uint8_t *find_glyph(const struct mf_rlefont_s *font,
-                                 mf_char character)
+                                 uint16_t character)
 {
    unsigned i, index;
    const struct mf_rlefont_char_range_s *range;
@@ -251,7 +251,7 @@ static void write_glyph_codeword(const struct mf_rlefont_s *font,
 
 uint8_t mf_rlefont_render_character(const struct mf_font_s *font,
                                     int16_t x0, int16_t y0,
-                                    mf_char character,
+                                    uint16_t character,
                                     mf_pixel_callback_t callback,
                                     void *state)
 {
@@ -267,7 +267,7 @@ uint8_t mf_rlefont_render_character(const struct mf_font_s *font,
     rstate.callback = callback;
     rstate.state = state;
     
-    p = find_glyph((struct mf_rlefont_s*)font, character);
+   	p = find_glyph((struct mf_rlefont_s*)font, character);
     if (!p)
         return 0;
     
@@ -281,7 +281,7 @@ uint8_t mf_rlefont_render_character(const struct mf_font_s *font,
 }
 
 uint8_t mf_rlefont_character_width(const struct mf_font_s *font,
-                                   mf_char character)
+                                   uint16_t character)
 {
     const uint8_t *p;
     p = find_glyph((struct mf_rlefont_s*)font, character);

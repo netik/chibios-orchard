@@ -18,9 +18,9 @@
 #include "pffconf.h"
 
 // Include the petitfs API
-#include "3rdparty/petitfs-0.03/src/pff.h"
+#include "../../3rdparty/petitfs-0.03/src/pff.h"
 
 // Include the petitfs diskio API
-#include "3rdparty/petitfs-0.03/src/diskio.h"
+#include "../../3rdparty/petitfs-0.03/src/diskio.h"
 
 #endif //_PETITFS_WRAPPER

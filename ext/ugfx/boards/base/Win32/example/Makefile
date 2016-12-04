@@ -8,7 +8,7 @@
 	# See $(GFXLIB)/tools/gmake_scripts/readme.txt for the list of variables
 	# For Win32 this variable can be set to "win32" (native win32 api) or "win32.chibios" (ChibiOS simulator). 
 	OPT_OS					= win32
-	OPT_LINK_OPTIMIZE		= yes
+	OPT_LINK_OPTIMIZE		= no
 
 # uGFX settings
 	# See $(GFXLIB)/tools/gmake_scripts/library_ugfx.mk for the list of variables
@@ -29,7 +29,7 @@ endif
 # Set these for your project
 #
 
-ARCH     = i686-pc-mingw32-
+ARCH     = i686-w64-mingw32-
 SRCFLAGS = -ggdb -O0
 CFLAGS   =
 CXXFLAGS =

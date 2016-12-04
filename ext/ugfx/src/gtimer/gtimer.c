@@ -5,7 +5,7 @@
  *              http://ugfx.org/license.html
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GTIMER || defined(__DOXYGEN__)
 
@@ -22,6 +22,7 @@ static gfxMutex			mutex;
 static gfxThreadHandle	hThread = 0;
 static GTimer			*pTimerHead = 0;
 static gfxSem			waitsem;
+static systemticks_t	ticks2ms;
 static DECLARE_THREAD_STACK(waTimerThread, GTIMER_THREAD_WORKAREA_SIZE);
 
 /*===========================================================================*/
@@ -29,15 +30,13 @@ static DECLARE_THREAD_STACK(waTimerThread, GTIMER_THREAD_WORKAREA_SIZE);
 /*===========================================================================*/
 
 static DECLARE_THREAD_FUNCTION(GTimerThreadHandler, arg) {
-	(void)arg;
 	GTimer			*pt;
 	systemticks_t	tm;
 	systemticks_t	nxtTimeout;
 	systemticks_t	lastTime;
 	GTimerFunction	fn;
 	void			*param;
-
-	chRegSetThreadName("gtimer");
+	(void)			arg;
 
 	nxtTimeout = TIME_INFINITE;
 	lastTime = 0;
@@ -77,7 +76,7 @@ static DECLARE_THREAD_FUNCTION(GTimerThreadHandler, arg) {
 						
 					} else {
 						// No - get us off the timers list
-						if (pt->next == pt->prev)
+						if (pt->next == pt)
 							pTimerHead = 0;
 						else {
 							pt->next->prev = pt->prev;
@@ -101,7 +100,7 @@ static DECLARE_THREAD_FUNCTION(GTimerThreadHandler, arg) {
 				
 				// Find when we next need to wake up
 				if (!(pt->flags & GTIMER_FLG_INFINITE) && pt->when - tm < nxtTimeout)
-					nxtTimeout = pt->when - tm;
+					nxtTimeout = (pt->when - tm)/ticks2ms;
 				pt = pt->next;
 			} while(pt != pTimerHead);
 		}
@@ -110,13 +109,14 @@ static DECLARE_THREAD_FUNCTION(GTimerThreadHandler, arg) {
 		lastTime = tm;
 		gfxMutexExit(&mutex);
 	}
-	return /* 0 */;
+	THREAD_RETURN(0);
 }
 
 void _gtimerInit(void)
 {
 	gfxSemInit(&waitsem, 0, 1);
 	gfxMutexInit(&mutex);
+	ticks2ms = gfxMillisecondsToTicks(1);
 }
 
 void _gtimerDeinit(void)
@@ -141,14 +141,14 @@ void gtimerStart(GTimer *pt, GTimerFunction fn, void *param, bool_t periodic, de
 	
 	// Start our thread if not already going
 	if (!hThread) {
-		hThread = gfxThreadCreate(waTimerThread, sizeof(waTimerThread), GTIMER_THREAD_PRIORITY, GTimerThreadHandler, 0);
+		hThread = gfxThreadCreate(waTimerThread, GTIMER_THREAD_WORKAREA_SIZE, GTIMER_THREAD_PRIORITY, GTimerThreadHandler, 0);
 		if (hThread) {gfxThreadClose(hThread);}		// We never really need the handle again
 	}
 
 	// Is this already scheduled?
 	if (pt->flags & GTIMER_FLG_SCHEDULED) {
 		// Cancel it!
-		if (pt->next == pt->prev)
+		if (pt->next == pt)
 			pTimerHead = 0;
 		else {
 			pt->next->prev = pt->prev;

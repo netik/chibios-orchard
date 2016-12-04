@@ -18,7 +18,7 @@
 #ifndef _GAUDIO_H
 #define _GAUDIO_H
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GAUDIO || defined(__DOXYGEN__)
 

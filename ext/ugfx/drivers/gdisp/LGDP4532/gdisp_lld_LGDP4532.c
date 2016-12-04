@@ -21,7 +21,7 @@
 
 #define GDISP_DRIVER_VMT	GDISPVMT_LGDP4532
 #include "gdisp_lld_config.h"
-#include "src/gdisp/gdisp_driver.h"
+#include "../../../src/gdisp/gdisp_driver.h"
 
 #include "board_LGDP4532.h"
 

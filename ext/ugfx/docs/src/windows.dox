@@ -11,6 +11,8 @@
  * @defgroup	Windows Windows
  * @ingroup		GWIN
  *
+ * @brief		Windows are the most basic element in the @p GWIN module.
+ *
  * @details		The window is the most basic GWIN element. All the other windows,
  *				widgets and containers are based on this class.
  *
@@ -26,6 +28,8 @@
  *				Like any other good window system, uGFX provide some standard window
  *				types such as graphs, consoles, buttons, containers etc. This is done
  *				through "super-classing" basic windows to provide the extended capabilities.
+ *
+ *				For the common window API, please see @ref Window.
  *
  * @pre			GFX_USE_GWIN must be set to TRUE in your gfxconf.h
  */

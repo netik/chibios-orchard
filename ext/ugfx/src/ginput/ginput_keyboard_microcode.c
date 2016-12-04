@@ -6,15 +6,15 @@
  */
 
 /**
- * @file    src/ginput/keyboard_microcode.c
+ * @file    src/ginput/ginput_keyboard_microcode.c
  * @brief   GINPUT keyboard standard microcode definitions.
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GINPUT && GINPUT_NEED_KEYBOARD && !GKEYBOARD_LAYOUT_OFF
 
-#include "keyboard_microcode.h"
+#include "ginput_keyboard_microcode.h"
 
 #if GKEYBOARD_LAYOUT_SCANCODE2_US
 

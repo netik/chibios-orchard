@@ -20,6 +20,7 @@
 # ChibiOS settings
 ifeq ($(OPT_OS),chibios)
 	# See $(GFXLIB)/tools/gmake_scripts/os_chibios.mk for the list of variables
+	CHIBIOS_VERSION		= 2
 	CHIBIOS				= ../ChibiOS
 	CHIBIOS_BOARD		=
 	CHIBIOS_PLATFORM	= STM32F4xx
@@ -34,7 +35,7 @@ endif
 #
 
 ARCH     = arm-none-eabi-
-SRCFLAGS = -ggdb -O0
+SRCFLAGS = -ggdb -O1
 CFLAGS   =
 CXXFLAGS = -fno-rtti
 ASFLAGS  =

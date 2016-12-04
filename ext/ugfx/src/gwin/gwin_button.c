@@ -10,32 +10,29 @@
  * @brief   GWIN sub-system button code
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GWIN && GWIN_NEED_BUTTON
 
 #include "gwin_class.h"
 
 // Parameters for various shapes
-#define RND_CNR_SIZE			5		// Rounded corner size for rounded buttons
-#define ARROWHEAD_DIVIDER		0		// What fraction of the length for the arrow head. Use 0 for 45 degree arrow head.
-#define ARROWBODY_DIVIDER		2		// What fraction of the width for the arrow body
-#define TOP_FADE				50		// (TOP_FADE/255)% fade to white for top of button
-#define BOTTOM_FADE				25		// (BOTTOM_FADE/255)% fade to black for bottom of button
-
-// Our pressed state
-#define GBUTTON_FLG_PRESSED		(GWIN_FIRST_CONTROL_FLAG<<0)
+#define BTN_CNR_SIZE			5		// Rounded corner size for rounded buttons
+#define BTN_ARROWHEAD_DIV		0		// What fraction of the length for the arrow head. Use 0 for 45 degree arrow head.
+#define BTN_ARROWBODY_DIV		2		// What fraction of the width for the arrow body
+#define BTN_TOP_FADE			50		// (BTN_TOP_FADE/255)% fade to white for top of button
+#define BTN_BOTTOM_FADE			25		// (BTN_BOTTOM_FADE/255)% fade to black for bottom of button
 
 #if GINPUT_NEED_MOUSE
 	// A mouse down has occurred over the button
-	static void MouseDown(GWidgetObject *gw, coord_t x, coord_t y) {
+	static void ButtonMouseDown(GWidgetObject *gw, coord_t x, coord_t y) {
 		(void) x; (void) y;
 		gw->g.flags |= GBUTTON_FLG_PRESSED;
 		_gwinUpdate((GHandle)gw);
 	}
 
 	// A mouse up has occurred (it may or may not be over the button)
-	static void MouseUp(GWidgetObject *gw, coord_t x, coord_t y) {
+	static void ButtonMouseUp(GWidgetObject *gw, coord_t x, coord_t y) {
 		(void) x; (void) y;
 		gw->g.flags &= ~GBUTTON_FLG_PRESSED;
 		_gwinUpdate((GHandle)gw);
@@ -50,16 +47,34 @@
 	}
 #endif
 
+#if GINPUT_NEED_KEYBOARD || GWIN_NEED_KEYBOARD
+	static void ButtonKeyboard(GWidgetObject* gw, GEventKeyboard* pke)
+	{
+		// ENTER and SPACE keys to press the button
+		if (pke->c[0] == GKEY_ENTER || pke->c[0] == GKEY_SPACE) {
+
+			// Press or release event?
+			if (pke->keystate & GKEYSTATE_KEYUP) {
+				gw->g.flags &= ~GBUTTON_FLG_PRESSED;
+			} else {
+				gw->g.flags |= GBUTTON_FLG_PRESSED;
+			}
+		}
+
+		_gwinUpdate((GHandle)gw);
+	}
+#endif
+
 #if GINPUT_NEED_TOGGLE
 	// A toggle off has occurred
-	static void ToggleOff(GWidgetObject *gw, uint16_t role) {
+	static void ButtonToggleOff(GWidgetObject *gw, uint16_t role) {
 		(void) role;
 		gw->g.flags &= ~GBUTTON_FLG_PRESSED;
 		_gwinUpdate((GHandle)gw);
 	}
 
 	// A toggle on has occurred
-	static void ToggleOn(GWidgetObject *gw, uint16_t role) {
+	static void ButtonToggleOn(GWidgetObject *gw, uint16_t role) {
 		(void) role;
 		gw->g.flags |= GBUTTON_FLG_PRESSED;
 		_gwinUpdate((GHandle)gw);
@@ -67,12 +82,12 @@
 		_gwinSendEvent(&gw->g, GEVENT_GWIN_BUTTON);
 	}
 
-	static void ToggleAssign(GWidgetObject *gw, uint16_t role, uint16_t instance) {
+	static void ButtonToggleAssign(GWidgetObject *gw, uint16_t role, uint16_t instance) {
 		(void) role;
 		((GButtonObject *)gw)->toggle = instance;
 	}
 
-	static uint16_t ToggleGet(GWidgetObject *gw, uint16_t role) {
+	static uint16_t ButtonToggleGet(GWidgetObject *gw, uint16_t role) {
 		(void) role;
 		return ((GButtonObject *)gw)->toggle;
 	}
@@ -90,18 +105,23 @@ static const gwidgetVMT buttonVMT = {
 	gwinButtonDraw_Normal,			// The default drawing routine
 	#if GINPUT_NEED_MOUSE
 		{
-			MouseDown,				// Process mouse down events
-			MouseUp,				// Process mouse up events
+			ButtonMouseDown,		// Process mouse down events
+			ButtonMouseUp,			// Process mouse up events
 			0,						// Process mouse move events (NOT USED)
+		},
+	#endif
+	#if GINPUT_NEED_KEYBOARD || GWIN_NEED_KEYBOARD
+		{
+			ButtonKeyboard			// Process keyboard events
 		},
 	#endif
 	#if GINPUT_NEED_TOGGLE
 		{
 			1,						// 1 toggle role
-			ToggleAssign,			// Assign Toggles
-			ToggleGet,				// Get Toggles
-			ToggleOff,				// Process toggle off events
-			ToggleOn,				// Process toggle on events
+			ButtonToggleAssign,		// Assign Toggles
+			ButtonToggleGet,		// Get Toggles
+			ButtonToggleOff,		// Process toggle off events
+			ButtonToggleOn,			// Process toggle on events
 		},
 	#endif
 	#if GINPUT_NEED_DIAL
@@ -136,7 +156,7 @@ bool_t gwinButtonIsPressed(GHandle gh) {
  * Custom Draw Routines
  *----------------------------------------------------------*/
 
-static const GColorSet *getDrawColors(GWidgetObject *gw) {
+static const GColorSet *getButtonColors(GWidgetObject *gw) {
 	if (!(gw->g.flags & GWIN_FLG_SYSENABLED))	return &gw->pstyle->disabled;
 	if ((gw->g.flags & GBUTTON_FLG_PRESSED))	return &gw->pstyle->pressed;
 	return &gw->pstyle->enabled;
@@ -145,14 +165,18 @@ static const GColorSet *getDrawColors(GWidgetObject *gw) {
 #if GWIN_FLAT_STYLING
 	void gwinButtonDraw_Normal(GWidgetObject *gw, void *param) {
 		const GColorSet *	pcol;
+
 		(void)				param;
 
 		if (gw->g.vmt != (gwinVMT *)&buttonVMT)	return;
-		pcol = getDrawColors(gw);
+		pcol = getButtonColors(gw);
 
 		gdispGFillStringBox(gw->g.display, gw->g.x, gw->g.y, gw->g.width-1, gw->g.height-1, gw->text, gw->g.font, pcol->text, pcol->fill, justifyCenter);
 		gdispGDrawLine(gw->g.display, gw->g.x+gw->g.width-1, gw->g.y, gw->g.x+gw->g.width-1, gw->g.y+gw->g.height-1, pcol->edge);
 		gdispGDrawLine(gw->g.display, gw->g.x, gw->g.y+gw->g.height-1, gw->g.x+gw->g.width-2, gw->g.y+gw->g.height-1, pcol->edge);
+
+		// Render highlighted border if focused
+		_gwidgetDrawFocusRect(gw, 1, 1, gw->g.width-2, gw->g.height-2);
 	}
 #else
 	void gwinButtonDraw_Normal(GWidgetObject *gw, void *param) {
@@ -161,14 +185,15 @@ static const GColorSet *getDrawColors(GWidgetObject *gw) {
 		fixed				dalpha;
 		coord_t				i;
 		color_t				tcol, bcol;
+
 		(void)				param;
 
 		if (gw->g.vmt != (gwinVMT *)&buttonVMT)	return;
-		pcol = getDrawColors(gw);
+		pcol = getButtonColors(gw);
 	
 		/* Fill the box blended from variants of the fill color */
-		tcol = gdispBlendColor(White, pcol->fill, TOP_FADE);
-		bcol = gdispBlendColor(Black, pcol->fill, BOTTOM_FADE);
+		tcol = gdispBlendColor(White, pcol->fill, BTN_TOP_FADE);
+		bcol = gdispBlendColor(Black, pcol->fill, BTN_BOTTOM_FADE);
 		dalpha = FIXED(255)/gw->g.height;
 		for(alpha = 0, i = 0; i < gw->g.height; i++, alpha += dalpha)
 			gdispGDrawLine(gw->g.display, gw->g.x, gw->g.y+i, gw->g.x+gw->g.width-2, gw->g.y+i, gdispBlendColor(bcol, tcol, NONFIXED(alpha)));
@@ -176,22 +201,26 @@ static const GColorSet *getDrawColors(GWidgetObject *gw) {
 		gdispGDrawStringBox(gw->g.display, gw->g.x, gw->g.y, gw->g.width-1, gw->g.height-1, gw->text, gw->g.font, pcol->text, justifyCenter);
 		gdispGDrawLine(gw->g.display, gw->g.x+gw->g.width-1, gw->g.y, gw->g.x+gw->g.width-1, gw->g.y+gw->g.height-1, pcol->edge);
 		gdispGDrawLine(gw->g.display, gw->g.x, gw->g.y+gw->g.height-1, gw->g.x+gw->g.width-2, gw->g.y+gw->g.height-1, pcol->edge);
+
+		// Render highlighted border if focused
+		_gwidgetDrawFocusRect(gw, 0, 0, gw->g.width-1, gw->g.height-1);
 	}
 #endif
 
 #if GDISP_NEED_ARC
 	void gwinButtonDraw_Rounded(GWidgetObject *gw, void *param) {
 		const GColorSet *	pcol;
+
 		(void)				param;
 
 		if (gw->g.vmt != (gwinVMT *)&buttonVMT)	return;
-		pcol = getDrawColors(gw);
+		pcol = getButtonColors(gw);
 
 		gdispGFillArea(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gw->g.height, gw->pstyle->background);
-		if (gw->g.width >= 2*RND_CNR_SIZE+10) {
-			gdispGFillRoundedBox(gw->g.display, gw->g.x+1, gw->g.y+1, gw->g.width-2, gw->g.height-2, RND_CNR_SIZE-1, pcol->fill);
-			gdispGDrawStringBox(gw->g.display, gw->g.x+1, gw->g.y+RND_CNR_SIZE, gw->g.width-2, gw->g.height-(2*RND_CNR_SIZE), gw->text, gw->g.font, pcol->text, justifyCenter);
-			gdispGDrawRoundedBox(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gw->g.height, RND_CNR_SIZE, pcol->edge);
+		if (gw->g.width >= 2*BTN_CNR_SIZE+10) {
+			gdispGFillRoundedBox(gw->g.display, gw->g.x+1, gw->g.y+1, gw->g.width-2, gw->g.height-2, BTN_CNR_SIZE-1, pcol->fill);
+			gdispGDrawStringBox(gw->g.display, gw->g.x+1, gw->g.y+BTN_CNR_SIZE, gw->g.width-2, gw->g.height-(2*BTN_CNR_SIZE), gw->text, gw->g.font, pcol->text, justifyCenter);
+			gdispGDrawRoundedBox(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gw->g.height, BTN_CNR_SIZE, pcol->edge);
 		} else {
 			gdispGFillStringBox(gw->g.display, gw->g.x+1, gw->g.y+1, gw->g.width-2, gw->g.height-2, gw->text, gw->g.font, pcol->text, pcol->fill, justifyCenter);
 			gdispGDrawBox(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gw->g.height, pcol->edge);
@@ -202,32 +231,34 @@ static const GColorSet *getDrawColors(GWidgetObject *gw) {
 #if GDISP_NEED_ELLIPSE
 	void gwinButtonDraw_Ellipse(GWidgetObject *gw, void *param) {
 		const GColorSet *	pcol;
+
 		(void)				param;
 
 		if (gw->g.vmt != (gwinVMT *)&buttonVMT)	return;
-		pcol = getDrawColors(gw);
+		pcol = getButtonColors(gw);
 
 		gdispGFillArea(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gw->g.height, gw->pstyle->background);
-		gdispGFillEllipse(gw->g.display, gw->g.x+1, gw->g.y+1, gw->g.width/2-1, gw->g.height/2-1, pcol->fill);
+		gdispGFillEllipse(gw->g.display, gw->g.x+gw->g.width/2, gw->g.y+gw->g.height/2, gw->g.width/2-2, gw->g.height/2-2, pcol->fill);
 		gdispGDrawStringBox(gw->g.display, gw->g.x+1, gw->g.y+1, gw->g.width-2, gw->g.height-2, gw->text, gw->g.font, pcol->text, justifyCenter);
-		gdispGDrawEllipse(gw->g.display, gw->g.x, gw->g.y, gw->g.width/2, gw->g.height/2, pcol->edge);
+		gdispGDrawEllipse(gw->g.display, gw->g.x+gw->g.width/2, gw->g.y+gw->g.height/2, gw->g.width/2-1, gw->g.height/2-1, pcol->edge);
 	}
 #endif
 
 #if GDISP_NEED_CONVEX_POLYGON
 	void gwinButtonDraw_ArrowUp(GWidgetObject *gw, void *param) {
 		const GColorSet *	pcol;
-		(void)				param;
 		point				arw[7];
 
+		(void)				param;
+
 		if (gw->g.vmt != (gwinVMT *)&buttonVMT)	return;
-		pcol = getDrawColors(gw);
+		pcol = getButtonColors(gw);
 
 		// Create the arrow polygon
 		arw[0].x = (gw->g.width-1)/2;				// Point center
 		arw[0].y = 0;								// Arrow start
 		arw[3].y = gw->g.height-1;					// Arrow end
-		#if ARROWHEAD_DIVIDER == 0
+		#if BTN_ARROWHEAD_DIV == 0
 			if (gw->g.height <= arw[0].x) {
 				arw[1].y = arw[3].y;				// End of head
 				arw[1].x = arw[0].x+arw[3].y;		// Width of head  (side 1)
@@ -237,15 +268,15 @@ static const GColorSet *getDrawColors(GWidgetObject *gw) {
 			} else {
 				arw[1].y = arw[0].x;
 				arw[1].x = arw[0].x << 1;
-				arw[2].x = arw[0].x + arw[0].x/ARROWBODY_DIVIDER;
-				arw[4].x = arw[0].x - arw[0].x/ARROWBODY_DIVIDER;
+				arw[2].x = arw[0].x + arw[0].x/BTN_ARROWBODY_DIV;
+				arw[4].x = arw[0].x - arw[0].x/BTN_ARROWBODY_DIV;
 				arw[6].x = 0;
 			}
 		#else
-			arw[1].y = gw->g.height/ARROWHEAD_DIVIDER;
+			arw[1].y = gw->g.height/BTN_ARROWHEAD_DIV;
 			arw[1].x = arw[0].x << 1;
-			arw[2].x = arw[0].x + arw[0].x/ARROWBODY_DIVIDER;
-			arw[4].x = arw[0].x - arw[0].x/ARROWBODY_DIVIDER;
+			arw[2].x = arw[0].x + arw[0].x/BTN_ARROWBODY_DIV;
+			arw[4].x = arw[0].x - arw[0].x/BTN_ARROWBODY_DIV;
 			arw[6].x = 0;
 		#endif
 
@@ -267,17 +298,18 @@ static const GColorSet *getDrawColors(GWidgetObject *gw) {
 
 	void gwinButtonDraw_ArrowDown(GWidgetObject *gw, void *param) {
 		const GColorSet *	pcol;
-		(void)				param;
 		point				arw[7];
 
+		(void)				param;
+
 		if (gw->g.vmt != (gwinVMT *)&buttonVMT)	return;
-		pcol = getDrawColors(gw);
+		pcol = getButtonColors(gw);
 
 		// Create the arrow polygon
 		arw[0].x = (gw->g.width-1)/2;				// Point center
 		arw[0].y = gw->g.height-1;					// Arrow start
 		arw[3].y = 0;								// Arrow end
-		#if ARROWHEAD_DIVIDER == 0
+		#if BTN_ARROWHEAD_DIV == 0
 			if (gw->g.height <= arw[0].x) {
 				arw[1].y = arw[3].y;				// End of head
 				arw[1].x = arw[0].x+arw[0].y;		// Width of head  (side 1)
@@ -287,15 +319,15 @@ static const GColorSet *getDrawColors(GWidgetObject *gw) {
 			} else {
 				arw[1].y = arw[0].y - arw[0].x;
 				arw[1].x = arw[0].x << 1;
-				arw[2].x = arw[0].x + arw[0].x/ARROWBODY_DIVIDER;
-				arw[4].x = arw[0].x - arw[0].x/ARROWBODY_DIVIDER;
+				arw[2].x = arw[0].x + arw[0].x/BTN_ARROWBODY_DIV;
+				arw[4].x = arw[0].x - arw[0].x/BTN_ARROWBODY_DIV;
 				arw[6].x = 0;
 			}
 		#else
-			arw[1].y = arw[0].y - gw->g.height/ARROWHEAD_DIVIDER;
+			arw[1].y = arw[0].y - gw->g.height/BTN_ARROWHEAD_DIV;
 			arw[1].x = arw[0].x << 1;
-			arw[2].x = arw[0].x + arw[0].x/ARROWBODY_DIVIDER;
-			arw[4].x = arw[0].x - arw[0].x/ARROWBODY_DIVIDER;
+			arw[2].x = arw[0].x + arw[0].x/BTN_ARROWBODY_DIV;
+			arw[4].x = arw[0].x - arw[0].x/BTN_ARROWBODY_DIV;
 			arw[6].x = 0;
 		#endif
 
@@ -317,17 +349,18 @@ static const GColorSet *getDrawColors(GWidgetObject *gw) {
 
 	void gwinButtonDraw_ArrowLeft(GWidgetObject *gw, void *param) {
 		const GColorSet *	pcol;
-		(void)				param;
 		point				arw[7];
 
+		(void)				param;
+
 		if (gw->g.vmt != (gwinVMT *)&buttonVMT)	return;
-		pcol = getDrawColors(gw);
+		pcol = getButtonColors(gw);
 
 		// Create the arrow polygon
 		arw[0].y = (gw->g.height-1)/2;				// Point center
 		arw[0].x = 0;								// Arrow start
 		arw[3].x = gw->g.width-1;					// Arrow end
-		#if ARROWHEAD_DIVIDER == 0
+		#if BTN_ARROWHEAD_DIV == 0
 			if (gw->g.width <= arw[0].y) {
 				arw[1].x = arw[3].x;				// End of head
 				arw[1].y = arw[0].y+arw[3].x;		// Width of head  (side 1)
@@ -337,15 +370,15 @@ static const GColorSet *getDrawColors(GWidgetObject *gw) {
 			} else {
 				arw[1].x = arw[0].y;
 				arw[1].y = arw[0].y << 1;
-				arw[2].y = arw[0].y + arw[0].y/ARROWBODY_DIVIDER;
-				arw[4].y = arw[0].y - arw[0].y/ARROWBODY_DIVIDER;
+				arw[2].y = arw[0].y + arw[0].y/BTN_ARROWBODY_DIV;
+				arw[4].y = arw[0].y - arw[0].y/BTN_ARROWBODY_DIV;
 				arw[6].y = 0;
 			}
 		#else
-			arw[1].x = gw->g.width/ARROWHEAD_DIVIDER;
+			arw[1].x = gw->g.width/BTN_ARROWHEAD_DIV;
 			arw[1].y = arw[0].y << 1;
-			arw[2].y = arw[0].y + arw[0].y/ARROWBODY_DIVIDER;
-			arw[4].y = arw[0].y - arw[0].y/ARROWBODY_DIVIDER;
+			arw[2].y = arw[0].y + arw[0].y/BTN_ARROWBODY_DIV;
+			arw[4].y = arw[0].y - arw[0].y/BTN_ARROWBODY_DIV;
 			arw[6].y = 0;
 		#endif
 
@@ -367,17 +400,18 @@ static const GColorSet *getDrawColors(GWidgetObject *gw) {
 
 	void gwinButtonDraw_ArrowRight(GWidgetObject *gw, void *param) {
 		const GColorSet *	pcol;
-		(void)				param;
 		point				arw[7];
+		
+		(void)				param;
 
 		if (gw->g.vmt != (gwinVMT *)&buttonVMT)	return;
-		pcol = getDrawColors(gw);
+		pcol = getButtonColors(gw);
 
 		// Create the arrow polygon
 		arw[0].y = (gw->g.height-1)/2;				// Point center
 		arw[0].x = gw->g.width-1;					// Arrow start
 		arw[3].x = 0;								// Arrow end
-		#if ARROWHEAD_DIVIDER == 0
+		#if BTN_ARROWHEAD_DIV == 0
 			if (gw->g.width <= arw[0].y) {
 				arw[1].x = arw[3].x;				// End of head
 				arw[1].y = arw[0].y+arw[0].x;		// Width of head  (side 1)
@@ -387,15 +421,15 @@ static const GColorSet *getDrawColors(GWidgetObject *gw) {
 			} else {
 				arw[1].x = arw[0].x - arw[0].y;
 				arw[1].y = arw[0].y << 1;
-				arw[2].y = arw[0].y + arw[0].y/ARROWBODY_DIVIDER;
-				arw[4].y = arw[0].y - arw[0].y/ARROWBODY_DIVIDER;
+				arw[2].y = arw[0].y + arw[0].y/BTN_ARROWBODY_DIV;
+				arw[4].y = arw[0].y - arw[0].y/BTN_ARROWBODY_DIV;
 				arw[6].y = 0;
 			}
 		#else
-			arw[1].x = arw[0].x - gw->g.width/ARROWHEAD_DIVIDER;
+			arw[1].x = arw[0].x - gw->g.width/BTN_ARROWHEAD_DIV;
 			arw[1].y = arw[0].y << 1;
-			arw[2].y = arw[0].y + arw[0].y/ARROWBODY_DIVIDER;
-			arw[4].y = arw[0].y - arw[0].y/ARROWBODY_DIVIDER;
+			arw[2].y = arw[0].y + arw[0].y/BTN_ARROWBODY_DIV;
+			arw[4].y = arw[0].y - arw[0].y/BTN_ARROWBODY_DIV;
 			arw[6].y = 0;
 		#endif
 
@@ -422,7 +456,7 @@ static const GColorSet *getDrawColors(GWidgetObject *gw) {
 		coord_t				sy;
 
 		if (gw->g.vmt != (gwinVMT *)&buttonVMT)	return;
-		pcol = getDrawColors(gw);
+		pcol = getButtonColors(gw);
 
 		if (!(gw->g.flags & GWIN_FLG_SYSENABLED)) {
 			sy = 2 * gw->g.height;

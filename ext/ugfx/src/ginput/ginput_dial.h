@@ -7,10 +7,11 @@
 
 /**
  * @file    src/ginput/ginput_dial.h
- * @brief   GINPUT GFX User Input subsystem header file.
  *
  * @defgroup Dial Dial
  * @ingroup GINPUT
+ *
+ * @brief   Sub-Module to handle physical controls that provide a range value (eg. potentiometers and rotary encoders).
  *
  * @details	A dial provides a powerful way to navigate through menus
  *			on a display. 

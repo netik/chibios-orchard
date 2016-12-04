@@ -10,13 +10,13 @@
 #if GFX_USE_GINPUT && GINPUT_NEED_MOUSE
 
 #define GMOUSE_DRIVER_VMT		GMOUSEVMT_FT5x06
-#include "src/ginput/ginput_driver_mouse.h"
+#include "../../../../src/ginput/ginput_driver_mouse.h"
 
 // Get the hardware interface
 #include "gmouse_lld_FT5x06_board.h"
 
 // Hardware definitions
-#include "drivers/ginput/touch/FT5x06/ft5x06.h"
+#include "ft5x06.h"
 
 static bool_t MouseInit(GMouse* m, unsigned driverinstance) {
 	if (!init_board(m, driverinstance))
@@ -56,7 +56,7 @@ static bool_t MouseInit(GMouse* m, unsigned driverinstance) {
 	return TRUE;
 }
 
-static bool_t MouseXYZ(GMouse* m, GMouseReading* pdr)
+static bool_t read_xyz(GMouse* m, GMouseReading* pdr)
 {
 	// Assume not touched.
 	pdr->buttons = 0;

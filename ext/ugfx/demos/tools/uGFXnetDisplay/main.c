@@ -203,7 +203,7 @@ static bool_t sendpkt(uint16_t *pkt, int len) {
 				continue;
 
 			// Nothing to do if the mouse data has not changed
-			if (lx == pem->x && ly == pem->y && lbuttons == pem->current_buttons)
+			if (lx == pem->x && ly == pem->y && lbuttons == pem->buttons)
 				continue;
 
 			// Transfer mouse data that has changed
@@ -220,7 +220,7 @@ static bool_t sendpkt(uint16_t *pkt, int len) {
 				sendpkt(cmd, 2);
 			}
 			// We always send the buttons as it also acts as a mouse sync signal
-			lbuttons = pem->current_buttons;
+			lbuttons = pem->buttons;
 			cmd[0] = GNETCODE_MOUSE_B;
 			cmd[1] = lbuttons;
 			sendpkt(cmd, 2);

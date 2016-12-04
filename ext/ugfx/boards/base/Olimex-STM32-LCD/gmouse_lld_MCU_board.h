@@ -50,7 +50,7 @@ static const ADCConversionGroup adc_x_config = {
     ADC_SQR3_SQ2_N(ADC_CHANNEL_IN10) | ADC_SQR3_SQ1_N(ADC_CHANNEL_IN11)
 };
 
-static inline void setup_z(void) {
+static GFXINLINE void setup_z(void) {
 	palSetPadMode(GPIOC, 0, PAL_MODE_INPUT_PULLDOWN);
 	palSetPadMode(GPIOC, 1, PAL_MODE_INPUT);
 	palSetPadMode(GPIOC, 2, PAL_MODE_INPUT);

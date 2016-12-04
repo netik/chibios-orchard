@@ -93,22 +93,29 @@ void cmd_enemysim(BaseSequentialStream *chp, int argc, char *argv[]) {
   (void) argc;
   (void) argv;
   user **enemies;
+
   enemies = enemiesGet();
-    osalMutexLock(&enemies_mutex);
-    for (int i=0; i< MAX_ENEMIES; i++) {
+  osalMutexLock(&enemies_mutex);
+  for (int i=0; i< MAX_ENEMIES; i++) {
     if (enemies[i] == NULL) {
+      char tmp[15];
       enemies[i] = (user *) chHeapAlloc(NULL, sizeof(user));
+      // enemies[i]->priority will be filled in by the recipient.
+      enemies[i]->type = p_guard;
+      enemies[i]->netid = i;
       enemies[i]->priority = 100;
       enemies[i]->in_combat = 0;
       enemies[i]->hp = 1337;
-      enemies[i]->level = rand() % 9 + 1;
-      //      char tmp[15];
-      //      sprintf(tmp, "test-%d", i);
-      //      strncpy(enemies[i]->name, tmp, CONFIG_NAME_MAXLEN);
+      enemies[i]->level = 9;
+
+      chsnprintf(tmp, sizeof(tmp), "test-%d",i);
+      strncpy(enemies[i]->name, tmp, CONFIG_NAME_MAXLEN);
     }
     osalMutexUnlock(&enemies_mutex);
   }
-  // todo: generate some names...
+
+  // jna: remove this once we go live
+  chprintf(stream, "Test enemies generated.\r\n");
   // generate some packets... 
   //  while(!should_stop()) {
     //    radioAcquire(radioDriver);

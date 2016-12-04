@@ -9,7 +9,7 @@
  * Stdio Emulation Routines
  ********************************************************/
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GFILE && GFILE_NEED_STDIO && !defined(GFILE_NEED_STDIO_MUST_BE_OFF)
 

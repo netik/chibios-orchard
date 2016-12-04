@@ -9,7 +9,7 @@
  * @file    src/ginput/ginput_mouse.c
  * @brief   GINPUT mouse/touch code.
  */
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GINPUT && GINPUT_NEED_MOUSE
 
@@ -55,9 +55,14 @@ static GTIMER_DECL(MouseTimer);
 #if !GINPUT_TOUCH_NOCALIBRATE
 	#include <string.h>							// Required for memcpy
 
-	static inline void CalibrationTransform(GMouseReading *pt, const GMouseCalibration *c) {
-		pt->x = (coord_t) (c->ax * pt->x + c->bx * pt->y + c->cx);
-		pt->y = (coord_t) (c->ay * pt->x + c->by * pt->y + c->cy);
+	static GFXINLINE void CalibrationTransform(GMouseReading *pt, const GMouseCalibration *c) {
+		coord_t x, y;
+
+		x = (coord_t) (c->ax * pt->x + c->bx * pt->y + c->cx);
+		y = (coord_t) (c->ay * pt->x + c->by * pt->y + c->cy);
+		
+		pt->x = x;
+		pt->y = y;
 	}
 #endif
 
@@ -330,7 +335,7 @@ static void MousePoll(void *param) {
 		#error "GINPUT: GFX_USE_GDISP must be defined when calibration is required"
 	#endif
 
-	static inline void CalibrationCrossDraw(GMouse *m, const point *pp) {
+	static GFXINLINE void CalibrationCrossDraw(GMouse *m, const point *pp) {
 		gdispGDrawLine(m->display, pp->x-CALIBRATION_CROSS_RADIUS, pp->y, pp->x-CALIBRATION_CROSS_INNERGAP, pp->y, CALIBRATION_CROSS_COLOR1);
 		gdispGDrawLine(m->display, pp->x+CALIBRATION_CROSS_INNERGAP, pp->y, pp->x+CALIBRATION_CROSS_RADIUS, pp->y, CALIBRATION_CROSS_COLOR1);
 		gdispGDrawLine(m->display, pp->x, pp->y-CALIBRATION_CROSS_RADIUS, pp->x, pp->y-CALIBRATION_CROSS_INNERGAP, CALIBRATION_CROSS_COLOR1);
@@ -345,11 +350,11 @@ static void MousePoll(void *param) {
 		gdispGDrawLine(m->display, pp->x+CALIBRATION_CROSS_RADIUS, pp->y-CALIBRATION_CROSS_RADIUS, pp->x+CALIBRATION_CROSS_RADIUS, pp->y-CALIBRATION_CROSS_RADIUS/2, CALIBRATION_CROSS_COLOR2);
 	}
 
-	static inline void CalibrationCrossClear(GMouse *m, const point *pp) {
+	static GFXINLINE void CalibrationCrossClear(GMouse *m, const point *pp) {
 		gdispGFillArea(m->display, pp->x - CALIBRATION_CROSS_RADIUS, pp->y - CALIBRATION_CROSS_RADIUS, CALIBRATION_CROSS_RADIUS*2+1, CALIBRATION_CROSS_RADIUS*2+1, CALIBRATION_BACKGROUND);
 	}
 
-	static inline void CalibrationCalculate(GMouse *m, const point *cross, const point *points) {
+	static GFXINLINE void CalibrationCalculate(GMouse *m, const point *cross, const point *points) {
 		float		dx;
 		coord_t		c0, c1, c2;
 		(void)		m;
@@ -669,8 +674,8 @@ bool_t _gmouseInitDriver(GDriver *g, void *display, unsigned driverinstance, uns
 	#endif
 
 	// Init the mouse
-	if (!gmvmt(m)->init((GMouse *)g, driverinstance))
-		return FALSE;
+    if (!gmvmt(m)->init((GMouse *)g, driverinstance))
+        return FALSE;
 
 	// Ensure the Poll timer is started
 	if (!gtimerIsActive(&MouseTimer))
@@ -790,8 +795,8 @@ bool_t ginputGetMouseStatus(unsigned instance, GEventMouse *pe) {
 			return 0;
 
 		// Check it needs calibration
-        	if (!(gmvmt(m)->d.flags & GMOUSE_VFLG_CALIBRATE))
-        		return 0;
+        if (!(gmvmt(m)->d.flags & GMOUSE_VFLG_CALIBRATE))
+        	return 0;
 
 		return CalibrateMouse(m);
 	}

@@ -53,17 +53,17 @@ struct mf_font_s
     uint8_t flags;
     
     /* Fallback character to use for missing glyphs. */
-    mf_char fallback_character;
+    uint16_t fallback_character;
     
     /* Function to get character width. Should return 0 if character is
      * not found. */
-    uint8_t (*character_width)(const struct mf_font_s *font, mf_char character);
+    uint8_t (*character_width)(const struct mf_font_s *font, uint16_t character);
     
     /* Function to render a character. Returns the character width or 0 if
      * character is not found. */
     uint8_t (*render_character)(const struct mf_font_s *font,
                                 int16_t x0, int16_t y0,
-                                mf_char character,
+                                uint16_t character,
                                 mf_pixel_callback_t callback,
                                 void *state);
 };

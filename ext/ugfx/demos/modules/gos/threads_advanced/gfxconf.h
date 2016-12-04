@@ -30,11 +30,22 @@
 #ifndef _GFXCONF_H
 #define _GFXCONF_H
 
-/* The operating system to use. One of these must be defined - preferably in your Makefile */
-//#define GFX_USE_OS_CHIBIOS	FALSE
-//#define GFX_USE_OS_WIN32		FALSE
-//#define GFX_USE_OS_LINUX		FALSE
-//#define GFX_USE_OS_OSX		FALSE
+///////////////////////////////////////////////////////////////////////////
+// GOS - One of these must be defined, preferably in your Makefile       //
+///////////////////////////////////////////////////////////////////////////
+//#define GFX_USE_OS_CHIBIOS                           FALSE
+//#define GFX_USE_OS_FREERTOS                          FALSE
+//    #define GFX_FREERTOS_USE_TRACE                   FALSE
+//#define GFX_USE_OS_WIN32                             FALSE
+//#define GFX_USE_OS_LINUX                             FALSE
+//#define GFX_USE_OS_OSX                               FALSE
+//#define GFX_USE_OS_ECOS                              FALSE
+//#define GFX_USE_OS_RAWRTOS                           FALSE
+//#define GFX_USE_OS_RAW32                             FALSE
+
+// We define this here in case you are using raw32 or arduino with this demo
+// and have a non-thread-safe C library.
+#define GOS_RAW_HEAP_SIZE                        10240
 
 #define GFX_USE_GTIMER        TRUE
 

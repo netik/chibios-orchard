@@ -69,8 +69,9 @@ typedef struct userconfig {
 typedef struct _user {
   /* this is a shortened form of userdata for transmission */
   /* appx 32 bytes */
+  uint32_t netid;
   uint8_t priority;
-  uint32_t netid;  
+  player_type type;
   char name[CONFIG_NAME_MAXLEN];
   uint8_t in_combat;
   uint16_t hp;

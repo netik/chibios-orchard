@@ -10,8 +10,8 @@
 #if GFX_USE_GDISP
 
 #define GDISP_DRIVER_VMT		GDISPVMT_PCF8812
-#include "drivers/gdisp/PCF8812/gdisp_lld_config.h"
-#include "src/gdisp/gdisp_driver.h"
+#include "gdisp_lld_config.h"
+#include "../../../src/gdisp/gdisp_driver.h"
 #include "board_PCF8812.h"
 
 /*===========================================================================*/
@@ -29,7 +29,7 @@
 
 #define GDISP_FLG_NEEDFLUSH		(GDISP_FLG_DRIVER << 0)
 
-#include "drivers/gdisp/PCF8812/PCF8812.h"
+#include "PCF8812.h"
 
 /*===========================================================================*/
 /* Driver local routines.                                                    */

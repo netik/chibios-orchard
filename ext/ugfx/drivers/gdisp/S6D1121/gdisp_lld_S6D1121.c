@@ -19,8 +19,8 @@
 #endif
 
 #define GDISP_DRIVER_VMT			GDISPVMT_S6D1121
-#include "drivers/gdisp/S6D1121/gdisp_lld_config.h"
-#include "src/gdisp/gdisp_driver.h"
+#include "gdisp_lld_config.h"
+#include "../../../src/gdisp/gdisp_driver.h"
 
 #include "board_S6D1121.h"
 
@@ -51,7 +51,7 @@
 #define delay(us)                   gfxSleepMicroseconds(us)
 #define delayms(ms)                 gfxSleepMilliseconds(ms)
 
-static inline void set_cursor(GDisplay *g) {
+static GFXINLINE void set_cursor(GDisplay *g) {
     /* R20h - 8 bit
      * R21h - 9 bit
      */
@@ -77,7 +77,7 @@ static inline void set_cursor(GDisplay *g) {
     write_index(g, 0x22);
 }
 
-static inline void set_viewport(GDisplay *g) {
+static GFXINLINE void set_viewport(GDisplay *g) {
     /* HSA / HEA are 8 bit
      * VSA / VEA are 9 bit
      * use masks 0x00FF and 0x01FF to enforce this

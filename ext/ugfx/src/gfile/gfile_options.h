@@ -201,6 +201,31 @@
 	#ifndef GFILE_MAX_GFILES
 		#define GFILE_MAX_GFILES		3
 	#endif
+	/**
+	 * @brief   TUse an external FATFS library instead of the uGFX inbuilt one
+	 * @note	This is applicable when GFILE_NEED_FATFS is specified. It allows
+	 *			the programmer to use their own FATFS implementation provided the
+	 *			api matches the fatfs-0.10b API.
+	 * @note	The users ffconf.h file still needs to be reachable when compiling uGFX.
+	 * @note	If ffconf.h contains _FS_REENTRANT as true then the user provided simpleton
+	 *			routines must be compatible with uGFX threading.
+	 * @note	If ffconf.h contains _USE_LFN == 3 then the user provided simpleton routines must
+	 *			be compatible with uGFX memory management.
+	 */
+	#ifndef GFILE_FATFS_EXTERNAL_LIB
+		#define GFILE_FATFS_EXTERNAL_LIB		FALSE
+	#endif
+	/**
+	 * @brief   TUse an external PETITFS library instead of the uGFX inbuilt one
+	 * @note	This is applicable when GFILE_NEED_PETITFS is specified. It allows
+	 *			the programmer to use their own FATFS implementation provided the
+	 *			api matches the petitfs-0.03 API.
+	 * @note	The users pffconf.h file still needs to be reachable when compiling uGFX.
+	 */
+	#ifndef GFILE_PETITFS_EXTERNAL_LIB
+		#define GFILE_PETITFS_EXTERNAL_LIB	FALSE
+	#endif
+	
 /** @} */
 
 #endif /* _GFILE_OPTIONS_H */

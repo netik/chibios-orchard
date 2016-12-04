@@ -48,6 +48,7 @@ typedef int					threadpriority_t;
 
 #define DECLARE_THREAD_FUNCTION(fnName, param)	threadreturn_t WINAPI fnName(void *param)
 #define DECLARE_THREAD_STACK(name, sz)			uint8_t name[0];
+#define THREAD_RETURN(retval)					return retval
 
 #define TIME_IMMEDIATE				0
 #define TIME_INFINITE				INFINITE

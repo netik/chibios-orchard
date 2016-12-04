@@ -12,6 +12,8 @@
  * @defgroup Button Button
  * @ingroup Widgets
  *
+ * @brief		PushButton widget.
+ *
  * @details		GWIN allows it to easily create buttons with different styles
  *				and check for different meta states such as: PRESSED, CLICKED,
  *				RELEASED etc.
@@ -36,6 +38,14 @@
  * @note	There are currently no GEventGWinButton listening flags - use 0 as the flags to @p gwinAttachListener()
  */
 typedef GEventGWin		GEventGWinButton;
+
+/**
+ * @brief	The internal button flags
+ * @note	Used only for writing a custom draw routine.
+ * @{
+ */
+#define GBUTTON_FLG_PRESSED		0x01
+/** @} */
 
 /**
  * @brief	The button widget structure
@@ -86,43 +96,129 @@ GHandle gwinGButtonCreate(GDisplay *g, GButtonObject *gb, const GWidgetInit *pIn
 bool_t gwinButtonIsPressed(GHandle gh);
 
 /**
- * @brief	Some custom button drawing routines
- * @details	These function may be passed to @p gwinSetCustomDraw() to get different button drawing styles
+ * @defgroup Renderings_Button Renderings
  *
- * @param[in] gw		The widget object (in this case a button)
- * @param[in] param		A parameter passed in from the user
+ * @brief				Built-in rendering functions for the button widget.
+ *
+ * @details				These function may be passed to @p gwinSetCustomDraw() to get different button drawing styles.
  *
  * @note				In your custom button drawing function you may optionally call these
  * 						standard functions and then draw your extra details on top.
  * @note				The standard functions below ignore the param parameter except for @p gwinButtonDraw_Image().
  * @note				The image custom draw function  @p gwinButtonDraw_Image() uses param to pass in the gdispImage pointer.
- * 						The image must be already opened before calling  @p gwinSetCustomDraw(). The image should be 3
- * 						times the height of the button. The button image is repeated 3 times vertically, the first (top) for
- * 						the "up" image, the 2nd for the "down" image, and the third (bottom) image for the disabled state. If
- * 						the disabled state is never going to be used then the image can be just 2 times the button height.
- * 						No checking is done to compare the size of the button to the size of the image.
- * 						Note text is drawn on top of the image.
  * @note				These custom drawing routines don't have to worry about setting clipping as the framework
  * 						sets clipping to the object window prior to calling these routines.
  *
- * @api
  * @{
  */
-void gwinButtonDraw_Normal(GWidgetObject *gw, void *param);				// @< A standard button
+
+/**
+ * @brief				The default rendering function for the button widget
+ *
+ * @param[in] gw		The widget object (must be a button object)
+ * @param[in] param		A parameter passed in from the user. Ignored by this function.
+ *
+ * @api
+ */
+void gwinButtonDraw_Normal(GWidgetObject *gw, void *param);
+
 #if GDISP_NEED_ARC || defined(__DOXYGEN__)
-	void gwinButtonDraw_Rounded(GWidgetObject *gw, void *param);		// @< A rounded rectangle button
+	/**
+	 * @brief				Renders a rectangular button with rounded corners
+	 *
+	 * @param[in] gw		The widget object (must be a button object)
+	 * @param[in] param		A parameter passed in from the user. Ignored by this function.
+	 *
+	 * @pre					GDISP_NEED_ARC must be set to TRUE
+	 *
+	 * @api
+	 */
+	void gwinButtonDraw_Rounded(GWidgetObject *gw, void *param);
 #endif
+
 #if GDISP_NEED_ELLIPSE || defined(__DOXYGEN__)
-	void gwinButtonDraw_Ellipse(GWidgetObject *gw, void *param);		// @< A circular button
+	/**
+	 * @brief				Renders a button with an elliptical shape
+	 *
+	 * @param[in] gw		The widget object (must be a button object)
+	 * @param[in] param		A parameter passed in from the user. Ignored by this function.
+	 *
+	 * @pre					GDISP_NEED_ELLIPSE must be set to TRUE
+	 *
+	 * @api
+	 */
+	void gwinButtonDraw_Ellipse(GWidgetObject *gw, void *param);
 #endif
+
 #if GDISP_NEED_CONVEX_POLYGON || defined(__DOXYGEN__)
-	void gwinButtonDraw_ArrowUp(GWidgetObject *gw, void *param);		// @< An up arrow button
-	void gwinButtonDraw_ArrowDown(GWidgetObject *gw, void *param);		// @< A down arrow button
-	void gwinButtonDraw_ArrowLeft(GWidgetObject *gw, void *param);		// @< A left arrow button
-	void gwinButtonDraw_ArrowRight(GWidgetObject *gw, void *param);		// @< A right arrow button
+	/**
+	 * @brief				Renders a button in a shape of an arrow pointing up.
+	 *
+	 * @param[in] gw		The widget object (must be a button object)
+	 * @param[in] param		A parameter passed in from the user. Ignored by this function.
+	 *
+	 * @pre					GDISP_NEED_CONVEX_POLYGON must be set to TRUE
+	 *
+	 * @api
+	 */
+	void gwinButtonDraw_ArrowUp(GWidgetObject *gw, void *param);
+
+	/**
+	 * @brief				Renders a button in a shape of an arrow pointing down.
+	 *
+	 * @param[in] gw		The widget object (must be a button object)
+	 * @param[in] param		A parameter passed in from the user. Ignored by this function.
+	 *
+	 * @pre					GDISP_NEED_CONVEX_POLYGON must be set to TRUE
+	 *
+	 * @api
+	 */
+	void gwinButtonDraw_ArrowDown(GWidgetObject *gw, void *param);
+
+	/**
+	 * @brief				Renders a button in a shape of an arrow pointing left.
+	 *
+	 * @param[in] gw		The widget object (must be a button object)
+	 * @param[in] param		A parameter passed in from the user. Ignored by this function.
+	 *
+	 * @pre					GDISP_NEED_CONVEX_POLYGON must be set to TRUE
+	 *
+	 * @api
+	 */
+	void gwinButtonDraw_ArrowLeft(GWidgetObject *gw, void *param);
+
+	/**
+	 * @brief				Renders a button in a shape of an arrow pointing right.
+	 *
+	 * @param[in] gw		The widget object (must be a button object)
+	 * @param[in] param		A parameter passed in from the user. Ignored by this function.
+	 *
+	 * @pre					GDISP_NEED_CONVEX_POLYGON must be set to TRUE
+	 *
+	 * @api
+	 */
+	void gwinButtonDraw_ArrowRight(GWidgetObject *gw, void *param);
 #endif
+
 #if GDISP_NEED_IMAGE || defined(__DOXYGEN__)
-	void gwinButtonDraw_Image(GWidgetObject *gw, void *param);			// @< An image button - see the notes above on the param.
+	/**
+	 * @brief				Renders a button using individual images for each button state.
+	 *
+	 * @param[in] gw		The widget object (must be a button object)
+	 * @param[in] param		A parameter passed in from the user. Must be an image handle. See note below.
+	 *
+	 * @note				The image must be already opened before calling  @p gwinSetCustomDraw(). The image should be 3
+	 * 						times the height of the button. The button image is repeated 3 times vertically, the first (top) for
+	 * 						the "up" image, the 2nd for the "down" image, and the third (bottom) image for the disabled state. If
+	 * 						the disabled state is never going to be used then the image can be just 2 times the button height.
+	 * 						No checking is done to compare the size of the button to the size of the image.
+	 * 						Note text is drawn on top of the image.
+	 *
+	 * @pre					GDISP_NEED_IMAGE must be set to TRUE
+	 *
+	 * @api
+	 */
+	void gwinButtonDraw_Image(GWidgetObject *gw, void *param);
 #endif
 /** @} */
 

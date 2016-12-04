@@ -7,10 +7,12 @@
 
 /**
  * @file    src/ginput/ginput_keyboard.h
- * @brief   GINPUT GFX User Input subsystem header file.
  *
  * @defgroup Keyboard Keyboard
  * @ingroup GINPUT
+ *
+ * @brief   Sub-Module to handle physical keyboards.
+ *
  * @{
  */
 
@@ -164,12 +166,10 @@ typedef struct GEventKeyboard_t {
 #define GLISTEN_KEYTRANSITIONS	0x0008			// Return transitions to the key state
 #define GLISTEN_KEYRAW			0x0010			// Return raw scan-codes. This turns off normal character processing.
 
-#endif
-
-#if GINPUT_NEED_KEYBOARD || defined(__DOXYGEN__)
-
 // All keyboards
 #define GKEYBOARD_ALL_INSTANCES		((unsigned)-1)
+
+#endif
 
 /*===========================================================================*/
 /* External declarations.                                                    */
@@ -188,33 +188,34 @@ extern "C" {
 	 */
 	GSourceHandle ginputGetKeyboard(unsigned instance);
 	
-	/**
-	 * @brief	Get the current keyboard status
-	 *
-	 * @param[in] instance	The ID of the keyboard input instance
-	 * @param[in] pkeyboard	The keyboard event struct
-	 *
-	 * @return Returns FALSE on an error (eg invalid instance)
-	 */
-	bool_t ginputGetKeyboardStatus(unsigned instance, GEventKeyboard *pkeyboard);
+	#if GINPUT_NEED_KEYBOARD || defined(__DOXYGEN__)
 
-	#if !GKEYBOARD_LAYOUT_OFF || defined(__DOXYGEN__)
 		/**
-		 * @brief	Set the keyboard layout
+		 * @brief	Get the current keyboard status
 		 *
 		 * @param[in] instance	The ID of the keyboard input instance
-		 * @param[in] pLayout	The keyboard layout micro-code. Passing NULL defaults to the driver's default layout.
+		 * @param[in] pkeyboard	The keyboard event struct
 		 *
 		 * @return Returns FALSE on an error (eg invalid instance)
 		 */
-		bool_t ginputSetKeyboardLayout(unsigned instance, const void *pLayout);
-	#endif
+		bool_t ginputGetKeyboardStatus(unsigned instance, GEventKeyboard *pkeyboard);
+
+		#if !GKEYBOARD_LAYOUT_OFF || defined(__DOXYGEN__)
+			/**
+			 * @brief	Set the keyboard layout
+			 *
+			 * @param[in] instance	The ID of the keyboard input instance
+			 * @param[in] pLayout	The keyboard layout micro-code. Passing NULL defaults to the driver's default layout.
+			 *
+			 * @return Returns FALSE on an error (eg invalid instance)
+			 */
+			bool_t ginputSetKeyboardLayout(unsigned instance, const void *pLayout);
+		#endif
+	#endif /* GINPUT_NEED_KEYBOARD */
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* GINPUT_NEED_KEYBOARD */
 
 #endif /* _GINPUT_KEYBOARD_H */
 /** @} */

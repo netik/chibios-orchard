@@ -297,7 +297,7 @@ void mf_render_justified(const struct mf_font_s *font,
     
     {
         int16_t x, tmp;
-        uint16_t c1 = 0, c2;
+        mf_char c1 = 0, c2;
         
         x = x0 - font->baseline_x;
         while (count--)

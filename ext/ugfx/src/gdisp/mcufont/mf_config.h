@@ -14,7 +14,7 @@
  * Configuration settings related to GFX               *
  *******************************************************/
 
-#include "gfx.h"
+#include "../../../gfx.h"
 
 #if !GFX_USE_GDISP || !GDISP_NEED_TEXT
 	#define MF_NO_COMPILE				// Don't compile any font code
@@ -25,16 +25,21 @@
 
 /* Mapping from uGFX settings to mcufont settings */
 #if GDISP_NEED_UTF8
-#define MF_ENCODING MF_ENCODING_UTF8
+	#define MF_ENCODING MF_ENCODING_UTF8
 #else
-#define MF_ENCODING MF_ENCODING_ASCII
+	#define MF_ENCODING MF_ENCODING_ASCII
+#endif
+
+#if GDISP_NEED_TEXT_WORDWRAP
+	#define MF_USE_ADVANCED_WORDWRAP 1
+#else
+	#define MF_USE_ADVANCED_WORDWRAP 0
 #endif
 
 #define MF_USE_KERNING GDISP_NEED_TEXT_KERNING
 #define MF_FONT_FILE_NAME "src/gdisp/fonts/fonts.h"
 
 /* These are not used for now */
-#define MF_USE_ADVANCED_WORDWRAP 0
 #define MF_USE_JUSTIFY 0
 
 /*******************************************************
@@ -159,7 +164,7 @@
 #ifdef __cplusplus
 #define MF_EXTERN extern "C"
 #else
-#define MF_EXTERN extern
+#define MF_EXTERN
 #endif
 
 #endif

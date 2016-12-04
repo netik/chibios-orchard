@@ -46,6 +46,7 @@ typedef cyg_handle_t		gfxThreadHandle;
 
 #define DECLARE_THREAD_STACK(name, sz)			struct { cyg_thread t; unsigned char stk[sz]; } name[1]
 #define DECLARE_THREAD_FUNCTION(fnName, param)	threadreturn_t fnName(cyg_addrword_t param)
+#define THREAD_RETURN(retval)
 
 typedef struct {
 	cyg_sem_t	sem;

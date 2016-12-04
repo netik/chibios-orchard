@@ -8,33 +8,33 @@
 #ifndef _GDISP_LLD_BOARD_H
 #define _GDISP_LLD_BOARD_H
 
-static inline void init_board(GDisplay *g) {
+static GFXINLINE void init_board(GDisplay *g) {
 	(void) g;
 }
 
-static inline void post_init_board(GDisplay *g) {
+static GFXINLINE void post_init_board(GDisplay *g) {
 	(void) g;
 }
 
-static inline void setpin_reset(GDisplay *g, bool_t state) {
+static GFXINLINE void setpin_reset(GDisplay *g, bool_t state) {
 	(void) g;
 	(void) state;
 }
 
-static inline void acquire_bus(GDisplay *g) {
+static GFXINLINE void acquire_bus(GDisplay *g) {
 	(void) g;
 }
 
-static inline void release_bus(GDisplay *g) {
+static GFXINLINE void release_bus(GDisplay *g) {
 	(void) g;
 }
 
-static inline void write_cmd(GDisplay *g, uint8_t index) {
+static GFXINLINE void write_cmd(GDisplay *g, uint8_t index) {
 	(void) g;
 	(void) index;
 }
 
-static inline void write_data(GDisplay *g, uint8_t data) {
+static GFXINLINE void write_data(GDisplay *g, uint8_t data) {
 	(void) g;
 	(void) data;
 }

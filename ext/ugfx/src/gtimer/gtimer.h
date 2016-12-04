@@ -29,7 +29,7 @@
 #ifndef _GTIMER_H
 #define _GTIMER_H
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GTIMER || defined(__DOXYGEN__)
 

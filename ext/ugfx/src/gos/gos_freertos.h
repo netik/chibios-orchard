@@ -62,6 +62,8 @@ typedef portBASE_TYPE		threadpriority_t;
 /* FreeRTOS will allocate the stack when creating the thread, so pass the size instead of a working area */
 #define DECLARE_THREAD_STACK(name, sz)			size_t *name = (size_t *)sz
 #define DECLARE_THREAD_FUNCTION(fnName, param)	threadreturn_t fnName(void *param)
+#define THREAD_RETURN(retval)
+
 portTickType MS2ST(portTickType ms);
 
 typedef struct {

@@ -53,12 +53,12 @@ static const SPIConfig hs_spicfg = {
 #endif
 
 #if USE_SOFT_SPI
-static inline void soft_spi_sck(void){
+static GFXINLINE void soft_spi_sck(void){
   palSetPad(SPFD54124B_SPI_PORT, SPFD54124B_SPI_SCK);
   palClearPad(SPFD54124B_SPI_PORT, SPFD54124B_SPI_SCK);
 }
 
-static inline void soft_spi_write_9bit(uint16_t data){
+static GFXINLINE void soft_spi_write_9bit(uint16_t data){
 
   uint8_t i;
 
@@ -81,7 +81,7 @@ static inline void soft_spi_write_9bit(uint16_t data){
 }
 #endif
 
-static inline void setpin_reset(GDisplay *g, bool_t state) {
+static GFXINLINE void setpin_reset(GDisplay *g, bool_t state) {
   (void) g;
   if(state) {
     CLR_RST;
@@ -90,7 +90,7 @@ static inline void setpin_reset(GDisplay *g, bool_t state) {
   }
 }
 
-static inline void init_board(GDisplay *g) {
+static GFXINLINE void init_board(GDisplay *g) {
   // As we are not using multiple displays we set g->board to NULL as we don't use it.
   g->board = 0;
 
@@ -127,7 +127,7 @@ static inline void init_board(GDisplay *g) {
   }
 }
 
-static inline void acquire_bus(GDisplay *g) {
+static GFXINLINE void acquire_bus(GDisplay *g) {
   (void) g;
 #if USE_HARD_SPI
 #if GFX_USE_OS_CHIBIOS
@@ -138,7 +138,7 @@ static inline void acquire_bus(GDisplay *g) {
 #endif
 }
 
-static inline void release_bus(GDisplay *g) {
+static GFXINLINE void release_bus(GDisplay *g) {
   (void) g;
 #if USE_HARD_SPI
 #if GFX_USE_OS_CHIBIOS
@@ -148,7 +148,7 @@ static inline void release_bus(GDisplay *g) {
 #endif
 }
 
-static inline void write_data(GDisplay *g, uint16_t data) {
+static GFXINLINE void write_data(GDisplay *g, uint16_t data) {
   (void) g;
 
   uint16_t b;
@@ -176,7 +176,7 @@ static inline void write_data(GDisplay *g, uint16_t data) {
 
 }
 
-static inline void write_index(GDisplay *g, uint16_t index) {
+static GFXINLINE void write_index(GDisplay *g, uint16_t index) {
   (void)    g;
 
 #if USE_HARD_SPI
@@ -191,11 +191,11 @@ static inline void write_index(GDisplay *g, uint16_t index) {
 #endif
 }
 
-static inline void post_init_board(GDisplay *g) {
+static GFXINLINE void post_init_board(GDisplay *g) {
   (void) g;
 }
 
-static inline void set_backlight(GDisplay *g, uint8_t percent) {
+static GFXINLINE void set_backlight(GDisplay *g, uint8_t percent) {
   (void) g;
   (void) percent;
 }

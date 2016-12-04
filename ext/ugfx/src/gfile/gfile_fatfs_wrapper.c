@@ -5,15 +5,15 @@
  *              http://ugfx.org/license.html
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
-#if GFX_USE_GFILE && GFILE_NEED_FATFS
+#if GFX_USE_GFILE && GFILE_NEED_FATFS && !GFILE_FATFS_EXTERNAL_LIB
 
 #include "gfile_fatfs_wrapper.h"
 
 // Include the source we want
-#include "3rdparty/fatfs-0.10b/src/ff.c"
-#include "3rdparty/fatfs-0.10b/src/option/unicode.c"
+#include "../../3rdparty/fatfs-0.10b/src/ff.c"
+#include "../../3rdparty/fatfs-0.10b/src/option/unicode.c"
 
 // Extra operating system support
 #if _FS_REENTRANT
@@ -80,4 +80,4 @@
 	}
 #endif /* _USE_LFN == 3 */
 
-#endif // GFX_USE_GFILE && GFILE_NEED_FATFS
+#endif // GFX_USE_GFILE && GFILE_NEED_FATFS && !GFILE_FATFS_EXTERNAL_LIB

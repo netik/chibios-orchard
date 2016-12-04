@@ -16,37 +16,39 @@ static const LCD_Parameters	DisplayTimings[] = {
 		CALC_PERIOD(480,2,2,41),				// Total Horizontal Period (calculated from above line)
 		2, 2, 10,								// Vertical Timings (back porch, front porch, pulse)
 		CALC_PERIOD(272,2,2,10),				// Total Vertical Period (calculated from above line)
-		CALC_FPR(480,272,2,2,41,2,2,10,60ULL)	// FPR - the 60ULL is the frames per second. Note the ULL!
+		CALC_FPR(480,272,2,2,41,2,2,10,60ULL),	// FPR - the 60ULL is the frames per second. Note the ULL!
+		FALSE,									// Flip horizontally
+		FALSE									// Flip vertically
 	},
 };
 
-static inline void init_board(GDisplay *g) {
+static GFXINLINE void init_board(GDisplay *g) {
 	(void) g;
 }
 
-static inline void post_init_board(GDisplay *g) {
+static GFXINLINE void post_init_board(GDisplay *g) {
 	(void) g;
 }
 
-static inline void setpin_reset(GDisplay *g, bool_t state) {
+static GFXINLINE void setpin_reset(GDisplay *g, bool_t state) {
 	(void) g;
 	(void) state;
 }
 
-static inline void acquire_bus(GDisplay *g) {
+static GFXINLINE void acquire_bus(GDisplay *g) {
 	(void) g;
 }
 
-static inline void release_bus(GDisplay *g) {
+static GFXINLINE void release_bus(GDisplay *g) {
 	(void) g;
 }
 
-static inline void write_index(GDisplay *g, uint16_t index) {
+static GFXINLINE void write_index(GDisplay *g, uint16_t index) {
 	(void) g;
 	(void) index;
 }
 
-static inline void write_data(GDisplay *g, uint16_t data) {
+static GFXINLINE void write_data(GDisplay *g, uint16_t data) {
 	(void) g;
 	(void) data;
 }

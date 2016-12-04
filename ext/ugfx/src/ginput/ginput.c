@@ -6,13 +6,13 @@
  */
 
 /**
- * @file    src/ginput/ginput_ginput.c
+ * @file    src/ginput/ginput.c
  * @brief   GINPUT subsystem common code.
  *
  * @addtogroup GINPUT
  * @{
  */
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GINPUT
 

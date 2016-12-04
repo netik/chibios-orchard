@@ -196,22 +196,31 @@ builddirs:
 
 $(FAKEFILE):
 ifneq ($(OPT_VERBOSE_COMPILE),yes)
-	@echo .
   ifneq ($(filter %.cpp,$(SRC) $(SRC_NOTHUMB) $(SRC_THUMB)),)
-	@echo C++ Compiler Options.. $(XCXX) -c $(CPPFLAGS) $(CXXFLAGS) $(SRCFLAGS) $(@:.o=.cpp) -o $(OBJDIR)/$@
+	@echo .
+	@echo C++ Compiler Options..
+	@echo $(XCXX) -c $(CPPFLAGS) $(CXXFLAGS) $(SRCFLAGS) $(@:.o=.cpp) -o $(OBJDIR)/$@
   else
    ifneq ($(filter %.c++,$(SRC) $(SRC_NOTHUMB) $(SRC_THUMB)),)
-	@echo C++ Compiler Options.. $(XCXX) -c $(CPPFLAGS) $(CXXFLAGS) $(SRCFLAGS) $(@:.o=.c++) -o $(OBJDIR)/$@
+	@echo .
+	@echo C++ Compiler Options..
+	@echo $(XCXX) -c $(CPPFLAGS) $(CXXFLAGS) $(SRCFLAGS) $(@:.o=.c++) -o $(OBJDIR)/$@
    endif
   endif
   ifneq ($(filter %.c,$(SRC) $(SRC_NOTHUMB) $(SRC_THUMB)),)
-	@echo C Compiler Options.... $(XCC) -c $(CPPFLAGS) $(CFLAGS) $(SRCFLAGS) $(@:.o=.c) -o $(OBJDIR)/$@
+	@echo .
+	@echo C Compiler Options....
+	@echo $(XCC) -c $(CPPFLAGS) $(CFLAGS) $(SRCFLAGS) $(@:.o=.c) -o $(OBJDIR)/$@
   endif
   ifneq ($(filter %.s,$(SRC) $(SRC_NOTHUMB) $(SRC_THUMB)),)
-	@echo Assembler Options..... $(XCC) -c $(CPPFLAGS) $(CFLAGS) $(SRCFLAGS) $(@:.o=.s) -o $(OBJDIR)/$@
+	@echo .
+	@echo Assembler Options.....
+	@echo $(XCC) -c $(CPPFLAGS) $(CFLAGS) $(SRCFLAGS) $(@:.o=.s) -o $(OBJDIR)/$@
   endif
   ifneq ($(OPT_MAKE_LIB),yes)
-	@echo Linker Options........ $(XLD) $(LDFLAGS) $(OBJDIR)/$@ -o $(EXEFILE)
+	@echo .
+	@echo Linker Options........
+	@echo $(XLD) $(LDFLAGS) $(OBJDIR)/$@ -o $(EXEFILE)
   endif
 	@echo .
 endif

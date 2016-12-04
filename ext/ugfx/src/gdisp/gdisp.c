@@ -5,24 +5,12 @@
  *              http://ugfx.org/license.html
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GDISP
 
 /* Include the low level driver information */
 #include "gdisp_driver.h"
-
-#if 1
-	#undef INLINE
-	#if defined(__KEIL__) || defined(__C51__)
-		#define INLINE	__inline
-	#else
-		#define INLINE	inline
-	#endif
-#else
-	#undef INLINE
-	#define INLINE
-#endif
 
 // Number of milliseconds for the startup logo - 0 means disabled.
 #if GDISP_NEED_STARTUP_LOGO
@@ -30,6 +18,17 @@
 	#define GDISP_STARTUP_LOGO_COLOR		White
 #else
 	#define GDISP_STARTUP_LOGO_TIMEOUT		0
+#endif
+
+// For internal use only.
+#if GDISP_NEED_TEXT_WORDWRAP
+	typedef struct wrapParameters {
+		GDisplay* g;
+		coord_t x;
+		coord_t y;
+		font_t font;
+		justify_t justify;
+	} wrapParameters_t;
 #endif
 
 /*===========================================================================*/
@@ -81,7 +80,7 @@ GDisplay	*GDISP;
 /*==========================================================================*/
 
 #if GDISP_HARDWARE_STREAM_POS && GDISP_HARDWARE_STREAM_WRITE
-	static INLINE void setglobalwindow(GDisplay *g) {
+	static GFXINLINE void setglobalwindow(GDisplay *g) {
 		coord_t	x, y;
 		x = g->p.x; y = g->p.y;
 		g->p.x = g->p.y = 0;
@@ -117,7 +116,7 @@ GDisplay	*GDISP;
 // Parameters:	x,y
 // Alters:		cx, cy (if using streaming)
 // Does not clip
-static INLINE void drawpixel(GDisplay *g) {
+static GFXINLINE void drawpixel(GDisplay *g) {
 
 	// Best is hardware accelerated pixel draw
 	#if GDISP_HARDWARE_DRAWPIXEL
@@ -164,7 +163,7 @@ static INLINE void drawpixel(GDisplay *g) {
 // Parameters:	x,y
 // Alters:		cx, cy (if using streaming)
 #if NEED_CLIPPING
-	static INLINE void drawpixel_clip(GDisplay *g) {
+	static GFXINLINE void drawpixel_clip(GDisplay *g) {
 		#if GDISP_HARDWARE_CLIP == HARDWARE_AUTODETECT
 			if (!gvmt(g)->setclip)
 		#endif
@@ -183,7 +182,7 @@ static INLINE void drawpixel(GDisplay *g) {
 // Alters:		nothing
 // Note:		This is not clipped
 // Resets the streaming area if GDISP_HARDWARE_STREAM_WRITE and GDISP_HARDWARE_STREAM_POS is set.
-static INLINE void fillarea(GDisplay *g) {
+static GFXINLINE void fillarea(GDisplay *g) {
 
 	// Best is hardware accelerated area fill
 	#if GDISP_HARDWARE_FILLS
@@ -501,7 +500,7 @@ static void line_clip(GDisplay *g) {
 }
 
 #if GDISP_STARTUP_LOGO_TIMEOUT > 0
-	static bool_t	initDone;
+	static bool_t	gdispInitDone;
 	static void StartupLogoDisplay(GDisplay *g) {
 		coord_t			x, y, w;
 		const coord_t *	p;
@@ -604,7 +603,7 @@ void _gdispInit(void)
 				#endif
 			}
 
-			initDone = TRUE;
+			gdispInitDone = TRUE;
 		}
 	#endif
 
@@ -660,7 +659,7 @@ void _gdispPostInitDriver(GDriver *g) {
 
 	// Display the startup logo if this is a static initialised display
 	#if GDISP_STARTUP_LOGO_TIMEOUT > 0
-		if (!initDone)
+		if (!gdispInitDone)
 			StartupLogoDisplay(gd);
 	#endif
 
@@ -1259,7 +1258,7 @@ void gdispGBlitArea(GDisplay *g, coord_t x, coord_t y, coord_t cx, coord_t cy, c
 			{
 				if (x < 0) { cx += x; x = 0; }
 				if (y < 0) { cy += y; y = 0; }
-				if (cx <= 0 || cy <= 0 || x >= g->g.Width || y >= g->g.Height) { MUTEX_EXIT(g); return; }
+				if (cx <= 0 || cy <= 0 || x >= g->g.Width || y >= g->g.Height) { x = y = cx = cy = 0; }
 				g->clipx0 = x;
 				g->clipy0 = y;
 				g->clipx1 = x+cx;	if (g->clipx1 > g->g.Width) g->clipx1 = g->g.Width;
@@ -1726,8 +1725,8 @@ void gdispGBlitArea(GDisplay *g, coord_t x, coord_t y, coord_t cx, coord_t cy, c
 			sedge = round(radius * ((sbit & 0x99) ? fsin(start) : fcos(start)));
 			eedge = round(radius * ((ebit & 0x99) ? fsin(end) : fcos(end)));
 		#else
-			sedge = round(radius * ((sbit & 0x99) ? sin(start*M_PI/180) : cos(start*M_PI/180)));
-			eedge = round(radius * ((ebit & 0x99) ? sin(end*M_PI/180) : cos(end*M_PI/180)));
+			sedge = round(radius * ((sbit & 0x99) ? sin(start*GFX_PI/180) : cos(start*GFX_PI/180)));
+			eedge = round(radius * ((ebit & 0x99) ? sin(end*GFX_PI/180) : cos(end*GFX_PI/180)));
 		#endif
 		if (sbit & 0xB4) sedge = -sedge;
 		if (ebit & 0xB4) eedge = -eedge;
@@ -1853,8 +1852,8 @@ void gdispGBlitArea(GDisplay *g, coord_t x, coord_t y, coord_t cx, coord_t cy, c
 			sxb = FP2FIXED(radius*fcos(start));	sy = -round(radius*fsin(start));
 			exb = FP2FIXED(radius*fcos(end));	ey = -round(radius*fsin(end));
 		#else
-			sxb = FP2FIXED(radius*cos(start*M_PI/180));	sy = -round(radius*sin(start*M_PI/180));
-			exb = FP2FIXED(radius*cos(end*M_PI/180));	ey = -round(radius*sin(end*M_PI/180));
+			sxb = FP2FIXED(radius*cos(start*GFX_PI/180));	sy = -round(radius*sin(start*GFX_PI/180));
+			exb = FP2FIXED(radius*cos(end*GFX_PI/180));	ey = -round(radius*sin(end*GFX_PI/180));
 		#endif
 		sxd = sy ? sxb/sy : sxb;
 		exd = ey ? exb/ey : exb;
@@ -3168,6 +3167,32 @@ void gdispGDrawBox(GDisplay *g, coord_t x, coord_t y, coord_t cx, coord_t cy, co
 		#undef GD
 	}
 
+	/* Callback to render string boxes with word wrap. */
+	#if GDISP_NEED_TEXT_WORDWRAP
+		static bool mf_countline_callback(mf_str line, uint16_t count, void *state) {
+			int *linecount = (int*)state;
+			(*linecount)++;
+
+			return TRUE;
+		}
+		static bool mf_drawline_callback(mf_str line, uint16_t count, void *state) {
+			wrapParameters_t* wrapParameters = (wrapParameters_t*)state;
+
+			mf_render_aligned(wrapParameters->font, wrapParameters->x, wrapParameters->y, wrapParameters->justify, line, count, drawcharglyph, wrapParameters->g);
+
+			wrapParameters->y += wrapParameters->font->line_height;
+			return TRUE;
+		}
+		static bool mf_fillline_callback(mf_str line, uint16_t count, void *state) {
+			wrapParameters_t* wrapParameters = (wrapParameters_t*)state;
+
+			mf_render_aligned(wrapParameters->font, wrapParameters->x, wrapParameters->y, wrapParameters->justify, line, count, fillcharglyph, wrapParameters->g);
+
+			wrapParameters->y += wrapParameters->font->line_height;
+			return TRUE;
+		}	
+	#endif
+
 	void gdispGDrawChar(GDisplay *g, coord_t x, coord_t y, uint16_t c, font_t font, color_t color) {
 		MUTEX_ENTER(g);
 		g->t.font = font;
@@ -3206,7 +3231,7 @@ void gdispGDrawBox(GDisplay *g, coord_t x, coord_t y, coord_t cx, coord_t cy, co
 		g->t.font = font;
 		g->t.clipx0 = x;
 		g->t.clipy0 = y;
-		g->t.clipx1 = x + mf_get_string_width(font, str, 0, 0);
+		g->t.clipx1 = x + mf_get_string_width(font, str, 0, 0) + font->baseline_x;
 		g->t.clipy1 = y + font->height;
 		g->t.color = color;
 
@@ -3217,7 +3242,7 @@ void gdispGDrawBox(GDisplay *g, coord_t x, coord_t y, coord_t cx, coord_t cy, co
 
 	void gdispGFillString(GDisplay *g, coord_t x, coord_t y, const char *str, font_t font, color_t color, color_t bgcolor) {
 		MUTEX_ENTER(g);
-		g->p.cx = mf_get_string_width(font, str, 0, 0);
+		g->p.cx = mf_get_string_width(font, str, 0, 0) + font->baseline_x;
 		g->p.cy = font->height;
 		g->t.font = font;
 		g->t.clipx0 = g->p.x = x;
@@ -3237,7 +3262,13 @@ void gdispGDrawBox(GDisplay *g, coord_t x, coord_t y, coord_t cx, coord_t cy, co
 	}
 
 	void gdispGDrawStringBox(GDisplay *g, coord_t x, coord_t y, coord_t cx, coord_t cy, const char* str, font_t font, color_t color, justify_t justify) {
+		#if GDISP_NEED_TEXT_WORDWRAP
+			wrapParameters_t wrapParameters;
+			uint16_t nbrLines;
+		#endif
+
 		MUTEX_ENTER(g);
+
 		g->t.font = font;
 		g->t.clipx0 = x;
 		g->t.clipy0 = y;
@@ -3257,16 +3288,38 @@ void gdispGDrawBox(GDisplay *g, coord_t x, coord_t y, coord_t cx, coord_t cy, co
 			x += font->baseline_x;
 			break;
 		}
-		y += (cy+1 - font->height)/2;
 
-		mf_render_aligned(font, x, y, justify, str, 0, drawcharglyph, g);
+		/* Render */
+		#if GDISP_NEED_TEXT_WORDWRAP
+			wrapParameters.x = x;
+			wrapParameters.y = y;
+			wrapParameters.font = font;
+			wrapParameters.justify = justify;
+			wrapParameters.g = g;
+
+			// Count the number of lines
+			nbrLines = 0;
+			mf_wordwrap(font, cx, str, mf_countline_callback, &nbrLines);
+			wrapParameters.y += (cy+1 - nbrLines*font->height)/2;
+			
+			mf_wordwrap(font, cx, str, mf_fillline_callback, &wrapParameters);
+		#else
+			y += (cy+1 - font->height)/2;
+			mf_render_aligned(font, x, y, justify, str, 0, drawcharglyph, g);
+		#endif
 
 		autoflush(g);
 		MUTEX_EXIT(g);
 	}
 
 	void gdispGFillStringBox(GDisplay *g, coord_t x, coord_t y, coord_t cx, coord_t cy, const char* str, font_t font, color_t color, color_t bgcolor, justify_t justify) {
+		#if GDISP_NEED_TEXT_WORDWRAP
+			wrapParameters_t wrapParameters;
+			uint16_t nbrLines;
+		#endif
+
 		MUTEX_ENTER(g);
+
 		g->p.cx = cx;
 		g->p.cy = cy;
 		g->t.font = font;
@@ -3294,10 +3347,26 @@ void gdispGDrawBox(GDisplay *g, coord_t x, coord_t y, coord_t cx, coord_t cy, co
 				x += font->baseline_x;
 				break;
 			}
-			y += (cy+1 - font->height)/2;
 
 			/* Render */
-			mf_render_aligned(font, x, y, justify, str, 0, fillcharglyph, g);
+			#if GDISP_NEED_TEXT_WORDWRAP
+				wrapParameters.x = x;
+				wrapParameters.y = y;
+				wrapParameters.font = font;
+				wrapParameters.justify = justify;
+				wrapParameters.g = g;
+
+
+				// Count the number of lines
+				nbrLines = 0;
+				mf_wordwrap(font, cx, str, mf_countline_callback, &nbrLines);
+				wrapParameters.y += (cy+1 - nbrLines*font->height)/2;
+
+				mf_wordwrap(font, cx, str, mf_fillline_callback, &wrapParameters);
+			#else
+				y += (cy+1 - font->height)/2;
+				mf_render_aligned(font, x, y, justify, str, 0, fillcharglyph, g);
+			#endif
 		}
 
 		autoflush(g);
@@ -3313,6 +3382,8 @@ void gdispGDrawBox(GDisplay *g, coord_t x, coord_t y, coord_t cx, coord_t cy, co
 		case fontCharPadding:		return 0;
 		case fontMinWidth:			return font->min_x_advance;
 		case fontMaxWidth:			return font->max_x_advance;
+		case fontBaselineX:			return font->baseline_x;
+		case fontBaselineY:			return font->baseline_y;
 		}
 		return 0;
 	}
@@ -3322,12 +3393,20 @@ void gdispGDrawBox(GDisplay *g, coord_t x, coord_t y, coord_t cx, coord_t cy, co
 		return mf_character_width(font, c);
 	}
 
-	coord_t gdispGetStringWidth(const char* str, font_t font) {
+	coord_t gdispGetStringWidthCount(const char* str, font_t font, uint16_t count) {
 		if (!str)
 			return 0;
 
-		/* No mutex required as we only read static data */
-		return mf_get_string_width(font, str, 0, 0);
+		// No mutex required as we only read static data
+		#if GDISP_NEED_TEXT_KERNING
+			return mf_get_string_width(font, str, count, TRUE);
+		#else
+			return mf_get_string_width(font, str, count, FALSE);
+		#endif
+	}
+
+	coord_t gdispGetStringWidth(const char* str, font_t font) {
+		return gdispGetStringWidthCount(str, font, 0);
 	}
 #endif
 

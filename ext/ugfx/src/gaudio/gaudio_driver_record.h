@@ -9,15 +9,18 @@
  * @file    src/gaudio/gaudio_driver_record.h
  * @brief   GAUDIO - Audio Recording driver header file.
  *
- * @defgroup Driver Driver
+ * @defgroup GAUDIO_Driver_Record Driver Recording
  * @ingroup GAUDIO
+ *
+ * @brief Recording driver interface for the GAUDIO module.
+ *
  * @{
  */
 
 #ifndef _GAUDIO_RECORD_LLD_H
 #define _GAUDIO_RECORD_LLD_H
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if (GFX_USE_GAUDIO && GAUDIO_NEED_RECORD) || defined(__DOXYGEN__)
 

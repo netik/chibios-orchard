@@ -5,9 +5,17 @@
  *              http://ugfx.org/license.html
  */
 
-#include "mf_font.h"
+#include "mf_config.h"
 
 #ifndef MF_NO_COMPILE
+
+#define MF_BWFONT_INTERNALS
+#define MF_RLEFONT_INTERNALS
+#define MF_SCALEDFONT_INTERNALS
+#include "mf_font.h"
+#include "mf_rlefont.h"
+#include "mf_bwfont.h"
+#include "mf_scaledfont.h"
 
 #include <stdbool.h>
 
@@ -40,7 +48,7 @@ uint8_t mf_character_width(const struct mf_font_s *font,
                            mf_char character)
 {
     uint8_t width;
-    width = font->character_width(font, character);
+    width = font->character_width(font, MFCHAR2UINT16(character));
     
     if (!width)
     {

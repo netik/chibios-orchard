@@ -7,19 +7,19 @@
 
 /**
  * @file    src/gdisp/gdisp_colors.h
- * @brief   GDISP color definitions header file.
- *
- * @details	GDISP color definitions and macros
  *
  * @defgroup Colors Colors
  * @ingroup GDISP
+ *
+ * @brief   Sub-Module for color handling.
+ *
  * @{
  */
 
 #ifndef _GDISP_COLORS_H
 #define _GDISP_COLORS_H
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GDISP || defined(__DOXYGEN__)
 

@@ -147,7 +147,7 @@
 	#error "TLS8204 board file: Unsupported SPI method"
 #endif
 
-static inline void init_board(GDisplay *g) {
+static GFXINLINE void init_board(GDisplay *g) {
 	(void) g;
 
 	PinIsOutput	(PORT_DC, PIN_DC);
@@ -157,11 +157,11 @@ static inline void init_board(GDisplay *g) {
 	SPI_INIT();
 }
 
-static inline void post_init_board(GDisplay *g) {
+static GFXINLINE void post_init_board(GDisplay *g) {
 	(void) g;
 }
 
-static inline void setpin_reset(GDisplay *g, bool_t state) {
+static GFXINLINE void setpin_reset(GDisplay *g, bool_t state) {
 	(void) g;
 	(void) state;
 
@@ -171,25 +171,25 @@ static inline void setpin_reset(GDisplay *g, bool_t state) {
 		PinSet(PORT_RESET, PIN_RESET);
 }
 
-static inline void set_backlight(GDisplay *g, uint8_t percent) {
+static GFXINLINE void set_backlight(GDisplay *g, uint8_t percent) {
 	(void) g;
 	(void) percent;
 }
 
-static inline void acquire_bus(GDisplay *g) {
+static GFXINLINE void acquire_bus(GDisplay *g) {
 	(void) g;
 
 	SPI_GETBUS();
 }
 
-static inline void release_bus(GDisplay *g) {
+static GFXINLINE void release_bus(GDisplay *g) {
 	(void) g;
 
 	SPI_WAITCOMPLETE();
 	SPI_RELEASEBUS();
 }
 
-static inline void write_cmd(GDisplay *g, uint8_t cmd) {
+static GFXINLINE void write_cmd(GDisplay *g, uint8_t cmd) {
 	(void) g;
 
 	// Command mode please
@@ -199,7 +199,7 @@ static inline void write_cmd(GDisplay *g, uint8_t cmd) {
 	SPI_WRITEBYTE(cmd);
 }
 
-static inline void write_data(GDisplay *g, uint8_t* data, uint16_t length) {
+static GFXINLINE void write_data(GDisplay *g, uint8_t* data, uint16_t length) {
 	(void) g;
 
 	// Data mode please

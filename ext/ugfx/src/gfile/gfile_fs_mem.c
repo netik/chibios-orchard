@@ -9,7 +9,7 @@
  * The virtual memory file-system
  ********************************************************/
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GFILE && GFILE_NEED_MEMFS
 

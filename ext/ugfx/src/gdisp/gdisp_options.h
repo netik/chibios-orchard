@@ -383,9 +383,138 @@
 /**
  * @}
  *
+ * @name    GDISP PNG Image Options
+ * @pre		GDISP_NEED_IMAGE and GDISP_NEED_IMAGE_PNG must be TRUE
+ * @{
+ */
+	/**
+	 * @brief   Is PNG Interlaced image decoding required.
+	 * @details	Defaults to FALSE
+	 * @note	Currently not supported due to the complex decoding and display requirements
+	 */
+	#ifndef GDISP_NEED_IMAGE_PNG_INTERLACED
+		#define GDISP_NEED_IMAGE_PNG_INTERLACED			FALSE
+	#endif
+	/**
+	 * @brief   Is PNG image transparency processed.
+	 * @details	Defaults to TRUE
+	 */
+	#ifndef GDISP_NEED_IMAGE_PNG_TRANSPARENCY
+		#define GDISP_NEED_IMAGE_PNG_TRANSPARENCY		TRUE
+	#endif
+	/**
+	 * @brief   Is PNG background data processed.
+	 * @details	Defaults to TRUE
+	 * @note	If the background is specified in the image file and this define is TRUE,
+	 * 			that background color is used for transparency and alpha blending.
+	 */
+	#ifndef GDISP_NEED_IMAGE_PNG_BACKGROUND
+		#define GDISP_NEED_IMAGE_PNG_BACKGROUND			TRUE
+	#endif
+	/**
+	 * @brief   What is the cliff between non-blended alpha pixels being displayed or not.
+	 * @details	Range of 0 to 255
+	 * @note	If GDISP_NEED_IMAGE_PNG_BACKGROUND is TRUE and the PNG file contains a
+	 * 			background color then the pixel will be blended with the background color
+	 * 			according to the alpha.
+	 * 			If not then no blending occurs. The pixel will either be set or not.
+	 * 			Any alpha value greater or equal to this number will be displayed.
+	 * 			Anything less than this number is not displayed.
+	 */
+	#ifndef GDISP_NEED_IMAGE_PNG_ALPHACLIFF
+		#define GDISP_NEED_IMAGE_PNG_ALPHACLIFF			32
+	#endif
+	/**
+	 * @brief   Is 1, 2 and 4 bit PNG palettized image decoding required.
+	 * @details	Defaults to TRUE
+	 */
+	#ifndef GDISP_NEED_IMAGE_PNG_PALETTE_124
+		#define GDISP_NEED_IMAGE_PNG_PALETTE_124		TRUE
+	#endif
+	/**
+	 * @brief   Is 8 bit PNG palettized image decoding required.
+	 * @details	Defaults to TRUE
+	 */
+	#ifndef GDISP_NEED_IMAGE_PNG_PALETTE_8
+		#define GDISP_NEED_IMAGE_PNG_PALETTE_8			TRUE
+	#endif
+	/**
+	 * @brief   Is 1,2 and 4 bit PNG grayscale image decoding required.
+	 * @details	Defaults to TRUE
+	 */
+	#ifndef GDISP_NEED_IMAGE_PNG_GRAYSCALE_124
+		#define GDISP_NEED_IMAGE_PNG_GRAYSCALE_124		TRUE
+	#endif
+	/**
+	 * @brief   Is 8 bit PNG grayscale image decoding required.
+	 * @details	Defaults to TRUE
+	 */
+	#ifndef GDISP_NEED_IMAGE_PNG_GRAYSCALE_8
+		#define GDISP_NEED_IMAGE_PNG_GRAYSCALE_8		TRUE
+	#endif
+	/**
+	 * @brief   Is 16 bit PNG grayscale image decoding required.
+	 * @details	Defaults to TRUE
+	 */
+	#ifndef GDISP_NEED_IMAGE_PNG_GRAYSCALE_16
+		#define GDISP_NEED_IMAGE_PNG_GRAYSCALE_16		TRUE
+	#endif
+	/**
+	 * @brief   Is 8 bit PNG grayscale with 8 bit alpha image decoding required.
+	 * @details	Defaults to TRUE
+	 */
+	#ifndef GDISP_NEED_IMAGE_PNG_GRAYALPHA_8
+		#define GDISP_NEED_IMAGE_PNG_GRAYALPHA_8		TRUE
+	#endif
+	/**
+	 * @brief   Is 16 bit PNG grayscale with 16 bit alpha image decoding required.
+	 * @details	Defaults to TRUE
+	 */
+	#ifndef GDISP_NEED_IMAGE_PNG_GRAYALPHA_16
+		#define GDISP_NEED_IMAGE_PNG_GRAYALPHA_16		TRUE
+	#endif
+	/**
+	 * @brief   Is 8/8/8 bit PNG RGB image decoding required.
+	 * @details	Defaults to TRUE
+	 */
+	#ifndef GDISP_NEED_IMAGE_PNG_RGB_8
+		#define GDISP_NEED_IMAGE_PNG_RGB_8				TRUE
+	#endif
+	/**
+	 * @brief   Is 16/16/16 bit PNG RGB image decoding required.
+	 * @details	Defaults to TRUE
+	 */
+	#ifndef GDISP_NEED_IMAGE_PNG_RGB_16
+		#define GDISP_NEED_IMAGE_PNG_RGB_16				TRUE
+	#endif
+	/**
+	 * @brief   Is 8/8/8 bit PNG RGB with 8 bit alpha image decoding required.
+	 * @details	Defaults to TRUE
+	 */
+	#ifndef GDISP_NEED_IMAGE_PNG_RGBALPHA_8
+		#define GDISP_NEED_IMAGE_PNG_RGBALPHA_8			TRUE
+	#endif
+	/**
+	 * @brief   Is 16/16/16 bit PNG RGB with 16 bit alpha image decoding required.
+	 * @details	Defaults to TRUE
+	 */
+	#ifndef GDISP_NEED_IMAGE_PNG_RGBALPHA_16
+		#define GDISP_NEED_IMAGE_PNG_RGBALPHA_16		TRUE
+	#endif
+/**
+ * @}
+ *
  * @name	GDISP Text Rendering Options
  * @{
  */
+	/**
+	 * @brief	Enable advanced word-wrapping.
+	 * @details	Only has an effect with @p gdispGDrawStringBox() and @p gdispGFillStringBox()
+	 * @details Defaults to FALSE
+	 */
+	#ifndef GDISP_NEED_TEXT_WORDWRAP
+		#define GDISP_NEED_TEXT_WORDWRAP		FALSE
+	#endif
 	/**
 	 * @brief	Enable UTF-8 support for text rendering.
 	 * @details Defaults to FALSE

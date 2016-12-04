@@ -47,6 +47,24 @@
 
 #define GDISP_LLD_PIXELFORMAT				GDISP_PIXELFORMAT_BGR888
 
+// This function allows you to specify the parent window for any ugfx display windows created.
+// Passing a NULL will reset window creation to creating top level windows.
+// Note: In order to affect any static displays it must be called BEFORE gfxInit().
+// Note: Creating a window under a parent causes the Mouse to be disabled by default (rather than enabled as for a top window)
+void gfxEmulatorSetParentWindow(HWND hwnd);
+
+#if GINPUT_NEED_MOUSE
+	// This function allows you to inject mouse events into the ugfx mouse driver
+	void gfxEmulatorMouseInject(GDisplay *g, uint16_t buttons, coord_t x, coord_t y);
+	
+	// This function enables you to turn on/off normal mouse functions on a ugfx Win32 display window.
+	void gfxEmulatorMouseEnable(GDisplay *g, bool_t enabled);
+	
+	// This function enables you to capture mouse events on a ugfx Win32 display window.
+	// Passing NULL turns off the capture
+	void gfxEmulatorMouseCapture(GDisplay *g, void (*capfn)(HWND hWnd, GDisplay *g, uint16_t buttons, coord_t x, coord_t y));
+#endif
+
 #endif	/* GFX_USE_GDISP */
 
 #endif	/* _GDISP_LLD_CONFIG_H */

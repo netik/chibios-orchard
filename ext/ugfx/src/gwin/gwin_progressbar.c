@@ -10,14 +10,14 @@
  * @brief   GWIN sub-system progressbar code
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if (GFX_USE_GWIN && GWIN_NEED_PROGRESSBAR) || defined(__DOXYGEN__)
 
 #include "gwin_class.h"
 
 // Reset the display position back to the value predicted by the saved progressbar position
-static void ResetDisplayPos(GProgressbarObject *gsw) {
+static void PBResetDisplayPos(GProgressbarObject *gsw) {
 	if (gsw->w.g.width < gsw->w.g.height)
 		gsw->dpos = gsw->w.g.height-1-((gsw->w.g.height-1)*(gsw->pos-gsw->min))/(gsw->max-gsw->min);
 	else
@@ -25,7 +25,7 @@ static void ResetDisplayPos(GProgressbarObject *gsw) {
 }
 
 // We have to deinitialize the timer which auto updates the progressbar if any
-static void _destroy(GHandle gh) {
+static void PBDestroy(GHandle gh) {
 	#if GWIN_PROGRESSBAR_AUTO
 		gtimerStop(&((GProgressbarObject *)gh)->gt);
 		gtimerDeinit(&((GProgressbarObject *)gh)->gt);
@@ -39,7 +39,7 @@ static const gwidgetVMT progressbarVMT = {
 	{
 		"Progressbar",				// The classname
 		sizeof(GProgressbarObject),	// The object size
-		_destroy,				// The destroy routine
+		PBDestroy,				// The destroy routine
 		_gwidgetRedraw,			// The redraw routine
 		0,						// The after-clear routine
 	},
@@ -49,6 +49,11 @@ static const gwidgetVMT progressbarVMT = {
 			0,						// Process mouse down events (NOT USED)
 			0,						// Process mouse up events
 			0,						// Process mouse move events
+		},
+	#endif
+	#if GINPUT_NEED_KEYBOARD || GWIN_NEED_KEYBOARD
+		{
+			0						// Process keyboard events
 		},
 	#endif
 	#if GINPUT_NEED_TOGGLE
@@ -83,7 +88,7 @@ GHandle gwinGProgressbarCreate(GDisplay *g, GProgressbarObject *gs, const GWidge
 		gtimerInit(&gs->gt);
 	#endif
 
-	ResetDisplayPos(gs);
+	PBResetDisplayPos(gs);
 	gwinSetVisible((GHandle)gs, pInit->g.show);
 
 	return (GHandle)gs;
@@ -101,7 +106,7 @@ void gwinProgressbarSetRange(GHandle gh, int min, int max) {
 	gsw->max = max;
 	gsw->pos = min;
 
-	ResetDisplayPos(gsw);
+	PBResetDisplayPos(gsw);
 
 	#undef gsw
 }
@@ -122,7 +127,7 @@ void gwinProgressbarSetPosition(GHandle gh, int pos) {
 		else gsw->pos = pos;
 	}
 
-	ResetDisplayPos(gsw);
+	PBResetDisplayPos(gsw);
 	_gwinUpdate(gh);
 
 	#undef gsw
@@ -153,7 +158,7 @@ void gwinProgressbarIncrement(GHandle gh) {
 	else
 		gsw->pos = gsw->max;
 
-	ResetDisplayPos(gsw);
+	PBResetDisplayPos(gsw);
 	_gwinUpdate(gh);
 
 	#undef gsw
@@ -172,7 +177,7 @@ void gwinProgressbarDecrement(GHandle gh) {
 
 	gsw->pos -= gsw->res;
 
-	ResetDisplayPos(gsw);
+	PBResetDisplayPos(gsw);
 	_gwinUpdate(gh);
 
 	#undef gsw
@@ -233,7 +238,7 @@ void gwinProgressbarDraw_Std(GWidgetObject *gw, void *param) {
 
 	// get the colors right
 	if ((gw->g.flags & GWIN_FLG_SYSENABLED))
-		pcol = &gw->pstyle->pressed;
+		pcol = &gw->pstyle->enabled;
 	else
 		pcol = &gw->pstyle->disabled;
 
@@ -242,14 +247,14 @@ void gwinProgressbarDraw_Std(GWidgetObject *gw, void *param) {
 		if (gsw->dpos != gw->g.height-1)
 			gdispGFillArea(gw->g.display, gw->g.x, gw->g.y+gsw->dpos, gw->g.width, gw->g.height - gsw->dpos, pcol->progress);				// Active Area
 		if (gsw->dpos != 0)
-			gdispGFillArea(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gsw->dpos, gw->pstyle->enabled.progress);							// Inactive area
+			gdispGFillArea(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gsw->dpos, pcol->fill);											// Inactive area
 		gdispGDrawBox(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gw->g.height, pcol->edge);												// Edge
 		gdispGDrawLine(gw->g.display, gw->g.x, gw->g.y+gsw->dpos, gw->g.x+gw->g.width-1, gw->g.y+gsw->dpos, pcol->edge);					// Thumb
 
 	// Horizontal progressbar
 	} else {
 		if (gsw->dpos != gw->g.width-1)
-			gdispGFillArea(gw->g.display, gw->g.x+gsw->dpos, gw->g.y, gw->g.width-gsw->dpos, gw->g.height, gw->pstyle->enabled.progress);	// Inactive area
+			gdispGFillArea(gw->g.display, gw->g.x+gsw->dpos, gw->g.y, gw->g.width-gsw->dpos, gw->g.height, pcol->fill);						// Inactive area
 		if (gsw->dpos != 0)
 			gdispGFillArea(gw->g.display, gw->g.x, gw->g.y, gsw->dpos, gw->g.height, pcol->progress);										// Active Area
 		gdispGDrawBox(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gw->g.height, pcol->edge);												// Edge
@@ -271,13 +276,14 @@ void gwinProgressbarDraw_Image(GWidgetObject *gw, void *param) {
 		return;
 
 	if ((gw->g.flags & GWIN_FLG_SYSENABLED))
-		pcol = &gw->pstyle->pressed;
+		pcol = &gw->pstyle->enabled;
 	else
 		pcol = &gw->pstyle->disabled;
 
-	if (gw->g.width < gw->g.height) {			// Vertical progressbar
+	// Vertical progressbar
+	if (gw->g.width < gw->g.height) {
 		if (gsw->dpos != 0)							// The unfilled area
-			gdispGFillArea(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gsw->dpos, gw->pstyle->enabled.progress);	// Inactive area
+			gdispGFillArea(gw->g.display, gw->g.x+1, gw->g.y+1, gw->g.width-2, gsw->dpos-1, gw->pstyle->enabled.progress);	// Inactive area
 		if (gsw->dpos != gw->g.height-1) {			// The filled area
 			for(z=gw->g.height, v=gi->height; z > gsw->dpos;) {
 				z -= v;
@@ -285,25 +291,25 @@ void gwinProgressbarDraw_Image(GWidgetObject *gw, void *param) {
 					v -= gsw->dpos - z;
 					z = gsw->dpos;
 				}
-				gdispGImageDraw(gw->g.display, gi, gw->g.x, gw->g.y+z, gw->g.width, v, 0, gi->height-v);
+				gdispGImageDraw(gw->g.display, gi, gw->g.x+1, gw->g.y+z+1, gw->g.width-1, v-2, 0, gi->height-v);
 			}
 		}
 		gdispGDrawBox(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gw->g.height, pcol->edge);								// Edge
-		gdispGDrawLine(gw->g.display, gw->g.x, gw->g.y+gsw->dpos, gw->g.x+gw->g.width-1, gw->g.y+gsw->dpos, pcol->edge);	// Thumb
+		gdispGDrawLine(gw->g.display, gw->g.x+1, gw->g.y+gsw->dpos, gw->g.x+gw->g.width-2, gw->g.y+gsw->dpos, pcol->edge);	// Thumb
 
 	// Horizontal progressbar
 	} else {
 		if (gsw->dpos != gw->g.width-1)				// The unfilled area
-			gdispGFillArea(gw->g.display, gw->g.x+gsw->dpos, gw->g.y, gw->g.width-gsw->dpos, gw->g.height, gw->pstyle->enabled.progress);	// Inactive area
+			gdispGFillArea(gw->g.display, gw->g.x+gsw->dpos+1, gw->g.y+1, gw->g.width-gsw->dpos-2, gw->g.height-2, gw->pstyle->enabled.progress);	// Inactive area
 		if (gsw->dpos != 0) {						// The filled area
 			for(z=0, v=gi->width; z < gsw->dpos; z += v) {
 				if (z+v > gsw->dpos)
 					v -= z+v - gsw->dpos;
-				gdispGImageDraw(gw->g.display, gi, gw->g.x+z, gw->g.y, v, gw->g.height, 0, 0);
+				gdispGImageDraw(gw->g.display, gi, gw->g.x+z+1, gw->g.y+1, v-1, gw->g.height-2, 0, 0);
 			}
 		}
 		gdispGDrawBox(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gw->g.height, pcol->edge);								// Edge
-		gdispGDrawLine(gw->g.display, gw->g.x+gsw->dpos, gw->g.y, gw->g.x+gsw->dpos, gw->g.y+gw->g.height-1, pcol->edge);	// Thumb
+		gdispGDrawLine(gw->g.display, gw->g.x+gsw->dpos, gw->g.y+1, gw->g.x+gsw->dpos, gw->g.y+gw->g.height-2, pcol->edge);	// Thumb
 	}
 	gdispGDrawStringBox(gw->g.display, gw->g.x+1, gw->g.y+1, gw->g.width-2, gw->g.height-2, gw->text, gw->g.font, pcol->text, justifyCenter);
 

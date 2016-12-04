@@ -34,15 +34,28 @@
 //#define GFX_USE_OS_OSX                               FALSE
 //#define GFX_USE_OS_ECOS                              FALSE
 //#define GFX_USE_OS_RAWRTOS                           FALSE
+//#define GFX_USE_OS_ARDUINO                           FALSE
+//#define GFX_USE_OS_KEIL                              FALSE
+//#define GFX_USE_OS_CMSIS                             FALSE
 //#define GFX_USE_OS_RAW32                             FALSE
-//    #define GOS_RAW_HEAP_SIZE                        0
+//#define GFX_USE_OS_NIOS                              FALSE
+//#define GFX_USE_OS_QT                                FALSE
 //    #define INTERRUPTS_OFF()                         optional_code
 //    #define INTERRUPTS_ON()                          optional_code
 
 // Options that (should where relevant) apply to all operating systems
-//    #define GFX_NO_OS_INIT                           FALSE
+//    #define GFX_NO_INLINE                            FALSE
+//    #define GFX_COMPILER                             GFX_COMPILER_UNKNOWN
+//    #define GFX_CPU                                  GFX_CPU_UNKNOWN
+//    #define GFX_CPU_NO_ALIGNMENT_FAULTS              FALSE
+//    #define GFX_CPU_ENDIAN                           GFX_CPU_ENDIAN_UNKNOWN
+//    #define GFX_OS_HEAP_SIZE                         0
+//    #define GFX_OS_NO_INIT                           FALSE
+//    #define GFX_OS_INIT_NO_WARNING                   FALSE
+//    #define GFX_OS_PRE_INIT_FUNCTION                 myHardwareInitRoutine
 //    #define GFX_OS_EXTRA_INIT_FUNCTION               myOSInitRoutine
 //    #define GFX_OS_EXTRA_DEINIT_FUNCTION             myOSDeInitRoutine
+//    #define GFX_EMULATE_MALLOC                       FALSE
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -66,6 +79,7 @@
 //#define GDISP_NEED_MULTITHREAD                       FALSE
 //#define GDISP_NEED_STREAMING                         FALSE
 //#define GDISP_NEED_TEXT                              FALSE
+//    #define GDISP_NEED_TEXT_WORDWRAP                 FALSE
 //    #define GDISP_NEED_ANTIALIAS                     FALSE
 //    #define GDISP_NEED_UTF8                          FALSE
 //    #define GDISP_NEED_TEXT_KERNING                  FALSE
@@ -94,16 +108,31 @@
 //    #define GDISP_NEED_IMAGE_NATIVE                  FALSE
 //    #define GDISP_NEED_IMAGE_GIF                     FALSE
 //    #define GDISP_NEED_IMAGE_BMP                     FALSE
-//        #define GDISP_NEED_IMAGE_BMP_1               FALSE
-//        #define GDISP_NEED_IMAGE_BMP_4               FALSE
-//        #define GDISP_NEED_IMAGE_BMP_4_RLE           FALSE
-//        #define GDISP_NEED_IMAGE_BMP_8               FALSE
-//        #define GDISP_NEED_IMAGE_BMP_8_RLE           FALSE
-//        #define GDISP_NEED_IMAGE_BMP_16              FALSE
-//        #define GDISP_NEED_IMAGE_BMP_24              FALSE
-//        #define GDISP_NEED_IMAGE_BMP_32              FALSE
+//        #define GDISP_NEED_IMAGE_BMP_1               TRUE
+//        #define GDISP_NEED_IMAGE_BMP_4               TRUE
+//        #define GDISP_NEED_IMAGE_BMP_4_RLE           TRUE
+//        #define GDISP_NEED_IMAGE_BMP_8               TRUE
+//        #define GDISP_NEED_IMAGE_BMP_8_RLE           TRUE
+//        #define GDISP_NEED_IMAGE_BMP_16              TRUE
+//        #define GDISP_NEED_IMAGE_BMP_24              TRUE
+//        #define GDISP_NEED_IMAGE_BMP_32              TRUE
 //    #define GDISP_NEED_IMAGE_JPG                     FALSE
 //    #define GDISP_NEED_IMAGE_PNG                     FALSE
+//        #define GDISP_NEED_IMAGE_PNG_INTERLACED      FALSE
+//        #define GDISP_NEED_IMAGE_PNG_TRANSPARENCY    TRUE
+//        #define GDISP_NEED_IMAGE_PNG_BACKGROUND      TRUE
+//        #define GDISP_NEED_IMAGE_PNG_ALPHACLIFF      32
+//        #define GDISP_NEED_IMAGE_PNG_PALETTE_124     TRUE
+//        #define GDISP_NEED_IMAGE_PNG_PALETTE_8       TRUE
+//        #define GDISP_NEED_IMAGE_PNG_GRAYSCALE_124   TRUE
+//        #define GDISP_NEED_IMAGE_PNG_GRAYSCALE_8     TRUE
+//        #define GDISP_NEED_IMAGE_PNG_GRAYSCALE_16    TRUE
+//        #define GDISP_NEED_IMAGE_PNG_GRAYALPHA_8     TRUE
+//        #define GDISP_NEED_IMAGE_PNG_GRAYALPHA_16    TRUE
+//        #define GDISP_NEED_IMAGE_PNG_RGB_8           TRUE
+//        #define GDISP_NEED_IMAGE_PNG_RGB_16          TRUE
+//        #define GDISP_NEED_IMAGE_PNG_RGBALPHA_8      TRUE
+//        #define GDISP_NEED_IMAGE_PNG_RGBALPHA_16     TRUE
 //    #define GDISP_NEED_IMAGE_ACCOUNTING              FALSE
 
 //#define GDISP_NEED_PIXMAP                            FALSE
@@ -164,6 +193,7 @@
 //#define GWIN_NEED_GL3D                               FALSE
 
 //#define GWIN_NEED_WIDGET                             FALSE
+//#define GWIN_FOCUS_HIGHLIGHT_WIDTH                   1
 //    #define GWIN_NEED_LABEL                          FALSE
 //        #define GWIN_LABEL_ATTRIBUTE                 FALSE
 //    #define GWIN_NEED_BUTTON                         FALSE
@@ -183,6 +213,7 @@
 //    #define GWIN_NEED_KEYBOARD                       FALSE
 //        #define GWIN_KEYBOARD_DEFAULT_LAYOUT         VirtualKeyboard_English1
 //        #define GWIN_NEED_KEYBOARD_ENGLISH1          TRUE
+//    #define GWIN_NEED_TEXTEDIT                       FALSE
 //    #define GWIN_FLAT_STYLING                        FALSE
 //    #define GWIN_WIDGET_TAGS                         FALSE
 
@@ -191,6 +222,12 @@
 //    #define GWIN_NEED_FRAME                          FALSE
 //    #define GWIN_NEED_TABSET                         FALSE
 //        #define GWIN_TABSET_TABHEIGHT                18
+
+
+///////////////////////////////////////////////////////////////////////////
+// GTRANS                                                                //
+///////////////////////////////////////////////////////////////////////////
+//#define GFX_USE_GTRANS                               FALSE
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -275,9 +312,7 @@
 // GADC                                                                  //
 ///////////////////////////////////////////////////////////////////////////
 //#define GFX_USE_GADC                                 FALSE
-
-//#define GADC_MAX_LOWSPEED_DEVICES                    4
-
+//    #define GADC_MAX_LOWSPEED_DEVICES                4
 
 ///////////////////////////////////////////////////////////////////////////
 // GAUDIO                                                                //
@@ -285,7 +320,6 @@
 //#define GFX_USE_GAUDIO                               FALSE
 //    #define GAUDIO_NEED_PLAY                         FALSE
 //    #define GAUDIO_NEED_RECORD                       FALSE
-
 
 ///////////////////////////////////////////////////////////////////////////
 // GMISC                                                                 //

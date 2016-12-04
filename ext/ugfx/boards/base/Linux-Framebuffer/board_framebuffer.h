@@ -123,7 +123,7 @@
 		}
 		if (fb_var.red.offset != LLDCOLOR_SHIFT_R || fb_var.green.offset != LLDCOLOR_SHIFT_G || fb_var.blue.offset != LLDCOLOR_SHIFT_B) {
 			#if LLDCOLOR_SHIFT_B == 0
-				fprintf(stderr, "GDISP Framebuffer: THe display pixel format is not RGB\n");
+				fprintf(stderr, "GDISP Framebuffer: The display pixel format is not RGB\n");
 			#else
 				fprintf(stderr, "GDISP Framebuffer: The display pixel format is not BGR\n");
 			#endif

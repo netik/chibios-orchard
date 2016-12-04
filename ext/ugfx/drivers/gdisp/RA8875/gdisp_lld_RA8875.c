@@ -10,8 +10,8 @@
 #if GFX_USE_GDISP /*|| defined(__DOXYGEN__)*/
 
 #define GDISP_DRIVER_VMT			GDISPVMT_RA8875
-#include "drivers/gdisp/RA8875/gdisp_lld_config.h"
-#include "src/gdisp/gdisp_driver.h"
+#include "gdisp_lld_config.h"
+#include "../../../src/gdisp/gdisp_driver.h"
 
 /* include the users board interface */
 #include "board_RA8875.h"
@@ -43,13 +43,13 @@
 #define write_reg16(g, reg, data)		{ write_index(g, reg); write_data(g, data); write_index(g, reg+1); write_data(g, (data)>>8); }
 #define write_reg8x2(g, reg, d1, d2)	{ write_index(g, reg); write_data(g, d1); write_data(g, d2); }
 
-static inline void set_cursor(GDisplay *g) {
+static GFXINLINE void set_cursor(GDisplay *g) {
 	write_reg16(g, 0x46, g->p.x);
 	write_reg16(g, 0x48, g->p.y);
 	write_index(g, 0x02);
 }
 
-static inline void set_viewport(GDisplay* g) {
+static GFXINLINE void set_viewport(GDisplay* g) {
 	write_reg16(g, 0x30, g->p.x);				//HSAW0 & HSAW1
 	write_reg16(g, 0x34, g->p.x+g->p.cx-1);		//HEAW0 & HEAW1
 	write_reg16(g, 0x32, g->p.y);				//VSAW0 & VSAW1
@@ -58,7 +58,7 @@ static inline void set_viewport(GDisplay* g) {
 
 // On this controller the back-light is controlled by the controllers internal PWM
 //	which is why it is in this file rather than the board file.
-static inline void set_backlight(GDisplay* g, uint8_t percent) {
+static GFXINLINE void set_backlight(GDisplay* g, uint8_t percent) {
 	uint8_t temp;
 
 	//Work in progress: the RA8875 has a built-in PWM, its output can

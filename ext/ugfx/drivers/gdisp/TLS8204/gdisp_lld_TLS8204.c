@@ -10,8 +10,8 @@
 #if GFX_USE_GDISP
 
 #define GDISP_DRIVER_VMT		GDISPVMT_TLS8204
-#include "drivers/gdisp/TLS8204/gdisp_lld_config.h"
-#include "src/gdisp/gdisp_driver.h"
+#include "gdisp_lld_config.h"
+#include "../../../src/gdisp/gdisp_driver.h"
 #include "board_TLS8204.h"
 
 /*===========================================================================*/
@@ -26,7 +26,7 @@
 
 #define GDISP_FLG_NEEDFLUSH		(GDISP_FLG_DRIVER << 0)
 
-#include "drivers/gdisp/TLS8204/TLS8204.h"
+#include "TLS8204.h"
 
 /*===========================================================================*/
 /* Driver local routines.                                                    */

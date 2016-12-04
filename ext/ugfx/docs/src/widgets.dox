@@ -11,6 +11,8 @@
  * @defgroup 	Widgets Widgets
  * @ingroup 	GWIN
  *
+ * @brief		Widgets extend the @ref Windows adding capabilities such as user input.
+ *
  * @details		Widgets are a "super-class" of a window that provides the
  *				following extra features:
  *				<ul>
@@ -23,6 +25,8 @@
  *						used to draw the widget similar to the way you can apply color schemes
  *						in Windows and Linux.
  *				</ul>
+ *
+ *				For the common window API, please see @ref Widget.
  *
  * @pre			GFX_USE_GWIN must be set to TRUE in your gfxconf.h
  */

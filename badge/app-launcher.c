@@ -33,7 +33,9 @@ static void draw_launcher_buttons(struct launcher_list * l) {
   GWidgetInit  wi, wi2, wi3;
   coord_t width;
   coord_t totalheight;
-  
+  font_t font;
+
+  font = gdispOpenFont(FONT_LG);
   width = gdispGetWidth();
   totalheight = gdispGetHeight();
   
@@ -48,7 +50,7 @@ static void draw_launcher_buttons(struct launcher_list * l) {
   wi3.g.show = TRUE;
 
   // Apply the button parameters
-  gwinSetDefaultFont(gdispOpenFont(FONT_LG));
+  gwinSetDefaultFont(font);
   wi.g.width = 80;
   wi.g.height = 50;
   wi.g.y = totalheight - 50;
@@ -73,6 +75,7 @@ static void draw_launcher_buttons(struct launcher_list * l) {
   l->ghButton1 = gwinButtonCreate(NULL, &wi);
   l->ghButton2 = gwinButtonCreate(NULL, &wi2);
   l->ghButton3 = gwinButtonCreate(NULL, &wi3);
+  gdispCloseFont(font);
   
 }
 
@@ -95,7 +98,7 @@ static void redraw_list(struct launcher_list *list) {
   chsnprintf(tmp, sizeof(tmp), "%d of %d apps", list->selected + 1, list->total);
   //gdispFillArea(0, 0, gdispGetWidth(), gdispGetHeight() / 2, Black);
   // draw title bar
-  font = gdispOpenFont(FONT_SM);
+  font = gdispOpenFont(FONT_FIXED);
   width = gdispGetWidth();
   height = gdispGetFontMetric(font, fontHeight);
   header_height = height;

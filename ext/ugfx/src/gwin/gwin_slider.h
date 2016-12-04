@@ -12,7 +12,9 @@
  * @defgroup Slider Slider
  * @ingroup Widgets
  *
- * @details		Create sliders with different styles
+ * @brief		Slider widget.
+ *
+ * @details		Extended events can be enabled using @p gwinSliderSendExtendedEvents().
  *
  * @pre			GFX_USE_GWIN must be set to TRUE in your gfxconf.h
  * @pre			GWIN_NEED_SLIDER must be set to TRUE in your gfxconf.h
@@ -42,6 +44,14 @@ typedef struct GEventGWinSlider {
 } GEventGWinSlider;
 
 // There are currently no GEventGWinSlider listening flags - use 0
+
+/**
+ * @brief	The internal slider object flags
+ * @note	Used only for writing a custom draw routine.
+ * @{
+ */
+#define GSLIDER_FLG_EXTENDED_EVENTS		0x01
+/** @} */
 
 // A slider window
 typedef struct GSliderObject {
@@ -97,7 +107,7 @@ GHandle gwinGSliderCreate(GDisplay *g, GSliderObject *gb, const GWidgetInit *pIn
  * @param[in] min		The minimum value
  * @param[in] max		The maximum value
  * @note				Sets the position to the minimum value.
- * @note				The slider is not automatically drawn. Call gwinSliderDraw() after changing the range.
+ * @note				The slider is not automatically drawn. Call gwinRedraw() after changing the range.
  *
  * @api
  */
@@ -110,7 +120,7 @@ void gwinSliderSetRange(GHandle gh, int min, int max);
  * @param[in] pos		The new position
  * @note				If the new position is outside the slider range then the position
  * 						is set to the closest end of the range.
- * @note				The slider is not automatically drawn. Call gwinSliderDraw() after changing the position.
+ * @note				The slider is not automatically drawn. Call gwinRedraw() after changing the position.
  *
  * @api
  */
@@ -143,29 +153,50 @@ void gwinSliderSetPosition(GHandle gh, int pos);
 void gwinSliderSendExtendedEvents(GHandle gh, bool_t enabled);
 
 /**
- * @brief	Some custom slider drawing routines
- * @details	These function may be passed to @p gwinSetCustomDraw() to get different slider drawing styles
+ * @defgroup Renderings_Slider Renderings
  *
- * @param[in] gw			The widget (which must be a slider)
- * @param[in] param			A parameter passed in from the user
+ * @brief				Built-in rendering functions for the slider widget.
  *
- * @note				In your custom slider drawing function you may optionally call this
+ * @details				These function may be passed to @p gwinSetCustomDraw() to get different slider drawing styles.
+ *
+ * @note				In your custom slider drawing function you may optionally call these
  * 						standard functions and then draw your extra details on top.
- * @note				The standard functions below ignore the param parameter except for @p gwinSliderDraw_Image().
- * @note				The image custom draw function  @p gwinSliderDraw_Image() uses param to pass in the gdispImage pointer.
- * 						The image must be already opened before calling  @p gwinSetCustomDraw(). The image is tiled to fill
- * 						the active area of the slider. The normal colors apply to the border and inactive area and the dividing line
- * 						between the active and inactive areas.
- * 						No checking is done to compare the dimensions of the slider to the size of the image.
- * 						Note text is drawn on top of the image.
  * @note				These custom drawing routines don't have to worry about setting clipping as the framework
  * 						sets clipping to the object window prior to calling these routines.
  *
- * @api
  * @{
  */
+
+/**
+ * @brief				The default rendering function for the slider widget.
+ *
+ * @param[in] gw		The widget object (must be a slider object).
+ * @param[in] param		A parameter passed in from the user. Ignored by this function.
+ *
+ * @api
+ */
 void gwinSliderDraw_Std(GWidgetObject *gw, void *param);
+
+#if GDISP_NEED_IMAGE || defined(__DOXYGEN__)
+	/**
+	 * @brief				The default rendering function
+	 *
+	 * @param[in] gw		The widget object (must be a slider object).
+	 * @param[in] param		A parameter passed in from the user. Must be an image handle. See note below.
+	 *
+	 * @note				The image must be already opened before calling  @p gwinSetCustomDraw(). The image should be 3
+	 * 						times the height of the button. The button image is repeated 3 times vertically, the first (top) for
+	 * 						the "up" image, the 2nd for the "down" image, and the third (bottom) image for the disabled state. If
+	 * 						the disabled state is never going to be used then the image can be just 2 times the button height.
+	 * 						No checking is done to compare the size of the button to the size of the image.
+	 * 						No text is drawn on top of the image.
+	 *
+	 * @pre					GDISP_NEED_IMAGE must be set to TRUE
+	 *
+	 * @api
+	 */
 void gwinSliderDraw_Image(GWidgetObject *gw, void *param);
+#endif /* GDISP_NEED_IMAGE */
 /** @} */
 
 #ifdef __cplusplus

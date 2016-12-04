@@ -5,7 +5,7 @@
  *              http://ugfx.org/license.html
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GDISP && GDISP_NEED_PIXMAP
 
@@ -39,8 +39,8 @@
 	#error "GDISP Pixmap: Pixmap's do not currently support the specified GDISP_LLD_PIXELFORMAT"
 #endif
 
-#include "src/gdisp/gdisp_driver.h"
-#include "src/gdriver/gdriver.h"
+#include "gdisp_driver.h"
+#include "../gdriver/gdriver.h"
 
 typedef struct pixmap {
 	#if GDISP_NEED_PIXMAP_IMAGE
@@ -49,7 +49,7 @@ typedef struct pixmap {
 	color_t			pixels[1];			// We really want pixels[0] but some compilers don't allow that even though it is C standard.
 	} pixmap;
 
-GDisplay *gdispCreatePixmap(coord_t width, coord_t height) {
+GDisplay *gdispPixmapCreate(coord_t width, coord_t height) {
 	GDisplay	*g;
 	pixmap		*p;
 	unsigned	i;
@@ -86,20 +86,20 @@ GDisplay *gdispCreatePixmap(coord_t width, coord_t height) {
 	return g;
 }
 
-void gdispDeletePixmap(GDisplay *g) {
+void gdispPixmapDelete(GDisplay *g) {
 	if (gvmt(g) != GDISPVMT_pixmap)
 		return;
 	gdriverUnRegister(&g->d);
 }
 
-pixel_t	*gdispGetPixmapBits(GDisplay *g) {
+pixel_t	*gdispPixmapGetBits(GDisplay *g) {
 	if (gvmt(g) != GDISPVMT_pixmap)
 		return 0;
 	return ((pixmap *)g->priv)->pixels;
 }
 
 #if GDISP_NEED_PIXMAP_IMAGE
-	void *gdispGetPixmapMemoryImage(GDisplay *g) {
+	void *gdispPixmapGetMemoryImage(GDisplay *g) {
 		if (gvmt(g) != GDISPVMT_pixmap)
 			return 0;
 		return ((pixmap *)g->priv)->imghdr;

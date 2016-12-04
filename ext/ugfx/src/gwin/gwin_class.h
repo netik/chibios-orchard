@@ -23,33 +23,29 @@
 
 #if GFX_USE_GWIN || defined(__DOXYGEN__)
 
-#if defined(__KEIL__) || defined(__C51__)
-	#pragma anon_unions
-#endif
-
 /**
  * @brief	The predefined flags for a Window
  * @{
  */
-#define GWIN_FIRST_CONTROL_FLAG			0x00000001			// @< 8 bits free for the control to use
-#define GWIN_LAST_CONTROL_FLAG			0x00000080			// @< 8 bits free for the control to use
-#define GWIN_FLG_VISIBLE				0x00000100			// @< The window is "visible"
-#define GWIN_FLG_SYSVISIBLE				0x00000200			// @< The window is visible after parents are tested
-#define GWIN_FLG_ENABLED				0x00000400			// @< The window is "enabled"
-#define GWIN_FLG_SYSENABLED				0x00000800			// @< The window is enabled after parents are tested
-#define GWIN_FLG_DYNAMIC				0x00001000			// @< The GWIN structure is allocated
-#define GWIN_FLG_ALLOCTXT				0x00002000			// @< The text/label is allocated
-#define GWIN_FLG_NEEDREDRAW				0x00004000			// @< Redraw is needed but has been delayed
-#define GWIN_FLG_BGREDRAW				0x00008000			// @< On redraw, if not visible redraw the revealed under-side
-#define GWIN_FLG_SUPERMASK				0x000F0000			// @< The bit mask to leave just the window superclass type
-#define GWIN_FLG_WIDGET					0x00010000			// @< This is a widget
-#define GWIN_FLG_CONTAINER				0x00020000			// @< This is a container
-#define GWIN_FLG_MINIMIZED				0x00100000			// @< The window is minimized
-#define GWIN_FLG_MAXIMIZED				0x00200000			// @< The window is maximized
-#define GWIN_FLG_MOUSECAPTURE			0x00400000			// @< The window has captured the mouse
-#define GWIN_FLG_FLASHING				0x00800000			// @< The window is flashing - see the _gwinFlashState boolean
-#define GWIN_FIRST_WM_FLAG				0x01000000			// @< 8 bits free for the window manager to use
-#define GWIN_LAST_WM_FLAG				0x80000000			// @< 8 bits free for the window manager to use
+#define GWIN_FIRST_CONTROL_FLAG			0x00000001			/**< 8 bits free for the control to use. Don't change this value as it is relied upon definitions in widget header files. */
+#define GWIN_LAST_CONTROL_FLAG			0x00000080			/**< 8 bits free for the control to use */
+#define GWIN_FLG_VISIBLE				0x00000100			/**< The window is "visible" */
+#define GWIN_FLG_SYSVISIBLE				0x00000200			/**< The window is visible after parents are tested */
+#define GWIN_FLG_ENABLED				0x00000400			/**< The window is "enabled" */
+#define GWIN_FLG_SYSENABLED				0x00000800			/**< The window is enabled after parents are tested */
+#define GWIN_FLG_DYNAMIC				0x00001000			/**< The GWIN structure is allocated */
+#define GWIN_FLG_ALLOCTXT				0x00002000			/**< The text/label is allocated */
+#define GWIN_FLG_NEEDREDRAW				0x00004000			/**< Redraw is needed but has been delayed */
+#define GWIN_FLG_BGREDRAW				0x00008000			/**< On redraw, if not visible redraw the revealed under-side */
+#define GWIN_FLG_SUPERMASK				0x000F0000			/**< The bit mask to leave just the window superclass type */
+#define GWIN_FLG_WIDGET					0x00010000			/**< This is a widget */
+#define GWIN_FLG_CONTAINER				0x00020000			/**< This is a container */
+#define GWIN_FLG_MINIMIZED				0x00100000			/**< The window is minimized */
+#define GWIN_FLG_MAXIMIZED				0x00200000			/**< The window is maximized */
+#define GWIN_FLG_MOUSECAPTURE			0x00400000			/**< The window has captured the mouse */
+#define GWIN_FLG_FLASHING				0x00800000			/**< The window is flashing - see the _gwinFlashState boolean */
+#define GWIN_FIRST_WM_FLAG				0x01000000			/**< 8 bits free for the window manager to use */
+#define GWIN_LAST_WM_FLAG				0x80000000			/**< 8 bits free for the window manager to use */
 /** @} */
 
 /**
@@ -57,11 +53,11 @@
  * @{
  */
 typedef struct gwinVMT {
-	const char *		classname;						// @< The GWIN classname (mandatory)
-	size_t				size;							// @< The size of the class object
-	void (*Destroy)		(GWindowObject *gh);			// @< The GWIN destroy function (optional)
-	void (*Redraw)		(GWindowObject *gh);			// @< The GWIN redraw routine (optional)
-	void (*AfterClear)	(GWindowObject *gh);			// @< The GWIN after-clear function (optional)
+	const char *		classname;						/**< The GWIN classname (mandatory) */
+	size_t				size;							/**< The size of the class object */
+	void (*Destroy)		(GWindowObject *gh);			/**< The GWIN destroy function (optional) */
+	void (*Redraw)		(GWindowObject *gh);			/**< The GWIN redraw routine (optional) */
+	void (*AfterClear)	(GWindowObject *gh);			/**< The GWIN after-clear function (optional) */
 } gwinVMT;
 /** @} */
 
@@ -75,7 +71,7 @@ typedef struct gwinVMT {
 	/**
 	 * @brief	The source handle that widgets use when sending events
 	 */
-	#define GWIDGET_SOURCE			((GSourceHandle)(void *)&WhiteWidgetStyle/*_gwidgetCreate*/)
+	#define GWIDGET_SOURCE			((GSourceHandle)(void *)_gwidgetCreate)
 
 	/**
 	 * @brief	The Virtual Method Table for a widget
@@ -87,31 +83,36 @@ typedef struct gwinVMT {
 	 * @{
 	 */
 	typedef struct gwidgetVMT {
-		struct gwinVMT				g;														// @< This is still a GWIN
-		void (*DefaultDraw)			(GWidgetObject *gw, void *param);						// @< The default drawing routine (mandatory)
+		struct gwinVMT				g;															/**< This is still a GWIN */
+		void (*DefaultDraw)			(GWidgetObject *gw, void *param);							/**< The default drawing routine (mandatory) */
 		#if GINPUT_NEED_MOUSE
-			struct _mouse {
-				void (*MouseDown)		(GWidgetObject *gw, coord_t x, coord_t y);				// @< Process mouse down events (optional)
-				void (*MouseUp)			(GWidgetObject *gw, coord_t x, coord_t y);				// @< Process mouse up events (optional)
-				void (*MouseMove)		(GWidgetObject *gw, coord_t x, coord_t y);				// @< Process mouse move events (optional)
-			} m;
+			struct {
+				void (*MouseDown)		(GWidgetObject *gw, coord_t x, coord_t y);				/**< Process mouse down events (optional) */
+				void (*MouseUp)			(GWidgetObject *gw, coord_t x, coord_t y);				/**< Process mouse up events (optional) */
+				void (*MouseMove)		(GWidgetObject *gw, coord_t x, coord_t y);				/**< Process mouse move events (optional) */
+			};
+		#endif
+		#if GINPUT_NEED_KEYBOARD || GWIN_NEED_KEYBOARD
+			struct {
+				void (*KeyboardEvent)	(GWidgetObject *gw, GEventKeyboard *pke);				/**< Process keyboard events (optional) */
+			};
 		#endif
 		#if GINPUT_NEED_TOGGLE
-			struct _toggle {
-				uint16_t				toggleroles;											// @< The roles supported for toggles (0->toggleroles-1)
-				void (*ToggleAssign)	(GWidgetObject *gw, uint16_t role, uint16_t instance);	// @< Assign a toggle to a role (optional)
-				uint16_t (*ToggleGet)	(GWidgetObject *gw, uint16_t role);						// @< Return the instance for a particular role (optional)
-				void (*ToggleOff)		(GWidgetObject *gw, uint16_t role);						// @< Process toggle off events (optional)
-				void (*ToggleOn)		(GWidgetObject *gw, uint16_t role);						// @< Process toggle on events (optional)
-			} t;
+			struct {
+				uint16_t				toggleroles;											/**< The roles supported for toggles (0->toggleroles-1) */
+				void (*ToggleAssign)	(GWidgetObject *gw, uint16_t role, uint16_t instance);	/**< Assign a toggle to a role (optional) */
+				uint16_t (*ToggleGet)	(GWidgetObject *gw, uint16_t role);						/**< Return the instance for a particular role (optional) */
+				void (*ToggleOff)		(GWidgetObject *gw, uint16_t role);						/**< Process toggle off events (optional) */
+				void (*ToggleOn)		(GWidgetObject *gw, uint16_t role);						/**< Process toggle on events (optional) */
+			};
 		#endif
 		#if GINPUT_NEED_DIAL
-			struct _dial {
-				uint16_t				dialroles;												// @< The roles supported for dials (0->dialroles-1)
-				void (*DialAssign)		(GWidgetObject *gw, uint16_t role, uint16_t instance);	// @< Test the role and save the dial instance handle (optional)
-				uint16_t (*DialGet)		(GWidgetObject *gw, uint16_t role);						// @< Return the instance for a particular role (optional)
-				void (*DialMove)		(GWidgetObject *gw, uint16_t role, uint16_t value, uint16_t max);	// @< Process dial move events (optional)
-			} d;
+			struct {
+				uint16_t				dialroles;												/**< The roles supported for dials (0->dialroles-1) */
+				void (*DialAssign)		(GWidgetObject *gw, uint16_t role, uint16_t instance);	/**< Test the role and save the dial instance handle (optional) */
+				uint16_t (*DialGet)		(GWidgetObject *gw, uint16_t role);						/**< Return the instance for a particular role (optional) */
+				void (*DialMove)		(GWidgetObject *gw, uint16_t role, uint16_t value, uint16_t max);	/**< Process dial move events (optional) */
+			};
 		#endif
 	} gwidgetVMT;
 	/** @} */
@@ -130,12 +131,12 @@ typedef struct gwinVMT {
 	 */
 	typedef struct gcontainerVMT {
 		gwidgetVMT	gw;
-		coord_t (*LeftBorder)		(GHandle gh);							// @< The size of the left border (mandatory)
-		coord_t (*TopBorder)		(GHandle gh);							// @< The size of the top border (mandatory)
-		coord_t (*RightBorder)		(GHandle gh);							// @< The size of the right border (mandatory)
-		coord_t (*BottomBorder)		(GHandle gh);							// @< The size of the bottom border (mandatory)
-		void (*NotifyAdd)			(GHandle gh, GHandle ghChild);			// @< Notification that a child has been added (optional)
-		void (*NotifyDelete)		(GHandle gh, GHandle ghChild);			// @< Notification that a child has been deleted (optional)
+		coord_t (*LeftBorder)		(GHandle gh);							/**< The size of the left border (mandatory) */
+		coord_t (*TopBorder)		(GHandle gh);							/**< The size of the top border (mandatory) */
+		coord_t (*RightBorder)		(GHandle gh);							/**< The size of the right border (mandatory) */
+		coord_t (*BottomBorder)		(GHandle gh);							/**< The size of the bottom border (mandatory) */
+		void (*NotifyAdd)			(GHandle gh, GHandle ghChild);			/**< Notification that a child has been added (optional) */
+		void (*NotifyDelete)		(GHandle gh, GHandle ghChild);			/**< Notification that a child has been deleted (optional) */
 	} gcontainerVMT;
 	/** @} */
 #endif
@@ -151,22 +152,22 @@ typedef struct gwinVMT {
 	 * @{
 	 */
 	typedef struct gwmVMT {
-		void (*Init)		(void);									// @< The window manager has just been set as the current window manager
-		void (*DeInit)		(void);									// @< The window manager has just been removed as the current window manager
-		bool_t (*Add)		(GHandle gh, const GWindowInit *pInit);	// @< A window has been added
-		void (*Delete)		(GHandle gh);							// @< A window has been deleted
-		void (*Redraw)		(GHandle gh);							// @< A window needs to be redraw (or undrawn)
-		void (*Size)		(GHandle gh, coord_t w, coord_t h);		// @< A window wants to be resized
-		void (*Move)		(GHandle gh, coord_t x, coord_t y);		// @< A window wants to be moved
-		void (*Raise)		(GHandle gh);							// @< A window wants to be on top
-		void (*MinMax)		(GHandle gh, GWindowMinMax minmax);		// @< A window wants to be minimized/maximised
+		void (*Init)		(void);									/**< The window manager has just been set as the current window manager */
+		void (*DeInit)		(void);									/**< The window manager has just been removed as the current window manager */
+		bool_t (*Add)		(GHandle gh, const GWindowInit *pInit);	/**< A window has been added */
+		void (*Delete)		(GHandle gh);							/**< A window has been deleted */
+		void (*Redraw)		(GHandle gh);							/**< A window needs to be redraw (or undrawn) */
+		void (*Size)		(GHandle gh, coord_t w, coord_t h);		/**< A window wants to be resized */
+		void (*Move)		(GHandle gh, coord_t x, coord_t y);		/**< A window wants to be moved */
+		void (*Raise)		(GHandle gh);							/**< A window wants to be on top */
+		void (*MinMax)		(GHandle gh, GWindowMinMax minmax);		/**< A window wants to be minimized/maximised */
 	} gwmVMT;
 	/** @} */
 
 	/**
 	 * @brief	The current window manager
 	 */
-	extern	GWindowManager * _GWINwm;
+	extern	GWindowManager	*_GWINwm;
 	extern	bool_t			_gwinFlashState;
 
 #endif
@@ -251,9 +252,8 @@ void _gwinDrawEnd(GHandle gh);
  * @param[in]	gh		The window
  * @param[in]	how		Do we wait for the lock?
  *
- * @note	This call will delete the window. If called without the
- * 			drawing lock 'how' must be REDRAW_WAIT. If called with the drawing
- * 			lock 'how' must be REDRAW_INSESSION.
+ * @note	If called without the drawing lock 'how' must be REDRAW_WAIT.
+ * 			If called with the drawing lock 'how' must be REDRAW_INSESSION.
  *
  * @notapi
  */
@@ -317,6 +317,52 @@ bool_t _gwinWMAdd(GHandle gh, const GWindowInit *pInit);
 	 */
 	void _gwinSendEvent(GHandle gh, GEventType type);
 
+	#if (GFX_USE_GINPUT && GINPUT_NEED_KEYBOARD) || GWIN_NEED_KEYBOARD || defined(__DOXYGEN__)
+		/**
+		 * @brief	Move the focus off the current focus window.
+		 *
+		 * @note	The focus can stay on the same window if there is no other focusable window
+		 *
+		 * @notapi
+		 */
+		void _gwinMoveFocus(void);
+
+		/**
+		 * @brief	Do focus fixup's after a change of state for a window.
+		 * @details	If a focus window has become invisible or disabled then
+		 * 			the focus must be taken away from it. If there is no focus
+		 * 			window and this window is eligible then this window becomes
+		 * 			the focus.
+		 *
+		 * @param[in]	gh		The window
+		 *
+		 * @note		This routine does not actually do a redraw. It assumes that surrounding code
+		 * 				will because of the change of state that lead to this being called.
+		 *
+		 * @notapi
+		 */
+		void _gwinFixFocus(GHandle gh);
+
+		/**
+		 * @brief	Draw a simple focus rectangle in the default style.
+		 *
+		 * @param[in]	gw		The widget
+		 * @param[in]	x, y	The start x, y position (relative to the window)
+		 * @param[in]	cx, cy	The width & height of the rectangle
+		 *
+		 * @note		Assumes the widget is in a state where it can draw.
+		 * @note		Nothing is drawn if the window doesn't have focus.
+		 * @note		The focus rectangle may be more than one pixel thick and may
+		 * 				not be a continuous line.
+		 *
+		 * @notapi
+		 */
+		void _gwidgetDrawFocusRect(GWidgetObject *gw, coord_t x, coord_t y, coord_t cx, coord_t cy);
+
+	#else
+		#define _gwinFixFocus(gh)
+		#define _gwidgetDrawFocusRect(gh,x,y,cx,cy)
+	#endif
 
 	#if GWIN_NEED_FLASHING || defined(__DOXYGEN__)
 		/**
@@ -330,6 +376,8 @@ bool_t _gwinWMAdd(GHandle gh, const GWindowInit *pInit);
 		 */
 		const GColorSet *_gwinGetFlashedColor(GWidgetObject *gw, const GColorSet *pcol, bool_t flashOffState);
 	#endif
+#else
+	#define _gwinFixFocus(gh)
 #endif
 
 #if GWIN_NEED_CONTAINERS || defined(__DOXYGEN__)

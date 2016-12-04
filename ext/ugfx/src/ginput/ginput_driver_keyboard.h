@@ -20,7 +20,7 @@
 #if GINPUT_NEED_KEYBOARD //|| defined(__DOXYGEN__)
 
 // Include the GDRIVER infrastructure
-#include "src/gdriver/gdriver.h"
+#include "../gdriver/gdriver.h"
 
 typedef struct GKeyboard {
 	GDriver			d;					// The driver overheads and vmt

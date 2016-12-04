@@ -7,10 +7,12 @@
 
 /**
  * @file    src/gdisp/gdisp_image.h
- * @brief   GDISP image header file.
  *
  * @defgroup Image Image
  * @ingroup GDISP
+ *
+ * @brief   Sub-Module for image handling.
+ *
  * @{
  */
 
@@ -50,52 +52,6 @@ typedef uint16_t	gdispImageFlags;
 	#define GDISP_IMAGE_FLG_ANIMATED			0x0002	/* The image has animation */
 	#define GDISP_IMAGE_FLG_MULTIPAGE			0x0004	/* The image has multiple pages */
 
-struct gdispImageIO;
-
-/**
- * @brief	An image IO close function
- *
- * @param[in] pio	Pointer to the io structure
- * @param[in] desc	The descriptor. A filename or an image structure pointer.
- *
- */
-typedef void (*gdispImageIOCloseFn)(struct gdispImageIO *pio);
-
-/**
- * @brief	An image IO read function
- * @returns	The number of bytes actually read or 0 on error
- *
- * @param[in] pio	Pointer to the io structure
- * @param[in] buf	Where the results should be placed
- * @param[in] len	The number of bytes to read
- *
- */
-typedef size_t (*gdispImageIOReadFn)(struct gdispImageIO *pio, void *buf, size_t len);
-
-/**
- * @brief	An image IO seek function
- *
- * @param[in] pio	Pointer to the io structure
- * @param[in] pos	Which byte to seek to relative to the start of the "file".
- *
- */
-typedef void (*gdispImageIOSeekFn)(struct gdispImageIO *pio, size_t pos);
-
-typedef struct gdispImageIOFunctions {
-	gdispImageIOReadFn			read;				/* @< The function to read input */
-	gdispImageIOSeekFn			seek;				/* @< The function to seek input */
-	gdispImageIOCloseFn			close;				/* @< The function to close input */
-	} gdispImageIOFunctions;
-
-/**
- * @brief	The structure defining the IO routines for image handling
- */
-typedef struct gdispImageIO {
-	const void *				fd;					/* @< The "file" descriptor */
-	size_t						pos;				/* @< The current "file" position */
-	const gdispImageIOFunctions	*fns;				/* @< The current "file" functions */
-} gdispImageIO;
-
 /**
  * @brief	The structure for an image
  */
@@ -110,25 +66,12 @@ typedef struct gdispImage {
 		uint32_t						maxmemused;			/* @< How much RAM has been allocated (maximum) */
 	#endif
 	const struct gdispImageHandlers *	fns;				/* @< Don't mess with this! */
-	struct gdispImagePrivate *			priv;				/* @< Don't mess with this! */
+	void *								priv;				/* @< Don't mess with this! */
 } gdispImage;
 	
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-	/*
-	 * Deprecated Functions.
-	 */
-	gdispImageError DEPRECATED("Use gdispImageOpenGFile() instead") gdispImageOpen(gdispImage *img);
-	bool_t DEPRECATED("Use gdispImageOpenMemory() instead") gdispImageSetMemoryReader(gdispImage *img, const void *memimage);
-	#if GFX_USE_OS_CHIBIOS
-		bool_t DEPRECATED("Use gdispImageOpenBaseFileStream() instead") gdispImageSetBaseFileStreamReader(gdispImage *img, void *BaseFileStreamPtr);
-	#endif
-	#if defined(WIN32) || GFX_USE_OS_WIN32 || GFX_USE_OS_LINUX || GFX_USE_OS_OSX
-		bool_t DEPRECATED("Please use gdispImageOpenFile() instead") gdispImageSetFileReader(gdispImage *img, const char *filename);
-		#define gdispImageSetSimulFileReader(img, fname)	gdispImageSetFileReader(img, fname)
-	#endif
 
 	/**
 	 * @brief	Initialise a gdispImage object

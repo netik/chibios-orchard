@@ -5,64 +5,30 @@
  *              http://ugfx.org/license.html
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GDISP && GDISP_NEED_IMAGE && GDISP_NEED_IMAGE_GIF
 
-/**
- * Helper Routines Needed
- */
-void *gdispImageAlloc(gdispImage *img, size_t sz);
-void gdispImageFree(gdispImage *img, void *ptr, size_t sz);
+#include "gdisp_image_support.h"
 
 /**
  * How big an array to allocate for blitting (in pixels)
  * Bigger is faster but uses more RAM.
  */
-#define BLIT_BUFFER_SIZE	32
-
-/*
- * Determining endianness as at compile time is not guaranteed or compiler portable.
- * We use the best test we can. If we can't guarantee little endianness we do things the
- * hard way.
- */
-#define GUARANTEED_LITTLE_ENDIAN	(!defined(SAFE_ENDIAN) && !defined(SAFE_ALIGNMENT) && (\
-		(defined(__BYTE_ORDER__)&&(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)) \
-		|| defined(__LITTLE_ENDIAN__) \
-		|| defined(__LITTLE_ENDIAN) \
-		|| defined(_LITTLE_ENDIAN) \
-/*		|| (1 == *(unsigned char *)&(const int){1})*/ \
-		))
-
-
-/* This is a runtime test */
-static const uint8_t	dwordOrder[4]	= { 1, 2, 3, 4 };
-
-#define isWordLittleEndian()	(*(uint16_t *)&dwordOrder == 0x0201)
-#define isDWordLittleEndian()	(*(uint32_t *)&dwordOrder == 0x04030201)
-
-#if GUARANTEED_LITTLE_ENDIAN
-	/* These are fast routines for guaranteed little endian machines */
-	#define CONVERT_FROM_WORD_LE(w)
-	#define CONVERT_FROM_DWORD_LE(dw)
-#else
-	/* These are slower routines for when little endianness cannot be guaranteed at compile time */
-	#define CONVERT_FROM_WORD_LE(w)		{ if (!isWordLittleEndian()) w = ((((uint16_t)(w))>>8)|(((uint16_t)(w))<<8)); }
-	#define CONVERT_FROM_DWORD_LE(dw)	{ if (!isDWordLittleEndian()) dw = (((uint32_t)(((const uint8_t *)(&dw))[0]))|(((uint32_t)(((const uint8_t *)(&dw))[1]))<<8)|(((uint32_t)(((const uint8_t *)(&dw))[2]))<<16)|(((uint32_t)(((const uint8_t *)(&dw))[3]))<<24)); }
-#endif
+#define BLIT_BUFFER_SIZE_GIF	32
 
 // We need a special error to indicate the end of file (which may not actually be an error)
-#define GDISP_IMAGE_EOF		((gdispImageError)-1)
-#define GDISP_IMAGE_LOOP	((gdispImageError)-2)
+#define GDISP_IMAGE_GIF_EOF		((gdispImageError)-1)
+#define GDISP_IMAGE_GIF_LOOP	((gdispImageError)-2)
 
-#define MAX_CODE_BITS		12
-#define CODE_MAX			((1<<MAX_CODE_BITS)-1)	// Maximum legal code value
-#define CODE_FLUSH			(CODE_MAX+1)			// Illegal code to signal flush
-#define CODE_FIRST			(CODE_MAX+2)			// Illegal code to signal first
-#define CODE_NONE			(CODE_MAX+3)			// Illegal code to signal empty
+#define GIF_MAX_CODE_BITS		12
+#define GIF_CODE_MAX			((1<<GIF_MAX_CODE_BITS)-1)	// Maximum legal code value
+#define GIF_CODE_FLUSH			(GIF_CODE_MAX+1)			// Illegal code to signal flush
+#define GIF_CODE_FIRST			(GIF_CODE_MAX+2)			// Illegal code to signal first
+#define GIF_CODE_NONE			(GIF_CODE_MAX+3)			// Illegal code to signal empty
 
 // Convert bits to masks for that number of bits
-static const uint16_t BitMask[] = {
+static const uint16_t GifBitMask[] = {
 		0x0000, 0x0001, 0x0003, 0x0007,
 		0x000f, 0x001f, 0x003f, 0x007f,
 		0x00ff, 0x01ff, 0x03ff, 0x07ff,
@@ -70,7 +36,7 @@ static const uint16_t BitMask[] = {
 		};
 
 // Structure for decoding a single frame
-typedef struct imgdecode {
+typedef struct gifimgdecode {
 	uint8_t		blocksz;								// The size of the block currently being processed
 	uint8_t		maxpixel;								// The maximum allowed pixel value
 	uint8_t		bitsperpixel;
@@ -84,14 +50,14 @@ typedef struct imgdecode {
 	uint16_t	code_last;
 	uint32_t	shiftdata;
 	color_t *	palette;
-	uint8_t		buf[BLIT_BUFFER_SIZE];					// Buffer for decoded pixels
-	uint16_t	prefix[1<<MAX_CODE_BITS];				// The LZW table
-    uint8_t		suffix[1<<MAX_CODE_BITS]; 				// So we can trace the codes
-    uint8_t 	stack[1<<MAX_CODE_BITS];				// Decoded pixels might be stacked here
-} imgdecode;
+	uint8_t		buf[BLIT_BUFFER_SIZE_GIF];					// Buffer for decoded pixels
+	uint16_t	prefix[1<<GIF_MAX_CODE_BITS];				// The LZW table
+    uint8_t		suffix[1<<GIF_MAX_CODE_BITS]; 				// So we can trace the codes
+    uint8_t 	stack[1<<GIF_MAX_CODE_BITS];				// Decoded pixels might be stacked here
+} gifimgdecode;
 
 // The data on a single frame
-typedef struct imgframe {
+typedef struct gifimgframe {
 	coord_t				x, y;							// position relative to full image
 	coord_t				width, height;					// size of frame
 	uint16_t			delay;							// delay after processing
@@ -106,55 +72,55 @@ typedef struct imgframe {
 	size_t				pospal;							// The file position of the palette
 	size_t				posimg;							// The file position of the image bits
 	size_t				posend;							// The file position of the end of the frame
-} imgframe;
+} gifimgframe;
 
 // The data for a cache
-typedef struct imgcache {
-	imgframe			frame;
+typedef struct gifimgcache {
+	gifimgframe			frame;
 	color_t *			palette;						// Local palette
 	uint8_t *			imagebits;						// Image bits - only saved when caching
-	struct imgcache *	next;							// Next cached frame
-} imgcache;
+	struct gifimgcache *next;							// Next cached frame
+} gifimgcache;
 
 // The data for a dispose area
-typedef struct imgdispose {
+typedef struct gifimgdispose {
 	uint8_t				flags;							// Frame flags
 	uint8_t				paltrans;						// Transparency
 	coord_t				x, y;							// position relative to full image
 	coord_t				width, height;					// size of dispose area
-} imgdispose;
+} gifimgdispose;
 
-typedef struct gdispImagePrivate {
-	uint8_t		flags;							// Flags (global)
-		#define GIF_LOOP			0x01		// Loop back to first frame
-		#define GIF_LOOPFOREVER		0x02		// Looping is forever
-	uint8_t		bgcolor;						// Background Color (global)
-	uint16_t	loops;							// Remaining frame loops (if animated)
-	uint16_t	palsize;						// Global palette size (global)
-	pixel_t		*palette;						// Global palette (global)
-	size_t		frame0pos;						// The position of the first frame
-	imgcache *	cache;							// The list of cached frames
-	imgcache *	curcache;						// The cache of the current frame (if created)
-	imgdecode *	decode;							// The decode data for the decode in progress
-	imgframe	frame;
-	imgdispose	dispose;
-	pixel_t		buf[BLIT_BUFFER_SIZE];			// Buffer for reading and blitting
-	} gdispImagePrivate;
+typedef struct gdispImagePrivate_GIF {
+	uint8_t			flags;						// Flags (global)
+		#define GIF_LOOP			0x01			// Loop back to first frame
+		#define GIF_LOOPFOREVER		0x02			// Looping is forever
+	uint8_t			bgcolor;					// Background Color (global)
+	uint16_t		loops;						// Remaining frame loops (if animated)
+	uint16_t		palsize;					// Global palette size (global)
+	pixel_t			*palette;					// Global palette (global)
+	size_t			frame0pos;					// The position of the first frame
+	gifimgcache *	cache;						// The list of cached frames
+	gifimgcache *	curcache;					// The cache of the current frame (if created)
+	gifimgdecode *	decode;						// The decode data for the decode in progress
+	gifimgframe		frame;
+	gifimgdispose	dispose;
+	pixel_t			buf[BLIT_BUFFER_SIZE_GIF];	// Buffer for reading and blitting
+	} gdispImagePrivate_GIF;
 
 /**
  * Get ready for decoding a frame.
  *
  * Pre:		Frame info has been read.
  */
-static gdispImageError startDecode(gdispImage *img) {
-	gdispImagePrivate *	priv;
-	imgdecode *			decode;
-	uint16_t			cnt;
+static gdispImageError startDecodeGif(gdispImage *img) {
+	gdispImagePrivate_GIF *	priv;
+	gifimgdecode *			decode;
+	uint16_t				cnt;
 
-	priv = img->priv;
+	priv = (gdispImagePrivate_GIF *)img->priv;
 
 	// We need the decode ram, and possibly a palette
-	if (!(decode = (imgdecode *)gdispImageAlloc(img, sizeof(imgdecode)+priv->frame.palsize*sizeof(color_t))))
+	if (!(decode = (gifimgdecode *)gdispImageAlloc(img, sizeof(gifimgdecode)+priv->frame.palsize*sizeof(color_t))))
 		return GDISP_IMAGE_ERR_NOMEMORY;
 
 	// We currently have not read any image data block
@@ -182,26 +148,26 @@ static gdispImageError startDecode(gdispImage *img) {
 
 	// Get the initial lzw code size and values
 	gfileSetPos(img->f, priv->frame.posimg);
-	if (gfileRead(img->f, &decode->bitsperpixel, 1) != 1 || decode->bitsperpixel >= MAX_CODE_BITS)
+	if (gfileRead(img->f, &decode->bitsperpixel, 1) != 1 || decode->bitsperpixel >= GIF_MAX_CODE_BITS)
 		goto baddatacleanup;
 	decode->code_clear = 1 << decode->bitsperpixel;
 	decode->code_eof = decode->code_clear + 1;
 	decode->code_max = decode->code_clear + 2;
-	decode->code_last = CODE_NONE;
+	decode->code_last = GIF_CODE_NONE;
 	decode->bitspercode = decode->bitsperpixel+1;
 	decode->maxcodesz = 1 << decode->bitspercode;
 	decode->shiftbits = 0;
 	decode->shiftdata = 0;
 	decode->stackcnt = 0;
-	for(cnt = 0; cnt <= CODE_MAX; cnt++)
-		decode->prefix[cnt] = CODE_NONE;
+	for(cnt = 0; cnt <= GIF_CODE_MAX; cnt++)
+		decode->prefix[cnt] = GIF_CODE_NONE;
 
 	// All ready to go
 	priv->decode = decode;
 	return GDISP_IMAGE_ERR_OK;
 
 baddatacleanup:
-	gdispImageFree(img, decode, sizeof(imgdecode)+priv->frame.palsize*sizeof(color_t));
+	gdispImageFree(img, decode, sizeof(gifimgdecode)+priv->frame.palsize*sizeof(color_t));
 	return GDISP_IMAGE_ERR_BADDATA;
 }
 
@@ -210,24 +176,24 @@ baddatacleanup:
  *
  * Pre:		Frame info has been read.
  */
-static void stopDecode(gdispImage *img) {
-	gdispImagePrivate *	priv;
+static void stopDecodeGif(gdispImage *img) {
+	gdispImagePrivate_GIF *	priv;
 
-	priv = img->priv;
+	priv = (gdispImagePrivate_GIF *)img->priv;
 
 	// Free the decode data
 	if (priv->decode) {
-		gdispImageFree(img, (void *)priv->decode, sizeof(imgdecode)+priv->frame.palsize*sizeof(color_t));
+		gdispImageFree(img, (void *)priv->decode, sizeof(gifimgdecode)+priv->frame.palsize*sizeof(color_t));
 		priv->decode = 0;
 	}
 }
 
-static uint16_t getPrefix(imgdecode *decode, uint16_t code) {
+static uint16_t getPrefixGif(gifimgdecode *decode, uint16_t code) {
 	uint16_t i;
 
-	for(i=0; code > decode->code_clear && i <= CODE_MAX; i++, code = decode->prefix[code]) {
-		if (code > CODE_MAX)
-			return CODE_NONE;
+	for(i=0; code > decode->code_clear && i <= GIF_CODE_MAX; i++, code = decode->prefix[code]) {
+		if (code > GIF_CODE_MAX)
+			return GIF_CODE_NONE;
 	}
     return code;
 }
@@ -237,18 +203,18 @@ static uint16_t getPrefix(imgdecode *decode, uint16_t code) {
  *
  * Pre:		We are ready for decoding.
  *
- * Return:	The number of pixels decoded 0 .. BLIT_BUFFER_SIZE-1. 0 means EOF
+ * Return:	The number of pixels decoded 0 .. BLIT_BUFFER_SIZE_GIF-1. 0 means EOF
  *
  * Note:	The resulting pixels are stored in decode->buf
  */
-static uint16_t getbytes(gdispImage *img) {
-	gdispImagePrivate *	priv;
-	imgdecode *			decode;
-	uint16_t			cnt;
-	uint16_t			code, prefix;
-	uint8_t				bdata;
+static uint16_t getBytesGif(gdispImage *img) {
+	gdispImagePrivate_GIF *	priv;
+	gifimgdecode *			decode;
+	uint16_t				cnt;
+	uint16_t				code, prefix;
+	uint8_t					bdata;
 
-	priv = img->priv;
+	priv = (gdispImagePrivate_GIF *)img->priv;
 	decode = priv->decode;
 	cnt = 0;
 
@@ -277,16 +243,16 @@ static uint16_t getbytes(gdispImage *img) {
 	        decode->shiftdata |= ((unsigned long)bdata) << decode->shiftbits;
 	        decode->shiftbits += 8;
 	    }
-	    code = decode->shiftdata & BitMask[decode->bitspercode];
+	    code = decode->shiftdata & GifBitMask[decode->bitspercode];
 	    decode->shiftdata >>= decode->bitspercode;
 	    decode->shiftbits -= decode->bitspercode;
 	    /**
 	     * If code cannot fit into bitspercode bits we must raise its size.
-	     * Note that codes above CODE_MAX are used for special signaling.
-	     * If we're using MAX_CODE_BITS bits already and we're at the max code, just
+	     * Note that codes above GIF_CODE_MAX are used for special signaling.
+	     * If we're using GIF_MAX_CODE_BITS bits already and we're at the max code, just
 	     * keep using the table as it is, don't increment decode->bitspercode.
 	     */
-	    if (decode->code_max < CODE_MAX + 2 && ++decode->code_max > decode->maxcodesz && decode->bitspercode < MAX_CODE_BITS) {
+	    if (decode->code_max < GIF_CODE_MAX + 2 && ++decode->code_max > decode->maxcodesz && decode->bitspercode < GIF_MAX_CODE_BITS) {
 	        decode->maxcodesz <<= 1;
 	        decode->bitspercode++;
 	    }
@@ -305,12 +271,12 @@ static uint16_t getbytes(gdispImage *img) {
 
 		if (code == decode->code_clear) {
 			// Start again
-			for(prefix = 0; prefix <= CODE_MAX; prefix++)
-				decode->prefix[prefix] = CODE_NONE;
+			for(prefix = 0; prefix <= GIF_CODE_MAX; prefix++)
+				decode->prefix[prefix] = GIF_CODE_NONE;
 			decode->code_max = decode->code_eof + 1;
 			decode->bitspercode = decode->bitsperpixel + 1;
 			decode->maxcodesz = 1 << decode->bitspercode;
-			decode->code_last = CODE_NONE;
+			decode->code_last = GIF_CODE_NONE;
 			continue;
 		}
 
@@ -324,7 +290,7 @@ static uint16_t getbytes(gdispImage *img) {
 			 * valid pixel while pushing the suffix pixels on the stack.
 			 * If done, pop the stack in reverse order adding the pixels
 			 */
-			if (decode->prefix[code] != CODE_NONE)
+			if (decode->prefix[code] != GIF_CODE_NONE)
 				prefix = code;
 
 			/**
@@ -335,34 +301,34 @@ static uint16_t getbytes(gdispImage *img) {
 			 */
 			else if (code == decode->code_max - 2 && decode->stackcnt < sizeof(decode->stack)) {
 				prefix = decode->code_last;
-				decode->suffix[decode->code_max - 2] = decode->stack[decode->stackcnt++] = getPrefix(decode, decode->code_last);
+				decode->suffix[decode->code_max - 2] = decode->stack[decode->stackcnt++] = getPrefixGif(decode, decode->code_last);
 			} else
 				return 0;
 
 			/**
-			 * If the image is OK we should not get a CODE_NONE while tracing.
+			 * If the image is OK we should not get a GIF_CODE_NONE while tracing.
 			 * To prevent looping with a bad image we use StackPtr as loop counter
 			 * and stop before overflowing Stack[].
 			 */
-			while (decode->stackcnt < sizeof(decode->stack) && prefix > decode->code_clear && prefix <= CODE_MAX) {
+			while (decode->stackcnt < sizeof(decode->stack) && prefix > decode->code_clear && prefix <= GIF_CODE_MAX) {
 				decode->stack[decode->stackcnt++] = decode->suffix[prefix];
 				prefix = decode->prefix[prefix];
 			}
-			if (decode->stackcnt >= sizeof(decode->stack) || prefix > CODE_MAX)
+			if (decode->stackcnt >= sizeof(decode->stack) || prefix > GIF_CODE_MAX)
 				return 0;
 
 			/* Push the last character on stack: */
 			decode->stack[decode->stackcnt++] = prefix;
 		}
 
-		if (decode->code_last != CODE_NONE && decode->prefix[decode->code_max - 2] == CODE_NONE) {
+		if (decode->code_last != GIF_CODE_NONE && decode->prefix[decode->code_max - 2] == GIF_CODE_NONE) {
 			decode->prefix[decode->code_max - 2] = decode->code_last;
 
 			/* Only allowed if code is exactly the running code:
 			* In that case code = XXXCode, CrntCode or the
 			* prefix code is last code and the suffix char is
 			* exactly the prefix of last code! */
-			decode->suffix[decode->code_max - 2] = getPrefix(decode, code == decode->code_max - 2 ? decode->code_last : code);
+			decode->suffix[decode->code_max - 2] = getPrefixGif(decode, code == decode->code_max - 2 ? decode->code_last : code);
 		}
 		decode->code_last = code;
 	}
@@ -374,13 +340,13 @@ static uint16_t getbytes(gdispImage *img) {
  *
  * Pre:		The file position is at the start of the frame.
  */
-static gdispImageError initFrame(gdispImage *img) {
-	gdispImagePrivate *	priv;
-	imgcache *			cache;
-	uint8_t				blocktype;
-	uint8_t				blocksz;
+static gdispImageError initFrameGif(gdispImage *img) {
+	gdispImagePrivate_GIF *	priv;
+	gifimgcache *			cache;
+	uint8_t					blocktype;
+	uint8_t					blocksz;
 
-	priv = img->priv;
+	priv = (gdispImagePrivate_GIF *)img->priv;
 
 	// Save the dispose info from the existing frame
 	priv->dispose.flags = priv->frame.flags;
@@ -416,14 +382,10 @@ static gdispImageError initFrame(gdispImage *img) {
 			// Read the Image Descriptor
 			if (gfileRead(img->f, priv->buf, 9) != 9)
 				return GDISP_IMAGE_ERR_BADDATA;
-			priv->frame.x = *(uint16_t *)(((uint8_t *)priv->buf)+0);
-			CONVERT_FROM_WORD_LE(priv->frame.x);
-			priv->frame.y = *(uint16_t *)(((uint8_t *)priv->buf)+2);
-			CONVERT_FROM_WORD_LE(priv->frame.y);
-			priv->frame.width = *(uint16_t *)(((uint8_t *)priv->buf)+4);
-			CONVERT_FROM_WORD_LE(priv->frame.width);
-			priv->frame.height = *(uint16_t *)(((uint8_t *)priv->buf)+6);
-			CONVERT_FROM_WORD_LE(priv->frame.height);
+			priv->frame.x = gdispImageGetAlignedLE16(priv->buf, 0);
+			priv->frame.y = gdispImageGetAlignedLE16(priv->buf, 2);
+			priv->frame.width = gdispImageGetAlignedLE16(priv->buf, 4);
+			priv->frame.height = gdispImageGetAlignedLE16(priv->buf, 6);
 			if (((uint8_t *)priv->buf)[8] & 0x80)				// Local color table?
 				priv->frame.palsize = 2 << (((uint8_t *)priv->buf)[8] & 0x07);
 			if (((uint8_t *)priv->buf)[8] & 0x40)				// Interlaced?
@@ -468,8 +430,7 @@ static gdispImageError initFrame(gdispImage *img) {
 				else
 					img->flags &= ~GDISP_IMAGE_FLG_MULTIPAGE;
 				// Process frame delay and the transparent color (if any)
-				priv->frame.delay = *(uint16_t *)(((uint8_t *)priv->buf)+2);
-				CONVERT_FROM_WORD_LE(priv->frame.delay);
+				priv->frame.delay = gdispImageGetAlignedLE16(priv->buf, 2);
 				priv->frame.paltrans = ((uint8_t *)priv->buf)[4];
 				break;
 
@@ -489,8 +450,7 @@ static gdispImageError initFrame(gdispImage *img) {
 						&& ((uint8_t *)priv->buf)[7] == 'P' && ((uint8_t *)priv->buf)[8] == 'E' && ((uint8_t *)priv->buf)[9] == '2'
 						&& ((uint8_t *)priv->buf)[10] == '.' && ((uint8_t *)priv->buf)[11] == '0') {
 					if (((uint8_t *)priv->buf)[13] == 1) {
-						priv->loops = *(uint16_t *)(((uint8_t *)priv->buf)+14);
-						CONVERT_FROM_WORD_LE(priv->loops);
+						priv->loops = gdispImageGetAlignedLE16(priv->buf, 14);
 						priv->flags |= GIF_LOOP;
 						if (!priv->loops)
 							priv->flags |= GIF_LOOPFOREVER;
@@ -522,16 +482,16 @@ static gdispImageError initFrame(gdispImage *img) {
 		case 0x3B:			//';' - TERMINATE_RECORD_TYPE;
 			// Are we an looping animation
 			if (!(priv->flags & GIF_LOOP))
-				return GDISP_IMAGE_EOF;
+				return GDISP_IMAGE_GIF_EOF;
 			if (!(priv->flags & GIF_LOOPFOREVER)) {
 				if (!priv->loops)
-					return GDISP_IMAGE_EOF;
+					return GDISP_IMAGE_GIF_EOF;
 				priv->loops--;
 			}
 
 			// Seek back to frame0
 			gfileSetPos(img->f, priv->frame0pos);
-			return GDISP_IMAGE_LOOP;
+			return GDISP_IMAGE_GIF_LOOP;
 
 		default:			// UNDEFINED_RECORD_TYPE;
 			return GDISP_IMAGE_ERR_UNSUPPORTED;
@@ -540,28 +500,28 @@ static gdispImageError initFrame(gdispImage *img) {
 }
 
 void gdispImageClose_GIF(gdispImage *img) {
-	gdispImagePrivate *	priv;
-	imgcache *			cache;
-	imgcache *			ncache;
+	gdispImagePrivate_GIF *	priv;
+	gifimgcache *			cache;
+	gifimgcache *			ncache;
 
-	priv = img->priv;
+	priv = (gdispImagePrivate_GIF *)img->priv;
 	if (priv) {
 		// Free any stored frames
 		cache = priv->cache;
 		while(cache) {
 			ncache = cache->next;
-			gdispImageFree(img, (void *)cache, sizeof(imgcache)+cache->frame.width*cache->frame.height+cache->frame.palsize*sizeof(color_t));
+			gdispImageFree(img, (void *)cache, sizeof(gifimgcache)+cache->frame.width*cache->frame.height+cache->frame.palsize*sizeof(color_t));
 			cache = ncache;
 		}
 		if (priv->palette)
 			gdispImageFree(img, (void *)priv->palette, priv->palsize*sizeof(color_t));
-		gdispImageFree(img, (void *)img->priv, sizeof(gdispImagePrivate));
+		gdispImageFree(img, (void *)priv, sizeof(gdispImagePrivate_GIF));
 		img->priv = 0;
 	}
 }
 
 gdispImageError gdispImageOpen_GIF(gdispImage *img) {
-	gdispImagePrivate *priv;
+	gdispImagePrivate_GIF *priv;
 	uint8_t		hdr[6];
 	uint16_t	aword;
 
@@ -579,17 +539,18 @@ gdispImageError gdispImageOpen_GIF(gdispImage *img) {
 	img->flags = 0;
 
 	/* Allocate our private area */
-	if (!(img->priv = (gdispImagePrivate *)gdispImageAlloc(img, sizeof(gdispImagePrivate))))
+	if (!(img->priv = gdispImageAlloc(img, sizeof(gdispImagePrivate_GIF))))
 		return GDISP_IMAGE_ERR_NOMEMORY;
 
 	/* Initialise the essential bits in the private area */
-	priv = img->priv;
+	priv = (gdispImagePrivate_GIF *)img->priv;
 	priv->flags = 0;
 	priv->palsize = 0;
 	priv->palette = 0;
 	priv->frame.flags = 0;
 	priv->cache = 0;
 	priv->curcache = 0;
+	priv->decode = 0;
 
 	/* Process the Screen Descriptor structure */
 
@@ -597,11 +558,9 @@ gdispImageError gdispImageOpen_GIF(gdispImage *img) {
 	if (gfileRead(img->f, priv->buf, 7) != 7)
 		goto baddatacleanup;
 	// Get the width
-	img->width = *(uint16_t *)(((uint8_t *)priv->buf)+0);
-	CONVERT_FROM_WORD_LE(img->width);
+	img->width = gdispImageGetAlignedLE16(priv->buf, 0);
 	// Get the height
-	img->height = *(uint16_t *)(((uint8_t *)priv->buf)+2);
-	CONVERT_FROM_WORD_LE(img->height);
+	img->height = gdispImageGetAlignedLE16(priv->buf, 2);
 	if (((uint8_t *)priv->buf)[4] & 0x80) {
 		// Global color table
 		priv->palsize = 2 << (((uint8_t *)priv->buf)[4] & 0x07);
@@ -621,7 +580,7 @@ gdispImageError gdispImageOpen_GIF(gdispImage *img) {
 	priv->frame0pos = gfileGetPos(img->f);
 
 	// Read the first frame descriptor
-	switch(initFrame(img)) {
+	switch(initFrameGif(img)) {
 	case GDISP_IMAGE_ERR_OK:					// Everything OK
 		img->type = GDISP_IMAGE_TYPE_GIF;
 		return GDISP_IMAGE_ERR_OK;
@@ -632,8 +591,8 @@ gdispImageError gdispImageOpen_GIF(gdispImage *img) {
 	nomemcleanup:
 		gdispImageClose_GIF(img);					// Clean up the private data area
 		return GDISP_IMAGE_ERR_NOMEMORY;
-	case GDISP_IMAGE_EOF:						// We should have a frame but we don't seem to
-	case GDISP_IMAGE_LOOP:						// We should have a frame but we don't seem to
+	case GDISP_IMAGE_GIF_EOF:						// We should have a frame but we don't seem to
+	case GDISP_IMAGE_GIF_LOOP:						// We should have a frame but we don't seem to
 	case GDISP_IMAGE_ERR_BADDATA:				// Oops - something wrong with the data
 	default:
 	baddatacleanup:
@@ -643,21 +602,21 @@ gdispImageError gdispImageOpen_GIF(gdispImage *img) {
 }
 
 gdispImageError gdispImageCache_GIF(gdispImage *img) {
-	gdispImagePrivate *	priv;
-	imgcache *			cache;
-	imgdecode *			decode;
-	uint8_t *			p;
-	uint8_t *			q;
-	coord_t				mx, my;
-	uint16_t			cnt;
+	gdispImagePrivate_GIF *	priv;
+	gifimgcache *			cache;
+	gifimgdecode *			decode;
+	uint8_t *				p;
+	uint8_t *				q;
+	coord_t					mx, my;
+	uint16_t				cnt;
 
 	/* If we are already cached - just return OK */
-	priv = img->priv;
+	priv = (gdispImagePrivate_GIF *)img->priv;
 	if (priv->curcache)
 		return GDISP_IMAGE_ERR_OK;
 
 	/* We need to allocate the frame, the palette and bits for the image */
-	if (!(cache = (imgcache *)gdispImageAlloc(img, sizeof(imgcache) + priv->frame.palsize*sizeof(color_t) + priv->frame.width*priv->frame.height)))
+	if (!(cache = (gifimgcache *)gdispImageAlloc(img, sizeof(gifimgcache) + priv->frame.palsize*sizeof(color_t) + priv->frame.width*priv->frame.height)))
 		return GDISP_IMAGE_ERR_NOMEMORY;
 
 	/* Initialise the cache */
@@ -667,7 +626,7 @@ gdispImageError gdispImageCache_GIF(gdispImage *img) {
 	cache->next = 0;
 
 	/* Start the decode */
-	switch(startDecode(img)) {
+	switch(startDecodeGif(img)) {
 	case GDISP_IMAGE_ERR_OK:			break;
 	case GDISP_IMAGE_ERR_NOMEMORY:		goto nomemcleanup;
 	case GDISP_IMAGE_ERR_BADDATA:
@@ -687,12 +646,13 @@ gdispImageError gdispImageCache_GIF(gdispImage *img) {
 
 	// Check for interlacing
 	cnt = 0;
+	q = 0;
 	if (cache->frame.flags & GIFL_INTERLACE) {
 		// Every 8th row starting at row 0
 		for(p=cache->imagebits, my=0; my < cache->frame.height; my+=8, p += cache->frame.width*7) {
 			for(mx=0; mx < cache->frame.width; mx++) {
 				if (!cnt) {
-					if (!(cnt = getbytes(img))) {
+					if (!(cnt = getBytesGif(img))) {
 						// Sometimes the image EOF is a bit early - treat the rest as transparent
 						if (decode->code_last != decode->code_eof)
 							goto baddatacleanup;
@@ -709,7 +669,7 @@ gdispImageError gdispImageCache_GIF(gdispImage *img) {
 		for(p=cache->imagebits+cache->frame.width*4, my=4; my < cache->frame.height; my+=8, p += cache->frame.width*7) {
 			for(mx=0; mx < cache->frame.width; mx++) {
 				if (!cnt) {
-					if (!(cnt = getbytes(img))) {
+					if (!(cnt = getBytesGif(img))) {
 						// Sometimes the image EOF is a bit early - treat the rest as transparent
 						if (decode->code_last != decode->code_eof)
 							goto baddatacleanup;
@@ -726,7 +686,7 @@ gdispImageError gdispImageCache_GIF(gdispImage *img) {
 		for(p=cache->imagebits+cache->frame.width*2, my=2; my < cache->frame.height; my+=4, p += cache->frame.width*3) {
 			for(mx=0; mx < cache->frame.width; mx++) {
 				if (!cnt) {
-					if (!(cnt = getbytes(img))) {
+					if (!(cnt = getBytesGif(img))) {
 						// Sometimes the image EOF is a bit early - treat the rest as transparent
 						if (decode->code_last != decode->code_eof)
 							goto baddatacleanup;
@@ -743,7 +703,7 @@ gdispImageError gdispImageCache_GIF(gdispImage *img) {
 		for(p=cache->imagebits+cache->frame.width, my=1; my < cache->frame.height; my+=2, p += cache->frame.width) {
 			for(mx=0; mx < cache->frame.width; mx++) {
 				if (!cnt) {
-					if (!(cnt = getbytes(img))) {
+					if (!(cnt = getBytesGif(img))) {
 						// Sometimes the image EOF is a bit early - treat the rest as transparent
 						if (decode->code_last != decode->code_eof)
 							goto baddatacleanup;
@@ -762,7 +722,7 @@ gdispImageError gdispImageCache_GIF(gdispImage *img) {
 		for(my=0; my < cache->frame.height; my++) {
 			for(mx=0; mx < cache->frame.width; mx++) {
 				if (!cnt) {
-					if (!(cnt = getbytes(img))) {
+					if (!(cnt = getBytesGif(img))) {
 						// Sometimes the image EOF is a bit early - treat the rest as transparent
 						if (decode->code_last != decode->code_eof)
 							goto baddatacleanup;
@@ -777,7 +737,7 @@ gdispImageError gdispImageCache_GIF(gdispImage *img) {
 		}
 	}
 	// We could be pedantic here but extra bytes won't hurt us
-	while(getbytes(img));
+	while(getBytesGif(img));
 	priv->frame.posend = cache->frame.posend = gfileGetPos(img->f);
 
 	// Save everything
@@ -788,7 +748,7 @@ gdispImageError gdispImageCache_GIF(gdispImage *img) {
 		cache->next = priv->cache;
 		priv->cache = cache;
 	} else {
-		imgcache	*pc;
+		gifimgcache	*pc;
 
 		for(pc = priv->cache; pc; pc = pc->next) {
 			if (!pc->next || pc->next->frame.posstart > cache->frame.posstart) {
@@ -798,29 +758,29 @@ gdispImageError gdispImageCache_GIF(gdispImage *img) {
 			}
 		}
 	}
-	stopDecode(img);
+	stopDecodeGif(img);
 	return GDISP_IMAGE_ERR_OK;
 
 nomemcleanup:
-	stopDecode(img);
-	gdispImageFree(img, cache, sizeof(imgcache) + priv->frame.palsize*sizeof(color_t) + priv->frame.width*priv->frame.height);
+	stopDecodeGif(img);
+	gdispImageFree(img, cache, sizeof(gifimgcache) + priv->frame.palsize*sizeof(color_t) + priv->frame.width*priv->frame.height);
 	return GDISP_IMAGE_ERR_NOMEMORY;
 
 baddatacleanup:
-	stopDecode(img);
-	gdispImageFree(img, cache, sizeof(imgcache) + priv->frame.palsize*sizeof(color_t) + priv->frame.width*priv->frame.height);
+	stopDecodeGif(img);
+	gdispImageFree(img, cache, sizeof(gifimgcache) + priv->frame.palsize*sizeof(color_t) + priv->frame.width*priv->frame.height);
 	return GDISP_IMAGE_ERR_BADDATA;
 }
 
 gdispImageError gdispGImageDraw_GIF(GDisplay *g, gdispImage *img, coord_t x, coord_t y, coord_t cx, coord_t cy, coord_t sx, coord_t sy) {
-	gdispImagePrivate *	priv;
-	imgdecode *			decode;
-	uint8_t *			q = 0;
-	coord_t				mx, my, fx, fy;
-	uint16_t			cnt, gcnt;
-	uint8_t				col;
+	gdispImagePrivate_GIF *	priv;
+	gifimgdecode *			decode;
+	uint8_t *				q = 0;
+	coord_t					mx, my, fx, fy;
+	uint16_t				cnt, gcnt;
+	uint8_t					col;
 
-	priv = img->priv;
+	priv = (gdispImagePrivate_GIF *)img->priv;
 
 	/* Handle previous frame disposing */
 	if (priv->dispose.flags & (GIFL_DISPOSECLEAR|GIFL_DISPOSEREST)) {
@@ -861,7 +821,7 @@ gdispImageError gdispGImageDraw_GIF(GDisplay *g, gdispImage *img, coord_t x, coo
 
 	/* Draw from the image cache - if it exists */
 	if (priv->curcache) {
-		imgcache *	cache;
+		gifimgcache *	cache;
 
 		cache = priv->curcache;
 		q = cache->imagebits+priv->frame.width*sy+sx;
@@ -879,7 +839,7 @@ gdispImageError gdispGImageDraw_GIF(GDisplay *g, gdispImage *img, coord_t x, coo
 					continue;
 				}
 				priv->buf[gcnt++] = cache->palette[col];
-				if (gcnt >= BLIT_BUFFER_SIZE) {
+				if (gcnt >= BLIT_BUFFER_SIZE_GIF) {
 					// We have run out of buffer - dump it to the display
 					gdispGBlitArea(g, x+mx-sx-gcnt+1, y+my-sy, gcnt, 1, 0, 0, gcnt, priv->buf);
 					gcnt = 0;
@@ -897,7 +857,7 @@ gdispImageError gdispGImageDraw_GIF(GDisplay *g, gdispImage *img, coord_t x, coo
 	}
 
 	/* Start the decode */
-	switch(startDecode(img)) {
+	switch(startDecodeGif(img)) {
 	case GDISP_IMAGE_ERR_OK:			break;
 	case GDISP_IMAGE_ERR_NOMEMORY:		return GDISP_IMAGE_ERR_NOMEMORY;
 	case GDISP_IMAGE_ERR_BADDATA:
@@ -912,7 +872,7 @@ gdispImageError gdispGImageDraw_GIF(GDisplay *g, gdispImage *img, coord_t x, coo
 		for(my=0; my < priv->frame.height; my+=8) {
 			for(gcnt=0, mx=0; mx < priv->frame.width; mx++, q++, cnt--) {
 				if (!cnt) {
-					if (!(cnt = getbytes(img))) {
+					if (!(cnt = getBytesGif(img))) {
 						// Sometimes the image EOF is a bit early - treat the rest as transparent
 						if (decode->code_last != decode->code_eof)
 							goto baddatacleanup;
@@ -933,7 +893,7 @@ gdispImageError gdispGImageDraw_GIF(GDisplay *g, gdispImage *img, coord_t x, coo
 						continue;
 					}
 					priv->buf[gcnt++] = decode->palette[col];
-					if (gcnt >= BLIT_BUFFER_SIZE) {
+					if (gcnt >= BLIT_BUFFER_SIZE_GIF) {
 						// We have run out of buffer - dump it to the display
 						gdispGBlitArea(g, x+mx-sx-gcnt+1, y+my-sy, gcnt, 1, 0, 0, gcnt, priv->buf);
 						gcnt = 0;
@@ -958,7 +918,7 @@ gdispImageError gdispGImageDraw_GIF(GDisplay *g, gdispImage *img, coord_t x, coo
 		for(my=4; my < priv->frame.height; my+=8) {
 			for(gcnt=0, mx=0; mx < priv->frame.width; mx++, q++, cnt--) {
 				if (!cnt) {
-					if (!(cnt = getbytes(img))) {
+					if (!(cnt = getBytesGif(img))) {
 						// Sometimes the image EOF is a bit early - treat the rest as transparent
 						if (decode->code_last != decode->code_eof)
 							goto baddatacleanup;
@@ -979,7 +939,7 @@ gdispImageError gdispGImageDraw_GIF(GDisplay *g, gdispImage *img, coord_t x, coo
 						continue;
 					}
 					priv->buf[gcnt++] = decode->palette[col];
-					if (gcnt >= BLIT_BUFFER_SIZE) {
+					if (gcnt >= BLIT_BUFFER_SIZE_GIF) {
 						// We have run out of buffer - dump it to the display
 						gdispGBlitArea(g, x+mx-sx-gcnt+1, y+my-sy, gcnt, 1, 0, 0, gcnt, priv->buf);
 						gcnt = 0;
@@ -1004,7 +964,7 @@ gdispImageError gdispGImageDraw_GIF(GDisplay *g, gdispImage *img, coord_t x, coo
 		for(my=2; my < priv->frame.height; my+=4) {
 			for(gcnt=0, mx=0; mx < priv->frame.width; mx++, q++, cnt--) {
 				if (!cnt) {
-					if (!(cnt = getbytes(img))) {
+					if (!(cnt = getBytesGif(img))) {
 						// Sometimes the image EOF is a bit early - treat the rest as transparent
 						if (decode->code_last != decode->code_eof)
 							goto baddatacleanup;
@@ -1025,7 +985,7 @@ gdispImageError gdispGImageDraw_GIF(GDisplay *g, gdispImage *img, coord_t x, coo
 						continue;
 					}
 					priv->buf[gcnt++] = decode->palette[col];
-					if (gcnt >= BLIT_BUFFER_SIZE) {
+					if (gcnt >= BLIT_BUFFER_SIZE_GIF) {
 						// We have run out of buffer - dump it to the display
 						gdispGBlitArea(g, x+mx-sx-gcnt+1, y+my-sy, gcnt, 1, 0, 0, gcnt, priv->buf);
 						gcnt = 0;
@@ -1050,7 +1010,7 @@ gdispImageError gdispGImageDraw_GIF(GDisplay *g, gdispImage *img, coord_t x, coo
 		for(my=1; my < priv->frame.height; my+=2) {
 			for(gcnt=0, mx=0; mx < priv->frame.width; mx++, q++, cnt--) {
 				if (!cnt) {
-					if (!(cnt = getbytes(img))) {
+					if (!(cnt = getBytesGif(img))) {
 						// Sometimes the image EOF is a bit early - treat the rest as transparent
 						if (decode->code_last != decode->code_eof)
 							goto baddatacleanup;
@@ -1071,7 +1031,7 @@ gdispImageError gdispGImageDraw_GIF(GDisplay *g, gdispImage *img, coord_t x, coo
 						continue;
 					}
 					priv->buf[gcnt++] = decode->palette[col];
-					if (gcnt >= BLIT_BUFFER_SIZE) {
+					if (gcnt >= BLIT_BUFFER_SIZE_GIF) {
 						// We have run out of buffer - dump it to the display
 						gdispGBlitArea(g, x+mx-sx-gcnt+1, y+my-sy, gcnt, 1, 0, 0, gcnt, priv->buf);
 						gcnt = 0;
@@ -1097,7 +1057,7 @@ gdispImageError gdispGImageDraw_GIF(GDisplay *g, gdispImage *img, coord_t x, coo
 		for(my=0; my < priv->frame.height; my++) {
 			for(gcnt=0, mx=0; mx < priv->frame.width; mx++, q++, cnt--) {
 				if (!cnt) {
-					if (!(cnt = getbytes(img))) {
+					if (!(cnt = getBytesGif(img))) {
 						// Sometimes the image EOF is a bit early - treat the rest as transparent
 						if (decode->code_last != decode->code_eof)
 							goto baddatacleanup;
@@ -1118,7 +1078,7 @@ gdispImageError gdispGImageDraw_GIF(GDisplay *g, gdispImage *img, coord_t x, coo
 						continue;
 					}
 					priv->buf[gcnt++] = decode->palette[col];
-					if (gcnt >= BLIT_BUFFER_SIZE) {
+					if (gcnt >= BLIT_BUFFER_SIZE_GIF) {
 						// We have run out of buffer - dump it to the display
 						gdispGBlitArea(g, x+mx-sx-gcnt+1, y+my-sy, gcnt, 1, 0, 0, gcnt, priv->buf);
 						gcnt = 0;
@@ -1141,23 +1101,23 @@ gdispImageError gdispGImageDraw_GIF(GDisplay *g, gdispImage *img, coord_t x, coo
 		}
 	}
 	// We could be pedantic here but extra bytes won't hurt us
-	while (getbytes(img));
+	while (getBytesGif(img));
 	priv->frame.posend = gfileGetPos(img->f);
 
-	stopDecode(img);
+	stopDecodeGif(img);
 	return GDISP_IMAGE_ERR_OK;
 
 baddatacleanup:
-	stopDecode(img);
+	stopDecodeGif(img);
 	return GDISP_IMAGE_ERR_BADDATA;
 }
 
 delaytime_t gdispImageNext_GIF(gdispImage *img) {
-	gdispImagePrivate *	priv;
-	delaytime_t			delay;
-	uint8_t				blocksz;
+	gdispImagePrivate_GIF *	priv;
+	delaytime_t				delay;
+	uint8_t					blocksz;
 
-	priv = img->priv;
+	priv = (gdispImagePrivate_GIF *)img->priv;
 
 	// Save the delay and convert to millisecs
 	delay = (delaytime_t)priv->frame.delay * 10;
@@ -1181,12 +1141,12 @@ delaytime_t gdispImageNext_GIF(gdispImage *img) {
 
 	// Read the next frame descriptor
 	for(blocksz=0; blocksz < 2; blocksz++) {		// 2 loops max to prevent cycling forever with a bad file
-		switch(initFrame(img)) {
+		switch(initFrameGif(img)) {
 		case GDISP_IMAGE_ERR_OK:					// Everything OK
 			return delay;
-		case GDISP_IMAGE_LOOP:						// Back to the beginning
+		case GDISP_IMAGE_GIF_LOOP:						// Back to the beginning
 			break;
-		case GDISP_IMAGE_EOF:						// The real End-Of-File
+		case GDISP_IMAGE_GIF_EOF:						// The real End-Of-File
 		case GDISP_IMAGE_ERR_BADDATA:				// Oops - something wrong with the data
 		case GDISP_IMAGE_ERR_NOMEMORY:				// Out of Memory
 		case GDISP_IMAGE_ERR_UNSUPPORTED:			// Unsupported

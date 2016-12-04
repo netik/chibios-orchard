@@ -11,6 +11,8 @@
  * @defgroup Window Window
  * @ingroup Windows
  *
+ * @brief		The basic window implementation (base class).
+ *
  * @details		GWIN provides a basic window manager which allows it to easily
  *				create and destroy different windows at runtime. Each window
  *				will have it's own properties such as colors as well as
@@ -23,7 +25,7 @@
 #ifndef _GWIN_H
 #define _GWIN_H
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GWIN || defined(__DOXYGEN__)
 
@@ -38,21 +40,24 @@ typedef struct GWindowObject *GHandle;
 typedef struct GWindowObject {
 	#if GWIN_NEED_WINDOWMANAGER
 		// This MUST be the first member of the structure
-		gfxQueueASyncItem	wmq;				// @< The next window (for the window manager)
+		gfxQueueASyncItem	wmq;				/**< The next window (for the window manager) */
 	#endif
-	const struct gwinVMT	*vmt;				// @< The VMT for this GWIN
-	GDisplay *				display;			// @< The display this window is on.
-	coord_t					x, y;				// @< Screen relative position
-	coord_t					width, height;		// @< Dimensions of this window
-	color_t					color, bgcolor;		// @< The current drawing colors
-	uint32_t				flags;				// @< Window flags (the meaning is private to the GWIN class)
+	const struct gwinVMT*	vmt;				/**< The VMT for this GWIN */
+	GDisplay *				display;			/**< The display this window is on */
+	coord_t					x;					/**< The position relative to the screen */
+	coord_t					y;					/**< The position relative to the screen */
+	coord_t					width;				/**< The width of this window */
+	coord_t					height;				/**< The height of this window */
+	color_t					color;				/**< The current foreground drawing color */
+	color_t					bgcolor;			/**< The current background drawing color */
+	uint32_t				flags;				/**< Window flags (the meaning is private to the GWIN class) */
 	#if GDISP_NEED_TEXT
-		font_t				font;				// @< The current font
+		font_t				font;				/**< The current font */
 	#endif
 	#if GWIN_NEED_CONTAINERS
-		GHandle				parent;				// @< The parent window
+		GHandle				parent;				/**< The parent window */
 	#endif
-} GWindowObject /*, * GHandle*/;
+} GWindowObject, * GHandle;
 /** @} */
 
 /**
@@ -68,11 +73,13 @@ typedef struct GWindowObject {
  * @{
  */
 typedef struct GWindowInit {
-	coord_t			x, y;							// @< The initial position relative to its parent
-	coord_t			width, height;					// @< The initial dimension
-	bool_t			show;							// @< Should the window be visible initially
+	coord_t			x;								/**< The initial position relative to its parent */
+	coord_t			y;								/**< The initial position relative to its parent */
+	coord_t			width;							/**< The width */
+	coord_t			height;							/**< The height */
+	bool_t			show;							/**< Should the window be visible initially */
 	#if GWIN_NEED_CONTAINERS
-		GHandle		parent;							// @< The parent - must be a container or NULL
+		GHandle		parent;							/**< The parent - must be a container or NULL */
 	#endif
 } GWindowInit;
 /** @} */
@@ -469,7 +476,7 @@ extern "C" {
 
 	#if GWIN_NEED_WINDOWMANAGER || defined (__DOXYGEN__)
 		/**
-		 * @brief	Redraw a window
+		 * @brief	Redraw a display
 		 *
 		 * @param[in] g				The display to redraw. Passing NULL will redraw all displays.
 		 * @param[in] preserve		Should the redraw try to preserve existing screen data for those

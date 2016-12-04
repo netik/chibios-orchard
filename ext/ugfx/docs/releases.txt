@@ -2,7 +2,75 @@
 *** Releases                                                              ***
 *****************************************************************************
 
-*** Changes after 2.2 ***
+*** Changes after 2.6 ***
+
+
+
+*** Release 2.6 ***
+FIX:		Fixed bug where the list item count wasn't decremented when an item was removed
+FEATURE:	Added options GFILE_FATFS_EXTERNAL_LIB and GFILE_PETITFSFS_EXTERNAL_LIB
+FEATURE:	Added FT6x06 driver
+FIX:		Fixed issue in STM32F746G-Discovery board file that resulted in bad color reproduction
+FEATURE:	Added gwinPrintg()
+FIX:		Fixed sprintg and related functions handling of NULL pointers.
+FIX:		Fixed width calculation of gdispGDrawString() and gdispGFillString().
+FEATURE:	Added QImage display driver.
+FEATURE:	Added QWidget touch driver
+FEATURE:	Added support for Qt as a GOS platform
+FEATURE:	Added ability to set a parent for a win32 ugfx emulator window
+FEATURE:	Added ability to inject mouse events for a Win32 ugfx emulator window
+FEATURE:	Added ability to turn on and off mouse processing for a win32 ugfx emulator window
+FEATURE:	Added ability to capture mouse events on the win32 ugfx emaultor window
+FIX:		Fixed issue where children of (nested) containers were not properly handled when callin gwinRaise()
+FEATURE:	Automatically close all open files in gfileDeinit()
+FEATURE:	Added support for IAR and EDG compilers
+FIX:		Fixed crash when loading GIF image without enough memory available
+FEATURE:	Added games/minesweeper demo
+FEATURE:	Added games/justget10 demo
+		
+
+*** Release 2.5 ***
+FEATURE:	Added support for numerous compilers
+FIX:		Improving STM32LTDC driver
+FEATURE:	Added support for NIOS-II platform
+FEATURE:	Added Altera-MAX10-NEEK board support
+FIX:		Vastly improving keyboard widget default rendering
+FEATURE:	Added ILI9342 driver
+FIX:		Fixing issues where wrong 'progress' color from widget style palette was used
+FEATURE:	Added GWIN_FRAME_KEEPONCLOSE flag to prevent destruction of a frame on close
+FEATURE:	Added support for PNG images
+FEATURE:	Added new module 'GTRANS' which allows handling application translations
+FEATURE:	Added SSD1848 driver
+
+
+*** Release 2.4 ***
+FIX:		Add missing stm32m3 cpu makefile option. Update doc to match.
+FEATURE:	Added ability to compile ugfx as a single file. Simply compile src/gfx_mk.c
+FEATURE:	Added GFXSINGLEMAKE=yes|no to the ugfx makefile to compile ugfx as a single file.
+FEATURE:	New board STM32F746G-Discovery
+FEATURE:	New gdisp driver STM32LTDC
+FEATURE:	Better support for Raw32 platforms
+FEATURE:	Renaming GFX_NO_OS_INIT to GFX_OS_NO_INIT
+FEATURE:	New demo applications/combo
+FEATURE:	Adding more font metrics (BaselineX and BaselineY)
+FEATURE:	Adding gdispGetStringWidthCount()
+FEATURE:	Implementing widget focusing. See gwinSetFocus() and gwinGetFocus()
+FEATURE:	Adding TextEdit widget
+FEATURE:	Added color to widget style for focused widgets
+FEATURE:	Added GWIN_FOCUS_HIGHLIGHT_WIDTH as an option in the configuration file
+FEATURE:	Added support for CMSIS RTOS
+FEATURE:	Added support for KEIL RTX
+FEATURE:	Replace all references to inline with a reference to GFXINLINE
+FEATURE:	Added config option GFX_NO_INLINE to run off inlining of ugfx functions.
+FEATURE:	Added word-wrapping support for gdispDrawStringBox() and gdispFillStringBox()
+FIX:		Fixing issue in touchscreen calibration code
+FEATURE:	Added GFX_OS_PRE_INIT_FUNCTION for early hardware initialization
+FEATURE:	Added label rendering functions that allow to set text justification
+FIX:		Fixing GTIMER for high clock rate devices
+FEATURE:	Added GFX_COMPILER_KEIL and GFX_COMPILER_ARMCC macros
+
+
+*** Release 2.3 ***
 FEATURE:	Added more events to the slider widget
 FIX:		Clean up visibility issues
 FIX:		Correct moving of containers
@@ -15,7 +83,7 @@ FEATURE:	Support for keyboard layouts for non-english keyboards
 FEATURE:	GDISP now supports pixmaps (in memory drawing)
 FEATURE:	Rename files to improve experience in certain brain-dead IDE's
 FEATURE:	Add a checkbox "Toggle Button" custom draw
-FEATURE:	Add Tetris as an application demo
+FEATURE:	Add Tetris as a game demo
 FEATURE:	Add HY-MiniSTM32V board support
 FEATURE:	Add GWIN feature to flash any window/widget
 FIX:		Lots of GDISP monochrome drivers fixed
@@ -39,6 +107,7 @@ FIX:		Color components fixed for some strange compilers
 FEATURE:	Added GWIN virtual keyboard widget
 FEATURE:	Added gwinListSetSelected()
 FEATURE:	Added gwinListViewItem()
+FIX:		GDISP driver color conversion when GDISP_PIXEL_FORMAT != GDISP_LLD_PIXEL_FORMAT
 
 
 *** Release 2.2 ***

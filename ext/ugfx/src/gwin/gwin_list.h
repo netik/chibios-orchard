@@ -12,7 +12,9 @@
  * @defgroup List List
  * @ingroup Widgets
  *
- * @details		GWIN allows it to create a list widget.
+ * @brief		List Widget. Used to display lists of items.
+ *
+ * @details		Provides advanced features such as multi-selection, smooth scrolling and item icons.
  *
  * @pre			GFX_USE_GDISP must be set to TRUE in your gfxconf.h
  * @pre			GFX_USE_GWIN must be set to TRUE in your gfxconf.h
@@ -73,6 +75,35 @@ typedef struct GListObject {
  * @note    @p scrollSmooth enable touch screen smooth scrolling
  */
 typedef enum scroll_t { scrollAlways, scrollAuto, scrollSmooth } scroll_t;
+
+/**
+ * @brief	The internal list object flags
+ * @note	Used only for writing a custom draw routine.
+ * @{
+ */
+#define GLIST_FLG_MULTISELECT		0x01
+#define GLIST_FLG_HASIMAGES			0x02
+#define GLIST_FLG_SCROLLALWAYS		0x04
+#define GLIST_FLG_SCROLLSMOOTH      0x08
+#define GLIST_FLG_ENABLERENDER      0x10
+/** @} */
+
+/**
+ * @brief	The internal list item structure
+ * @note	Used only for writing a custom draw routine.
+ */
+typedef struct ListItem {
+	gfxQueueASyncItem	q_item;		// This must be the first member in the struct
+
+	uint16_t			flags;
+		#define GLIST_FLG_SELECTED			0x0001
+	uint16_t			param;		// A parameter the user can specify himself
+	const char*			text;
+	#if GWIN_NEED_LIST_IMAGES
+		gdispImage*		pimg;
+	#endif
+} ListItem;
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -325,6 +356,33 @@ void gwinListViewItem(GHandle gh, int item);
 	 */
 	void gwinListItemSetImage(GHandle gh, int item, gdispImage *pimg);
 #endif
+
+/**
+ * @defgroup Renderings_List Renderings
+ *
+ * @brief				Built-in rendering functions for the list widget.
+ *
+ * @details				These function may be passed to @p gwinSetCustomDraw() to get different list drawing styles.
+ *
+ * @note				In your custom list drawing function you may optionally call these
+ * 						standard functions and then draw your extra details on top.
+ * @note				These custom drawing routines don't have to worry about setting clipping as the framework
+ * 						sets clipping to the object window prior to calling these routines.
+ *
+ * @{
+ */
+
+/**
+ * @brief				The default rendering function for the list widget
+ *
+ * @param[in] gw		The widget object (must be a list object)
+ * @param[in] param		A parameter passed in from the user. Ignored by this function.
+ *
+ * @api
+ */
+void gwinListDefaultDraw(GWidgetObject* gw, void* param);
+
+/** @} */
 
 #ifdef __cplusplus
 }

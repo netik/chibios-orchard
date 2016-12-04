@@ -10,10 +10,10 @@
 #if GFX_USE_GINPUT && GINPUT_NEED_MOUSE
 
 #define GMOUSE_DRIVER_VMT		GMOUSEVMT_STMPE610
-#include "src/ginput/ginput_driver_mouse.h"
+#include "../../../../src/ginput/ginput_driver_mouse.h"
 
 // Hardware definitions
-#include "drivers/ginput/touch/STMPE610/stmpe610.h"
+#include "stmpe610.h"
 
 // Get the hardware interface
 #include "gmouse_lld_STMPE610_board.h"

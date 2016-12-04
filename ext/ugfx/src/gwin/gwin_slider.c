@@ -10,16 +10,14 @@
  * @brief   GWIN sub-system slider code
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if (GFX_USE_GWIN && GWIN_NEED_SLIDER) || defined(__DOXYGEN__)
 
 #include "gwin_class.h"
 
-#define GSLIDER_FLG_EXTENDED_EVENTS		(GWIN_FIRST_CONTROL_FLAG<<0)
-
 // Calculate the slider position from the display position
-static int CalculatePosFromDPos(GSliderObject *gsw) {
+static int SliderCalcPosFromDPos(GSliderObject *gsw) {
 	int		halfbit;
 
 	// Set the new position
@@ -74,7 +72,7 @@ static void SendSliderEvent(GSliderObject *gsw, uint8_t action) {
 		#endif
 
 		// If it is a cancel or set use the defined position else use the calculated position.
-		pse->position = pse->action >= GSLIDER_EVENT_CANCEL ? gsw->pos : CalculatePosFromDPos(gsw);
+		pse->position = pse->action >= GSLIDER_EVENT_CANCEL ? gsw->pos : SliderCalcPosFromDPos(gsw);
 
 		// Cleanup and send.
 		psl->srcflags = 0;
@@ -85,7 +83,7 @@ static void SendSliderEvent(GSliderObject *gsw, uint8_t action) {
 }
 
 // Reset the display position back to the value predicted by the saved slider position
-static void ResetDisplayPos(GSliderObject *gsw) {
+static void SliderResetDisplayPos(GSliderObject *gsw) {
 	if (gsw->w.g.width < gsw->w.g.height)
 		gsw->dpos = gsw->w.g.height-1-(gsw->w.g.height-1)*(gsw->pos-gsw->min)/(gsw->max-gsw->min);
 	else
@@ -102,14 +100,14 @@ static void ResetDisplayPos(GSliderObject *gsw) {
 	}
 
 	// A mouse up event
-	static void MouseUp(GWidgetObject *gw, coord_t x, coord_t y) {
+	static void SliderMouseUp(GWidgetObject *gw, coord_t x, coord_t y) {
 		#define gsw		((GSliderObject *)gw)
 
 		#if !GWIN_BUTTON_LAZY_RELEASE
 			// Are we over the slider?
 			if (x < 0 || x >= gsw->w.g.width || y < 0 || y >= gsw->w.g.height) {
 				// No - restore the slider
-				ResetDisplayPos(gsw);
+				SliderResetDisplayPos(gsw);
 				_gwinUpdate(&gsw->w.g);
 				SendSliderEvent(gsw, GSLIDER_EVENT_CANCEL);
 				return;
@@ -118,7 +116,7 @@ static void ResetDisplayPos(GSliderObject *gsw) {
 
 		// Set the new position
 		SetDisplayPosFromMouse(gsw, x, y);
-		gsw->pos = CalculatePosFromDPos(gsw);
+		gsw->pos = SliderCalcPosFromDPos(gsw);
 
 		// Update the display
 		#if GWIN_SLIDER_NOSNAP
@@ -135,7 +133,7 @@ static void ResetDisplayPos(GSliderObject *gsw) {
 					gsw->dpos = 0;
 			}
 		#else
-			ResetDisplayPos(gsw);
+			SliderResetDisplayPos(gsw);
 		#endif
 		_gwinUpdate(&gsw->w.g);
 
@@ -146,7 +144,7 @@ static void ResetDisplayPos(GSliderObject *gsw) {
 	}
 
 	// A mouse down event
-	static void MouseDown(GWidgetObject *gw, coord_t x, coord_t y) {
+	static void SliderMouseDown(GWidgetObject *gw, coord_t x, coord_t y) {
 		#define gsw		((GSliderObject *)gw)
 
 		// Determine the display position
@@ -162,7 +160,7 @@ static void ResetDisplayPos(GSliderObject *gsw) {
 	}
 
 	// A mouse move event
-	static void MouseMove(GWidgetObject *gw, coord_t x, coord_t y) {
+	static void SliderMouseMove(GWidgetObject *gw, coord_t x, coord_t y) {
 		#define gsw		((GSliderObject *)gw)
 
 		// Determine the display position
@@ -180,7 +178,7 @@ static void ResetDisplayPos(GSliderObject *gsw) {
 
 #if GINPUT_NEED_TOGGLE
 	// A toggle on has occurred
-	static void ToggleOn(GWidgetObject *gw, uint16_t role) {
+	static void SliderToggleOn(GWidgetObject *gw, uint16_t role) {
 		#define gsw		((GSliderObject *)gw)
 
 		if (role) {
@@ -193,28 +191,28 @@ static void ResetDisplayPos(GSliderObject *gsw) {
 		#undef gsw
 	}
 
-	static void ToggleAssign(GWidgetObject *gw, uint16_t role, uint16_t instance) {
+	static void SliderToggleAssign(GWidgetObject *gw, uint16_t role, uint16_t instance) {
 		if (role)
 			((GSliderObject *)gw)->t_up = instance;
 		else
 			((GSliderObject *)gw)->t_dn = instance;
 	}
 
-	static uint16_t ToggleGet(GWidgetObject *gw, uint16_t role) {
+	static uint16_t SliderToggleGet(GWidgetObject *gw, uint16_t role) {
 		return role ? ((GSliderObject *)gw)->t_up : ((GSliderObject *)gw)->t_dn;
 	}
 #endif
 
 #if GINPUT_NEED_DIAL
 	// A dial move event
-	static void DialMove(GWidgetObject *gw, uint16_t role, uint16_t value, uint16_t max) {
+	static void SliderDialMove(GWidgetObject *gw, uint16_t role, uint16_t value, uint16_t max) {
 		#define gsw		((GSliderObject *)gw)
 		(void)			role;
 
 		// Set the new position
 		gsw->pos = (uint16_t)((uint32_t)value*(gsw->max-gsw->min)/max + gsw->min);
 
-		ResetDisplayPos(gsw);
+		SliderResetDisplayPos(gsw);
 		_gwinUpdate(&gsw->w.g);
 
 		// Generate the event
@@ -222,12 +220,12 @@ static void ResetDisplayPos(GSliderObject *gsw) {
 		#undef gsw
 	}
 
-	static void DialAssign(GWidgetObject *gw, uint16_t role, uint16_t instance) {
+	static void SliderDialAssign(GWidgetObject *gw, uint16_t role, uint16_t instance) {
 		(void) role;
 		((GSliderObject *)gw)->dial = instance;
 	}
 
-	static uint16_t DialGet(GWidgetObject *gw, uint16_t role) {
+	static uint16_t SliderDialGet(GWidgetObject *gw, uint16_t role) {
 		(void) role;
 		return ((GSliderObject *)gw)->dial;
 	}
@@ -245,26 +243,31 @@ static const gwidgetVMT sliderVMT = {
 	gwinSliderDraw_Std,			// The default drawing routine
 	#if GINPUT_NEED_MOUSE
 		{
-			MouseDown,				// Process mouse down events
-			MouseUp,				// Process mouse up events
-			MouseMove,				// Process mouse move events
+			SliderMouseDown,		// Process mouse down events
+			SliderMouseUp,			// Process mouse up events
+			SliderMouseMove,		// Process mouse move events
+		},
+	#endif
+	#if GINPUT_NEED_KEYBOARD || GWIN_NEED_KEYBOARD
+		{
+			0						// Process keyboard events
 		},
 	#endif
 	#if GINPUT_NEED_TOGGLE
 		{
 			2,						// 1 toggle role
-			ToggleAssign,			// Assign Toggles
-			ToggleGet,				// Get Toggles
+			SliderToggleAssign,		// Assign Toggles
+			SliderToggleGet,		// Get Toggles
 			0,						// Process toggle off events (NOT USED)
-			ToggleOn,				// Process toggle on events
+			SliderToggleOn,			// Process toggle on events
 		},
 	#endif
 	#if GINPUT_NEED_DIAL
 		{
 			1,						// 1 dial roles
-			DialAssign,				// Assign Dials
-			DialGet,				// Get Dials
-			DialMove,				// Process dial move events
+			SliderDialAssign,		// Assign Dials
+			SliderDialGet,			// Get Dials
+			SliderDialMove,			// Process dial move events
 		},
 	#endif
 };
@@ -282,7 +285,7 @@ GHandle gwinGSliderCreate(GDisplay *g, GSliderObject *gs, const GWidgetInit *pIn
 	gs->min = 0;
 	gs->max = 100;
 	gs->pos = 0;
-	ResetDisplayPos(gs);
+	SliderResetDisplayPos(gs);
 	gwinSetVisible((GHandle)gs, pInit->g.show);
 	return (GHandle)gs;
 }
@@ -298,7 +301,7 @@ void gwinSliderSetRange(GHandle gh, int min, int max) {
 	gsw->min = min;
 	gsw->max = max;
 	gsw->pos = min;
-	ResetDisplayPos(gsw);
+	SliderResetDisplayPos(gsw);
 	#undef gsw
 }
 
@@ -317,7 +320,7 @@ void gwinSliderSetPosition(GHandle gh, int pos) {
 		else if (pos < gsw->max) gsw->pos = gsw->max;
 		else gsw->pos = pos;
 	}
-	ResetDisplayPos(gsw);
+	SliderResetDisplayPos(gsw);
 	_gwinUpdate(gh);
 
 	#undef gsw
@@ -346,17 +349,18 @@ void gwinSliderDraw_Std(GWidgetObject *gw, void *param) {
 		return;
 
 	if ((gw->g.flags & GWIN_FLG_SYSENABLED))
-		pcol = &gw->pstyle->pressed;
+		pcol = &gw->pstyle->enabled;
 	else
 		pcol = &gw->pstyle->disabled;
 
-	if (gw->g.width < gw->g.height) {			// Vertical slider
+	// Vertical slider
+	if (gw->g.width < gw->g.height) {
 		if (gsw->dpos != gw->g.height-1)
-			gdispGFillArea(gw->g.display, gw->g.x, gw->g.y+gsw->dpos, gw->g.width, gw->g.height - gsw->dpos, pcol->progress);	// Active Area
+			gdispGFillArea(gw->g.display, gw->g.x, gw->g.y+gsw->dpos, gw->g.width, gw->g.height - gsw->dpos, pcol->progress);		// Active area
 		if (gsw->dpos != 0)
-			gdispGFillArea(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gsw->dpos, gw->pstyle->enabled.progress);			// Inactive area
-		gdispGDrawBox(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gw->g.height, pcol->edge);								// Edge
-		gdispGDrawLine(gw->g.display, gw->g.x, gw->g.y+gsw->dpos, gw->g.x+gw->g.width-1, gw->g.y+gsw->dpos, pcol->edge);	// Thumb
+			gdispGFillArea(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gsw->dpos, pcol->fill);									// Inactive area
+		gdispGDrawBox(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gw->g.height, pcol->edge);										// Edge
+		gdispGDrawLine(gw->g.display, gw->g.x, gw->g.y+gsw->dpos, gw->g.x+gw->g.width-1, gw->g.y+gsw->dpos, pcol->edge);			// Thumb
 		if (gsw->dpos >= 2)
 			gdispGDrawLine(gw->g.display, gw->g.x, gw->g.y+gsw->dpos-2, gw->g.x+gw->g.width-1, gw->g.y+gsw->dpos-2, pcol->edge);	// Thumb
 		if (gsw->dpos <= gw->g.height-2)
@@ -365,16 +369,18 @@ void gwinSliderDraw_Std(GWidgetObject *gw, void *param) {
 	// Horizontal slider
 	} else {
 		if (gsw->dpos != gw->g.width-1)
-			gdispGFillArea(gw->g.display, gw->g.x+gsw->dpos, gw->g.y, gw->g.width-gsw->dpos, gw->g.height, gw->pstyle->enabled.progress);	// Inactive area
+			gdispGFillArea(gw->g.display, gw->g.x+gsw->dpos, gw->g.y, gw->g.width-gsw->dpos, gw->g.height, pcol->fill);				// Inactive area
 		if (gsw->dpos != 0)
-			gdispGFillArea(gw->g.display, gw->g.x, gw->g.y, gsw->dpos, gw->g.height, pcol->progress);	// Active Area
-		gdispGDrawBox(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gw->g.height, pcol->edge);								// Edge
-		gdispGDrawLine(gw->g.display, gw->g.x+gsw->dpos, gw->g.y, gw->g.x+gsw->dpos, gw->g.y+gw->g.height-1, pcol->edge);	// Thumb
+			gdispGFillArea(gw->g.display, gw->g.x, gw->g.y, gsw->dpos, gw->g.height, pcol->progress);								// Active area
+		gdispGDrawBox(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gw->g.height, pcol->edge);										// Edge
+		gdispGDrawLine(gw->g.display, gw->g.x+gsw->dpos, gw->g.y, gw->g.x+gsw->dpos, gw->g.y+gw->g.height-1, pcol->edge);			// Thumb
 		if (gsw->dpos >= 2)
 			gdispGDrawLine(gw->g.display, gw->g.x+gsw->dpos-2, gw->g.y, gw->g.x+gsw->dpos-2, gw->g.y+gw->g.height-1, pcol->edge);	// Thumb
 		if (gsw->dpos <= gw->g.width-2)
 			gdispGDrawLine(gw->g.display, gw->g.x+gsw->dpos+2, gw->g.y, gw->g.x+gsw->dpos+2, gw->g.y+gw->g.height-1, pcol->edge);	// Thumb
 	}
+
+	// Draw the string
 	gdispGDrawStringBox(gw->g.display, gw->g.x+1, gw->g.y+1, gw->g.width-2, gw->g.height-2, gw->text, gw->g.font, pcol->text, justifyCenter);
 
 	#undef gsw
@@ -391,13 +397,13 @@ void gwinSliderDraw_Image(GWidgetObject *gw, void *param) {
 		return;
 
 	if ((gw->g.flags & GWIN_FLG_SYSENABLED))
-		pcol = &gw->pstyle->pressed;
+		pcol = &gw->pstyle->enabled;
 	else
 		pcol = &gw->pstyle->disabled;
 
 	if (gw->g.width < gw->g.height) {			// Vertical slider
 		if (gsw->dpos != 0)							// The unfilled area
-			gdispGFillArea(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gsw->dpos, gw->pstyle->enabled.progress);	// Inactive area
+			gdispGFillArea(gw->g.display, gw->g.x+1, gw->g.y+1, gw->g.width-2, gsw->dpos-1, gw->pstyle->enabled.progress);	// Inactive area
 		if (gsw->dpos != gw->g.height-1) {			// The filled area
 			for(z=gw->g.height, v=gi->height; z > gsw->dpos;) {
 				z -= v;
@@ -405,25 +411,25 @@ void gwinSliderDraw_Image(GWidgetObject *gw, void *param) {
 					v -= gsw->dpos - z;
 					z = gsw->dpos;
 				}
-				gdispGImageDraw(gw->g.display, gi, gw->g.x, gw->g.y+z, gw->g.width, v, 0, gi->height-v);
+				gdispGImageDraw(gw->g.display, gi, gw->g.x+1, gw->g.y+z+1, gw->g.width-1, v-2, 0, gi->height-v);
 			}
 		}
 		gdispGDrawBox(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gw->g.height, pcol->edge);								// Edge
-		gdispGDrawLine(gw->g.display, gw->g.x, gw->g.y+gsw->dpos, gw->g.x+gw->g.width-1, gw->g.y+gsw->dpos, pcol->edge);	// Thumb
+		gdispGDrawLine(gw->g.display, gw->g.x+1, gw->g.y+gsw->dpos, gw->g.x+gw->g.width-2, gw->g.y+gsw->dpos, pcol->edge);	// Thumb
 
 	// Horizontal slider
 	} else {
 		if (gsw->dpos != gw->g.width-1)				// The unfilled area
-			gdispGFillArea(gw->g.display, gw->g.x+gsw->dpos, gw->g.y, gw->g.width-gsw->dpos, gw->g.height, gw->pstyle->enabled.progress);	// Inactive area
+			gdispGFillArea(gw->g.display, gw->g.x+gsw->dpos+1, gw->g.y+1, gw->g.width-gsw->dpos-2, gw->g.height-2, gw->pstyle->enabled.progress);	// Inactive area
 		if (gsw->dpos != 0) {						// The filled area
 			for(z=0, v=gi->width; z < gsw->dpos; z += v) {
 				if (z+v > gsw->dpos)
 					v -= z+v - gsw->dpos;
-				gdispGImageDraw(gw->g.display, gi, gw->g.x+z, gw->g.y, v, gw->g.height, 0, 0);
+				gdispGImageDraw(gw->g.display, gi, gw->g.x+z+1, gw->g.y+1, v-1, gw->g.height-2, 0, 0);
 			}
 		}
 		gdispGDrawBox(gw->g.display, gw->g.x, gw->g.y, gw->g.width, gw->g.height, pcol->edge);								// Edge
-		gdispGDrawLine(gw->g.display, gw->g.x+gsw->dpos, gw->g.y, gw->g.x+gsw->dpos, gw->g.y+gw->g.height-1, pcol->edge);	// Thumb
+		gdispGDrawLine(gw->g.display, gw->g.x+gsw->dpos, gw->g.y+1, gw->g.x+gsw->dpos, gw->g.y+gw->g.height-2, pcol->edge);	// Thumb
 	}
 	gdispGDrawStringBox(gw->g.display, gw->g.x+1, gw->g.y+1, gw->g.width-2, gw->g.height-2, gw->text, gw->g.font, pcol->text, justifyCenter);
 

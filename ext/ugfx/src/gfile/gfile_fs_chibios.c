@@ -9,7 +9,7 @@
  * The ChibiOS FileStream file-system
  ********************************************************/
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GFILE && GFILE_NEED_CHIBIOSFS && GFX_USE_OS_CHIBIOS
 

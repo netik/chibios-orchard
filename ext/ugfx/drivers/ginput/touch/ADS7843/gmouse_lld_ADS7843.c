@@ -10,7 +10,7 @@
 #if (GFX_USE_GINPUT && GINPUT_NEED_MOUSE) 
 
 #define GMOUSE_DRIVER_VMT		GMOUSEVMT_ADS7843
-#include "src/ginput/ginput_driver_mouse.h"
+#include "../../../../src/ginput/ginput_driver_mouse.h"
 
 // Get the hardware interface
 #include "gmouse_lld_ADS7843_board.h"

@@ -5,9 +5,9 @@
 /* disk I/O modules and attach it to FatFs module with common interface. */
 /*-----------------------------------------------------------------------*/
 
-#include "gfx.h"
+#include "../../gfx.h"
 
-#if GFX_USE_GFILE && GFILE_NEED_PETITFS && GFX_USE_OS_CHIBIOS
+#if GFX_USE_GFILE && GFILE_NEED_PETITFS && GFX_USE_OS_CHIBIOS && !GFILE_PETITFS_EXTERNAL_LIB
 
 #include "gfile_petitfs_wrapper.h"
 
@@ -77,6 +77,6 @@ DRESULT disk_readp (
 	return RES_OK;
 }
 
-#endif // GFX_USE_GFILE && GFILE_NEED_PETITFS && GFX_USE_OS_CHIBIOS
+#endif // GFX_USE_GFILE && GFILE_NEED_PETITFS && GFX_USE_OS_CHIBIOS && !GFILE_PETITFS_EXTERNAL_LIB
 
 

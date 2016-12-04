@@ -11,7 +11,7 @@
  *
  * @addtogroup GFILE
  *
- * @brief	Module which contains Operating system independent FILEIO
+ * @brief	Module which contains operating system independent file I/O.
  *
  * @{
  */
@@ -19,7 +19,7 @@
 #ifndef _GFILE_H
 #define _GFILE_H
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GFILE || defined(__DOXYGEN__)
 

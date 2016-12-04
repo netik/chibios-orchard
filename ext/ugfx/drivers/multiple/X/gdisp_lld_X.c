@@ -20,7 +20,7 @@
 
 #define GDISP_DRIVER_VMT				GDISPVMT_X11
 #include "gdisp_lld_config.h"
-#include "src/gdisp/gdisp_driver.h"
+#include "../../../src/gdisp/gdisp_driver.h"
 
 // Configuration parameters for this driver
 #ifndef GDISP_FORCE_24BIT
@@ -56,7 +56,7 @@
 #if GINPUT_NEED_MOUSE
 	// Include mouse support code
 	#define GMOUSE_DRIVER_VMT		GMOUSEVMT_X11
-	#include "src/ginput/ginput_driver_mouse.h"
+	#include "../../../src/ginput/ginput_driver_mouse.h"
 
 	// Forward definitions
 	static bool_t XMouseInit(GMouse *m, unsigned driverinstance);
@@ -98,7 +98,7 @@
 #if GINPUT_NEED_KEYBOARD
 	// Include mouse support code
 	#define GKEYBOARD_DRIVER_VMT		GKEYBOARDVMT_X
-	#include "src/ginput/ginput_driver_keyboard.h"
+	#include "../../../src/ginput/ginput_driver_keyboard.h"
 
 	#if !GKEYBOARD_X_NO_LAYOUT
 		#if GKEYBOARD_LAYOUT_OFF
@@ -108,7 +108,7 @@
 		// Forward definitions
 		extern uint8_t	GKEYBOARD_X_DEFAULT_LAYOUT[];
 
-		#include "src/ginput/ginput_keyboard_microcode.h"
+		#include "../../../src/ginput/ginput_keyboard_microcode.h"
 		#include <X11/keysym.h>
 
 		// This is the layout code for the English US keyboard.

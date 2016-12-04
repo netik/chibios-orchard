@@ -13,13 +13,16 @@
 /* Display various warnings from gfx_rules.h */
 #define GFX_DISPLAY_RULE_WARNINGS	TRUE
 
-#include "gfx.h"
+#include "../gfx.h"
 
-static bool_t initDone = FALSE;
+static bool_t gfxInitDone = FALSE;
 
 /* These init functions are defined by each module but not published */
 extern void _gosInit(void);
 extern void _gosDeinit(void);
+#ifdef GFX_OS_PRE_INIT_FUNCTION
+		extern void GFX_OS_PRE_INIT_FUNCTION(void);
+#endif
 #ifdef GFX_OS_EXTRA_INIT_FUNCTION
 		extern void GFX_OS_EXTRA_INIT_FUNCTION(void);
 #endif
@@ -70,16 +73,23 @@ extern void _gosDeinit(void);
 	extern void _gmiscInit(void);
 	extern void _gmiscDeinit(void);
 #endif
+#if GFX_USE_GTRANS
+	extern void _gtransInit(void);
+	extern void _gtransDeinit(void);
+#endif
 
 void gfxInit(void)
 {
 	/* Ensure we only initialise once */
-	if (initDone)
+	if (gfxInitDone)
 		return;
-	initDone = TRUE;
+	gfxInitDone = TRUE;
 
 	// These must be initialised in the order of their dependancies
 
+	#ifdef GFX_OS_PRE_INIT_FUNCTION
+		GFX_OS_PRE_INIT_FUNCTION();
+	#endif
 	_gosInit();
 	#ifdef GFX_OS_EXTRA_INIT_FUNCTION
 		GFX_OS_EXTRA_INIT_FUNCTION();
@@ -89,6 +99,9 @@ void gfxInit(void)
 	#endif
 	#if GFX_USE_GMISC
 		_gmiscInit();
+	#endif
+	#if GFX_USE_GTRANS
+		_gtransInit();
 	#endif
 	#if GFX_USE_GEVENT
 		_geventInit();
@@ -121,15 +134,15 @@ void gfxInit(void)
 
 void gfxDeinit(void)
 {
-	if (!initDone)
+	if (!gfxInitDone)
 		return;
-	initDone = FALSE;
+	gfxInitDone = FALSE;
 
 	// We deinitialise the opposite way as we initialised
 	#if GFX_USE_GWIN
 		_gwinDeinit();
 	#endif
-	#if GFX_USE_GAUDIN
+	#if GFX_USE_GAUDIO
 		_gaudioDeinit();
 	#endif
 	#if GFX_USE_GADC
@@ -152,6 +165,9 @@ void gfxDeinit(void)
 	#endif
 	#if GFX_USE_GEVENT
 		_geventDeinit();
+	#endif
+	#if GFX_USE_GTRANS
+		_gtransDeinit();
 	#endif
 	#if GFX_USE_GMISC
 		_gmiscDeinit();

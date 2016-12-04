@@ -10,7 +10,7 @@
  * @brief   GWIN sub-system window manager code
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GWIN && !GWIN_NEED_WINDOWMANAGER
 	/**
@@ -162,7 +162,6 @@
 extern const GWindowManager	GNullWindowManager;
 GWindowManager *			_GWINwm;
 bool_t						_gwinFlashState;
-
 static gfxSem				gwinsem;
 static gfxQueueASync		_GWINList;
 #if GWIN_NEED_FLASHING
@@ -331,14 +330,23 @@ void _gwinUpdate(GHandle gh) {
 				if (!gh->parent || (gh->parent->flags & GWIN_FLG_SYSVISIBLE)) {
 					// We have been made visible
 					gh->flags |= (GWIN_FLG_SYSVISIBLE|GWIN_FLG_NEEDREDRAW|GWIN_FLG_BGREDRAW);
+
+					// Do we want to grab the focus
+					_gwinFixFocus(gh);
+
 					RedrawPending |= DOREDRAW_VISIBLES;
 				}
 				break;
 			case (GWIN_FLG_VISIBLE|GWIN_FLG_SYSVISIBLE):
 				if (!gh->parent || (gh->parent->flags & GWIN_FLG_SYSVISIBLE))
 					break;
+
 				// Parent has been made invisible
 				gh->flags &= ~GWIN_FLG_SYSVISIBLE;
+
+				// No focus for us anymore
+				_gwinFixFocus(gh);
+
 				break;
 			case GWIN_FLG_SYSVISIBLE:
 				// We have been made invisible
@@ -346,6 +354,10 @@ void _gwinUpdate(GHandle gh) {
 				if (!gh->parent || (gh->parent->flags & GWIN_FLG_SYSVISIBLE)) {
 					// The parent is visible so we must clear the area we took
 					gh->flags |= (GWIN_FLG_NEEDREDRAW|GWIN_FLG_BGREDRAW);
+
+					// No focus for us anymore
+					_gwinFixFocus(gh);
+
 					RedrawPending |= DOREDRAW_INVISIBLES;
 				}
 				break;
@@ -455,6 +467,10 @@ void gwinRedraw(GHandle gh) {
 		if (visible) {
 			if (!(gh->flags & GWIN_FLG_VISIBLE)) {
 				gh->flags |= (GWIN_FLG_VISIBLE|GWIN_FLG_SYSVISIBLE|GWIN_FLG_NEEDREDRAW|GWIN_FLG_BGREDRAW);
+
+				// Do we want to grab the focus
+				_gwinFixFocus(gh);
+
 				RedrawPending |= DOREDRAW_VISIBLES;
 				TriggerRedraw();
 			}
@@ -462,6 +478,10 @@ void gwinRedraw(GHandle gh) {
 			if ((gh->flags & GWIN_FLG_VISIBLE)) {
 				gh->flags &= ~(GWIN_FLG_VISIBLE|GWIN_FLG_SYSVISIBLE);
 				gh->flags |= (GWIN_FLG_NEEDREDRAW|GWIN_FLG_BGREDRAW);
+
+				// No focus for us anymore
+				_gwinFixFocus(gh);
+
 				RedrawPending |= DOREDRAW_INVISIBLES;
 				TriggerRedraw();
 			}
@@ -482,6 +502,10 @@ void gwinRedraw(GHandle gh) {
 				for(gh = gwinGetNextWindow(0); gh; gh = gwinGetNextWindow(gh)) {
 					if ((gh->flags & (GWIN_FLG_SYSENABLED|GWIN_FLG_ENABLED)) == GWIN_FLG_ENABLED && (!gh->parent || (gh->parent->flags & GWIN_FLG_SYSENABLED))) {
 						gh->flags |= GWIN_FLG_SYSENABLED;							// Fix it
+
+						// Do we want to grab the focus
+						_gwinFixFocus(gh);
+
 						_gwinUpdate(gh);
 					}
 				}
@@ -495,6 +519,10 @@ void gwinRedraw(GHandle gh) {
 				for(gh = gwinGetNextWindow(0); gh; gh = gwinGetNextWindow(gh)) {
 					if ((gh->flags & GWIN_FLG_SYSENABLED) && (!(gh->flags & GWIN_FLG_ENABLED) || (gh->parent && !(gh->parent->flags & GWIN_FLG_SYSENABLED)))) {
 						gh->flags &= ~GWIN_FLG_SYSENABLED;			// Fix it
+
+						// No focus for us anymore
+						_gwinFixFocus(gh);
+
 						_gwinUpdate(gh);
 					}
 				}
@@ -506,11 +534,19 @@ void gwinRedraw(GHandle gh) {
 		if (enabled) {
 			if (!(gh->flags & GWIN_FLG_ENABLED)) {
 				gh->flags |= (GWIN_FLG_ENABLED|GWIN_FLG_SYSENABLED);
+
+				// Do we want to grab the focus
+				_gwinFixFocus(gh);
+
 				_gwinUpdate(gh);
 			}
 		} else {
 			if ((gh->flags & GWIN_FLG_ENABLED)) {
 				gh->flags &= ~(GWIN_FLG_ENABLED|GWIN_FLG_SYSENABLED);
+
+				// No focus for us anymore
+				_gwinFixFocus(gh);
+
 				_gwinUpdate(gh);
 			}
 		}
@@ -952,6 +988,37 @@ static void WM_Raise(GHandle gh) {
 	gfxQueueASyncRemove(&_GWINList, &gh->wmq);
 	gfxQueueASyncPut(&_GWINList, &gh->wmq);
 
+	#if GWIN_NEED_CONTAINERS
+		// Any children need to be raised too
+		if ((gh->flags & GWIN_FLG_CONTAINER)) {
+			GHandle		gx;
+			GHandle		child;
+			bool_t		restart;
+
+			// Raise the children too
+			// Note: Children can also have their own children so after each move we have to start again.
+			for (gx = gwinGetNextWindow(0); gx; gx = gwinGetNextWindow(gx)) {
+				if ((gx->flags & GWIN_FLG_CONTAINER)) {
+					restart = FALSE;
+					for (child = gwinGetNextWindow(0); child && child != gx; child = gwinGetNextWindow(child)) {
+						if (child->parent == gx) {
+							// Oops - this child is behind its parent. Move it to the front.
+							gfxQueueASyncRemove(&_GWINList, &child->wmq);
+							gfxQueueASyncPut(&_GWINList, &child->wmq);
+
+							// Restart at the front of the list for this parent container as we have moved this child
+							// to the end of the list. We also need to restart everything once this container is done.
+							child = 0;
+							restart = TRUE;
+						}
+					}
+					if (restart)
+						gx = 0;
+				}
+			}
+		}
+	#endif
+	
 	// Redraw the window
 	_gwinUpdate(gh);
 }

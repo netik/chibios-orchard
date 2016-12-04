@@ -60,27 +60,27 @@ static bool_t init_board(GMouse* m, unsigned driverinstance) {
 	return TRUE;
 }
 
-static inline bool_t getpin_pressed(GMouse* m) {
+static GFXINLINE bool_t getpin_pressed(GMouse* m) {
 	(void)		m;
 
 	return (!palReadPad(GPIOC, 5));
 }
 
-static inline void aquire_bus(GMouse* m) {
+static GFXINLINE void aquire_bus(GMouse* m) {
 	(void)		m;
 
 	spiAcquireBus(&SPID2);
 	palClearPad(GPIOC, 4);
 }
 
-static inline void release_bus(GMouse* m) {
+static GFXINLINE void release_bus(GMouse* m) {
 	(void)		m;
 
 	palSetPad(GPIOC, 4);
 	spiReleaseBus(&SPID2);
 }
 
-static inline uint16_t read_value(GMouse* m, uint16_t port) {
+static GFXINLINE uint16_t read_value(GMouse* m, uint16_t port) {
 	static uint8_t txbuf[3] = {0};
 	static uint8_t rxbuf[3] = {0};
 	(void)		m;

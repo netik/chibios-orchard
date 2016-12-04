@@ -73,12 +73,12 @@ struct mf_bwfont_s
 /* Internal functions, don't use these directly. */
 MF_EXTERN uint8_t mf_bwfont_render_character(const struct mf_font_s *font,
                                              int16_t x0, int16_t y0,
-                                             mf_char character,
+                                             uint16_t character,
                                              mf_pixel_callback_t callback,
                                              void *state);
 
 MF_EXTERN uint8_t mf_bwfont_character_width(const struct mf_font_s *font,
-                                            mf_char character);
+                                            uint16_t character);
 #endif
 
 #endif

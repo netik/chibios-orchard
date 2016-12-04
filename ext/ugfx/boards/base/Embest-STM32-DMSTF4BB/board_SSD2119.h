@@ -42,7 +42,7 @@ static const PWMConfig pwmcfg = {
 	0
 };
 
-static inline void init_board(GDisplay *g) {
+static GFXINLINE void init_board(GDisplay *g) {
 
 	// As we are not using multiple displays we set g->board to NULL as we don't use it.
 	g->board = 0;
@@ -95,11 +95,11 @@ static inline void init_board(GDisplay *g) {
 	}
 }
 
-static inline void post_init_board(GDisplay *g) {
+static GFXINLINE void post_init_board(GDisplay *g) {
 	(void) g;
 }
 
-static inline void setpin_reset(GDisplay *g, bool_t state) {
+static GFXINLINE void setpin_reset(GDisplay *g, bool_t state) {
 	(void) g;
 	if (state) {
 		CLR_RST;
@@ -108,44 +108,44 @@ static inline void setpin_reset(GDisplay *g, bool_t state) {
 	}
 }
 
-static inline void set_backlight(GDisplay *g, uint8_t percent) {
+static GFXINLINE void set_backlight(GDisplay *g, uint8_t percent) {
 	(void) g;
 	pwmEnableChannel(&PWMD4, 1, percent);
 }
 
-static inline void acquire_bus(GDisplay *g) {
+static GFXINLINE void acquire_bus(GDisplay *g) {
 	(void) g;
 }
 
-static inline void release_bus(GDisplay *g) {
+static GFXINLINE void release_bus(GDisplay *g) {
 	(void) g;
 }
 
-static inline void write_index(GDisplay *g, uint16_t index) {
+static GFXINLINE void write_index(GDisplay *g, uint16_t index) {
 	(void) g;
 	GDISP_REG = index;
 }
 
-static inline void write_data(GDisplay *g, uint16_t data) {
+static GFXINLINE void write_data(GDisplay *g, uint16_t data) {
 	(void) g;
 	GDISP_RAM = data;
 }
 
-static inline void setreadmode(GDisplay *g) {
+static GFXINLINE void setreadmode(GDisplay *g) {
 	(void) g;
 }
 
-static inline void setwritemode(GDisplay *g) {
+static GFXINLINE void setwritemode(GDisplay *g) {
 	(void) g;
 }
 
-static inline uint16_t read_data(GDisplay *g) {
+static GFXINLINE uint16_t read_data(GDisplay *g) {
 	(void) g;
 	return GDISP_RAM;
 }
 
 #if defined(GDISP_USE_DMA)
-	static inline void dma_with_noinc(GDisplay *g, color_t *buffer, int area) {
+	static GFXINLINE void dma_with_noinc(GDisplay *g, color_t *buffer, int area) {
 		(void) g;
 		dmaStreamSetPeripheral(GDISP_DMA_STREAM, buffer);
 		dmaStreamSetMode(GDISP_DMA_STREAM, STM32_DMA_CR_PL(0) | STM32_DMA_CR_PSIZE_HWORD | STM32_DMA_CR_MSIZE_HWORD | STM32_DMA_CR_DIR_M2M);
@@ -156,7 +156,7 @@ static inline uint16_t read_data(GDisplay *g) {
 		}
 	}
 
-	static inline void dma_with_inc(GDisplay *g, color_t *buffer, int area) {
+	static GFXINLINE void dma_with_inc(GDisplay *g, color_t *buffer, int area) {
 		(void) g;
         dmaStreamSetPeripheral(GDISP_DMA_STREAM, buffer);
         dmaStreamSetMode(GDISP_DMA_STREAM, STM32_DMA_CR_PL(0) | STM32_DMA_CR_PINC | STM32_DMA_CR_PSIZE_HWORD | STM32_DMA_CR_MSIZE_HWORD | STM32_DMA_CR_DIR_M2M);

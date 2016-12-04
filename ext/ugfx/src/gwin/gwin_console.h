@@ -12,6 +12,8 @@
  * @defgroup Console Console
  * @ingroup Windows
  *
+ * @brief		Console widget that can be used similar a terminal on a computer.
+ *
  * @details		GWIN allows it to create a console/terminal like window.
  *				You can simply use chprintf() to print to the terminal.
  *

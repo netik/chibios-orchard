@@ -28,7 +28,7 @@
 	 * @details	Defaults to FALSE
 	 */
 	#ifndef GWIN_NEED_WINDOWMANAGER
-		#define GWIN_NEED_WIDGET	FALSE
+		#define GWIN_NEED_WINDOWMANAGER	FALSE
 	#endif
 	/**
 	 * @brief	Should the widget hierarchy be included. This provides parent-child features.
@@ -43,6 +43,13 @@
 	 */
 	#ifndef GWIN_NEED_WIDGET
 		#define GWIN_NEED_WIDGET	FALSE
+	#endif
+	/**
+	 * @brief   The width of the rectangle that highlights a widget that is focused
+	 * @details	Defaults to 1
+	 */
+	#ifndef GWIN_FOCUS_HIGHLIGHT_WIDTH
+		#define GWIN_FOCUS_HIGHLIGHT_WIDTH 1
 	#endif
 	/**
 	 * @brief	Should the simple container be included.
@@ -129,6 +136,13 @@
 		#define GWIN_NEED_RADIO		FALSE
 	#endif
 	/**
+	 * @brief   Should list widget functions be included.
+	 * @details	Defaults to FALSE
+	 */
+	#ifndef GWIN_NEED_LIST
+		#define GWIN_NEED_LIST		FALSE
+	#endif
+	/**
 	 * @brief   Should tabset functions be included.
 	 * @details	Defaults to FALSE
 	 */
@@ -141,6 +155,13 @@
 	 */
 	#ifndef GWIN_NEED_KEYBOARD
 		#define GWIN_NEED_KEYBOARD	FALSE
+	#endif
+	/**
+	 * @brief   Should the textedit widget be included.
+	 * @details	Defaults to FALSE
+	 */
+	#ifndef GWIN_NEED_TEXTEDIT
+		#define GWIN_NEED_TEXTEDIT	FALSE
 	#endif
 /**
  * @}
@@ -292,6 +313,22 @@
 	 */
 	#ifndef GWIN_NEED_IMAGE_ANIMATION
 		#define GWIN_NEED_IMAGE_ANIMATION		FALSE
+	#endif
+	/**
+	 * @brief	Enable the API to use attributes in the label widget
+	 * @details	Defaults to FALSE
+	 * @note	Using this feature is discouraged. The proper (and faster as well
+	 *			as more efficient) way is to use two separate labels.
+	 */
+	#ifndef GWIN_LABEL_ATTRIBUTE
+	 	#define GWIN_LABEL_ATTRIBUTE			FALSE
+	#endif
+	/**
+	 * @brief	Enable the API to use images in items in the list widget
+	 * @details	Defaults to FALSE
+	 */
+	#ifndef GWIN_NEED_LIST_IMAGES
+	 	#define GWIN_NEED_LIST_IMAGES			FALSE
 	#endif
 	/**
 	 * @brief	Enable the API to automatically increment the progressbar over time

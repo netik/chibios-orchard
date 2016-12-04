@@ -10,8 +10,8 @@
 #if GFX_USE_GDISP
 
 #define GDISP_DRIVER_VMT			GDISPVMT_ED060SC4
-#include "drivers/gdisp/ED060SC4/gdisp_lld_config.h"
-#include "src/gdisp/gdisp_driver.h"
+#include "gdisp_lld_config.h"
+#include "../../../src/gdisp/gdisp_driver.h"
 
 #include "board_ED060SC4.h"
 
@@ -79,7 +79,7 @@
 #define PRIV(g)		((drvPriv *)g->priv)
 
 /* Delay between signal changes, to give time for IO pins to change state. */
-static inline void clockdelay(void)
+static GFXINLINE void clockdelay(void)
 {
 	#if EINK_CLOCKDELAY & 1
 	asm("nop");

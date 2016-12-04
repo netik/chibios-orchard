@@ -8,7 +8,7 @@
 // We need to include stdio.h below. Turn off GFILE_NEED_STDIO just for this file to prevent conflicts
 #define GFILE_NEED_STDIO_MUST_BE_OFF
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_OS_WIN32
 

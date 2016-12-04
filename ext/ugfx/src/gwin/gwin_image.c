@@ -10,26 +10,26 @@
  * @brief	GWIN sub-system image code
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GWIN && GWIN_NEED_IMAGE
 
 #include "gwin_class.h"
 
-#define widget(gh)	((GImageObject *)gh)
+#define gw	((GImageObject *)gh)
 
-static void _destroy(GWindowObject *gh) {
-	if (gdispImageIsOpen(&widget(gh)->image))
-		gdispImageClose(&widget(gh)->image);
+static void ImageDestroy(GWindowObject *gh) {
+	if (gdispImageIsOpen(&gw->image))
+		gdispImageClose(&gw->image);
 }
 
 #if GWIN_NEED_IMAGE_ANIMATION
-	static void _timer(void *param) {
+	static void ImageTimer(void *param) {
 		_gwinUpdate((GHandle)param);
 	}
 #endif
 
-static void _redraw(GHandle gh) {
+static void ImageRedraw(GHandle gh) {
 	coord_t		x, y, w, h, dx, dy;
 	color_t		bg;
 	#if GWIN_NEED_IMAGE_ANIMATION
@@ -46,14 +46,14 @@ static void _redraw(GHandle gh) {
 	bg = gwinGetDefaultBgColor();
 
 	// If the image isn't open just clear the area
-	if (!gdispImageIsOpen(&widget(gh)->image)) {
+	if (!gdispImageIsOpen(&gw->image)) {
 		gdispGFillArea(gh->display, x, y, w, h, bg);
 		return;
 	}
 
 	// Center horizontally if the area is larger than the image
-	if (widget(gh)->image.width < w) {
-		w = widget(gh)->image.width;
+	if (gw->image.width < w) {
+		w = gw->image.width;
 		dx = (gh->width-w)/2;
 		x += dx;
 		if (dx)
@@ -63,13 +63,13 @@ static void _redraw(GHandle gh) {
 	}
 
 	// Center image horizontally if the area is smaller than the image
-	else if (widget(gh)->image.width > w) {
-		dx = (widget(gh)->image.width - w)/2;
+	else if (gw->image.width > w) {
+		dx = (gw->image.width - w)/2;
 	}
 
 	// Center vertically if the area is larger than the image
-	if (widget(gh)->image.height < h) {
-		h = widget(gh)->image.height;
+	if (gw->image.height < h) {
+		h = gw->image.height;
 		dy = (gh->height-h)/2;
 		y += dy;
 		if (dy)
@@ -79,19 +79,19 @@ static void _redraw(GHandle gh) {
 	}
 
 	// Center image vertically if the area is smaller than the image
-	else if (widget(gh)->image.height > h) {
-		dy = (widget(gh)->image.height - h)/2;
+	else if (gw->image.height > h) {
+		dy = (gw->image.height - h)/2;
 	}
 
 	// Reset the background color in case it has changed
-	gdispImageSetBgColor(&widget(gh)->image, bg);
+	gdispImageSetBgColor(&gw->image, bg);
 
 	// Display the image
-	gdispGImageDraw(gh->display, &widget(gh)->image, x, y, w, h, dx, dy);
+	gdispGImageDraw(gh->display, &gw->image, x, y, w, h, dx, dy);
 
 	#if GWIN_NEED_IMAGE_ANIMATION
 		// read the delay for the next frame
-		delay = gdispImageNext(&widget((GHandle)gh)->image);
+		delay = gdispImageNext(&gw->image);
 
 		// Wait for that delay if required
 		switch(delay) {
@@ -104,7 +104,7 @@ static void _redraw(GHandle gh) {
 			// Fall through
 		default:
 			// Start the timer to draw the next frame of the animation
-			gtimerStart(&widget((GHandle)gh)->timer, _timer, (void*)gh, FALSE, delay);
+			gtimerStart(&gw->timer, ImageTimer, (void*)gh, FALSE, delay);
 			break;
 		}
 	#endif
@@ -113,8 +113,8 @@ static void _redraw(GHandle gh) {
 static const gwinVMT imageVMT = {
 	"Image",					// The class name
 	sizeof(GImageObject),		// The object size
-	_destroy,					// The destroy routine
-	_redraw,					// The redraw routine
+	ImageDestroy,				// The destroy routine
+	ImageRedraw,				// The redraw routine
 	0,							// The after-clear routine
 };
 
@@ -140,10 +140,10 @@ bool_t gwinImageOpenGFile(GHandle gh, GFILE *f) {
 	if (gh->vmt != (gwinVMT *)&imageVMT)
 		return FALSE;
 
-	if (gdispImageIsOpen(&widget(gh)->image))
-		gdispImageClose(&widget(gh)->image);
+	if (gdispImageIsOpen(&gw->image))
+		gdispImageClose(&gw->image);
 
-	if ((gdispImageOpenGFile(&widget(gh)->image, f) & GDISP_IMAGE_ERR_UNRECOVERABLE))
+	if ((gdispImageOpenGFile(&gw->image, f) & GDISP_IMAGE_ERR_UNRECOVERABLE))
 		return FALSE;
 
 	_gwinUpdate(gh);
@@ -156,7 +156,8 @@ gdispImageError gwinImageCache(GHandle gh) {
 	if (gh->vmt != (gwinVMT *)&imageVMT)
 		return GDISP_IMAGE_ERR_BADFORMAT;
 
-	return gdispImageCache(&widget(gh)->image);
+	return gdispImageCache(&gw->image);
 }
 
+#undef gw
 #endif // GFX_USE_GWIN && GWIN_NEED_IMAGE

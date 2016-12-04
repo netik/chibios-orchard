@@ -15,9 +15,16 @@
 
 typedef struct _FightHandles {
   GListener glFight;
+  GHandle ghContainerSelect;
+  GHandle ghContainerAccept;
+  GHandle ghContainerVS;
+  GHandle ghContainerAttackSelect;
+  GHandle ghContainerBattleResult;
   GHandle ghExitButton;
+  GHandle ghLabel1;
   GHandle ghNextEnemy;
   GHandle ghPrevEnemy;
+  GHandle ghAttack;
 } FightHandles;
 
 typedef enum _fight_state {
@@ -37,11 +44,13 @@ static int current_enemy = 0;
 static uint32_t last_ui_time = 0;
 
 /* prototypes */
+static void create_containers(FightHandles *p);
 static int putImageFile(char *name, int16_t x, int16_t y);
 static void drawHPBox(coord_t x, coord_t y, coord_t width, uint16_t hp, uint16_t maxhp);
 static uint8_t prevEnemy(void);
 static uint8_t nextEnemy(void);
 static uint16_t maxhp(uint8_t level);
+static void redraw_approval_screen(OrchardAppContext *);
 
 /* levels */
 static uint16_t base_xp[10] = {
@@ -90,7 +99,7 @@ static uint8_t calc_level(uint16_t xp) {
 
 static uint16_t maxhp(uint8_t level) {
   // for now
-  return 1337;
+  return (level-1 * 100) + 337;
 }
 
 static void drawHPBox(coord_t x, coord_t y, coord_t width, uint16_t hp, uint16_t maxhp) {
@@ -137,9 +146,40 @@ static void noRender(GWidgetObject* gw, void* param)
   return;
 }
 
-static void draw_buttons(FightHandles *p) { 
+static void draw_select_buttons(FightHandles *p) { 
   GWidgetInit wi;
   coord_t totalheight = gdispGetHeight();
+  font_t fontFF;
+  fontFF = gdispOpenFont(FONT_FIXED);
+
+  const GWidgetStyle AttackButtonStyle = {
+    HTML2COLOR(0x000000),		// window background
+    HTML2COLOR(0x2A8FCD),               // focused
+    
+    // enabled color set
+    {
+      HTML2COLOR(0xffffff),		// text
+      HTML2COLOR(0xC0C0C0),		// edge
+      HTML2COLOR(0xf06060),		// fill
+      HTML2COLOR(0x404040),		// progress - inactive area
+    },
+    
+    // disabled color set
+    {
+      HTML2COLOR(0x808080),		// text
+      HTML2COLOR(0x404040),		// edge
+      HTML2COLOR(0x404040),		// fill
+      HTML2COLOR(0x004000),		// progress - active area
+    },
+    
+    // pressed color set
+    {
+      HTML2COLOR(0xff0000),		// text
+      HTML2COLOR(0x00ff00),		// edge
+      HTML2COLOR(0x0000ff),		// fill
+      HTML2COLOR(0xffff00),		// progress - active area
+    },
+  };
 
   // Left
   gwinWidgetClearInit(&wi);
@@ -149,6 +189,7 @@ static void draw_buttons(FightHandles *p) {
   wi.g.width = 30;
   wi.g.height = 180;
   wi.text = "";
+  wi.g.parent = p->ghContainerSelect;
   wi.customDraw = gwinButtonDraw_ArrowLeft;
   p->ghPrevEnemy = gwinButtonCreate(0, &wi);
 
@@ -160,8 +201,23 @@ static void draw_buttons(FightHandles *p) {
   wi.g.width = 30;
   wi.g.height = 180;
   wi.text = "";
+  wi.g.parent = p->ghContainerSelect;
   wi.customDraw = gwinButtonDraw_ArrowRight;
   p->ghNextEnemy = gwinButtonCreate(0, &wi);
+
+  // Fight
+  gwinSetDefaultStyle(&AttackButtonStyle, FALSE);
+  gwinSetDefaultFont(gdispOpenFont(FONT_FIXED));
+  gwinWidgetClearInit(&wi);
+  wi.g.show = TRUE;
+  wi.g.x = 70;
+  wi.g.y = POS_FLOOR_Y+10;
+  wi.g.width = 180;
+  wi.g.height = gdispGetFontMetric(fontFF, fontHeight) + 2;
+  wi.g.parent = p->ghContainerSelect;
+  wi.text = "ATTACK";
+  p->ghAttack = gwinButtonCreate(0, &wi);
+  gwinSetDefaultStyle(&BlackWidgetStyle, FALSE);
   
   // Exit
   gwinWidgetClearInit(&wi);
@@ -170,10 +226,12 @@ static void draw_buttons(FightHandles *p) {
   wi.g.height = 40;
   wi.g.y = totalheight - 40;
   wi.g.x = gdispGetWidth() - 40;
+  wi.g.parent = p->ghContainerSelect;
   wi.text = "";
   wi.customDraw = noRender;
-
+  
   p->ghExitButton = gwinButtonCreate(NULL, &wi);
+
 }
 
 static void redraw_no_enemies(void) {
@@ -241,6 +299,7 @@ static uint8_t prevEnemy() {
   }
 }
 
+
 static void redraw_enemy_select(void) {
   // enemy selection screen
   font_t fontFF, fontSM;
@@ -249,9 +308,8 @@ static void redraw_enemy_select(void) {
 
   // blank out the center
   gdispFillArea(31,22,260,POS_FLOOR_Y-22,Black);
-    
+
   putImageFile(IMG_GUARD_IDLE_L, POS_PCENTER_X, POS_PCENTER_Y);
-  putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
 
   fontSM = gdispOpenFont (FONT_SM);
   fontFF = gdispOpenFont (FONT_FIXED);
@@ -319,38 +377,137 @@ static uint32_t fight_init(OrchardAppContext *context) {
   return 0;
 }
 
+static void create_containers(FightHandles *p) { 
+  GWidgetInit wi;
+
+  // create container widget
+  gwinWidgetClearInit(&wi);
+  wi.g.show = FALSE;
+  wi.g.x = 0;
+  wi.g.y = 0;
+  wi.g.width = 320;
+  wi.g.height = 240;
+  wi.g.parent = 0;
+  wi.text = "Select";
+  wi.customDraw = gwinContainerDraw_Transparent;
+  wi.customParam = 0;
+  wi.customStyle = 0;
+  p->ghContainerSelect = gwinContainerCreate(0, &wi, 0);
+
+  gwinWidgetClearInit(&wi);
+  wi.g.show = FALSE;
+  wi.g.x = 0;
+  wi.g.y = 0;
+  wi.g.width = 320;
+  wi.g.height = 240;
+  wi.g.parent = 0;
+  wi.text = "Accept";
+  wi.customDraw = gwinContainerDraw_Transparent;
+  wi.customParam = 0;
+  wi.customStyle = 0;
+  p->ghContainerAccept = gwinContainerCreate(0, &wi, 0);
+
+}
 static void fight_start(OrchardAppContext *context) {
   FightHandles *p;
+
   user **enemies = enemiesGet();
   (void)context;
-
+  p = chHeapAlloc (NULL, sizeof(FightHandles));
+  memset(p, 0, sizeof(FightHandles));
+  context->priv = p;
+  
   // fires once a second for updates. 
   orchardAppTimer(context, 1000, true);
   last_ui_time = chVTGetSystemTime();
-  
-  if (enemyCount() > 0) { 
-    current_fight_state = ENEMY_SELECT;
+
+  if (enemyCount() > 0) {
+    // render the select page. 
     gdispClear(Black);
+    create_containers(p);
+
+    // draw ground once. 
+    gwinShow(p->ghContainerSelect);
+    
+    current_fight_state = ENEMY_SELECT;
+    putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
+
+    redraw_enemy_select();
+    draw_select_buttons(p);
+    
+    geventListenerInit(&p->glFight);
+    gwinAttachListener(&p->glFight);
+    geventRegisterCallback (&p->glFight, orchardAppUgfxCallback, &p->glFight);
 
     if (enemies[current_enemy] == NULL) {
       nextEnemy();
     }
-    
-    redraw_enemy_select();
+
   } else {
     // punt if no enemies
     redraw_no_enemies();
     chThdSleepMilliseconds(1000);
     orchardAppExit();
   }
+}
 
-  p = chHeapAlloc (NULL, sizeof(FightHandles));
-  draw_buttons(p);
-  context->priv = p;
+static void redraw_approval_screen(OrchardAppContext *context) {
+  font_t fontFF;
+  GWidgetInit wi;
+  FightHandles * p;
+  p = context->priv;
+
+  const GWidgetStyle RedLabelStyle = {
+    HTML2COLOR(0x000000),			// window background
+    HTML2COLOR(0x2A8FCD),                   // focused -- only in ugfx 2.6?
+    
+    // enabled color set
+    {
+      HTML2COLOR(0xff0000),		// text
+      HTML2COLOR(0xffffff),		// edge
+      HTML2COLOR(0x000000),		// fill
+      HTML2COLOR(0x000000),		// progress - inactive area
+    },
+    // disabled color set
+    {
+      HTML2COLOR(0x808080),		// text
+      HTML2COLOR(0x404040),		// edge
+      HTML2COLOR(0x404040),		// fill
+      HTML2COLOR(0x004000),		// progress - active area
+    },
+    
+    // pressed color set
+    {
+      HTML2COLOR(0xff0000),		// text
+      HTML2COLOR(0x00ff00),		// edge
+      HTML2COLOR(0x0000ff),		// fill
+      HTML2COLOR(0xffff00),		// progress - active area
+    },
+  };
+
+
+  fontFF = gdispOpenFont (FONT_FIXED);
+  gdispClear(Black);
+  gwinSetDefaultStyle(&RedLabelStyle, FALSE);
   
-  geventListenerInit(&p->glFight);
-  gwinAttachListener(&p->glFight);
-  geventRegisterCallback (&p->glFight, orchardAppUgfxCallback, &p->glFight);
+  // Create label widget: ghLabel1
+  gwinWidgetClearInit(&wi);
+  wi.g.show = TRUE;
+  wi.g.x = 0;
+  wi.g.y = (gdispGetHeight() / 2) - (gdispGetFontMetric(fontFF, fontHeight) / 2);
+  wi.g.width = gdispGetWidth();
+  wi.g.height = gdispGetFontMetric(fontFF, fontHeight);
+  wi.customDraw = gwinLabelDrawJustifiedLeft;
+  wi.customDraw = gwinLabelDrawJustifiedCenter;
+  wi.text = "WAITING FOR ENEMY TO ACCEPT!";
+  p->ghLabel1 = gwinLabelCreate(0, &wi);
+
+  drawHPBox(40,
+	    (gdispGetHeight() / 2) + 60,
+	    240,
+	    100,
+	    100);
+	    
 }
 
 static void fight_event(OrchardAppContext *context,
@@ -359,8 +516,10 @@ static void fight_event(OrchardAppContext *context,
   p = context->priv;
   
   GEvent * pe;
-  if (event->type == timerEvent) {
-    if( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) {
+  // this returns us to the badge screen on idle.
+  // we don't want this for all states, just select and end-of-fight
+  if ( (event->type == timerEvent) && current_fight_state == ENEMY_SELECT ) {
+      if( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) {
       orchardAppRun(orchardAppByName("Badge"));
     }
     return;
@@ -382,6 +541,14 @@ static void fight_event(OrchardAppContext *context,
 	  }
 	  return;
 	}
+	if (((GEventGWinButton*)pe)->gwin == p->ghAttack) {
+	  last_ui_time = chVTGetSystemTime();
+	  current_fight_state = FIGHT_APPROVE;
+	  gwinHide(p->ghContainerSelect);
+	  gwinShow(p->ghContainerAccept);
+	  redraw_approval_screen(context);
+	  return;
+	}
 	if (((GEventGWinButton*)pe)->gwin == p->ghPrevEnemy) {
 	  if (prevEnemy()) {
 	    last_ui_time = chVTGetSystemTime();
@@ -398,9 +565,12 @@ static void fight_exit(OrchardAppContext *context) {
   FightHandles * p;
 
   p = context->priv;
+  gwinDestroy (p->ghContainerSelect);
+  gwinDestroy (p->ghContainerAccept);
   gwinDestroy (p->ghExitButton);
   gwinDestroy (p->ghNextEnemy);
   gwinDestroy (p->ghPrevEnemy);
+  gwinDestroy (p->ghAttack);
   geventDetachSource (&p->glFight, NULL);
   geventRegisterCallback (&p->glFight, NULL, NULL);
 

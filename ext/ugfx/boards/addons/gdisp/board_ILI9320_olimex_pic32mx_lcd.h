@@ -64,7 +64,7 @@ static void init_board(GDisplay *g) {
 
 #define PmpWaitBusy()   do {} while (PMMODEbits.BUSY)
 
-static inline void post_init_board(GDisplay *g) {
+static GFXINLINE void post_init_board(GDisplay *g) {
 	(void) g;
 }
 
@@ -84,11 +84,11 @@ static void set_backlight(GDisplay *g, uint8_t percent) {
 		palSetPad(IOPORTD, 3);
 }
 
-static inline void acquire_bus(GDisplay *g) {
+static GFXINLINE void acquire_bus(GDisplay *g) {
 	(void) g;
 }
 
-static inline void release_bus(GDisplay *g) {
+static GFXINLINE void release_bus(GDisplay *g) {
 	(void) g;
 }
 
@@ -112,11 +112,11 @@ static noinline void write_data(GDisplay *g, uint16_t data) {
 	PmpWaitBusy();
 }
 
-static inline void setreadmode(GDisplay *g) {
+static GFXINLINE void setreadmode(GDisplay *g) {
 	(void) g;
 }
 
-static inline void setwritemode(GDisplay *g) {
+static GFXINLINE void setwritemode(GDisplay *g) {
 	(void) g;
 }
 

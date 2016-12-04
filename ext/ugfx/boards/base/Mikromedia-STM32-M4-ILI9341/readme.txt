@@ -13,3 +13,5 @@ As this is not a standard ChibiOS supported board the necessary board files have
 been provided in the ChibiOS_Board directory.
 
 There are two examples, one for ChibiOS/RT 2.x and one for ChibiOS/RT 3.x available.
+
+If you are using the uGFX makefiles use OPT_CPU=stm32m4 in your makefile to get the correct cpu.

@@ -16,20 +16,27 @@
 #ifndef _GOS_RULES_H
 #define _GOS_RULES_H
 
-#if !GFX_USE_OS_CHIBIOS && !GFX_USE_OS_WIN32 && !GFX_USE_OS_LINUX && !GFX_USE_OS_OSX && !GFX_USE_OS_RAW32 && !GFX_USE_OS_FREERTOS && !GFX_USE_OS_ECOS && !GFX_USE_OS_RAWRTOS && !GFX_USE_OS_ARDUINO
-	#if GFX_DISPLAY_RULE_WARNINGS
-		#warning "GOS: No Operating System has been defined. ChibiOS (GFX_USE_OS_CHIBIOS) has been turned on for you."
-	#endif
-	#undef GFX_USE_OS_CHIBIOS
-	#define GFX_USE_OS_CHIBIOS	TRUE
+#if !GFX_USE_OS_CHIBIOS && !GFX_USE_OS_WIN32 && !GFX_USE_OS_LINUX && !GFX_USE_OS_OSX && !GFX_USE_OS_RAW32 && !GFX_USE_OS_FREERTOS && !GFX_USE_OS_ECOS && !GFX_USE_OS_RAWRTOS && !GFX_USE_OS_ARDUINO && !GFX_USE_OS_CMSIS && !GFX_USE_OS_KEIL && !GFX_USE_OS_NIOS && !GFX_USE_OS_QT
+	#error "GOS: No operating system has been defined."
 #endif
 
-#if GFX_USE_OS_CHIBIOS + GFX_USE_OS_WIN32 + GFX_USE_OS_LINUX + GFX_USE_OS_OSX + GFX_USE_OS_RAW32 + GFX_USE_OS_FREERTOS + GFX_USE_OS_ECOS + GFX_USE_OS_RAWRTOS + GFX_USE_OS_ARDUINO != 1 * TRUE
+#if GFX_USE_OS_CHIBIOS + GFX_USE_OS_WIN32 + GFX_USE_OS_LINUX + GFX_USE_OS_OSX + GFX_USE_OS_RAW32 + GFX_USE_OS_FREERTOS + GFX_USE_OS_ECOS + GFX_USE_OS_RAWRTOS + GFX_USE_OS_ARDUINO + GFX_USE_OS_CMSIS + GFX_USE_OS_KEIL + GFX_USE_OS_NIOS + GFX_USE_OS_QT != 1 * TRUE
 	#error "GOS: More than one operation system has been defined as TRUE."
 #endif
 
 #if GFX_FREERTOS_USE_TRACE && !GFX_USE_OS_FREERTOS
  	#error "GOS: GFX_FREERTOS_USE_TRACE is only available for the FreeRTOS port."
+#endif
+
+#if GFX_EMULATE_MALLOC
+	#if GFX_USE_OS_WIN32 || GFX_USE_OS_LINUX || GFX_USE_OS_OSX || GFX_USE_OS_ECOS || \
+			(GFX_OS_HEAP_SIZE == 0 && (GFX_USE_OS_RAW32 || GFX_USE_OS_ARDUINO || GFX_USE_OS_CMSIS || GFX_USE_OS_KEIL))
+		#if GFX_DISPLAY_RULE_WARNINGS
+			#warning "GOS: Cannot emulate malloc as gfxAlloc() internally uses malloc on this platform"
+		#endif
+		#undef GFX_EMULATE_MALLOC
+		#define GFX_EMULATE_MALLOC	FALSE
+	#endif
 #endif
 
 #endif /* _GOS_RULES_H */

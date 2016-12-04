@@ -10,7 +10,7 @@
  * @brief   GWIN sub-system console code.
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GWIN && GWIN_NEED_CONSOLE
 
@@ -41,6 +41,7 @@
 #if GFX_USE_OS_CHIBIOS && GWIN_CONSOLE_USE_BASESTREAM
 	#define Stream2GWindow(ip)		((GHandle)(((char *)(ip)) - (size_t)(&(((GConsoleObject *)0)->stream))))
 
+#if CH_KERNEL_MAJOR == 2
 	static size_t GWinStreamWrite(void *ip, const uint8_t *bp, size_t n) { gwinPutCharArray(Stream2GWindow(ip), (const char *)bp, n); return RDY_OK; }
 	static size_t GWinStreamRead(void *ip, uint8_t *bp, size_t n) {	(void)ip; (void)bp; (void)n; return 0; }
 	static msg_t GWinStreamPut(void *ip, uint8_t b) { gwinPutChar(Stream2GWindow(ip), (char)b); return RDY_OK; }
@@ -49,6 +50,16 @@
 	static msg_t GWinStreamGetTimed(void *ip, systime_t timeout) { (void)ip; (void)timeout; return RDY_OK; }
 	static size_t GWinStreamWriteTimed(void *ip, const uint8_t *bp, size_t n, systime_t time) { (void)time; gwinPutCharArray(Stream2GWindow(ip), (const char *)bp, n); return RDY_OK; }
 	static size_t GWinStreamReadTimed(void *ip, uint8_t *bp, size_t n, systime_t time) { (void)ip; (void)bp; (void)n; (void)time; return 0; }
+#elif CH_KERNEL_MAJOR == 3
+    static size_t GWinStreamWrite(void *ip, const uint8_t *bp, size_t n) { gwinPutCharArray(Stream2GWindow(ip), (const char *)bp, n); return MSG_OK; }
+    static size_t GWinStreamRead(void *ip, uint8_t *bp, size_t n) { (void)ip; (void)bp; (void)n; return 0; }
+    static msg_t GWinStreamPut(void *ip, uint8_t b) { gwinPutChar(Stream2GWindow(ip), (char)b); return MSG_OK; }
+    static msg_t GWinStreamGet(void *ip) {(void)ip; return MSG_OK; }
+    static msg_t GWinStreamPutTimed(void *ip, uint8_t b, systime_t time) { (void)time; gwinPutChar(Stream2GWindow(ip), (char)b); return MSG_OK; }
+    static msg_t GWinStreamGetTimed(void *ip, systime_t timeout) { (void)ip; (void)timeout; return MSG_OK; }
+    static size_t GWinStreamWriteTimed(void *ip, const uint8_t *bp, size_t n, systime_t time) { (void)time; gwinPutCharArray(Stream2GWindow(ip), (const char *)bp, n); return MSG_OK; }
+    static size_t GWinStreamReadTimed(void *ip, uint8_t *bp, size_t n, systime_t time) { (void)ip; (void)bp; (void)n; (void)time; return 0; }
+#endif
 
 	struct GConsoleWindowVMT_t {
 		_base_asynchronous_channel_methods
@@ -342,6 +353,7 @@ GHandle gwinGConsoleCreate(GDisplay *g, GConsoleObject *gc, const GWindowInit *p
 	#endif
 
 	gwinSetVisible((GHandle)gc, pInit->show);
+	_gwinFlushRedraws(REDRAW_WAIT);
 
 	return (GHandle)gc;
 }
@@ -611,7 +623,7 @@ void gwinPutCharArray(GHandle gh, const char *str, size_t n) {
 #define MAX_FILLER 11
 #define FLOAT_PRECISION 100000
 
-static char *ltoa_wd(char *p, long num, unsigned radix, long divisor) {
+static char *consltoa_wd(char *p, long num, unsigned radix, long divisor) {
 	int i;
 	char *q;
 
@@ -641,10 +653,10 @@ static char *ltoa_wd(char *p, long num, unsigned radix, long divisor) {
 		unsigned long precision = FLOAT_PRECISION;
 
 		l = num;
-		p = ltoa_wd(p, l, 10, 0);
+		p = consltoa_wd(p, l, 10, 0);
 		*p++ = '.';
 		l = (num - l) * precision;
-		return ltoa_wd(p, l, 10, precision / 10);
+		return consltoa_wd(p, l, 10, precision / 10);
 	}
 #endif
 
@@ -746,7 +758,7 @@ void gwinPrintf(GHandle gh, const char *fmt, ...) {
 				*p++ = '-';
 				l = -l;
 			}
-			p = ltoa_wd(p, l, 10, 0);
+			p = consltoa_wd(p, l, 10, 0);
 			break;
 		#if GWIN_CONSOLE_USE_FLOAT
 			case 'f':
@@ -774,7 +786,7 @@ void gwinPrintf(GHandle gh, const char *fmt, ...) {
 				l = va_arg(ap, long);
 			else
 				l = va_arg(ap, int);
-			p = ltoa_wd(p, l, c, 0);
+			p = consltoa_wd(p, l, c, 0);
 			break;
 		default:
 			*p++ = c;

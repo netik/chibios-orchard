@@ -6,14 +6,14 @@
 #include <stdint.h>
  
 // write to MMIO register
-static inline void mmio_write(uint32_t reg, uint32_t data) {
+static GFXINLINE void mmio_write(uint32_t reg, uint32_t data) {
     uint32_t *ptr = (uint32_t*)reg;
     asm volatile("str %[data], [%[reg]]"
 	     : : [reg]"r"(ptr), [data]"r"(data));
 }
  
 // read from MMIO register
-static inline uint32_t mmio_read(uint32_t reg) {
+static GFXINLINE uint32_t mmio_read(uint32_t reg) {
     uint32_t *ptr = (uint32_t*)reg;
     uint32_t data;
     asm volatile("ldr %[data], [%[reg]]"

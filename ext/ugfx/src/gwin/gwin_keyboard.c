@@ -10,18 +10,12 @@
  * @brief   GWIN sub-system virtual keyboard code
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GWIN && GWIN_NEED_KEYBOARD
 
 #include "gwin_class.h"
 #include "gwin_keyboard_layout.h"
-
-
-#define GKEYBOARD_FLG_REVERTSET		(GWIN_FIRST_CONTROL_FLAG<<0)
-#define GKEYBOARD_FLG_QUICKUPDATE	(GWIN_FIRST_CONTROL_FLAG<<1)
-
-#define BAD_ROWCOL		255
 
 typedef uint8_t		utf8;
 typedef uint16_t	utf16;
@@ -29,6 +23,8 @@ typedef uint32_t	utf32;
 
 // A character code - note this is not UTF-32 but a representation of the UTF-8 code stream for a single character.
 typedef uint32_t	ucode;
+
+static GSourceHandle	AllKeyboards;
 
 // Get the length of a UTF-8 string
 static int UTF8StrLen(const utf8 *s) {
@@ -164,6 +160,11 @@ static void SendKeyboardEventToListener(GSourceListener	*psl, GKeyboardObject *g
 static void SendKeyboardEvent(GKeyboardObject *gk) {
 	GSourceListener	*psl;
 
+	// Send to the "All Keyboards" source listeners
+	psl = 0;
+	while ((psl = geventGetSourceListener(AllKeyboards, psl)))
+		SendKeyboardEventToListener(psl, gk);
+
 	// Send to the keyboard specific source listeners
 	psl = 0;
 	while ((psl = geventGetSourceListener((GSourceHandle)gk, psl)))
@@ -173,13 +174,13 @@ static void SendKeyboardEvent(GKeyboardObject *gk) {
 
 #if GINPUT_NEED_MOUSE
 	// Find the key from the keyset and the x, y position
-	static void FindKey(GKeyboardObject *gk, coord_t x, coord_t y) {
+	static void KeyFindKey(GKeyboardObject *gk, coord_t x, coord_t y) {
 		const utf8		*krow;
 		fixed			f;
 		int				idx;
 
 		if (x < 0 || y < 0 || x >= gk->w.g.width || y >= gk->w.g.height) {
-			gk->keyrow = gk->keycol = BAD_ROWCOL;
+			gk->keyrow = gk->keycol = GKEY_BAD_ROWCOL;
 			return;
 		}
 
@@ -209,14 +210,14 @@ static void SendKeyboardEvent(GKeyboardObject *gk) {
 	}
 
 	// A mouse up has occurred (it may or may not be over the button)
-	static void MouseUp(GWidgetObject *gw, coord_t x, coord_t y) {
+	static void KeyMouseUp(GWidgetObject *gw, coord_t x, coord_t y) {
 		#define gk		((GKeyboardObject *)gw)
 
-		FindKey(gk, x, y);
+		KeyFindKey(gk, x, y);
 
 		// Do we have a valid key?
-		if (gk->keyrow == BAD_ROWCOL) {
-			if (gk->lastkeyrow != BAD_ROWCOL) {
+		if (gk->keyrow == GKEY_BAD_ROWCOL) {
+			if (gk->lastkeyrow != GKEY_BAD_ROWCOL) {
 				gw->g.flags |= GKEYBOARD_FLG_QUICKUPDATE;
 				_gwinUpdate((GHandle)gw);
 			}
@@ -224,7 +225,7 @@ static void SendKeyboardEvent(GKeyboardObject *gk) {
 		}
 
 		// We are turning off the display of the key
-		gk->keyrow = gk->keycol = BAD_ROWCOL;
+		gk->keyrow = gk->keycol = GKEY_BAD_ROWCOL;
 
 		// Is this one of the special keys
 		if (gk->key < 0x20) {
@@ -280,10 +281,10 @@ static void SendKeyboardEvent(GKeyboardObject *gk) {
 	}
 
 	// A mouse move has occurred (it may or may not be over the button)
-	static void MouseMove(GWidgetObject *gw, coord_t x, coord_t y) {
+	static void KeyMouseMove(GWidgetObject *gw, coord_t x, coord_t y) {
 		#define gk		((GKeyboardObject *)gw)
 
-		FindKey(gk, x, y);
+		KeyFindKey(gk, x, y);
 
 		if (gk->keyrow != gk->lastkeyrow || gk->keycol != gk->lastkeycol) {
 			gk->w.g.flags |= GKEYBOARD_FLG_QUICKUPDATE;
@@ -293,8 +294,7 @@ static void SendKeyboardEvent(GKeyboardObject *gk) {
 	}
 #endif
 
-extern GVKeyTable GWIN_KEYBOARD_DEFAULT_LAYOUT;
-void gwinKeyboardDraw_Normal(GWidgetObject *gw, void *param);
+extern const GVKeyTable GWIN_KEYBOARD_DEFAULT_LAYOUT;
 
 // The button VMT table
 static const gwidgetVMT keyboardVMT = {
@@ -308,9 +308,14 @@ static const gwidgetVMT keyboardVMT = {
 	gwinKeyboardDraw_Normal,		// The default drawing routine
 	#if GINPUT_NEED_MOUSE
 		{
-			MouseMove,				// Process mouse down events
-			MouseUp,				// Process mouse up events
-			MouseMove,				// Process mouse move events
+			KeyMouseMove,			// Process mouse down events
+			KeyMouseUp,				// Process mouse up events
+			KeyMouseMove,			// Process mouse move events
+		},
+	#endif
+	#if GINPUT_NEED_KEYBOARD || GWIN_NEED_KEYBOARD
+		{
+			0						// Process keyboard events
 		},
 	#endif
 	#if GINPUT_NEED_TOGGLE
@@ -338,7 +343,11 @@ GHandle gwinGKeyboardCreate(GDisplay *g, GKeyboardObject *gk, const GWidgetInit 
 
 	gk->keytable = &GWIN_KEYBOARD_DEFAULT_LAYOUT;
 	gk->keyset = gk->keytable->ksets[0];
-	gk->lastkeyrow = gk->lastkeycol = gk->keyrow = gk->keycol = BAD_ROWCOL;
+	gk->lastkeyrow = gk->lastkeycol = gk->keyrow = gk->keycol = GKEY_BAD_ROWCOL;
+
+	if (!AllKeyboards)
+		AllKeyboards = ginputGetKeyboard(GKEYBOARD_ALL_INSTANCES);
+
 	gwinSetVisible((GHandle)gk, pInit->g.show);
 	return (GHandle)gk;
 }
@@ -349,7 +358,7 @@ GSourceHandle gwinKeyboardGetEventSource(GHandle gh) {
 	return (GSourceHandle)gh;
 }
 
-void gwinKeyboardSetLayout(GHandle gh, struct GVKeyTable *layout) {
+void gwinKeyboardSetLayout(GHandle gh, const struct GVKeyTable *layout) {
 	#define gk		((GKeyboardObject *)gh)
 
 	if (gh->vmt != (gwinVMT *)&keyboardVMT)
@@ -359,7 +368,7 @@ void gwinKeyboardSetLayout(GHandle gh, struct GVKeyTable *layout) {
 		layout = &GWIN_KEYBOARD_DEFAULT_LAYOUT;
 	gk->keytable = layout;
 	gk->keyset = gk->keytable->ksets[0];
-	gk->lastkeyrow = gk->lastkeycol = gk->keyrow = gk->keycol = BAD_ROWCOL;
+	gk->lastkeyrow = gk->lastkeycol = gk->keyrow = gk->keycol = GKEY_BAD_ROWCOL;
 	gk->w.g.flags &= ~(GKEYBOARD_FLG_QUICKUPDATE|GKEYBOARD_FLG_REVERTSET);
 	gwinRedraw(gh);
 	#undef gk
@@ -378,24 +387,27 @@ static const GColorSet *getDrawColors(GWidgetObject *gw) {
 */
 
 void gwinKeyboardDraw_Normal(GWidgetObject *gw, void *param) {
-	#define gk		((GKeyboardObject *)gw)
+	#define gk ((GKeyboardObject *)gw)
 
-	char	cap[5];
+	char cap[5];
 	const char *pcap;
 	const utf8 *krow;
-	coord_t	x, y, cx, cy;
-	uint8_t	rows, cols, row, col, kcols;
-	ucode	key;
-	fixed	fx, fy;
-	const GColorSet	*pcol;
+	coord_t x, y, cx, cy;
+	uint8_t rows, cols, row, col, kcols;
+	ucode key;
+	fixed fx, fy;
+	const GColorSet *pcol;
+
 	(void) param;
 
-	if (gw->g.vmt != (gwinVMT *)&keyboardVMT)	return;
+	// Make sure that this is a keyboard widget object
+	if (gw->g.vmt != (gwinVMT *)&keyboardVMT)
+		return;
 
 	// Get the y parameters
 	rows = NumKeyRows(gk->keyset);
 	fy = FIXED(gk->w.g.height) / rows;
-	for(row = 0; row < rows; row++) {
+	for (row = 0; row < rows; row++) {
 		y = NONFIXED(fy * row + FIXED0_5);
 		cy = NONFIXED(fy * (row+1) + FIXED0_5) - y;
 
@@ -405,67 +417,171 @@ void gwinKeyboardDraw_Normal(GWidgetObject *gw, void *param) {
 		// Get the x parameters
 		cols = UTF8StrLen(krow);
 		fx = FIXED(gk->w.g.width) / cols;
-		for(col = 0; col < cols; col=kcols) {
+		for (col = 0; col < cols; col=kcols) {
 
-			// Choose the color
+			// Get the correct color set
 			if (!(gk->w.g.flags & GWIN_FLG_SYSENABLED))
-				pcol = &gk->w.pstyle->disabled;
-			else if (gk->keyrow == row && gk->keycol == col)
-				pcol = &gk->w.pstyle->pressed;
-			else
+					pcol = &gk->w.pstyle->disabled;
+			else 
 				pcol = &gk->w.pstyle->enabled;
-
+        	 
 			// Get the key
 			key = UTF8CharAt(krow, col);
-
-			// Amalgamate identical keys into one big key
+	
+			// Fuse identical keys into one big key
 			kcols = col+1;
-			while(UTF8CharAt(krow, kcols) == key)
+			while (UTF8CharAt(krow, kcols) == key)
 				kcols++;
+        	 
+			// If quick update needed and keyboard already drawn (if not use this flag, then bug when screen touched before keyboard was drawn)
+			if ( (gk->w.g.flags & GKEYBOARD_FLG_QUICKUPDATE) && !(gk->w.g.flags & GWIN_FLG_BGREDRAW) )  {
+
+				// If key pressed
+				if ( (gk->keyrow != GKEY_BAD_ROWCOL) && (gk->keycol != GKEY_BAD_ROWCOL) ) {
+
+					// And previous key have
+					if ( (gk->lastkeyrow != GKEY_BAD_ROWCOL) && (gk->lastkeycol != GKEY_BAD_ROWCOL) ) {
+						
+						if (gk->lastkeyrow == row && gk->lastkeycol == col) {
+							// If keyboard has no "disabled" color
+							if (pcol != &gk->w.pstyle->disabled)
+								pcol = &gk->w.pstyle->enabled;
+							gk->lastkeyrow = gk->lastkeycol = GKEY_BAD_ROWCOL;
+						} else {
+							continue;
+						}
+					}
+
+					// If no previous key
+					else {
+
+						if (gk->keyrow == row && gk->keycol == col) {
+							if (pcol != &gk->w.pstyle->disabled)
+								pcol = &gk->w.pstyle->pressed;
+							gk->lastkeyrow = row;
+							gk->lastkeycol = col;
+						}
+						else if (gk->lastkeyrow == row && gk->lastkeycol == col)
+						{
+							if (pcol != &gk->w.pstyle->disabled) pcol = &gk->w.pstyle->enabled;
+						}
+						else continue;
+					}
+				}
+
+				// If key up, and need clear the previous key
+				else if ( (gk->lastkeyrow != GKEY_BAD_ROWCOL) && (gk->lastkeycol != GKEY_BAD_ROWCOL) )
+				{
+					if ( (gk->lastkeyrow == row) && (gk->lastkeycol == col) )
+					{
+						if (pcol != &gk->w.pstyle->disabled) pcol = &gk->w.pstyle->enabled;
+					}
+					else continue;
+				}
+			}                  
+			else
+			{
+				gk->lastkeyrow = gk->lastkeycol = GKEY_BAD_ROWCOL;
+			}
+
 			x = NONFIXED(fx * col + FIXED0_5);
 			cx = NONFIXED(fx * kcols + FIXED0_5) - x;
-
+			
 			if (key < 0x20) {
 				pcap = gk->keytable->skeys[key-1].keycap;
 			} else {
 				cap[UCode2UTF8((utf8 *)cap, key)] = 0;
 				pcap = cap;
 			}
+			
 			switch(*pcap) {
-			case  '\001':	// Shift (up arrow)
+
+			case  '\001':	// Shift (up-arrow)
 				gdispGFillArea(gw->g.display, gw->g.x+x, gw->g.y+y, cx, cy, pcol->fill);
-				gdispGDrawLine(gw->g.display, gw->g.x+x+cx/2, gw->g.y+y+1, gw->g.x+x+1, gw->g.y+y+cy-1, pcol->text);
-				gdispGDrawLine(gw->g.display, gw->g.x+x+cx/2, gw->g.y+y+1, gw->g.x+x+cx-1, gw->g.y+y+cy-1, pcol->text);
+
+				gdispGDrawLine(gw->g.display, gw->g.x+x    +cx/4, gw->g.y+y+cy/2, gw->g.x+x+cx/2, gw->g.y+y +cy/4, pcol->text);               /*    / \    */
+				gdispGDrawLine(gw->g.display, gw->g.x+x+cx -cx/4, gw->g.y+y+cy/2, gw->g.x+x+cx/2, gw->g.y+y +cy/4, pcol->text); 
+				gdispGDrawLine(gw->g.display, gw->g.x+x    +cx/4, gw->g.y+y+cy/2, gw->g.x+x+cx/2-cx/6, gw->g.y+y+cy/2, pcol->text);           /*    _ _    */
+				gdispGDrawLine(gw->g.display, gw->g.x+x+cx -cx/4, gw->g.y+y+cy/2, gw->g.x+x+cx/2+cx/6, gw->g.y+y+cy/2, pcol->text);
+				gdispGDrawLine(gw->g.display, gw->g.x+x+cx/2-cx/6, gw->g.y+y+cy/2, gw->g.x+x+cx/2-cx/6, gw->g.y+y+cy -cy/3, pcol->text);      /*    ||     */
+				gdispGDrawLine(gw->g.display, gw->g.x+x+cx/2+cx/6, gw->g.y+y+cy/2, gw->g.x+x+cx/2+cx/6, gw->g.y+y+cy -cy/3, pcol->text);
+				gdispGDrawLine(gw->g.display, gw->g.x+x+cx/2-cx/6, gw->g.y+y+cy -cy/3, gw->g.x+x+cx/2+cx/6, gw->g.y+y+cy -cy/3, pcol->text);  /*    _      */
+
 				break;
-			case '\002':	// Shift locked (up arrow - bold)
+
+			case '\002':	// Shift locked (underlined up-arrow)
 				gdispGFillArea(gw->g.display, gw->g.x+x, gw->g.y+y, cx, cy, pcol->fill);
-				gdispGDrawLine(gw->g.display, gw->g.x+x+cx/2, gw->g.y+y, gw->g.x+x+1, gw->g.y+y+cy-1, pcol->text);
-				gdispGDrawLine(gw->g.display, gw->g.x+x+cx/2, gw->g.y+y, gw->g.x+x+cx-1, gw->g.y+y+cy-1, pcol->text);
-				gdispGDrawBox(gw->g.display, gw->g.x+x, gw->g.y+y, cx, cy, pcol->edge);
+
+				gdispGDrawLine(gw->g.display, gw->g.x+x    +cx/4, gw->g.y+y+cy/2, gw->g.x+x+cx/2, gw->g.y+y +cy/4, pcol->text);               /*   / \     */
+				gdispGDrawLine(gw->g.display, gw->g.x+x+cx -cx/4, gw->g.y+y+cy/2, gw->g.x+x+cx/2, gw->g.y+y +cy/4, pcol->text);    
+				gdispGDrawLine(gw->g.display, gw->g.x+x    +cx/4, gw->g.y+y+cy/2, gw->g.x+x+cx/2-cx/6, gw->g.y+y+cy/2, pcol->text);           /*   _ _     */
+				gdispGDrawLine(gw->g.display, gw->g.x+x+cx -cx/4, gw->g.y+y+cy/2, gw->g.x+x+cx/2+cx/6, gw->g.y+y+cy/2, pcol->text);
+				gdispGDrawLine(gw->g.display, gw->g.x+x+cx/2-cx/6, gw->g.y+y+cy/2, gw->g.x+x+cx/2-cx/6, gw->g.y+y+cy -cy/3, pcol->text);      /*    ||     */
+				gdispGDrawLine(gw->g.display, gw->g.x+x+cx/2+cx/6, gw->g.y+y+cy/2, gw->g.x+x+cx/2+cx/6, gw->g.y+y+cy -cy/3, pcol->text);
+				gdispGDrawLine(gw->g.display, gw->g.x+x+cx/2-cx/6, gw->g.y+y+cy -cy/3, gw->g.x+x+cx/2+cx/6, gw->g.y+y+cy -cy/3, pcol->text);  /*     _     */
+				gdispGDrawLine(gw->g.display, gw->g.x+x+cx/2-cx/5, gw->g.y+y+cy -cy/4, gw->g.x+x+cx/2+cx/5, gw->g.y+y+cy -cy/4, pcol->text);  /*    ___    */
+
 				break;
-			case '\t':
+
+			case '\t':	// Tabulator
 				gdispGFillArea(gw->g.display, gw->g.x+x, gw->g.y+y, cx, cy, pcol->fill);
+
 				gdispGDrawLine(gw->g.display, gw->g.x+x+1, gw->g.y+y+1, gw->g.x+x+cx-1, gw->g.y+y+cy/2, pcol->text);
 				gdispGDrawLine(gw->g.display, gw->g.x+x+1, gw->g.y+y+cy-1, gw->g.x+x+cx-1, gw->g.y+y+cy/2, pcol->text);
 				gdispGDrawLine(gw->g.display, gw->g.x+x+cx-1, gw->g.y+y+1, gw->g.x+x+cx-1, gw->g.y+y+cy-1, pcol->text);
+
 				break;
-			case '\b':
+
+			case '\b': // Backspace
 				gdispGFillArea(gw->g.display, gw->g.x+x, gw->g.y+y, cx, cy, pcol->fill);
-				gdispGDrawLine(gw->g.display, gw->g.x+x+1, gw->g.y+y+cy/2, gw->g.x+x+cx-1, gw->g.y+y+1, pcol->text);
-				gdispGDrawLine(gw->g.display, gw->g.x+x+1, gw->g.y+y+cy/2, gw->g.x+x+cx-1, gw->g.y+y+cy-1, pcol->text);
+
+				gdispGDrawLine(gw->g.display, gw->g.x+x+ cx/8, gw->g.y+y+cy/2, gw->g.x+x+cx/2, gw->g.y+y    +cy/3, pcol->text);               /* /      */
+				gdispGDrawLine(gw->g.display, gw->g.x+x+ cx/8, gw->g.y+y+cy/2, gw->g.x+x+cx-cx/8, gw->g.y+y+cy/2, pcol->text);                /*  --    */
+				gdispGDrawLine(gw->g.display, gw->g.x+x+ cx/8, gw->g.y+y+cy/2, gw->g.x+x+cx/2, gw->g.y+y+cy -cy/3, pcol->text);               /* \      */
+
 				break;
-			case '\r':
+
+			case '\r': // Enter
 				gdispGFillArea(gw->g.display, gw->g.x+x, gw->g.y+y, cx, cy, pcol->fill);
-				gdispGDrawLine(gw->g.display, gw->g.x+x+1, gw->g.y+y+cy/2, gw->g.x+x+cx-1, gw->g.y+y+cy/2, pcol->text);
-				gdispGDrawLine(gw->g.display, gw->g.x+x+cx-1, gw->g.y+y+cy/2, gw->g.x+x+cx-1, gw->g.y+y+1, pcol->text);
+
+				gdispGDrawLine(gw->g.display, gw->g.x+x+(cx/3)*2, gw->g.y+y+cy/2, gw->g.x+x+(cx/3)*2, gw->g.y+y+cy/5, pcol->text);            /*      | */
+				gdispGDrawLine(gw->g.display, gw->g.x+x+ cx/3, gw->g.y+y+cy/2, gw->g.x+x+cx/3 +cx/8, gw->g.y+y+cy/3, pcol->text);             /* /      */
+				gdispGDrawLine(gw->g.display, gw->g.x+x+ cx/3, gw->g.y+y+cy/2, gw->g.x+x+(cx/3)*2, gw->g.y+y+cy/2, pcol->text);               /*  --    */
+				gdispGDrawLine(gw->g.display, gw->g.x+x+ cx/3, gw->g.y+y+cy/2, gw->g.x+x+cx/3 +cx/8, gw->g.y+y+cy -cy/3, pcol->text);         /* \      */
+
 				break;
-			default:
+
+			default:   // Regular character
 				gdispGFillStringBox(gw->g.display, gw->g.x+x, gw->g.y+y, cx, cy, pcap, gw->g.font, pcol->text, pcol->fill, justifyCenter);
+				
+				break;
+			}
+			
+			// Draw the frame (border around the entire widget)
+			gdispGDrawBox(gw->g.display, gw->g.x+x, gw->g.y+y, cx, cy, pcol->edge);
+			
+			// If key up and we already cleared the previous key
+			if ( (gk->keyrow == GKEY_BAD_ROWCOL) && (gk->keycol == GKEY_BAD_ROWCOL) && (gk->lastkeyrow == row) && (gk->lastkeycol == col) ) {
+			   gk->lastkeyrow = gk->lastkeycol = GKEY_BAD_ROWCOL;
+			   return;
+			}
+
+			// Just quit the cycle if we did all the work in order not to waste any CPU time
+			if ( (row >= gk->keyrow && col >= gk->keycol) && (row >= gk->lastkeyrow && col >= gk->lastkeycol) ) {
+				return;
 			}
 		}
 	}
 
 	#undef gk
 }
+
+#if !(GFX_USE_GINPUT && GINPUT_NEED_KEYBOARD)
+	GSourceHandle ginputGetKeyboard(unsigned instance) {
+		if (instance == GKEYBOARD_ALL_INSTANCES)
+			return (GSourceHandle)&AllKeyboards;
+		return 0;
+	}
+#endif
 
 #endif /* GFX_USE_GWIN && GWIN_NEED_KEYBOARD */

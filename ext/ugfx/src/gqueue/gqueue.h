@@ -385,7 +385,7 @@ GDataBuffer *gfxBufferGetI(void);
 /** @} */
 
 /**
- * @name		BufferRelease) Functions
+ * @name		BufferRelease() Functions
  * @brief		Release a buffer back to the free list
  *
  * @param[in] pd		The buffer to put (back) on the free-list.

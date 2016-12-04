@@ -50,7 +50,7 @@ IOBus busDataLo = { GDISP_DATA_LO_PORT, 0xFF, 0 };
 IOBus busDataHi = { GDISP_DATA_HI_PORT, 0xFF, 8 };
 
 
-static inline void init_board(GDisplay *g) {
+static GFXINLINE void init_board(GDisplay *g) {
 	g->board = 0;
 	switch(g->controllerdisplay) {
 	case 0:
@@ -64,11 +64,11 @@ static inline void init_board(GDisplay *g) {
 	}
 }
 
-static inline void post_init_board(GDisplay *g) {
+static GFXINLINE void post_init_board(GDisplay *g) {
 	(void) g;
 }
 
-static inline void setpin_reset(GDisplay *g, bool_t state) {
+static GFXINLINE void setpin_reset(GDisplay *g, bool_t state) {
 	(void) g;
 	if (state) {
 		CLR_RST;
@@ -77,17 +77,17 @@ static inline void setpin_reset(GDisplay *g, bool_t state) {
 	}
 }
 
-static inline void acquire_bus(GDisplay *g) {
+static GFXINLINE void acquire_bus(GDisplay *g) {
 	(void) g;
 	CLR_CS;
 }
 
-static inline void release_bus(GDisplay *g) {
+static GFXINLINE void release_bus(GDisplay *g) {
 	(void) g;
 	SET_CS;
 }
 
-static inline void write_index(GDisplay *g, uint16_t index) {
+static GFXINLINE void write_index(GDisplay *g, uint16_t index) {
 	(void) g;
 
 	CLR_DC;
@@ -97,7 +97,7 @@ static inline void write_index(GDisplay *g, uint16_t index) {
 	SET_DC;
 }
 
-static inline void write_data(GDisplay *g, uint16_t data) {
+static GFXINLINE void write_data(GDisplay *g, uint16_t data) {
 	(void) g;
 
 	palWriteBus(&busDataLo, (data & 0xFF));
@@ -105,19 +105,19 @@ static inline void write_data(GDisplay *g, uint16_t data) {
 	writeStrobe;
 }
 
-static inline void setreadmode(GDisplay *g) {
+static GFXINLINE void setreadmode(GDisplay *g) {
 	(void) g;
 	palSetBusMode(&busDataLo, PAL_MODE_INPUT_PULLUP);
 	palSetBusMode(&busDataHi, PAL_MODE_INPUT_PULLUP);
 }
 
-static inline void setwritemode(GDisplay *g) {
+static GFXINLINE void setwritemode(GDisplay *g) {
 	(void) g;
 	palSetBusMode(&busDataLo, PAL_MODE_OUTPUT_PUSHPULL);
 	palSetBusMode(&busDataHi, PAL_MODE_OUTPUT_PUSHPULL);
 }
 
-static inline uint16_t read_data(GDisplay *g) {
+static GFXINLINE uint16_t read_data(GDisplay *g) {
 	uint16_t data;
 	(void) g;
 

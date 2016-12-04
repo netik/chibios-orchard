@@ -1,5 +1,5 @@
 #include "gfx.h"
-#include "stdio.h"
+#include <stdlib.h>
 
 static GListener    gl;
 static GHandle      ghFrame1;

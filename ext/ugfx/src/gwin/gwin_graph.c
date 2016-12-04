@@ -10,7 +10,7 @@
  * @brief   GWIN sub-system button code
  */
 
-#include "gfx.h"
+#include "../../gfx.h"
 
 #if GFX_USE_GWIN && GWIN_NEED_GRAPH
 
@@ -172,6 +172,7 @@ GHandle gwinGGraphCreate(GDisplay *g, GGraphObject *gg, const GWindowInit *pInit
 	gg->lastx = gg->lasty = 0;
 	gwinGraphSetStyle((GHandle)gg, &GGraphDefaultStyle);
 	gwinSetVisible((GHandle)gg, pInit->show);
+	_gwinFlushRedraws(REDRAW_WAIT);
 	return (GHandle)gg;
 }
 

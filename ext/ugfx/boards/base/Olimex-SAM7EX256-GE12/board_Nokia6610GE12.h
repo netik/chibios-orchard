@@ -69,7 +69,7 @@ static bool_t pwmRunning = FALSE;
  *
  * @notapi
  */
-static inline void init_board(GDisplay *g) {
+static GFXINLINE void init_board(GDisplay *g) {
 
 	// As we are not using multiple displays we set g->board to NULL as we don't use it.
 	g->board = 0;
@@ -129,11 +129,11 @@ static inline void init_board(GDisplay *g) {
 	}
 }
 
-static inline void post_init_board(GDisplay *g) {
+static GFXINLINE void post_init_board(GDisplay *g) {
 	(void) g;
 }
 
-static inline void setpin_reset(GDisplay *g, bool_t state) {
+static GFXINLINE void setpin_reset(GDisplay *g, bool_t state) {
 	(void) g;
 	if (state)
 		palClearPad(IOPORT1, PIOA_LCD_RESET);
@@ -141,7 +141,7 @@ static inline void setpin_reset(GDisplay *g, bool_t state) {
 		palSetPad(IOPORT1, PIOA_LCD_RESET);
 }
 
-static inline void set_backlight(GDisplay *g, uint8_t percent) {
+static GFXINLINE void set_backlight(GDisplay *g, uint8_t percent) {
 	(void) g;
 	if (percent == 100) {
 		/* Turn the pin on - No PWM */
@@ -167,15 +167,15 @@ static inline void set_backlight(GDisplay *g, uint8_t percent) {
 	}
 }
 
-static inline void acquire_bus(GDisplay *g) {
+static GFXINLINE void acquire_bus(GDisplay *g) {
 	(void) g;
 }
 
-static inline void release_bus(GDisplay *g) {
+static GFXINLINE void release_bus(GDisplay *g) {
 	(void) g;
 }
 
-static inline void write_index(GDisplay *g, uint16_t index) {
+static GFXINLINE void write_index(GDisplay *g, uint16_t index) {
 	(void) g;
 	// wait for the previous transfer to complete
 	while(!(pSPI->SPI_SR & AT91C_SPI_TDRE));
@@ -183,7 +183,7 @@ static inline void write_index(GDisplay *g, uint16_t index) {
 	pSPI->SPI_TDR = index & 0xFF;
 }
 
-static inline void write_data(GDisplay *g, uint16_t data) {
+static GFXINLINE void write_data(GDisplay *g, uint16_t data) {
 	(void) g;
 	// wait for the previous transfer to complete
 	while(!(pSPI->SPI_SR & AT91C_SPI_TDRE));

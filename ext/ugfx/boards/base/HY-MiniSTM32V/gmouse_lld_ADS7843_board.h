@@ -28,7 +28,7 @@
 #define GMOUSE_ADS7843_FINGER_MOVE_ERROR		14
 
 // How much extra data to allocate at the end of the GMouse structure for the board's use
-#define BOARD_DATA_SIZE			0
+#define GMOUSE_ADS7843_BOARD_DATA_SIZE   0
 
 static const SPIConfig spicfg = {
   0,
@@ -63,7 +63,7 @@ static bool_t init_board(GMouse* m, unsigned driverinstance) {
 /*
  * PB6 is connected to TP_IRQ (low active).
  */
-static inline bool_t getpin_pressed(GMouse* m) {
+static GFXINLINE bool_t getpin_pressed(GMouse* m) {
   (void)m;
   return (!palReadPad(GPIOB, 6));
 }
@@ -71,19 +71,19 @@ static inline bool_t getpin_pressed(GMouse* m) {
 /*
  * PA4 is connected to TP_CS (low active):
  */
-static inline void aquire_bus(GMouse* m) {
+static GFXINLINE void aquire_bus(GMouse* m) {
   (void)m;
   spiAcquireBus(&SPID1);
   palClearPad(GPIOA, 4);
 }
 
-static inline void release_bus(GMouse* m) {
+static GFXINLINE void release_bus(GMouse* m) {
   (void)m;
   palSetPad(GPIOA, 4);
   spiReleaseBus(&SPID1);
 }
 
-static inline uint16_t read_value(GMouse* m, uint16_t port) {
+static GFXINLINE uint16_t read_value(GMouse* m, uint16_t port) {
   (void)m;
   static uint8_t txbuf[3] = {0};
   static uint8_t rxbuf[3] = {0};

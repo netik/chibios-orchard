@@ -6,7 +6,7 @@
  */
 
 /**
- * @file    src/ginput/keyboard_microcode.h
+ * @file    src/ginput/ginput_keyboard_microcode.h
  * @brief   GINPUT keyboard layout microcode definition.
  */
 

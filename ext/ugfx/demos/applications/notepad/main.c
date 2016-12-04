@@ -84,7 +84,7 @@ int main(void) {
 
 	while (TRUE) {
 		ginputGetMouseStatus(0, &ev);
-		if (!(ev.current_buttons & GINPUT_MOUSE_BTN_LEFT))
+		if (!(ev.buttons & GINPUT_MOUSE_BTN_LEFT))
 			continue;
 
 		/* inside color box ? */

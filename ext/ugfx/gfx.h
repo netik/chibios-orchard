@@ -38,21 +38,11 @@
 	#define TRUE        -1
 #endif
 
-/**
- * @brief   Mark a function as deprecated.
- */
-#ifndef DEPRECATED
-	#if defined(__GNUC__) || defined(__MINGW32_) || defined(__CYGWIN__)
-		#define DEPRECATED(msg)		__attribute__((deprecated(msg)))
-	#elif defined(_MSC_VER)
-		#define DEPRECATED(msg)		__declspec(deprecated(msg))
-	#else
-		#define DEPRECATED(msg)
-	#endif
-#endif
-
 /* gfxconf.h is the user's project configuration for the GFX system. */
 #include "gfxconf.h"
+
+/* Include Compiler and CPU support */
+#include "src/gfx_compilers.h"
 
 /**
  * @name    GFX sub-systems that can be turned on
@@ -155,6 +145,13 @@
 	#ifndef GFX_USE_GFILE
 		#define GFX_USE_GFILE	FALSE
 	#endif
+	/**
+	 * @brief   GFX Translation Support API
+	 * @details	Defaults to FALSE
+	 */
+	#ifndef GFX_USE_GTRANS
+		#define GFX_USE_GTRANS	FALSE
+	#endif
 /** @} */
 
 /**
@@ -165,6 +162,7 @@
 #include "src/gdriver/gdriver_options.h"
 #include "src/gfile/gfile_options.h"
 #include "src/gmisc/gmisc_options.h"
+#include "src/gtrans/gtrans_options.h"
 #include "src/gqueue/gqueue_options.h"
 #include "src/gevent/gevent_options.h"
 #include "src/gtimer/gtimer_options.h"
@@ -191,6 +189,7 @@
 #include "src/gtimer/gtimer_rules.h"
 #include "src/gqueue/gqueue_rules.h"
 #include "src/gmisc/gmisc_rules.h"
+#include "src/gtrans/gtrans_rules.h"
 #include "src/gfile/gfile_rules.h"
 #include "src/gdriver/gdriver_rules.h"
 #include "src/gos/gos_rules.h"
@@ -202,6 +201,7 @@
 //#include "src/gdriver/gdriver.h"			// This module is only included by source that needs it.
 #include "src/gfile/gfile.h"
 #include "src/gmisc/gmisc.h"
+#include "src/gtrans/gtrans.h"
 #include "src/gqueue/gqueue.h"
 #include "src/gevent/gevent.h"
 #include "src/gtimer/gtimer.h"
@@ -221,11 +221,11 @@ extern "C" {
 	 * @note	This will initialise each sub-system that has been turned on.
 	 * 			For example, if GFX_USE_GDISP is defined then display will be initialised
 	 * 			and cleared to black.
-	 * @note	If you define GFX_NO_OS_INIT as TRUE in your gfxconf.h file then ugfx doesn't try to
+	 * @note	If you define GFX_OS_NO_INIT as TRUE in your gfxconf.h file then ugfx doesn't try to
 	 * 			initialise the operating system for you when you call @p gfxInit().
 	 * @note	If you define GFX_OS_EXTRA_INIT_FUNCTION in your gfxconf.h file the macro is the
 	 * 			name of a void function with no parameters that is called immediately after
-	 * 			operating system initialisation (whether or not GFX_NO_OS_INIT is set).
+	 * 			operating system initialisation (whether or not GFX_OS_NO_INIT is set).
 	 * @note	If you define GFX_OS_EXTRA_DEINIT_FUNCTION in your gfxconf.h file the macro is the
 	 * 			name of a void function with no parameters that is called immediately before
 	 * 			operating system de-initialisation (as ugfx is exiting).

@@ -24,6 +24,9 @@
 //#define GFX_USE_OS_LINUX                           TRUE
 //#define GFX_USE_OS_OSX                             TRUE
 
+// Oops - rand() seems to use malloc()
+#define GFX_EMULATE_MALLOC                           TRUE
+
 ///////////////////////////////////////////////////////////////////////////
 // GDISP                                                                 //
 ///////////////////////////////////////////////////////////////////////////

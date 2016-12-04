@@ -20,7 +20,7 @@
 
 #define GDISP_DRIVER_VMT			GDISPVMT_SSD1331
 #include "gdisp_lld_config.h"
-#include "src/gdisp/gdisp_driver.h"
+#include "../../../src/gdisp/gdisp_driver.h"
 
 #include "board_SSD1331.h"
 
@@ -54,7 +54,7 @@
 /* Driver exported functions.                                                */
 /*===========================================================================*/
 
-static const initdata[] = {
+static const uint8_t initdata[] = {
 	SSD1331_DISPLAY_OFF,
 	SSD1331_START_LINE, 0x00,
 	SSD1331_COM_OFFSET, 0x00,
@@ -88,7 +88,7 @@ static const initdata[] = {
 };
 
 LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
-	int		i;
+	unsigned		i;
 
 	// No private area for this controller
 	g->priv = 0;
@@ -108,17 +108,14 @@ LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
 	for(i=0;i<sizeof(initdata);i++)
 		write_cmd(g, initdata[i]);
 
-	gfxSleepMilliseconds(2);
 	write_cmd(g, SSD1331_DISPLAY_ON);
-
-	release_bus(g);
 
     // Finish Init
     post_init_board(g);
 
  	// Release the bus
 	release_bus(g);
-	
+
 	/* Initialise the GDISP structure */
 	g->g.Width = GDISP_SCREEN_WIDTH;
 	g->g.Height = GDISP_SCREEN_HEIGHT;
@@ -174,7 +171,7 @@ LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
 			return;
 		}
 
-		#if GDISP_LLD_PIXELFORMAT == GDISP_PIXELFORMAT_RGB565 || GDISP_LLD_PIXELFORMAT == GDISP_PIXELFORMAT_RGB322
+		#if GDISP_LLD_PIXELFORMAT == GDISP_PIXELFORMAT_RGB565 || GDISP_LLD_PIXELFORMAT == GDISP_PIXELFORMAT_RGB332
 			c6 = RED_OF(g->p.color) >> 2;
 			#if COLOR_BITS_R < 5
 				if (c6 & 0x20) c6 |= (1<<(6-COLOR_BITS_R))-1;

@@ -5,9 +5,9 @@
 /* disk I/O modules and attach it to FatFs module with common interface. */
 /*-----------------------------------------------------------------------*/
 
-#include "gfx.h"
+#include "../../gfx.h"
 
-#if GFX_USE_GFILE && GFILE_NEED_FATFS && GFX_USE_OS_CHIBIOS
+#if GFX_USE_GFILE && GFILE_NEED_FATFS && GFX_USE_OS_CHIBIOS && !GFILE_FATFS_EXTERNAL_LIB
 
 #include "gfile_fatfs_wrapper.h"
 
@@ -119,24 +119,16 @@ DRESULT disk_read (
   case MMC:
     if (blkGetDriverState(&MMCD1) != BLK_READY)
       return RES_NOTRDY;
-    spiAcquireBus (MMCD1.config->spip);
-    if (mmcStartSequentialRead(&MMCD1, sector)) {
-      spiReleaseBus (MMCD1.config->spip);
+    if (mmcStartSequentialRead(&MMCD1, sector))
       return RES_ERROR;
-    }
     while (count > 0) {
-      if (mmcSequentialRead(&MMCD1, buff)) {
-        spiReleaseBus (MMCD1.config->spip);
+      if (mmcSequentialRead(&MMCD1, buff))
         return RES_ERROR;
-      }
       buff += MMCSD_BLOCK_SIZE;
       count--;
     }
-    if (mmcStopSequentialRead(&MMCD1)) {
-        spiReleaseBus (MMCD1.config->spip);
+    if (mmcStopSequentialRead(&MMCD1))
         return RES_ERROR;
-    }
-    spiReleaseBus (MMCD1.config->spip);
     return RES_OK;
 #else
   case SDC:
@@ -170,24 +162,16 @@ DRESULT disk_write (
         return RES_NOTRDY;
     if (mmcIsWriteProtected(&MMCD1))
         return RES_WRPRT;
-    spiAcquireBus (MMCD1.config->spip);
-    if (mmcStartSequentialWrite(&MMCD1, sector)) {
-        spiReleaseBus (MMCD1.config->spip);
+    if (mmcStartSequentialWrite(&MMCD1, sector))
         return RES_ERROR;
-    }
     while (count > 0) {
-        if (mmcSequentialWrite(&MMCD1, buff)) {
-            spiReleaseBus (MMCD1.config->spip);
+        if (mmcSequentialWrite(&MMCD1, buff))
             return RES_ERROR;
-        }
         buff += MMCSD_BLOCK_SIZE;
         count--;
     }
-    if (mmcStopSequentialWrite(&MMCD1)) {
-        spiReleaseBus (MMCD1.config->spip);
+    if (mmcStopSequentialWrite(&MMCD1))
         return RES_ERROR;
-    }
-    spiReleaseBus (MMCD1.config->spip);
     return RES_OK;
 #else
   case SDC:
@@ -219,17 +203,12 @@ DRESULT disk_ioctl (
     switch (ctrl) {
     case CTRL_SYNC:
         return RES_OK;
-    case GET_SECTOR_COUNT:
-        *((DWORD *)buff) = mmcsdGetCardCapacity(&MMCD1);
-        return RES_OK;
     case GET_SECTOR_SIZE:
         *((WORD *)buff) = MMCSD_BLOCK_SIZE;
         return RES_OK;
 #if _USE_ERASE
     case CTRL_ERASE_SECTOR:
-        spiAcquireBus (MMCD1.config->spip);
         mmcErase(&MMCD1, *((DWORD *)buff), *((DWORD *)buff + 1));
-        spiReleaseBus (MMCD1.config->spip);
         return RES_OK;
 #endif
     default:
@@ -270,6 +249,6 @@ DWORD get_fattime(void) {
 #endif
 }
 
-#endif // GFX_USE_GFILE && GFILE_NEED_FATFS && GFX_USE_OS_CHIBIOS
+#endif // GFX_USE_GFILE && GFILE_NEED_FATFS && GFX_USE_OS_CHIBIOS && !GFILE_FATFS_EXTERNAL_LIB
 
 

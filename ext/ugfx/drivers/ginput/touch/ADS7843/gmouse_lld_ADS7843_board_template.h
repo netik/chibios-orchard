@@ -23,19 +23,19 @@ static bool_t init_board(GMouse* m, unsigned driverinstance) {
 
 }
 
-static inline bool_t getpin_pressed(GMouse* m) {
+static GFXINLINE bool_t getpin_pressed(GMouse* m) {
 
 }
 
-static inline void aquire_bus(GMouse* m) {
+static GFXINLINE void aquire_bus(GMouse* m) {
 
 }
 
-static inline void release_bus(GMouse* m) {
+static GFXINLINE void release_bus(GMouse* m) {
 
 }
 
-static inline uint16_t read_value(GMouse* m, uint16_t port) {
+static GFXINLINE uint16_t read_value(GMouse* m, uint16_t port) {
 
 }
 

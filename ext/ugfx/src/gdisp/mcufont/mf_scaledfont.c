@@ -36,7 +36,7 @@ static void scaled_pixel_callback(int16_t x, int16_t y, uint8_t count,
 }
     
 uint8_t mf_scaled_character_width(const struct mf_font_s *font,
-                                      mf_char character)
+                                      uint16_t character)
 {
     struct mf_scaledfont_s *sfont = (struct mf_scaledfont_s*)font;
     uint8_t basewidth;
@@ -48,7 +48,7 @@ uint8_t mf_scaled_character_width(const struct mf_font_s *font,
 
 uint8_t mf_scaled_render_character(const struct mf_font_s *font,
                                        int16_t x0, int16_t y0,
-                                       mf_char character,
+                                       uint16_t character,
                                        mf_pixel_callback_t callback,
                                        void *state)
 {

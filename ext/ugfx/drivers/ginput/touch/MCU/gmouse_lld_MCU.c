@@ -10,7 +10,7 @@
 #if GFX_USE_GINPUT && GINPUT_NEED_MOUSE
 
 #define GMOUSE_DRIVER_VMT		GMOUSEVMT_MCU
-#include "src/ginput/ginput_driver_mouse.h"
+#include "../../../../src/ginput/ginput_driver_mouse.h"
 
 // Get the hardware interface
 #include "gmouse_lld_MCU_board.h"
@@ -19,8 +19,7 @@ const GMouseVMT const GMOUSE_DRIVER_VMT[1] = {{
 	{
 		GDRIVER_TYPE_TOUCH,
 		GMOUSE_VFLG_TOUCH|GMOUSE_VFLG_CALIBRATE|GMOUSE_VFLG_CAL_TEST
-			|GMOUSE_VFLG_ONLY_DOWN|GMOUSE_VFLG_POORUPDOWN
-			|GMOUSE_VFLG_CAL_EXTREMES,
+			|GMOUSE_VFLG_ONLY_DOWN|GMOUSE_VFLG_POORUPDOWN,
 		// Extra flags for testing only
 		//GMOUSE_VFLG_DEFAULTFINGER|GMOUSE_VFLG_CAL_EXTREMES					- Possible
 		//GMOUSE_VFLG_NOPOLL|GMOUSE_VFLG_DYNAMICONLY|GMOUSE_VFLG_SELFROTATION|GMOUSE_VFLG_CAL_LOADFREE - unlikely

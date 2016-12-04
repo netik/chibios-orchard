@@ -10,8 +10,8 @@
 #if GFX_USE_GDISP
 
 #define GDISP_DRIVER_VMT			GDISPVMT_SSD1963
-#include "drivers/gdisp/SSD1963/gdisp_lld_config.h"
-#include "src/gdisp/gdisp_driver.h"
+#include "gdisp_lld_config.h"
+#include "../../../src/gdisp/gdisp_driver.h"
 
 #define CALC_PERIOD(w,b,f,p)				(p+b+w+f)
 #define CALC_FPR(w,h,hb,hf,hp,vb,vf,vp,fps)	((fps * CALC_PERIOD(w,hb,hf,hp) * CALC_PERIOD(h,vb,vf,vp) * 1048576)/100000000)
@@ -27,7 +27,7 @@ typedef struct LCD_Parameters {
 	uint16_t	vpulse;							// Vertical Pulse
 	uint16_t	vperiod;						// Vertical Period (Total)
 	uint32_t	fpr;							// Calculated FPR
-	uint16_t	flags;							// For command "SSD1963_SET_GDISP_MODE"
+	uint16_t	mode;							// For command "SSD1963_SET_LCD_MODE"
 		/* Set the pannel data width */
 		#define LCD_PANEL_DATA_WIDTH_24BIT 				(1<<5)						// 18bit default
 		/* Set the color deeph enhancement */
@@ -44,6 +44,9 @@ typedef struct LCD_Parameters {
 		/* Set the lcd panel interface type */										// default TFT mode
 		#define LCD_PANEL_TYPE_SERIAL_RGB_MODE			((1<<6) << 8)				// Serial RGB mode
 		#define LCD_PANEL_TYPE_SERIAL_RGB_DUMMY_MODE	(((1<<5) | (1<<6)) << 8)	// Serial RGB+dummy mode
+
+	bool_t		flipHorz;						// Flipping the display horizontally
+	bool_t		flipVert;						// Flipping the display vertically
 } LCD_Parameters;
 
 #include "board_SSD1963.h"
@@ -66,14 +69,14 @@ typedef struct LCD_Parameters {
 /* Driver local functions.                                                   */
 /*===========================================================================*/
 
-#include "drivers/gdisp/SSD1963/ssd1963.h"
+#include "ssd1963.h"
 
 #define dummy_read(g)               { volatile uint16_t dummy; dummy = read_data(g); (void) dummy; }
 #define write_reg(g, reg, data)		{ write_index(g, reg); write_data(g, data); }
 #define write_data16(g, data)		{ write_data(g, (data)>>8); write_data(g, (data) & 0xFF); }
 #define read_reg(g, reg)            { write_index(g, reg); read_data(g); }
 
-static inline void set_viewport(GDisplay* g) {
+static GFXINLINE void set_viewport(GDisplay* g) {
 	switch(g->g.Orientation) {
 		default:
 		case GDISP_ROTATE_0:
@@ -121,7 +124,7 @@ static inline void set_viewport(GDisplay* g) {
  *
  *	Backlight appears to be forced off (by chip) when display blanked
  */
-static inline void set_backlight(GDisplay *g, uint8_t percent) {
+static GFXINLINE void set_backlight(GDisplay *g, uint8_t percent) {
 	// The SSD1963 has a built-in PWM (duty_cycle 00..FF).
 	// Its output can be used by a Dynamic Background Control or by a host (user)
 	// Check your LCD's hardware, the PWM connection is default left open and instead
@@ -190,9 +193,9 @@ LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
 		write_reg(g, SSD1963_SET_PLL, 0x03);			// Use PLL
 
 		/* LCD panel parameters */
-		write_index(g, SSD1963_SET_GDISP_MODE);
-		write_data(g, lcdp->flags & 0xFF);
-		write_data(g, (lcdp->flags >> 8) & 0xFF);
+		write_index(g, SSD1963_SET_LCD_MODE);
+		write_data(g, lcdp->mode & 0xFF);
+		write_data(g, (lcdp->mode >> 8) & 0xFF);
 		//**	write_data(g, 0x18);					//Enabled dithering
 		//**	write_data(g, 0x00);
 		write_data16(g, lcdp->width-1);
@@ -200,9 +203,17 @@ LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
 		write_data(g, 0x00);							// RGB - line sequences for serial TFT
 	#endif
 
-	// From Displaytech example - for larger horizontal resolutions - not sure if display-specific
-	if (lcdp->width >= 640)
-		write_reg(g, SSD1963_SET_ADDRESS_MODE, 2);		// Flip horizontal direction
+	
+	// Display flipping
+	if (lcdp->flipHorz)	{
+		write_reg(g, SSD1963_SET_ADDRESS_MODE, SSD1963_ADDR_MODE_FLIP_HORZ);
+	} else if (lcdp->flipVert) {
+		write_reg(g, SSD1963_SET_ADDRESS_MODE, SSD1963_ADDR_MODE_FLIP_VERT);
+	} else if (lcdp->flipHorz && lcdp->flipVert) {
+		write_reg(g, SSD1963_SET_ADDRESS_MODE, SSD1963_ADDR_MODE_FLIP_VERT | SSD1963_ADDR_MODE_FLIP_HORZ);
+	} else {
+		write_reg(g, SSD1963_SET_ADDRESS_MODE, 0x00);
+	}
 
 	write_reg(g, SSD1963_SET_PIXEL_DATA_INTERFACE, SSD1963_PDI_16BIT565);
 	write_reg(g, SSD1963_SET_PIXEL_FORMAT, 0x50);

@@ -16,6 +16,7 @@
 	GFXLIB					= ../uGFX
 	GFXBOARD				= Olimex-SAM7EX256-GE8
 	GFXDEMO					= modules/gdisp/basics
+	GFXSINGLEMAKE			= no
 
 # ChibiOS settings
 ifeq ($(OPT_OS),chibios)

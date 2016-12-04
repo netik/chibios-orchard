@@ -27,6 +27,7 @@ typedef RAW_TASK_OBJ*		gfxThreadHandle;
 
 #define DECLARE_THREAD_FUNCTION(fnName, param)	threadreturn_t fnName(void *param)
 #define DECLARE_THREAD_STACK(name, sz)			PORT_STACK name[sz];
+#define THREAD_RETURN(retval)					return retval
 
 #define gfxHalt(msg)					for(;;)
 #define gfxExit()						for(;;)

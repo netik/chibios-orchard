@@ -37,6 +37,7 @@ typedef pthread_mutex_t		gfxMutex;
 
 #define DECLARE_THREAD_FUNCTION(fnName, param)	threadreturn_t fnName(void *param)
 #define DECLARE_THREAD_STACK(name, sz)			uint8_t name[0];
+#define THREAD_RETURN(retval)					return retval
 
 #define gfxExit()						exit(0)
 #define gfxAlloc(sz)					malloc(sz)
