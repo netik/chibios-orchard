@@ -56,7 +56,7 @@ endif
 # Stack size to be allocated to the Cortex-M process stack. This stack is
 # the stack used by the main() thread.
 ifeq ($(USE_PROCESS_STACKSIZE),)
-  USE_PROCESS_STACKSIZE = 0x500
+  USE_PROCESS_STACKSIZE = 0x900
 endif
 
 # Stack size to the allocated to the Cortex-M main/exceptions stack. This
@@ -135,7 +135,8 @@ CSRC = main.c \
        app-shout.c \
        app-default.c \
        app-setup.c \
-       $(wildcard ui-*.c) \
+       ui-keyboard.c \
+       rand.c \
        sound.c \
        led.c \
        oled.c \
@@ -269,7 +270,7 @@ ULIBDIR =
 
 # List all user libraries here
 #ULIBS = lib/armv6-m-libgcc.a lib/libc-nano-armv6-m.a
-ULIBS = -lc_nano -lnosys -lgcc -lm # -lm_nano
+ULIBS = -lc_nano -lnosys -lm -lgcc
 
 #
 # End of user defines

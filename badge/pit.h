@@ -8,7 +8,11 @@ typedef struct pit_driver {
 	PIT_FUNC	pit_func;
 } PITDriver;
 
+#ifdef UPDATER
+#define KINETIS_PIT_IRQ_VECTOR	38
+#else
 #define KINETIS_PIT_IRQ_VECTOR Vector98
+#endif
 
 #define CSR_READ_4(drv, addr)					\
         *(volatile uint32_t *)((drv)->pit_base + addr)

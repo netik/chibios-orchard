@@ -6,7 +6,7 @@ SECTIONS
   .text :
   {
    main = .;
-   *(.text.*)
+   *(.text*)
    *(.text)
    *(.rdata)
    *(.rodata)

@@ -24,14 +24,6 @@ typedef struct _CreditsHandles {
 	uint8_t		stop;
 } CreditsHandles;
 
-static void noRender(GWidgetObject* gw, void* param)
-{
-	(void)gw;
-	(void)param;
-
-	return;
-}
-
 static void scrollAreaSet (uint16_t TFA, uint16_t BFA)
 {
 	acquire_bus (NULL);

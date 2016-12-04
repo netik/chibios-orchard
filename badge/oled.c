@@ -42,7 +42,7 @@ void oledSDFail(void) {
 void oledOrchardBanner(void)
 {
 	font_t font;
-	static gdispImage myImage;
+	gdispImage myImage;
 
 	if (gdispImageOpenFile (&myImage,
 				IMG_SPLASH) == GDISP_IMAGE_ERR_OK) {

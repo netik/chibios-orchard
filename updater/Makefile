@@ -1,6 +1,6 @@
 
 VPATH= ../os/hal/ports/KINETIS/KL1x ../os/hal/ports/common/ARMCMx	\
-	../os/hal/src ../ext/fatfs/src ../ext/C90TFS/source/
+	../os/hal/src ../ext/fatfs/src ../ext/C90TFS/source ../badge
 
 OBJS=	entry.o updater.o nvic.o pit.o ff.o diskio.o mmc_kinetis_spi.o	\
 	flash.o FlashInit.o FlashProgram.o FlashEraseSector.o		\
@@ -17,11 +17,11 @@ OBJCOPY= arm-none-eabi-objcopy
 CFLAGS+=  -mcpu=cortex-m0plus -Os -ggdb -fomit-frame-pointer		\
 	-falign-functions=4 -nostdlib -DBIG_ENDIAN=0 -DLITTLE_ENDIAN=1	\
 	-Dasm=__asm__ -ansi -pedantic -ffunction-sections		\
-	 -fdata-sections -fno-common -std=c99				\
+	-DUPDATER -fdata-sections -fno-common -std=c99			\
 	-DCPU_MKL25Z128VLK4 -Wall -Wextra -Wstrict-prototypes		\
 	-DCORTEX_USE_FPU=FALSE -DTHUMB_PRESENT -mno-thumb-interwork	\
 	-DTHUMB_NO_INTERWORKING -mthumb -DTHUMB -msoft-float -I.	\
-	-I../os/common/ports/ARMCMx/devices/KL1x			\
+	-I../badge -I../os/common/ports/ARMCMx/devices/KL1x		\
 	-I../os/ext/CMSIS/include -I../os/ext/CMSIS/KINETIS		\
 	-I../os/rt/include -I../os/rt/ports/ARMCMx			\
 	-I../os/rt/ports/ARMCMx/compilers/GCC				\
