@@ -25,6 +25,7 @@ typedef struct _FightHandles {
   GHandle ghNextEnemy;
   GHandle ghPrevEnemy;
   GHandle ghAttack;
+  GHandle ghProgressBar;
 } FightHandles;
 
 typedef enum _fight_state {
@@ -138,14 +139,6 @@ static int putImageFile(char *name, int16_t x, int16_t y) {
   }    
 }
 
-static void noRender(GWidgetObject* gw, void* param)
-{
-  (void)gw;
-  (void)param;
-
-  return;
-}
-
 static void draw_select_buttons(FightHandles *p) { 
   GWidgetInit wi;
   coord_t totalheight = gdispGetHeight();
@@ -223,7 +216,7 @@ static void draw_select_buttons(FightHandles *p) {
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
   wi.g.width = 40;
-  wi.g.height = 40;
+  wi.g.height = 20;
   wi.g.y = totalheight - 40;
   wi.g.x = gdispGetWidth() - 40;
   wi.g.parent = p->ghContainerSelect;
@@ -458,19 +451,20 @@ static void redraw_approval_screen(OrchardAppContext *context) {
   p = context->priv;
 
   const GWidgetStyle RedLabelStyle = {
-    HTML2COLOR(0x000000),			// window background
-    HTML2COLOR(0x2A8FCD),                   // focused -- only in ugfx 2.6?
+    RGB2COLOR(0x00,0x00,0x00),	        // window background
+    RGB2COLOR(0xff,0xff,0xff),               // focused -- only in ugfx 2.6?
     
     // enabled color set
     {
-      HTML2COLOR(0xff0000),		// text
+      RGB2COLOR(0xff, 0x00, 0x00),		// text
       HTML2COLOR(0xffffff),		// edge
-      HTML2COLOR(0x000000),		// fill
+      HTML2COLOR(0xff0000),		// fill
       HTML2COLOR(0x000000),		// progress - inactive area
     },
+    
     // disabled color set
     {
-      HTML2COLOR(0x808080),		// text
+      RGB2COLOR(0xff, 0x00, 0x00),		// text
       HTML2COLOR(0x404040),		// edge
       HTML2COLOR(0x404040),		// fill
       HTML2COLOR(0x004000),		// progress - active area
@@ -478,9 +472,9 @@ static void redraw_approval_screen(OrchardAppContext *context) {
     
     // pressed color set
     {
-      HTML2COLOR(0xff0000),		// text
+      RGB2COLOR(0xff, 0x00, 0x00),	// text
       HTML2COLOR(0x00ff00),		// edge
-      HTML2COLOR(0x0000ff),		// fill
+      HTML2COLOR(0xffffff),		// fill
       HTML2COLOR(0xffff00),		// progress - active area
     },
   };
@@ -492,21 +486,29 @@ static void redraw_approval_screen(OrchardAppContext *context) {
   
   // Create label widget: ghLabel1
   gwinWidgetClearInit(&wi);
-  wi.g.show = TRUE;
+  wi.g.show = FALSE;
   wi.g.x = 0;
   wi.g.y = (gdispGetHeight() / 2) - (gdispGetFontMetric(fontFF, fontHeight) / 2);
   wi.g.width = gdispGetWidth();
   wi.g.height = gdispGetFontMetric(fontFF, fontHeight);
-  wi.customDraw = gwinLabelDrawJustifiedLeft;
   wi.customDraw = gwinLabelDrawJustifiedCenter;
+  wi.g.parent = p->ghContainerAccept;
   wi.text = "WAITING FOR ENEMY TO ACCEPT!";
   p->ghLabel1 = gwinLabelCreate(0, &wi);
 
-  drawHPBox(40,
-	    (gdispGetHeight() / 2) + 60,
-	    240,
-	    100,
-	    100);
+  // progess bar
+  gwinWidgetClearInit(&wi);
+  wi.customDraw = 0;
+  wi.customParam = 0;
+  wi.customStyle = 0;
+  wi.g.show = FALSE;
+  wi.g.x = 40;
+  wi.g.y = (gdispGetHeight() / 2) + 60;
+  wi.g.width = 240;
+  wi.g.height = 20;
+  wi.g.parent = p->ghContainerAccept;
+  wi.text = "";
+  p->ghProgressBar = gwinProgressbarCreate(NULL, &wi);
 	    
 }
 
@@ -545,8 +547,9 @@ static void fight_event(OrchardAppContext *context,
 	  last_ui_time = chVTGetSystemTime();
 	  current_fight_state = FIGHT_APPROVE;
 	  gwinHide(p->ghContainerSelect);
-	  gwinShow(p->ghContainerAccept);
 	  redraw_approval_screen(context);
+	  gwinProgressbarSetPosition( p->ghProgressBar, 100);
+	  gwinShow(p->ghContainerAccept);
 	  return;
 	}
 	if (((GEventGWinButton*)pe)->gwin == p->ghPrevEnemy) {
@@ -571,6 +574,7 @@ static void fight_exit(OrchardAppContext *context) {
   gwinDestroy (p->ghNextEnemy);
   gwinDestroy (p->ghPrevEnemy);
   gwinDestroy (p->ghAttack);
+  gwinDestroy (p->ghProgressBar);
   geventDetachSource (&p->glFight, NULL);
   geventRegisterCallback (&p->glFight, NULL, NULL);
 

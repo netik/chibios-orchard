@@ -180,8 +180,8 @@
 //    #define GWIN_NEED_RADIO                          FALSE
 //    #define GWIN_NEED_LIST                           TRUE
 //        #define GWIN_NEED_LIST_IMAGES                FALSE
-//    #define GWIN_NEED_PROGRESSBAR                    FALSE
-//        #define GWIN_PROGRESSBAR_AUTO                FALSE
+#define GWIN_NEED_PROGRESSBAR                    TRUE
+#define GWIN_PROGRESSBAR_AUTO                    TRUE
 #define GWIN_NEED_KEYBOARD                       TRUE
 //        #define GWIN_KEYBOARD_DEFAULT_LAYOUT         VirtualKeyboard_English1
 //        #define GWIN_NEED_KEYBOARD_ENGLISH1          TRUE
@@ -211,7 +211,7 @@
 #define GFX_USE_GTIMER                               TRUE
 
 //#define GTIMER_THREAD_PRIORITY                       HIGH_PRIORITY
-#define GTIMER_THREAD_WORKAREA_SIZE                  700
+#define GTIMER_THREAD_WORKAREA_SIZE                  900
 
 
 ///////////////////////////////////////////////////////////////////////////
