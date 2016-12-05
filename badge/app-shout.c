@@ -21,23 +21,18 @@ static uint32_t shout_init (OrchardAppContext *context)
 static void shout_start (OrchardAppContext *context)
 {
 	OrchardUiContext * keyboardUiContext;
-	KW01_PKT * pkt;
+	char * p;
 
-	/*
-	 * Save some RAM by re-using the payload buffer in the
-	 * radio context handle.
-	 */
+	p = chHeapAlloc (NULL, KW01_PKT_AES_MAXLEN - KW01_PKT_HDRLEN);
 
-	pkt = &KRADIO1.kw01_pkt;
-
-	memset (pkt->kw01_payload, 0, sizeof(pkt->kw01_payload));
+	memset (p, 0, KW01_PKT_AES_MAXLEN - KW01_PKT_HDRLEN);
 
         keyboardUiContext = chHeapAlloc(NULL, sizeof(OrchardUiContext));
 	keyboardUiContext->itemlist = (const char **)chHeapAlloc(NULL,
 		sizeof(char *) * 2);
 	keyboardUiContext->itemlist[0] =
                 "Shout something,\npress ENTER when done";
-	keyboardUiContext->itemlist[1] = (char *)pkt->kw01_payload;
+	keyboardUiContext->itemlist[1] = p;
 	keyboardUiContext->total = KRADIO1.kw01_maxlen - KW01_PKT_HDRLEN;
 
 	context->instance->ui = getUiByName ("keyboard");
@@ -50,13 +45,12 @@ static void shout_start (OrchardAppContext *context)
 static void shout_event (OrchardAppContext *context,
 	const OrchardAppEvent *event)
 {
+	OrchardUiContext * keyboardUiContext;
 	const OrchardUi * keyboardUi;
-	KW01_PKT * pkt;
 	font_t font;
 
-	pkt = &KRADIO1.kw01_pkt;
-
 	keyboardUi = context->instance->ui;
+	keyboardUiContext = context->instance->uicontext;
 
 	if (event->type == ugfxEvent)
 		keyboardUi->event (context, event);
@@ -75,8 +69,10 @@ static void shout_event (OrchardAppContext *context,
 			/* Send the message */
 
 			radioSend (&KRADIO1, 0xFFFFFFFF, RADIO_PROTOCOL_SHOUT,
-				KRADIO1.kw01_maxlen - KW01_PKT_HDRLEN,
-				pkt->kw01_payload);
+				KW01_PKT_AES_MAXLEN - KW01_PKT_HDRLEN,
+				keyboardUiContext->itemlist[1]);
+
+			chHeapFree ((char *)keyboardUiContext->itemlist[1]);
 
 			/* Display a confirmation message */
 
