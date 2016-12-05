@@ -191,16 +191,11 @@ radioReceive (RADIODriver * radio)
 		return (-1);
 	}
 
-	/*
-	 * The first byte in the pkt structure is the RSSI value
-	 * and the second is the length, both of which we will
-	 * fill in manually, so start filling the packet buffer
-	 * from the second byte in.
-	 */
-
 	pkt->kw01_length = len - sizeof (KW01_PKT_HDR);
-	p = (uint8_t *)pkt;
-	p += 2;
+
+	/* Get the packet header */
+
+	p = (uint8_t *)&pkt->kw01_hdr;
 
 	/* Read the rest of the frame. */
 

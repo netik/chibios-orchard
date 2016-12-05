@@ -40,7 +40,7 @@
 #define KW01_PKT_AES_MAXLEN 48	/* Max packet size with AES and filtering on */
 #else
 #define KW01_PKT_HDRLEN 9
-#define KW01_PKT_AES_MAXLEN 66	/* Max packet size with AES and filtering off */
+#define KW01_PKT_AES_MAXLEN 64	/* Max packet size with AES and filtering off */
 #endif
 #define KW01_PKT_HANDLERS_MAX 4
 
@@ -61,6 +61,7 @@
  * enabled. Everything else is defined by the user.
  */
 
+#pragma pack(1)
 typedef struct kw01_pkt_hdr {
 #ifdef KW01_RADIO_HWFILTER
 	uint8_t		kw01_dst;	/* Destination node */
@@ -71,13 +72,16 @@ typedef struct kw01_pkt_hdr {
 #endif
 	uint8_t		kw01_prot;	/* Protocol type */
 } KW01_PKT_HDR;
+#pragma pack()
 
+#pragma pack(1)
 typedef struct kw01_pkt {
 	uint8_t		kw01_rssi;	/* Signal strength reading */
 	uint8_t		kw01_length;	/* Total frame length */
 	KW01_PKT_HDR	kw01_hdr;
 	uint8_t		kw01_payload[KW01_PKT_MAXLEN - KW01_PKT_HDRLEN];
 } KW01_PKT;
+#pragma pack()
 
 typedef void (*KW01_PKT_FUNC)(KW01_PKT *);
 
