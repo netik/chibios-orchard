@@ -180,16 +180,16 @@
 //    #define GWIN_NEED_RADIO                          FALSE
 //    #define GWIN_NEED_LIST                           TRUE
 //        #define GWIN_NEED_LIST_IMAGES                FALSE
-#define GWIN_NEED_PROGRESSBAR                    TRUE
-#define GWIN_PROGRESSBAR_AUTO                    TRUE
+#define GWIN_NEED_PROGRESSBAR                    FALSE
+#define GWIN_PROGRESSBAR_AUTO                    FALSE
 #define GWIN_NEED_KEYBOARD                       TRUE
 //        #define GWIN_KEYBOARD_DEFAULT_LAYOUT         VirtualKeyboard_English1
 //        #define GWIN_NEED_KEYBOARD_ENGLISH1          TRUE
 //    #define GWIN_FLAT_STYLING                        FALSE
 //    #define GWIN_WIDGET_TAGS                         FALSE
 
-#define GWIN_NEED_CONTAINERS                         TRUE
-#define GWIN_NEED_CONTAINER                      TRUE
+#define GWIN_NEED_CONTAINERS                     FALSE
+#define GWIN_NEED_CONTAINER                      FALSE
 //    #define GWIN_NEED_FRAME                          FALSE
 //    #define GWIN_NEED_TABSET                         FALSE
 //        #define GWIN_TABSET_TABHEIGHT                18

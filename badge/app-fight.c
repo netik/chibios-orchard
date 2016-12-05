@@ -15,23 +15,18 @@
 
 typedef struct _FightHandles {
   GListener glFight;
-  GHandle ghContainerSelect;
-  GHandle ghContainerAccept;
-  GHandle ghContainerVS;
-  GHandle ghContainerAttackSelect;
-  GHandle ghContainerBattleResult;
   GHandle ghExitButton;
   GHandle ghLabel1;
   GHandle ghNextEnemy;
   GHandle ghPrevEnemy;
   GHandle ghAttack;
-  GHandle ghProgressBar;
 } FightHandles;
 
 typedef enum _fight_state {
   ENEMY_SELECT,
+  APPROVAL_DEMAND,
+  APPROVAL_WAIT,
   VS_SCREEN,
-  FIGHT_APPROVE,
   MOVE_SELECT,
   MOVE_WAITACK,
   RESULTS,
@@ -39,15 +34,15 @@ typedef enum _fight_state {
   ENEMY_DEAD
 } fight_state;
 
-
 static fight_state current_fight_state;
 static int current_enemy = 0;
 static uint32_t last_ui_time = 0;
 
+static uint8_t ticktock = 100; // a byte used to hold a generic timer value. 
+
 /* prototypes */
-static void create_containers(FightHandles *p);
 static int putImageFile(char *name, int16_t x, int16_t y);
-static void drawHPBox(coord_t x, coord_t y, coord_t width, uint16_t hp, uint16_t maxhp);
+static void drawProgressBar(coord_t x, coord_t y, coord_t height, coord_t width, uint16_t maxval, uint16_t current_val);
 static uint8_t prevEnemy(void);
 static uint8_t nextEnemy(void);
 static uint16_t maxhp(uint8_t level);
@@ -103,11 +98,11 @@ static uint16_t maxhp(uint8_t level) {
   return (level-1 * 100) + 337;
 }
 
-static void drawHPBox(coord_t x, coord_t y, coord_t width, uint16_t hp, uint16_t maxhp) {
+static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, uint16_t maxval, uint16_t currentval) {
   // draw a HP bargraph.
   color_t c = Lime;
 
-  float remain_f = (float) hp / (float)maxhp;
+  float remain_f = (float) currentval / (float)maxval;
   int remain = width * remain_f;
   
   if (remain_f >= 0.8) {
@@ -118,8 +113,8 @@ static void drawHPBox(coord_t x, coord_t y, coord_t width, uint16_t hp, uint16_t
     c = Red;
   }
   
-  gdispDrawBox(x,y,width,10, c);
-  gdispFillArea(x,y,remain,10, c);
+  gdispDrawBox(x,y,width,height, c);
+  gdispFillArea(x,y,remain,height, c);
 }
 
 static int putImageFile(char *name, int16_t x, int16_t y) {
@@ -182,7 +177,6 @@ static void draw_select_buttons(FightHandles *p) {
   wi.g.width = 30;
   wi.g.height = 180;
   wi.text = "";
-  wi.g.parent = p->ghContainerSelect;
   wi.customDraw = gwinButtonDraw_ArrowLeft;
   p->ghPrevEnemy = gwinButtonCreate(0, &wi);
 
@@ -194,7 +188,6 @@ static void draw_select_buttons(FightHandles *p) {
   wi.g.width = 30;
   wi.g.height = 180;
   wi.text = "";
-  wi.g.parent = p->ghContainerSelect;
   wi.customDraw = gwinButtonDraw_ArrowRight;
   p->ghNextEnemy = gwinButtonCreate(0, &wi);
 
@@ -207,7 +200,6 @@ static void draw_select_buttons(FightHandles *p) {
   wi.g.y = POS_FLOOR_Y+10;
   wi.g.width = 180;
   wi.g.height = gdispGetFontMetric(fontFF, fontHeight) + 2;
-  wi.g.parent = p->ghContainerSelect;
   wi.text = "ATTACK";
   p->ghAttack = gwinButtonCreate(0, &wi);
   gwinSetDefaultStyle(&BlackWidgetStyle, FALSE);
@@ -219,7 +211,6 @@ static void draw_select_buttons(FightHandles *p) {
   wi.g.height = 20;
   wi.g.y = totalheight - 40;
   wi.g.x = gdispGetWidth() - 40;
-  wi.g.parent = p->ghContainerSelect;
   wi.text = "";
   wi.customDraw = noRender;
   
@@ -360,7 +351,7 @@ static void redraw_enemy_select(void) {
 
   ypos = ypos + gdispGetFontMetric(fontFF, fontHeight) + 5;
   
-  drawHPBox(xpos,ypos,100,enemies[current_enemy]->hp,maxhp(enemies[current_enemy]->level));
+  drawProgressBar(xpos,ypos,100,10,enemies[current_enemy]->hp,maxhp(enemies[current_enemy]->level));
   
 }
 
@@ -370,37 +361,6 @@ static uint32_t fight_init(OrchardAppContext *context) {
   return 0;
 }
 
-static void create_containers(FightHandles *p) { 
-  GWidgetInit wi;
-
-  // create container widget
-  gwinWidgetClearInit(&wi);
-  wi.g.show = FALSE;
-  wi.g.x = 0;
-  wi.g.y = 0;
-  wi.g.width = 320;
-  wi.g.height = 240;
-  wi.g.parent = 0;
-  wi.text = "Select";
-  wi.customDraw = gwinContainerDraw_Transparent;
-  wi.customParam = 0;
-  wi.customStyle = 0;
-  p->ghContainerSelect = gwinContainerCreate(0, &wi, 0);
-
-  gwinWidgetClearInit(&wi);
-  wi.g.show = FALSE;
-  wi.g.x = 0;
-  wi.g.y = 0;
-  wi.g.width = 320;
-  wi.g.height = 240;
-  wi.g.parent = 0;
-  wi.text = "Accept";
-  wi.customDraw = gwinContainerDraw_Transparent;
-  wi.customParam = 0;
-  wi.customStyle = 0;
-  p->ghContainerAccept = gwinContainerCreate(0, &wi, 0);
-
-}
 static void fight_start(OrchardAppContext *context) {
   FightHandles *p;
 
@@ -417,11 +377,7 @@ static void fight_start(OrchardAppContext *context) {
   if (enemyCount() > 0) {
     // render the select page. 
     gdispClear(Black);
-    create_containers(p);
 
-    // draw ground once. 
-    gwinShow(p->ghContainerSelect);
-    
     current_fight_state = ENEMY_SELECT;
     putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
 
@@ -481,43 +437,34 @@ static void redraw_approval_screen(OrchardAppContext *context) {
 
 
   fontFF = gdispOpenFont (FONT_FIXED);
-  gdispClear(Black);
+
   gwinSetDefaultStyle(&RedLabelStyle, FALSE);
   
   // Create label widget: ghLabel1
   gwinWidgetClearInit(&wi);
-  wi.g.show = FALSE;
+  wi.g.show = TRUE;;
   wi.g.x = 0;
   wi.g.y = (gdispGetHeight() / 2) - (gdispGetFontMetric(fontFF, fontHeight) / 2);
   wi.g.width = gdispGetWidth();
   wi.g.height = gdispGetFontMetric(fontFF, fontHeight);
   wi.customDraw = gwinLabelDrawJustifiedCenter;
-  wi.g.parent = p->ghContainerAccept;
   wi.text = "WAITING FOR ENEMY TO ACCEPT!";
   p->ghLabel1 = gwinLabelCreate(0, &wi);
 
   // progess bar
-  gwinWidgetClearInit(&wi);
-  wi.customDraw = 0;
-  wi.customParam = 0;
-  wi.customStyle = 0;
-  wi.g.show = FALSE;
-  wi.g.x = 40;
-  wi.g.y = (gdispGetHeight() / 2) + 60;
-  wi.g.width = 240;
-  wi.g.height = 20;
-  wi.g.parent = p->ghContainerAccept;
-  wi.text = "";
-  p->ghProgressBar = gwinProgressbarCreate(NULL, &wi);
+  drawProgressBar(40,(gdispGetHeight() / 2) + 60,240,20,100,ticktock);
 	    
 }
 
 static void fight_event(OrchardAppContext *context,
 			const OrchardAppEvent *event) {
-  FightHandles * p;
-  p = context->priv;
-  
+
+  FightHandles * p = context->priv;
   GEvent * pe;
+  
+  // the timerEvent fires once a second and is overloaded a bit to handle
+  // real-time functionality in the fight sequence
+  //
   // this returns us to the badge screen on idle.
   // we don't want this for all states, just select and end-of-fight
   if ( (event->type == timerEvent) && current_fight_state == ENEMY_SELECT ) {
@@ -526,8 +473,13 @@ static void fight_event(OrchardAppContext *context,
     }
     return;
   }
-  else 
-    if (event->type == ugfxEvent) {
+  
+  if ( (event->type == timerEvent) && current_fight_state == ENEMY_SELECT ) {
+    ticktock--;
+    redraw_approval_screen(context);
+  }
+  
+  if (event->type == ugfxEvent) {
       pe = event->ugfx.pEvent;
       
       switch(pe->type) {
@@ -545,11 +497,11 @@ static void fight_event(OrchardAppContext *context,
 	}
 	if (((GEventGWinButton*)pe)->gwin == p->ghAttack) {
 	  last_ui_time = chVTGetSystemTime();
-	  current_fight_state = FIGHT_APPROVE;
-	  gwinHide(p->ghContainerSelect);
+	  current_fight_state = APPROVAL_WAIT;
 	  redraw_approval_screen(context);
-	  gwinProgressbarSetPosition( p->ghProgressBar, 100);
-	  gwinShow(p->ghContainerAccept);
+	  gdispFlush();
+		  
+
 	  return;
 	}
 	if (((GEventGWinButton*)pe)->gwin == p->ghPrevEnemy) {
@@ -568,13 +520,11 @@ static void fight_exit(OrchardAppContext *context) {
   FightHandles * p;
 
   p = context->priv;
-  gwinDestroy (p->ghContainerSelect);
-  gwinDestroy (p->ghContainerAccept);
   gwinDestroy (p->ghExitButton);
   gwinDestroy (p->ghNextEnemy);
   gwinDestroy (p->ghPrevEnemy);
   gwinDestroy (p->ghAttack);
-  gwinDestroy (p->ghProgressBar);
+
   geventDetachSource (&p->glFight, NULL);
   geventRegisterCallback (&p->glFight, NULL, NULL);
 
