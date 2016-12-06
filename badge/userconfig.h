@@ -62,7 +62,7 @@ typedef struct userconfig {
 
 /* attack profile (attack_bitmap) */
 #define ATTACK_ONESHOT  ( 1 << 7 ) 
-#define ATTACK_NOTUSED  ( 1 << 6 )
+#define ATTACK_ISCRIT   ( 1 << 6 )
 
 #define ATTACK_HI       ( 1 << 5 )
 #define ATTACK_MED      ( 1 << 4 )
@@ -74,7 +74,7 @@ typedef struct userconfig {
 
 typedef struct _userpkt {
   /* this is a shortened form of userdata for transmission */
-  /* appx 41 bytes, max is 66 (AES limitiation) */
+  /* appx 40 bytes, max is 66 (AES limitiation) */
 
   /* Network Payload */
   uint32_t netid_src;     /* 4 */
@@ -93,7 +93,6 @@ typedef struct _userpkt {
   /* A bitwise map indicating the attack and block --  see ATTACK_ and BLOCK_ operators above. */
   uint8_t attack_bitmap;  
   uint8_t damage;         /* 1 */
-  uint8_t is_crit;        /* 1 */
 } user;
 
 extern void configStart(void);
