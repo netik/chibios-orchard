@@ -39,7 +39,7 @@
 
 /* Flash Configuration Field, stored at offset 0x400 from start of flash.*/
 __attribute__ ((section(".cfmconfig")))
-const uint8_t _cfm[0x10] = {
+volatile const uint8_t _cfm[0x10] = {
   0xFF,  /* NV_BACKKEY3: KEY=0xFF */
   0xFF,  /* NV_BACKKEY2: KEY=0xFF */
   0xFF,  /* NV_BACKKEY1: KEY=0xFF */
