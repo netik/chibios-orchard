@@ -18,6 +18,8 @@ typedef struct _DefaultHandles {
 	GListener glBadge;
 } DefaultHandles;
 
+extern uint8_t shout_ok;
+
 static int putImageFile(char *name, int16_t x, int16_t y);
 
 static int putImageFile(char *name, int16_t x, int16_t y) {
@@ -165,6 +167,9 @@ static void redraw_badge(void) {
 
 static uint32_t default_init(OrchardAppContext *context) {
   (void)context;
+
+  shout_ok = 1;
+
   return 0;
 }
 
@@ -213,6 +218,8 @@ static void default_exit(OrchardAppContext *context) {
   geventRegisterCallback (&p->glBadge, NULL, NULL);
   chHeapFree (context->priv);
   context->priv = NULL;
+
+  shout_ok = 0;
 
   return;
 }

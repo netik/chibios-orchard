@@ -10,6 +10,7 @@
 #include "userconfig.h"
 
 extern const OrchardApp *orchard_app_list;
+extern uint8_t shout_ok;
 static uint32_t last_ui_time = 0;
 
 struct launcher_list_item {
@@ -153,6 +154,7 @@ static uint32_t launcher_init(OrchardAppContext *context) {
   (void)context;
 
   gdispClear(Black);
+  shout_ok = 1;
 
   return (0);
 }
@@ -263,7 +265,7 @@ static void launcher_exit(OrchardAppContext *context) {
 
   chHeapFree (context->priv);
   context->priv = NULL;
-
+  shout_ok = 0;
 }
 
 /* the app labelled as app_1 is always the launcher. changing this
