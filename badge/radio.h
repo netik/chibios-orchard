@@ -34,17 +34,23 @@
 #define _RADIO_H_
 
 #define KW01_DELAY 1000
-#define KW01_PKT_MAXLEN 66	/* Max packet size (FIFO size) */
+
 #ifdef KW01_RADIO_HWFILTER
+#define KW01_PKT_MAXLEN 66	/* Max packet size (FIFO size) */
 #define KW01_PKT_HDRLEN 3
 #define KW01_PKT_AES_MAXLEN 48	/* Max packet size with AES and filtering on */
 #else
+#define KW01_PKT_MAXLEN 64	/* Max packet size (FIFO size) */
 #define KW01_PKT_HDRLEN 9
 #define KW01_PKT_AES_MAXLEN 64	/* Max packet size with AES and filtering off */
 #endif
 #define KW01_PKT_HANDLERS_MAX 4
 
+#ifdef KW01_RADIO_HWFILTER
+#define RADIO_BROADCAST_ADDRESS 0xFF
+#else
 #define RADIO_BROADCAST_ADDRESS 0xFFFFFFFF
+#endif
 
 /* Radio message types */
 #define RADIO_PROTOCOL_CHAT	1	/* Send message to 1 badge */
@@ -91,7 +97,6 @@ typedef struct kw01_pkt_handler {
 } KW01_PKT_HANDLER;
 
 #define KW01_FLAG_AES		0x01	/* AES enabled */
-#define KW01_FLAG_AFILT		0x02	/* Address filtering enabled */
 
 typedef struct radio_driver {
 	SPIDriver *	kw01_spi;

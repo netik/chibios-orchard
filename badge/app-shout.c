@@ -68,7 +68,8 @@ static void shout_event (OrchardAppContext *context,
 
 			/* Send the message */
 
-			radioSend (&KRADIO1, 0xFFFFFFFF, RADIO_PROTOCOL_SHOUT,
+			radioSend (&KRADIO1, RADIO_BROADCAST_ADDRESS,
+				RADIO_PROTOCOL_SHOUT,
 				KW01_PKT_AES_MAXLEN - KW01_PKT_HDRLEN,
 				keyboardUiContext->itemlist[1]);
 

@@ -193,11 +193,9 @@ radioReceive (RADIODriver * radio)
 
 	pkt->kw01_length = len - sizeof (KW01_PKT_HDR);
 
-	/* Get the packet header */
+	/* Read in the he frame. */
 
 	p = (uint8_t *)&pkt->kw01_hdr;
-
-	/* Read the rest of the frame. */
 
 	spiReceive (radio->kw01_spi, len, p);
 
@@ -310,6 +308,8 @@ radioReset (RADIODriver * radio)
  	/* Now wait for the chip to get its brains in order. */
 
 	chThdSleepMilliseconds (20);
+
+	radioWrite (radio, KW01_DIOMAP2, KW01_CLKOUT_FXOSC);
 
 	return;
 }
@@ -601,7 +601,7 @@ radioStart (SPIDriver * sp)
 		    KW01_AFILT_NONE);
 #endif
 
-	radio->kw01_flags = KW01_FLAG_AFILT;
+	radio->kw01_flags = 0;
 	radio->kw01_maxlen = KW01_PKT_MAXLEN;
 
 	radioWrite (radio, KW01_PKTCONF2, KW01_PKTCONF2_AUTORRX);
@@ -1022,7 +1022,9 @@ radioSend (RADIODriver * radio, uint32_t dest, uint8_t prot,
 	KW01_PKT_HDR hdr;
 	uint8_t reg;
 	unsigned int i;
+#ifndef KW01_RADIO_HWFILTER
 	userconfig * config;
+#endif
 
 	/* Don't send more data than will fit in the FIFO. */
 
@@ -1227,15 +1229,14 @@ radioAesEnable (RADIODriver * radio, const uint8_t * key, uint8_t len)
 	radio->kw01_flags |= KW01_FLAG_AES;
 
 	/*
-	 * When AES encryption is turned on, packets may be up to 66
+	 * When AES encryption is turned on, packets may be up to 64
 	 * bytes in size when address filtering is off, or up to 48
 	 * bytes in size when it's turned on. So if address filtering
 	 * is enabled (which it usually is), then we have to adjust
 	 * the packet size limit accordingly.
 	 */
 
-	if (radio->kw01_flags & KW01_FLAG_AFILT)
-		radio->kw01_maxlen = KW01_PKT_AES_MAXLEN;
+	radio->kw01_maxlen = KW01_PKT_AES_MAXLEN;
 
 	radioRelease (radio);
 
