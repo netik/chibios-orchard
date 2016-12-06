@@ -562,8 +562,10 @@ radioStart (SPIDriver * sp)
 			    0x01, 0x02, 0x04, 0x4,
 			    0x01, 0x02, 0x04, 0x4,
 			    0x01, 0x02, 0x04, 0x4 };
+#ifdef KW01_RSSI_CALIBRATE
 	unsigned int i;
 	uint8_t rssi;
+#endif
 
 	radio = radioDriver;
 
@@ -669,6 +671,7 @@ radioStart (SPIDriver * sp)
 	radioModeSet (radio, KW01_MODE_RX);
 	radioRelease (radio);
 
+#ifdef KW01_RSSI_CALIBRATE
 	/* Calibrate the squelch level. Set squelch to full open, */
 
 	radioWrite (radio, KW01_RSSITHRESH, 0xFF);
@@ -702,7 +705,9 @@ radioStart (SPIDriver * sp)
 
 	chprintf (stream, "Auto-calibrated squelch level: -%ddBm\r\n",
 		  rssi / 2);
-
+#else
+	radioWrite (radio, KW01_RSSITHRESH, 0xA0);
+#endif
 	return;
 }
 

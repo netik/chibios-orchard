@@ -265,6 +265,8 @@ void __early_init(void) {
 
   /* Reset the radio */
 
+  palSetPadMode (GPIOE, 30, PAL_MODE_OUTPUT_PUSHPULL);
+
   palSetPad (GPIOE, 30);
   early_usleep (100);
   palClearPad (GPIOE, 30);
