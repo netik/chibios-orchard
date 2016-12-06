@@ -124,7 +124,6 @@ int updater (void)
 	uint8_t * p;
 	uint8_t * src = (uint8_t *)0x20001000;
 	uint8_t * dst = (uint8_t *)0x0;
-	uint32_t * fixup;
 	FATFS * fs = (FATFS *)0x20000000;
 
 	/* Disable all interrupts */
@@ -188,30 +187,10 @@ int updater (void)
 		while (1) {}
 	}
 
+	/* Read data from the SD card and copy it to flash. */
+
 	while (1) {
 		f_read (&f, src, UPDATE_SIZE, &br);
-
-		/*
-		 * This fixup is needed to ensure that the flash
-		 * security bits are set correctly. In the compiled
-	 	 * firmware image, the bytes at address 0x400 are all
-		 * zeros. There are actually four registers here which
-	 	 * are used to set the security state of the processor.
-		 * If all the bits get zeroed out during a firmware
-		 * update, the chip will be locked and we won't be
-		 * able to debug anymore. To avoid this, we force
-		 * these locations to the unsecured state before
-		 * writing the block at address 0x400.
-		 */
-
-		if (dst == (uint8_t *)0x400) {
-			fixup = (uint32_t *)src;
-			fixup[0] = 0xFFFFFFFF;
-			fixup[1] = 0xFFFFFFFF;
-			fixup[2] = 0xFFFFFFFF;
-			fixup[3] = 0xFFFFFFFE;
-		}
-
 		flashErase (dst);
 		flashProgram (src, dst);
 		dst += br;
