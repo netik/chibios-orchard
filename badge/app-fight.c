@@ -37,6 +37,7 @@ typedef enum _fight_state {
 } fight_state;
 
 static fight_state current_fight_state;
+static uint32_t current_enemy_netid = 0;
 static int current_enemy = 0;
 static uint32_t last_ui_time = 0;
 static uint32_t last_tick_time = 0;
@@ -44,8 +45,10 @@ static uint32_t last_tick_time = 0;
 static int16_t ticktock = DEFAULT_WAIT_TIME; // used to hold a generic timer value. 
 
 /* prototypes */
+/* TODO: move these primitives to some central graphics library */
 static int putImageFile(char *name, int16_t x, int16_t y);
 static void drawProgressBar(coord_t x, coord_t y, coord_t height, coord_t width, uint16_t maxval, uint16_t currentval, uint8_t use_leds);
+
 static uint8_t prevEnemy(void);
 static uint8_t nextEnemy(void);
 static uint16_t maxhp(uint8_t level);
@@ -475,6 +478,7 @@ static void fight_event(OrchardAppContext *context,
 
 	  screen_select_close(context);
 	  screen_waitapproval_draw(context);
+	  
 
 	  return;
 	}

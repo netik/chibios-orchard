@@ -23,7 +23,7 @@ void cmd_enemylist(BaseSequentialStream *chp, int argc, char *argv[])
   for(i = 0; i < MAX_ENEMIES; i++) {
     if( enemies[i] != NULL ) {
       chprintf(chp, "%d: %d %s (hp:%d, ic:%d, lvl:%d)\n\r", i,
-	       enemies[i]->priority,
+	       enemies[i]->ttl,
 	       enemies[i]->name,
 	       enemies[i]->hp,
 	       enemies[i]->in_combat,
@@ -55,7 +55,7 @@ void cmd_enemyadd(BaseSequentialStream *chp, int argc, char *argv[]) {
   if( enemies[i] != NULL ) {
     chprintf(chp, "Index used. Incrementing %s instead.\n\r", enemies[i]->name);
     osalMutexLock(&enemies_mutex);
-    enemies[i]->priority++;
+    enemies[i]->ttl++;
     enemies[i]->in_combat = ic;
     enemies[i]->hp = hp;
     enemies[i]->level = level;
@@ -63,7 +63,7 @@ void cmd_enemyadd(BaseSequentialStream *chp, int argc, char *argv[]) {
   } else {
     osalMutexLock(&enemies_mutex);
     enemies[i] = (user *) chHeapAlloc(NULL, sizeof(user));
-    enemies[i]->priority = ENEMIES_INIT_CREDIT;
+    enemies[i]->ttl = ENEMIES_INIT_CREDIT;
     enemies[i]->in_combat = ic;
     enemies[i]->hp = hp;
     enemies[i]->level = level;
@@ -100,10 +100,10 @@ void cmd_enemysim(BaseSequentialStream *chp, int argc, char *argv[]) {
     if (enemies[i] == NULL) {
       char tmp[15];
       enemies[i] = (user *) chHeapAlloc(NULL, sizeof(user));
-      // enemies[i]->priority will be filled in by the recipient.
+      // enemies[i]->ttl will be filled in by the recipient.
       enemies[i]->type = p_guard;
       enemies[i]->netid = i;
-      enemies[i]->priority = 100;
+      enemies[i]->ttl = 100;
       enemies[i]->in_combat = 0;
       enemies[i]->hp = 1137;
       enemies[i]->level = 9;

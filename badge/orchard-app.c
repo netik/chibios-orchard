@@ -44,8 +44,8 @@ void enemy_cleanup(void);            // reaps the list every other ping
 // max level of credit a enemy can have; defines how long a record can stay around
 // once a enemy goes away. Roughly equal to
 // 2 * (PING_MIN_INTERVAL + PING_RAND_INTERVAL / 2 * MAX_CREDIT) milliseconds
-#define ENEMIES_INIT_CREDIT  4
-#define ENEMIES_MAX_CREDIT   12
+#define ENEMIES_TTL_INITIAL  4
+#define ENEMIES_TTL_MAX  12
 #define ENEMIES_SORT_HYSTERESIS 4
 
 // lock/unlock this mutex before touching the enemies list!
@@ -81,8 +81,8 @@ void enemy_cleanup(void) {
     if( enemies[i] == NULL )
       continue;
 
-    enemies[i]->priority--;
-    if( enemies[i]->priority == 0 ) {
+    enemies[i]->ttl--;
+    if( enemies[i]->ttl == 0 ) {
       chHeapFree(enemies[i]);
       enemies[i] = NULL;
     }
@@ -101,7 +101,7 @@ static void handle_ping_timeout(eventid_t id) {
   /* time to send a ping. */
   /* build packet */
   user upkt;
-  upkt.priority = 4;
+  upkt.ttl = 4;
   upkt.netid = config->netid;
   strncpy(upkt.name, config->name, CONFIG_NAME_MAXLEN);
   upkt.in_combat = config->in_combat;
@@ -421,7 +421,7 @@ user *enemy_add(char *name) {
   for( i = 0; i < MAX_ENEMIES; i++ ) {
     if( enemies[i] == NULL ) {
       enemies[i] = (user *) chHeapAlloc(NULL, sizeof(user));
-      enemies[i]->priority = ENEMIES_INIT_CREDIT;
+      enemies[i]->ttl = ENEMIES_TTL_INITIAL;
       strncpy(enemies[i]->name, name, CONFIG_NAME_MAXLEN);
       osalMutexUnlock(&enemies_mutex);
       return enemies[i];
