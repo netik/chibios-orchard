@@ -105,7 +105,7 @@ void cmd_enemysim(BaseSequentialStream *chp, int argc, char *argv[]) {
       enemies[i]->netid = i;
       enemies[i]->priority = 100;
       enemies[i]->in_combat = 0;
-      enemies[i]->hp = 1337;
+      enemies[i]->hp = 1137;
       enemies[i]->level = 9;
 
       chsnprintf(tmp, sizeof(tmp), "test-%d",i);

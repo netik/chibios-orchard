@@ -157,11 +157,6 @@ static void ui_complete_cleanup(eventid_t id) {
   (void)id;
   OrchardAppEvent evt;
  
-#ifdef notdef 
-  // unhook the UI patch so key & dial events pass into the app
-  instance.ui = NULL;
-#endif
-
   evt.type = uiEvent;
   evt.ui.code = uiComplete;
   evt.ui.flags = uiOK;

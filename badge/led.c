@@ -12,13 +12,15 @@
 
 #include <string.h>
 #include <math.h>
+#include <shell.h>
 
 /* these keep track of the animation position and are used selectively
    by the algorithms */
 static int16_t fx_index = 0;           // fx index 
 static int16_t fx_position = 0;        // fx position counter
-static int8_t  fx_direction = 1;       // fx direction 
-static uint8_t led_brightshift = 0;     // right-shift value, normally zero.
+static int8_t  fx_direction = 1;       // fx direction
+static uint8_t led_brightshift = 0;    // right-shift value, normally zero.
+static int8_t  led_progress = -1;      // if > -1, the entire ring becomes a progress bar. 
 
 static struct led_config {
   uint8_t  *fb;          // effects frame buffer
@@ -67,13 +69,41 @@ const struct FXENTRY fxlist[] = {
   {"Random Hue Pulse", anim_one_hue_pulse}
 };
 
-
-
-
 void ledClear(void);
 
 void ledSetBrightness(uint8_t bval) {
   led_brightshift = bval;
+}
+
+void ledSetProgress(int8_t percentage) {
+  // we run the progress bar on the LEDs
+  // progress is a number between 0 and 100.
+  //
+  // setting this to -1 will run the normal animation loop.
+  ledClear();
+  led_progress = percentage;
+}
+
+static void handle_progress(void) {
+  uint8_t i,c;
+  
+  float pct_lit = (float)led_progress / 100;
+  int total_lit = led_config.pixel_count * pct_lit;
+
+  if (pct_lit >= 0.8) {
+    c = 3; // green
+  } else if (pct_lit >= 0.5) {
+    c = 2; // yel
+  } else {
+    c = 0; // red
+  }
+  
+  ledClear();
+
+  for(i=0; i < total_lit; i++)  {
+    ledSetRGB(led_config.fb, i, roygbiv[c].r, roygbiv[c].g, roygbiv[c].b);
+  }
+					     
 }
 
 /* utility functions */
@@ -413,7 +443,11 @@ static THD_FUNCTION(effects_thread, arg) {
     chThdSleepMilliseconds(EFFECTS_REDRAW_MS);
     
     // re-render the internal framebuffer animations
-    fxlist[config->led_pattern].function();
+    if (led_progress > -1) { 
+      handle_progress();
+    } else {
+      fxlist[config->led_pattern].function();
+    }
     
     if( ledExitRequest ) {
       // force one full cycle through an update on request to force LEDs off
@@ -436,6 +470,7 @@ void effectsStart(void) {
   // set user config
   config = getConfig();
   led_brightshift = config->led_shift; // start at 1/2 power
+
   (*fxlist[config->led_pattern].function)();
   
   ledExitRequest = 0;

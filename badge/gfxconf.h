@@ -211,7 +211,7 @@
 #define GFX_USE_GTIMER                               TRUE
 
 //#define GTIMER_THREAD_PRIORITY                       HIGH_PRIORITY
-#define GTIMER_THREAD_WORKAREA_SIZE                  0x360
+#define GTIMER_THREAD_WORKAREA_SIZE                  0x400
 
 
 ///////////////////////////////////////////////////////////////////////////

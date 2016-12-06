@@ -13,10 +13,12 @@
 
 #include "userconfig.h"
 
+// number of mS to wait for a response from either side
+#define DEFAULT_WAIT_TIME 2000
+
 typedef struct _FightHandles {
   GListener glFight;
   GHandle ghExitButton;
-  GHandle ghLabel1;
   GHandle ghNextEnemy;
   GHandle ghPrevEnemy;
   GHandle ghAttack;
@@ -37,30 +39,20 @@ typedef enum _fight_state {
 static fight_state current_fight_state;
 static int current_enemy = 0;
 static uint32_t last_ui_time = 0;
+static uint32_t last_tick_time = 0;
 
-static uint8_t ticktock = 100; // a byte used to hold a generic timer value. 
+static int16_t ticktock = DEFAULT_WAIT_TIME; // used to hold a generic timer value. 
 
 /* prototypes */
 static int putImageFile(char *name, int16_t x, int16_t y);
-static void drawProgressBar(coord_t x, coord_t y, coord_t height, coord_t width, uint16_t maxval, uint16_t current_val);
+static void drawProgressBar(coord_t x, coord_t y, coord_t height, coord_t width, uint16_t maxval, uint16_t currentval, uint8_t use_leds);
 static uint8_t prevEnemy(void);
 static uint8_t nextEnemy(void);
 static uint16_t maxhp(uint8_t level);
-static void redraw_approval_screen(OrchardAppContext *);
 
-/* levels */
-static uint16_t base_xp[10] = {
-  0,
-  400,
-  800,
-  1200,
-  1800,
-  2600,
-  3600,
-  4800,
-  6200,
-  7800
-};
+static void screen_select_draw(void);
+static void screen_select_close(OrchardAppContext *);
+static void screen_waitapproval_draw(OrchardAppContext *);
 
 static uint8_t calc_level(uint16_t xp) {
   if(xp >= 7800) {
@@ -98,12 +90,16 @@ static uint16_t maxhp(uint8_t level) {
   return (level-1 * 100) + 337;
 }
 
-static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, uint16_t maxval, uint16_t currentval) {
-  // draw a HP bargraph.
+static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, uint16_t maxval, uint16_t currentval, uint8_t use_leds) {
+  // draw a bargraph.
   color_t c = Lime;
 
   float remain_f = (float) currentval / (float)maxval;
-  int remain = width * remain_f;
+  int16_t remain = width * remain_f;
+
+ if (use_leds == 1) {
+   ledSetProgress(100 * remain_f);
+ }
   
   if (remain_f >= 0.8) {
     c = Lime;
@@ -112,9 +108,10 @@ static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height,
   } else {
     c = Red;
   }
-  
-  gdispDrawBox(x,y,width,height, c);
+
+  gdispFillArea(x + remain,y+1,(width - remain),height-1, Black);
   gdispFillArea(x,y,remain,height, c);
+  gdispDrawBox(x,y,width,height, c);
 }
 
 static int putImageFile(char *name, int16_t x, int16_t y) {
@@ -218,7 +215,7 @@ static void draw_select_buttons(FightHandles *p) {
 
 }
 
-static void redraw_no_enemies(void) {
+static void screen_alert_draw(char *msg) {
   font_t fontFF;
   gdispClear(Black);
   fontFF = gdispOpenFont (FONT_FIXED);
@@ -226,9 +223,8 @@ static void redraw_no_enemies(void) {
 		      (gdispGetHeight() / 2) - (gdispGetFontMetric(fontFF, fontHeight) / 2),
 		      gdispGetWidth(),
 		      gdispGetFontMetric(fontFF, fontHeight),
-		      "NO ENEMIES NEARBY!",
+		      msg,
 		      fontFF, Red, justifyCenter);
-  
 }
 
 static uint8_t nextEnemy() {
@@ -250,7 +246,7 @@ static uint8_t nextEnemy() {
     return TRUE;
   } else {
     // we failed, so time to die.
-    redraw_no_enemies();
+    screen_alert_draw("NO ENEMIES NEARBY!");
     chThdSleepMilliseconds(1000);
     orchardAppExit();
     return FALSE;
@@ -276,7 +272,7 @@ static uint8_t prevEnemy() {
     return TRUE;
   } else {
     // we failed, so time to die.
-    redraw_no_enemies();
+    screen_alert_draw("NO ENEMIES NEARBY!");
     chThdSleepMilliseconds(1000);
     orchardAppExit();
     return FALSE;
@@ -284,7 +280,7 @@ static uint8_t prevEnemy() {
 }
 
 
-static void redraw_enemy_select(void) {
+static void screen_select_draw(void) {
   // enemy selection screen
   font_t fontFF, fontSM;
   font_t fontXS;
@@ -351,10 +347,21 @@ static void redraw_enemy_select(void) {
 
   ypos = ypos + gdispGetFontMetric(fontFF, fontHeight) + 5;
   
-  drawProgressBar(xpos,ypos,100,10,enemies[current_enemy]->hp,maxhp(enemies[current_enemy]->level));
-  
+  drawProgressBar(xpos,ypos,100,10,enemies[current_enemy]->hp,maxhp(enemies[current_enemy]->level), 0);
 }
 
+static void screen_select_close(OrchardAppContext *context) {
+  FightHandles * p;
+
+  // shut down the select screen 
+  gdispClear(Black);
+
+  p = context->priv;
+  gwinDestroy (p->ghExitButton);
+  gwinDestroy (p->ghNextEnemy);
+  gwinDestroy (p->ghPrevEnemy);
+  gwinDestroy (p->ghAttack);
+}
 
 static uint32_t fight_init(OrchardAppContext *context) {
   (void)context;
@@ -381,7 +388,7 @@ static void fight_start(OrchardAppContext *context) {
     current_fight_state = ENEMY_SELECT;
     putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
 
-    redraw_enemy_select();
+    screen_select_draw();
     draw_select_buttons(p);
     
     geventListenerInit(&p->glFight);
@@ -394,66 +401,20 @@ static void fight_start(OrchardAppContext *context) {
 
   } else {
     // punt if no enemies
-    redraw_no_enemies();
+    screen_alert_draw("NO ENEMIES NEARBY!");
     chThdSleepMilliseconds(1000);
     orchardAppExit();
   }
 }
 
-static void redraw_approval_screen(OrchardAppContext *context) {
-  font_t fontFF;
-  GWidgetInit wi;
-  FightHandles * p;
-  p = context->priv;
-
-  const GWidgetStyle RedLabelStyle = {
-    RGB2COLOR(0x00,0x00,0x00),	        // window background
-    RGB2COLOR(0xff,0xff,0xff),               // focused -- only in ugfx 2.6?
-    
-    // enabled color set
-    {
-      RGB2COLOR(0xff, 0x00, 0x00),		// text
-      HTML2COLOR(0xffffff),		// edge
-      HTML2COLOR(0xff0000),		// fill
-      HTML2COLOR(0x000000),		// progress - inactive area
-    },
-    
-    // disabled color set
-    {
-      RGB2COLOR(0xff, 0x00, 0x00),		// text
-      HTML2COLOR(0x404040),		// edge
-      HTML2COLOR(0x404040),		// fill
-      HTML2COLOR(0x004000),		// progress - active area
-    },
-    
-    // pressed color set
-    {
-      RGB2COLOR(0xff, 0x00, 0x00),	// text
-      HTML2COLOR(0x00ff00),		// edge
-      HTML2COLOR(0xffffff),		// fill
-      HTML2COLOR(0xffff00),		// progress - active area
-    },
-  };
-
-
-  fontFF = gdispOpenFont (FONT_FIXED);
-
-  gwinSetDefaultStyle(&RedLabelStyle, FALSE);
-  
+static void screen_waitapproval_draw(OrchardAppContext *context) {
   // Create label widget: ghLabel1
-  gwinWidgetClearInit(&wi);
-  wi.g.show = TRUE;;
-  wi.g.x = 0;
-  wi.g.y = (gdispGetHeight() / 2) - (gdispGetFontMetric(fontFF, fontHeight) / 2);
-  wi.g.width = gdispGetWidth();
-  wi.g.height = gdispGetFontMetric(fontFF, fontHeight);
-  wi.customDraw = gwinLabelDrawJustifiedCenter;
-  wi.text = "WAITING FOR ENEMY TO ACCEPT!";
-  p->ghLabel1 = gwinLabelCreate(0, &wi);
+  screen_alert_draw("WAITING FOR ENEMY TO ACCEPT!");
 
   // progess bar
-  drawProgressBar(40,(gdispGetHeight() / 2) + 60,240,20,100,ticktock);
-	    
+  ticktock = DEFAULT_WAIT_TIME; // used to hold a generic timer value.
+  drawProgressBar(40,(gdispGetHeight() / 2) + 60,240,20,DEFAULT_WAIT_TIME,ticktock, 1);
+  last_tick_time = chVTGetSystemTime();
 }
 
 static void fight_event(OrchardAppContext *context,
@@ -469,14 +430,27 @@ static void fight_event(OrchardAppContext *context,
   // we don't want this for all states, just select and end-of-fight
   if ( (event->type == timerEvent) && current_fight_state == ENEMY_SELECT ) {
       if( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) {
-      orchardAppRun(orchardAppByName("Badge"));
-    }
-    return;
+	orchardAppRun(orchardAppByName("Badge"));
+      }
+      return;
   }
   
-  if ( (event->type == timerEvent) && current_fight_state == ENEMY_SELECT ) {
-    ticktock--;
-    redraw_approval_screen(context);
+  if ( (event->type == timerEvent) &&
+       (current_fight_state == APPROVAL_WAIT) &&
+       ((chVTGetSystemTime() - last_tick_time) > 1000) ) {
+    ticktock = ticktock - 100;
+    last_tick_time = chVTGetSystemTime();
+
+    // progess bar
+    drawProgressBar(40,(gdispGetHeight() / 2) + 60,240,20,DEFAULT_WAIT_TIME,ticktock, 1);
+    if (ticktock <= 0) { 
+      screen_alert_draw("TIMED OUT!");
+      ledSetProgress(-1);
+      chThdSleepMilliseconds(1000);
+      orchardAppRun(orchardAppByName("Badge"));
+    }
+
+    return;
   }
   
   if (event->type == ugfxEvent) {
@@ -491,23 +465,23 @@ static void fight_event(OrchardAppContext *context,
 	if (((GEventGWinButton*)pe)->gwin == p->ghNextEnemy) {
 	  if (nextEnemy()) {
 	    last_ui_time = chVTGetSystemTime();
-	    redraw_enemy_select();
+	    screen_select_draw();
 	  }
 	  return;
 	}
 	if (((GEventGWinButton*)pe)->gwin == p->ghAttack) {
 	  last_ui_time = chVTGetSystemTime();
 	  current_fight_state = APPROVAL_WAIT;
-	  redraw_approval_screen(context);
-	  gdispFlush();
-		  
+
+	  screen_select_close(context);
+	  screen_waitapproval_draw(context);
 
 	  return;
 	}
 	if (((GEventGWinButton*)pe)->gwin == p->ghPrevEnemy) {
 	  if (prevEnemy()) {
 	    last_ui_time = chVTGetSystemTime();
-	    redraw_enemy_select();
+	    screen_select_draw();
 	  }
 	  return;
 	}
@@ -524,7 +498,7 @@ static void fight_exit(OrchardAppContext *context) {
   gwinDestroy (p->ghNextEnemy);
   gwinDestroy (p->ghPrevEnemy);
   gwinDestroy (p->ghAttack);
-
+  
   geventDetachSource (&p->glFight, NULL);
   geventRegisterCallback (&p->glFight, NULL, NULL);
 

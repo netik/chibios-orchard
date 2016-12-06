@@ -45,6 +45,7 @@ void effectsPrevPattern(void);
 void listEffects(void);
 void ledResetPattern(void);
 void ledSetBrightness(uint8_t bval);
+void ledSetProgress(int8_t percentage);
 
 const char *effectsCurName(void);
 

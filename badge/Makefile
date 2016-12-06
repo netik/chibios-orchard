@@ -56,7 +56,7 @@ endif
 # Stack size to be allocated to the Cortex-M process stack. This stack is
 # the stack used by the main() thread.
 ifeq ($(USE_PROCESS_STACKSIZE),)
-  USE_PROCESS_STACKSIZE = 0x300
+  USE_PROCESS_STACKSIZE = 0x400
 endif
 
 # Stack size to the allocated to the Cortex-M main/exceptions stack. This
@@ -189,7 +189,7 @@ TCPPSRC =
 # List ASM source files here
 ASMSRC = $(STARTUPASM) $(PORTASM) $(OSALASM) ws2812b_ll.s
 
-INCDIR = $(STARTUPINC) $(KERNINC) $(PORTINC) $(OSALINC) $(LIBFIXMATHINC) \
+INCDIR = $(STARTUPINC) $(KERNINC) $(PORTINC) $(OSALINC) \
          $(LIBC90TFSINC) \
          $(FATFSINC) \
          $(HALINC) $(PLATFORMINC) $(BOARDINC) $(TESTINC) $(GFXINC) \
