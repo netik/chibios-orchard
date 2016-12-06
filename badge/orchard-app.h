@@ -14,6 +14,15 @@
 #define APP_FLAG_HIDDEN		0x00000001
 #define APP_FLAG_AUTOINIT	0x00000002
 
+#define PING_MIN_INTERVAL  3000 // base time between pings
+// defines how long a enemy record stays around before expiration
+// max level of credit a enemy can have; defines how long a record can stay around
+// once a enemy goes away. Roughly equal to
+// 2 * (PING_MIN_INTERVAL + PING_RAND_INTERVAL / 2 * MAX_CREDIT) milliseconds
+#define ENEMIES_TTL_INITIAL  4
+#define ENEMIES_TTL_MAX  12
+#define ENEMIES_SORT_HYSTERESIS 4
+
 struct _OrchardApp;
 typedef struct _OrchardApp OrchardApp;
 struct _OrchardAppContext;

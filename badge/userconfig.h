@@ -11,10 +11,8 @@
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0
-#define CONFIG_VERSION    7
+#define CONFIG_VERSION    8
 #define CONFIG_NAME_MAXLEN 10
-
-#define ENEMIES_INIT_CREDIT 4
 
 typedef enum _player_type {
   p_pleeb,
@@ -27,8 +25,8 @@ typedef enum _player_type {
  * above
  */
 typedef struct userconfig {
-  uint32_t  signature;
-  uint32_t  version;
+  uint32_t signature;
+  uint32_t version;
 
   /* unique network ID determined from use of lower 64 bits of SIM-UID */
   uint32_t netid;
@@ -59,23 +57,43 @@ typedef struct userconfig {
   /* long-term counters */
   uint16_t won;
   uint16_t lost;
-  
-  /* these fields are only used during attack-response */
-  uint8_t damage;
-  uint8_t is_crit;
+
 } userconfig;
 
+/* attack profile (attack_bitmap) */
+#define ATTACK_ONESHOT  ( 1 << 7 ) 
+#define ATTACK_NOTUSED  ( 1 << 6 )
 
-typedef struct _user {
+#define ATTACK_HI       ( 1 << 5 )
+#define ATTACK_MED      ( 1 << 4 )
+#define ATTACK_LOW      ( 1 << 3 )
+
+#define BLOCK_HI   ( 1 << 2 )
+#define BLOCK_MED  ( 1 << 1 )
+#define BLOCK_LOW  ( 1 << 0 )
+
+typedef struct _userpkt {
   /* this is a shortened form of userdata for transmission */
-  /* appx 32 bytes, max is 66 (AES limitiation) */
-  uint32_t netid;
-  uint8_t ttl;
-  player_type type;
-  char name[CONFIG_NAME_MAXLEN];
-  uint8_t in_combat;
-  uint16_t hp;
-  uint8_t level;
+  /* appx 41 bytes, max is 66 (AES limitiation) */
+
+  /* Network Payload */
+  uint32_t netid_src;     /* 4 */
+  uint32_t netid_dst;     /* 8 */
+  uint16_t seq;           /* 2 */
+  uint8_t ttl;            /* 1 */
+
+  /* Player Payload */
+  char name[CONFIG_NAME_MAXLEN];  /* 16 */
+  player_type p_type;       /* 1 */
+  uint8_t in_combat;      /* 1 */        
+  uint16_t hp;            /* 2 */
+  uint8_t level;          /* 1 */
+
+  /* Battle Payload */
+  /* A bitwise map indicating the attack and block --  see ATTACK_ and BLOCK_ operators above. */
+  uint8_t attack_bitmap;  
+  uint8_t damage;         /* 1 */
+  uint8_t is_crit;        /* 1 */
 } user;
 
 extern void configStart(void);

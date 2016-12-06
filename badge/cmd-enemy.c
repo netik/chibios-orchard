@@ -63,7 +63,7 @@ void cmd_enemyadd(BaseSequentialStream *chp, int argc, char *argv[]) {
   } else {
     osalMutexLock(&enemies_mutex);
     enemies[i] = (user *) chHeapAlloc(NULL, sizeof(user));
-    enemies[i]->ttl = ENEMIES_INIT_CREDIT;
+    enemies[i]->ttl = ENEMIES_TTL_INITIAL;
     enemies[i]->in_combat = ic;
     enemies[i]->hp = hp;
     enemies[i]->level = level;
@@ -101,8 +101,9 @@ void cmd_enemysim(BaseSequentialStream *chp, int argc, char *argv[]) {
       char tmp[15];
       enemies[i] = (user *) chHeapAlloc(NULL, sizeof(user));
       // enemies[i]->ttl will be filled in by the recipient.
-      enemies[i]->type = p_guard;
-      enemies[i]->netid = i;
+      enemies[i]->p_type = p_guard;
+      enemies[i]->netid_src = i;
+      enemies[i]->netid_dst = 0xff;
       enemies[i]->ttl = 100;
       enemies[i]->in_combat = 0;
       enemies[i]->hp = 1137;

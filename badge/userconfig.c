@@ -90,10 +90,6 @@ static void init_config(userconfig *config) {
 
   config->won = 0;
   config->lost = 0;
-  
-  /* these fields are only used during attack-response */
-  config->damage = 0;
-  config->is_crit = 0;
 }
 
 void configStart(void) {

@@ -32,21 +32,12 @@ event_source_t timer_expired;
 event_source_t ui_completed;
 
 /* Enemy ping/pong handling ------------------------------------------------*/
-#define PING_MIN_INTERVAL  3000 // base time between pings
 
 static virtual_timer_t ping_timer;
 static event_source_t ping_timeout;  // fires when ping_timer is ping'd
 static uint8_t cleanup_state = 0;    // cleans up every other ping
 void enemy_cleanup(void);            // reaps the list every other ping
 /* end ping handling */
-
-// defines how long a enemy record stays around before expiration
-// max level of credit a enemy can have; defines how long a record can stay around
-// once a enemy goes away. Roughly equal to
-// 2 * (PING_MIN_INTERVAL + PING_RAND_INTERVAL / 2 * MAX_CREDIT) milliseconds
-#define ENEMIES_TTL_INITIAL  4
-#define ENEMIES_TTL_MAX  12
-#define ENEMIES_SORT_HYSTERESIS 4
 
 // lock/unlock this mutex before touching the enemies list!
 mutex_t enemies_mutex;
@@ -57,9 +48,6 @@ static uint8_t ui_override = 0;
 
 uint8_t shout_received;
 uint8_t shout_ok;
-
-#define MAIN_MENU_MASK  ((1 << 11) | (1 << 0))
-#define MAIN_MENU_VALUE ((1 << 11) | (1 << 0))
 
 static void run_ping(void *arg) {
   (void)arg;
@@ -102,7 +90,8 @@ static void handle_ping_timeout(eventid_t id) {
   /* build packet */
   user upkt;
   upkt.ttl = 4;
-  upkt.netid = config->netid;
+  upkt.netid_src = config->netid;
+  upkt.netid_dst = 0xff; // don't care
   strncpy(upkt.name, config->name, CONFIG_NAME_MAXLEN);
   upkt.in_combat = config->in_combat;
   upkt.hp = config->hp;

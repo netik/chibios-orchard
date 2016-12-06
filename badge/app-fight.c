@@ -13,8 +13,8 @@
 
 #include "userconfig.h"
 
-// number of mS to wait for a response from either side
-#define DEFAULT_WAIT_TIME 2000
+// time to wait for a response from either side (mS)
+#define DEFAULT_WAIT_TIME 20000
 
 typedef struct _FightHandles {
   GListener glFight;
@@ -37,8 +37,9 @@ typedef enum _fight_state {
 } fight_state;
 
 static fight_state current_fight_state;
-static uint32_t current_enemy_netid = 0;
-static int current_enemy = 0;
+static user current_enemy;
+static int current_enemy_idx = 0;
+
 static uint32_t last_ui_time = 0;
 static uint32_t last_tick_time = 0;
 
@@ -56,6 +57,9 @@ static uint16_t maxhp(uint8_t level);
 static void screen_select_draw(void);
 static void screen_select_close(OrchardAppContext *);
 static void screen_waitapproval_draw(OrchardAppContext *);
+
+static void start_fight(void);
+static void end_fight(void);
 
 static uint8_t calc_level(uint16_t xp) {
   if(xp >= 7800) {
@@ -90,7 +94,7 @@ static uint8_t calc_level(uint16_t xp) {
 
 static uint16_t maxhp(uint8_t level) {
   // for now
-  return (level-1 * 100) + 337;
+  return ((level-1) * 100) + 337;
 }
 
 static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, uint16_t maxval, uint16_t currentval, uint8_t use_leds) {
@@ -233,7 +237,7 @@ static void screen_alert_draw(char *msg) {
 static uint8_t nextEnemy() {
   /* walk the list looking for an enemy. */
   user **enemies = enemiesGet();
-  int8_t ce = current_enemy;
+  int8_t ce = current_enemy_idx;
   uint8_t distance = 0;
   
   do { 
@@ -245,7 +249,7 @@ static uint8_t nextEnemy() {
   } while ( (enemies[ce] == NULL) && (distance < MAX_ENEMIES) );
 		   
   if (enemies[ce] != NULL) {
-    current_enemy = ce;
+    current_enemy_idx = ce;
     return TRUE;
   } else {
     // we failed, so time to die.
@@ -259,7 +263,7 @@ static uint8_t nextEnemy() {
 static uint8_t prevEnemy() {
   /* walk the list looking for an enemy. */
   user **enemies = enemiesGet();
-  int8_t ce = current_enemy;
+  int8_t ce = current_enemy_idx;
   uint8_t distance = 0;
   
   do { 
@@ -271,7 +275,7 @@ static uint8_t prevEnemy() {
   } while ( (enemies[ce] == NULL) && (distance < MAX_ENEMIES) );
 		   
   if (enemies[ce] != NULL) {
-    current_enemy = ce;
+    current_enemy_idx = ce;
     return TRUE;
   } else {
     // we failed, so time to die.
@@ -315,7 +319,7 @@ static void screen_select_draw(void) {
   xpos = (gdispGetWidth() / 2) + 10;
 
   // count
-  chsnprintf(tmp, sizeof(tmp), "%d of %d", current_enemy + 1, enemyCount() );
+  chsnprintf(tmp, sizeof(tmp), "%d of %d", current_enemy_idx + 1, enemyCount() );
   gdispDrawStringBox (xpos,
 		      ypos - 20,
 		      gdispGetWidth() - xpos - 30,
@@ -327,11 +331,11 @@ static void screen_select_draw(void) {
 		      ypos,
 		      gdispGetWidth() - xpos,
 		      gdispGetFontMetric(fontFF, fontHeight),
-		      enemies[current_enemy]->name,
+		      enemies[current_enemy_idx]->name,
 		      fontFF, Yellow, justifyLeft);
   // level
   ypos = ypos + 25;
-  chsnprintf(tmp, sizeof(tmp), "LEVEL %d", enemies[current_enemy]->level);
+  chsnprintf(tmp, sizeof(tmp), "LEVEL %d", enemies[current_enemy_idx]->level);
   gdispDrawStringBox (xpos,
 		      ypos,
 		      gdispGetWidth() - xpos,
@@ -340,7 +344,7 @@ static void screen_select_draw(void) {
 		      fontFF, Yellow, justifyLeft);
 
   ypos = ypos + 50;
-  chsnprintf(tmp, sizeof(tmp), "HP %d", enemies[current_enemy]->hp);
+  chsnprintf(tmp, sizeof(tmp), "HP %d", enemies[current_enemy_idx]->hp);
   gdispDrawStringBox (xpos,
 		      ypos,
 		      gdispGetWidth() - xpos,
@@ -350,7 +354,7 @@ static void screen_select_draw(void) {
 
   ypos = ypos + gdispGetFontMetric(fontFF, fontHeight) + 5;
   
-  drawProgressBar(xpos,ypos,100,10,enemies[current_enemy]->hp,maxhp(enemies[current_enemy]->level), 0);
+  drawProgressBar(xpos,ypos,100,10,enemies[current_enemy_idx]->hp,maxhp(enemies[current_enemy_idx]->level), 0);
 }
 
 static void screen_select_close(OrchardAppContext *context) {
@@ -398,7 +402,7 @@ static void fight_start(OrchardAppContext *context) {
     gwinAttachListener(&p->glFight);
     geventRegisterCallback (&p->glFight, orchardAppUgfxCallback, &p->glFight);
 
-    if (enemies[current_enemy] == NULL) {
+    if (enemies[current_enemy_idx] == NULL) {
       nextEnemy();
     }
 
@@ -411,6 +415,8 @@ static void fight_start(OrchardAppContext *context) {
 }
 
 static void screen_waitapproval_draw(OrchardAppContext *context) {
+  (void)context;
+  
   // Create label widget: ghLabel1
   screen_alert_draw("WAITING FOR ENEMY TO ACCEPT!");
 
@@ -418,6 +424,45 @@ static void screen_waitapproval_draw(OrchardAppContext *context) {
   ticktock = DEFAULT_WAIT_TIME; // used to hold a generic timer value.
   drawProgressBar(40,(gdispGetHeight() / 2) + 60,240,20,DEFAULT_WAIT_TIME,ticktock, 1);
   last_tick_time = chVTGetSystemTime();
+}
+
+static void start_fight(void) {
+  // set my incombat to true
+  KW01_PKT pkt;
+  userconfig *config = getConfig();
+  user **enemies = enemiesGet();
+  user upkt;
+    
+  config->in_combat = 1;
+
+  // clear the packet
+  memset (pkt.kw01_payload, 0, sizeof(pkt.kw01_payload));
+
+  // copy data
+  memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(user));
+
+  // send one ping. 
+  upkt.ttl = 4;
+  upkt.netid_src = config->netid;
+  upkt.netid_dst = current_enemy.netid_src;
+  
+  strncpy(upkt.name, config->name, CONFIG_NAME_MAXLEN);
+  upkt.in_combat = 1; // doesn't matter
+  upkt.hp = config->hp;
+  upkt.level = config->level;
+  upkt.p_type = config->p_type;
+  
+  memcpy(pkt.kw01_payload, &upkt, sizeof(upkt));
+	 
+  radioSend (&KRADIO1, RADIO_BROADCAST_ADDRESS,  RADIO_PROTOCOL_BATTLE,
+	     KRADIO1.kw01_maxlen - KW01_PKT_HDRLEN,
+	     &pkt);
+}
+
+static void end_fight(void) {
+  // set my incombat to true
+  userconfig *config = getConfig();
+  config->in_combat = 0;
 }
 
 static void fight_event(OrchardAppContext *context,
@@ -441,7 +486,7 @@ static void fight_event(OrchardAppContext *context,
   if ( (event->type == timerEvent) &&
        (current_fight_state == APPROVAL_WAIT) &&
        ((chVTGetSystemTime() - last_tick_time) > 1000) ) {
-    ticktock = ticktock - 100;
+    ticktock = ticktock - 1000;
     last_tick_time = chVTGetSystemTime();
 
     // progess bar
@@ -449,6 +494,7 @@ static void fight_event(OrchardAppContext *context,
     if (ticktock <= 0) { 
       screen_alert_draw("TIMED OUT!");
       ledSetProgress(-1);
+      end_fight();
       chThdSleepMilliseconds(1000);
       orchardAppRun(orchardAppByName("Badge"));
     }
@@ -475,11 +521,9 @@ static void fight_event(OrchardAppContext *context,
 	if (((GEventGWinButton*)pe)->gwin == p->ghAttack) {
 	  last_ui_time = chVTGetSystemTime();
 	  current_fight_state = APPROVAL_WAIT;
-
 	  screen_select_close(context);
+	  start_fight();
 	  screen_waitapproval_draw(context);
-	  
-
 	  return;
 	}
 	if (((GEventGWinButton*)pe)->gwin == p->ghPrevEnemy) {
