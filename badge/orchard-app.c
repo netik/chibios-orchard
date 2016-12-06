@@ -55,6 +55,9 @@ static user *enemies[MAX_ENEMIES]; // array of pointers to enemy structures
 
 static uint8_t ui_override = 0;
 
+uint8_t shout_received;
+uint8_t shout_ok;
+
 #define MAIN_MENU_MASK  ((1 << 11) | (1 << 0))
 #define MAIN_MENU_VALUE ((1 << 11) | (1 << 0))
 
@@ -345,6 +348,7 @@ static THD_FUNCTION(orchard_app_thread, arg) {
 }
 
 void orchardAppInit(void) {
+  const OrchardApp * current;
 
   orchard_app_list = orchard_apps();
   instance.app = orchard_app_list;
@@ -365,6 +369,13 @@ void orchardAppInit(void) {
     enemies[i] = NULL;
   }
   osalMutexObjectInit(&enemies_mutex);
+
+  current = orchard_app_list;
+  while (current->name) {
+    if (current->flags & APP_FLAG_AUTOINIT)
+      current->init(NULL);
+    current++;
+  }
 
 }
 
