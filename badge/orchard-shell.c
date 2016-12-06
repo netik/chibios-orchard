@@ -31,7 +31,7 @@ static const SerialConfig serialConfig = {
 };
 
 static thread_t *shell_tp = NULL;
-static THD_WORKING_AREA(waShellThread, 280 /*768*/);
+static THD_WORKING_AREA(waShellThread, 364 /*768*/);
 
 void orchardShellInit(void)
 {
