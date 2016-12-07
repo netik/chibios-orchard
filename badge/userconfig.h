@@ -11,7 +11,7 @@
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0
-#define CONFIG_VERSION    8
+#define CONFIG_VERSION    1
 #define CONFIG_NAME_MAXLEN 10
 
 typedef enum _player_type {
@@ -76,9 +76,11 @@ typedef struct _userpkt {
   /* this is a shortened form of userdata for transmission */
   /* appx 40 bytes, max is 66 (AES limitiation) */
 
+  /* stash this away for future attacks/lookups */
+  /* unique network ID determined from use of lower 64 bits of SIM-UID */
+  uint32_t netid;
+
   /* Network Payload */
-  uint32_t netid_src;     /* 4 */
-  uint32_t netid_dst;     /* 8 */
   uint16_t seq;           /* 2 */
   uint8_t ttl;            /* 1 */
 

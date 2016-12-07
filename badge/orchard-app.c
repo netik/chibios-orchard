@@ -90,8 +90,7 @@ static void handle_ping_timeout(eventid_t id) {
   /* build packet */
   user upkt;
   upkt.ttl = 4;
-  upkt.netid_src = config->netid;
-  upkt.netid_dst = 0xff; // don't care
+  upkt.netid = config->netid;
   strncpy(upkt.name, config->name, CONFIG_NAME_MAXLEN);
   upkt.in_combat = config->in_combat;
   upkt.hp = config->hp;

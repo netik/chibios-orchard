@@ -53,10 +53,15 @@
 #endif
 
 /* Radio message types */
-#define RADIO_PROTOCOL_CHAT	1	/* Send message to 1 badge */
-#define RADIO_PROTOCOL_SHOUT	2	/* Broadcast message to all badges */
-#define RADIO_PROTOCOL_PING	3	/* Solicit ping ID from badges */
-#define RADIO_PROTOCOL_BATTLE	4	/* Fight! */
+#define RADIO_PROTOCOL_CHAT	0x01	/* Send message to 1 badge */
+#define RADIO_PROTOCOL_SHOUT	0x02	/* Broadcast message to all badges */
+#define RADIO_PROTOCOL_PING	0x03	/* Solicit ping ID from badges */
+
+#define RADIO_PROTOCOL_STARTBATTLE	0x80	/* Fight! */
+#define RADIO_PROTOCOL_STARTBATTLE_ACK	0x81	/* Fight! */
+#define RADIO_PROTOCOL_YOUGO	        0x82	/* Fight! */
+#define RADIO_PROTOCOL_IMDEAD     	0x83	/* Fight! */
+#define RADIO_PROTOCOL_FIGHTTURN	0x90	/* Fight! */
 
 /*
  * Only the first byte of the packet header definition is defined

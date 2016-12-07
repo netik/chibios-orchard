@@ -332,6 +332,11 @@ int main(void)
     gfxInit();
     chprintf (stream, "No SD card found.\r\n");
     oledSDFail();
+    configStart ();
+    config = getConfig ();
+    /* override any sound choice the user has made */
+    config->sound_enabled = 1;
+    
     playHardFail();
     /* nuke the main thread but keep our shell up for debugging */
     orchardShellRestart();

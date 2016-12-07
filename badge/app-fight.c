@@ -10,6 +10,7 @@
 #include "orchard-ui.h"
 #include "images.h"
 #include "fontlist.h"
+#include "sound.h"
 
 #include "userconfig.h"
 
@@ -61,6 +62,7 @@ static void screen_waitapproval_draw(OrchardAppContext *);
 static void start_fight(void);
 static void end_fight(void);
 
+#ifdef notyet
 static uint8_t calc_level(uint16_t xp) {
   if(xp >= 7800) {
     return 10;
@@ -91,6 +93,7 @@ static uint8_t calc_level(uint16_t xp) {
   }
   return 1;
 }
+#endif
 
 static uint16_t maxhp(uint8_t level) {
   // for now
@@ -443,9 +446,6 @@ static void start_fight(void) {
 
   // send one ping. 
   upkt.ttl = 4;
-  upkt.netid_src = config->netid;
-  upkt.netid_dst = current_enemy.netid_src;
-  
   strncpy(upkt.name, config->name, CONFIG_NAME_MAXLEN);
   upkt.in_combat = 1; // doesn't matter
   upkt.hp = config->hp;
@@ -454,7 +454,8 @@ static void start_fight(void) {
   
   memcpy(pkt.kw01_payload, &upkt, sizeof(upkt));
 	 
-  radioSend (&KRADIO1, RADIO_BROADCAST_ADDRESS,  RADIO_PROTOCOL_BATTLE,
+  radioSend (&KRADIO1, current_enemy.netid,
+	     RADIO_PROTOCOL_STARTBATTLE,
 	     KRADIO1.kw01_maxlen - KW01_PKT_HDRLEN,
 	     &pkt);
 }
@@ -495,7 +496,8 @@ static void fight_event(OrchardAppContext *context,
       screen_alert_draw("TIMED OUT!");
       ledSetProgress(-1);
       end_fight();
-      chThdSleepMilliseconds(1000);
+      playHardFail();
+      chThdSleepMilliseconds(2000);
       orchardAppRun(orchardAppByName("Badge"));
     }
 

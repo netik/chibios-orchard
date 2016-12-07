@@ -82,11 +82,7 @@ void cmd_enemyping(BaseSequentialStream *chp, int argc, char *argv[]) {
 }
 orchard_command("enemyping", cmd_enemyping);
 
-static int should_stop(void) {
-  uint8_t bfr[1];
-  return chnReadTimeout(serialDriver, bfr, sizeof(bfr), 1);
-}
-
+// jna: remove this once we go live
 // generate a list of random names and broadcast them until told to stop
 void cmd_enemysim(BaseSequentialStream *chp, int argc, char *argv[]) {
   (void) chp;
@@ -102,8 +98,7 @@ void cmd_enemysim(BaseSequentialStream *chp, int argc, char *argv[]) {
       enemies[i] = (user *) chHeapAlloc(NULL, sizeof(user));
       // enemies[i]->ttl will be filled in by the recipient.
       enemies[i]->p_type = p_guard;
-      enemies[i]->netid_src = i;
-      enemies[i]->netid_dst = 0xff;
+      enemies[i]->netid = i; // fake 
       enemies[i]->ttl = 100;
       enemies[i]->in_combat = 0;
       enemies[i]->hp = 1137;
@@ -115,16 +110,7 @@ void cmd_enemysim(BaseSequentialStream *chp, int argc, char *argv[]) {
     osalMutexUnlock(&enemies_mutex);
   }
 
-  // jna: remove this once we go live
   chprintf(stream, "Test enemies generated.\r\n");
-  // generate some packets... 
-  //  while(!should_stop()) {
-    //    radioAcquire(radioDriver);
-    //    radioSend(radioDriver, RADIO_BROADCAST_ADDRESS, radio_prot_ping,
-    //	      strlen(enemylist[i]) + 1, enemylist[i]);
-    //    radioRelease(radioDriver);
-  //    chThdSleepMilliseconds((5000 + rand() % 2000) / 16); // simulate timeouts
-  ///  }
 }
 orchard_command("enemysim", cmd_enemysim);
 
