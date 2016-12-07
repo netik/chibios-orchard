@@ -55,9 +55,12 @@ static uint8_t prevEnemy(void);
 static uint8_t nextEnemy(void);
 static uint16_t maxhp(uint8_t level);
 
+/* the fight sequence */
 static void screen_select_draw(void);
 static void screen_select_close(OrchardAppContext *);
-static void screen_waitapproval_draw(OrchardAppContext *);
+static void screen_waitapproval_draw(void);
+
+static void screen_vs_draw(void);
 
 static void start_fight(void);
 static void end_fight(void);
@@ -289,7 +292,6 @@ static uint8_t prevEnemy() {
   }
 }
 
-
 static void screen_select_draw(void) {
   // enemy selection screen
   font_t fontFF, fontSM;
@@ -304,9 +306,9 @@ static void screen_select_draw(void) {
   fontSM = gdispOpenFont (FONT_SM);
   fontFF = gdispOpenFont (FONT_FIXED);
   fontXS = gdispOpenFont (FONT_XS);
-  
+
+  uint16_t xpos = 0; // cursor, so if we move or add things we don't have to rethink this  
   uint16_t ypos = 0; // cursor, so if we move or add things we don't have to rethink this
-  uint16_t xpos = 0; // cursor, so if we move or add things we don't have to rethink this
 
   gdispDrawStringBox (0,
 		      ypos,
@@ -360,6 +362,42 @@ static void screen_select_draw(void) {
   drawProgressBar(xpos,ypos,100,10,enemies[current_enemy_idx]->hp,maxhp(enemies[current_enemy_idx]->level), 0);
 }
 
+static void screen_vs_draw(void)  {
+  // enemy selection screen
+  font_t fontFF, fontSM;
+
+  putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER2_Y);
+  putImageFile(IMG_GUARD_IDLE_R, POS_PLAYER2_X, POS_PLAYER2_Y);
+  
+  fontSM = gdispOpenFont(FONT_SM);
+  fontFF = gdispOpenFont(FONT_FIXED);
+  
+  uint16_t ypos = 0; // cursor, so if we move or add things we don't have to rethink this
+
+  gdispDrawStringBox (0,
+		      ypos,
+		      gdispGetWidth(),
+		      gdispGetFontMetric(fontSM, fontHeight),
+		      "YYYYYYYYYY",
+		      fontSM, Lime, justifyLeft);
+
+  gdispDrawStringBox (0,
+		      ypos,
+		      gdispGetWidth(),
+		      gdispGetFontMetric(fontSM, fontHeight),
+		      "YYYYYYYYYY",
+		      fontSM, Red, justifyRight);
+
+  ypos = ypos +  gdispGetFontMetric(fontSM, fontHeight);
+  gdispDrawStringBox (0,
+		      ypos,
+		      gdispGetWidth(),
+		      gdispGetFontMetric(fontSM, fontHeight),
+		      "Waiting for enemy to accept!",
+		      fontSM, White, justifyCenter);
+
+}
+
 static void screen_select_close(OrchardAppContext *context) {
   FightHandles * p;
 
@@ -373,8 +411,16 @@ static void screen_select_close(OrchardAppContext *context) {
   gwinDestroy (p->ghAttack);
 }
 
+static void radio_battle_ack(KW01_PKT * pkt)
+{
+  radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_STARTBATTLE_ACK, NULL);
+  current_fight_state = VS_SCREEN;
+  screen_vs_draw();
+}
+
 static uint32_t fight_init(OrchardAppContext *context) {
   (void)context;
+
   return 0;
 }
 
@@ -416,16 +462,15 @@ static void fight_start(OrchardAppContext *context) {
     orchardAppExit();
   }
 }
-
-static void screen_waitapproval_draw(OrchardAppContext *context) {
-  (void)context;
+static void screen_waitapproval_draw(void) {
   
   // Create label widget: ghLabel1
-  screen_alert_draw("WAITING FOR ENEMY TO ACCEPT!");
+  gdispClear(Black);
+  screen_vs_draw(); // test!
 
-  // progess bar
+  // progress bar
   ticktock = DEFAULT_WAIT_TIME; // used to hold a generic timer value.
-  drawProgressBar(40,(gdispGetHeight() / 2) + 60,240,20,DEFAULT_WAIT_TIME,ticktock, 1);
+  drawProgressBar(40,gdispGetHeight() - 40,240,20,DEFAULT_WAIT_TIME,ticktock, 1);
   last_tick_time = chVTGetSystemTime();
 }
 
@@ -491,9 +536,11 @@ static void fight_event(OrchardAppContext *context,
     last_tick_time = chVTGetSystemTime();
 
     // progess bar
-    drawProgressBar(40,(gdispGetHeight() / 2) + 60,240,20,DEFAULT_WAIT_TIME,ticktock, 1);
-    if (ticktock <= 0) { 
+    drawProgressBar(40,gdispGetHeight() - 40,240,20,DEFAULT_WAIT_TIME,ticktock, 1);
+    if (ticktock <= 0) {
+      orchardAppTimer(context, 0, false); // shut down the timer
       screen_alert_draw("TIMED OUT!");
+      radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_STARTBATTLE_ACK, NULL);
       ledSetProgress(-1);
       end_fight();
       playHardFail();
@@ -525,7 +572,8 @@ static void fight_event(OrchardAppContext *context,
 	  current_fight_state = APPROVAL_WAIT;
 	  screen_select_close(context);
 	  start_fight();
-	  screen_waitapproval_draw(context);
+	  screen_waitapproval_draw();
+	  radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_STARTBATTLE_ACK, radio_battle_ack);
 	  return;
 	}
 	if (((GEventGWinButton*)pe)->gwin == p->ghPrevEnemy) {
@@ -544,11 +592,13 @@ static void fight_exit(OrchardAppContext *context) {
   FightHandles * p;
 
   p = context->priv;
-  gwinDestroy (p->ghExitButton);
-  gwinDestroy (p->ghNextEnemy);
-  gwinDestroy (p->ghPrevEnemy);
-  gwinDestroy (p->ghAttack);
-  
+  if (current_fight_state == ENEMY_SELECT) { 
+    gwinDestroy (p->ghExitButton);
+    gwinDestroy (p->ghNextEnemy);
+    gwinDestroy (p->ghPrevEnemy);
+    gwinDestroy (p->ghAttack);
+  }
+
   geventDetachSource (&p->glFight, NULL);
   geventRegisterCallback (&p->glFight, NULL, NULL);
 

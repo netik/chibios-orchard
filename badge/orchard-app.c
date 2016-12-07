@@ -346,6 +346,7 @@ void orchardAppInit(void) {
   chEvtObjectInit(&ping_timeout);
   chEvtObjectInit(&ui_completed);
   chVTReset(&instance.timer);
+
   // set up our ping timer
   chVTReset(&ping_timer);
   //  evtTableHook(orchard_events, radio_page, handle_radio_page);

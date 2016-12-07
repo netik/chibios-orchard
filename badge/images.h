@@ -23,10 +23,11 @@ Matthew (graphics,art)\r\n\r\n"
 #define SCREEN_HEIGHT 240
 
 // Remember! Filenames must be in old school dos format (8x3)
+//                         12345678.123
 #define IMG_SPLASH        "SPQR.RGB"
-#define IMG_GUARD         "GUARD_01.RGB"
-#define IMG_GUARD_IDLE_L  "GUARD_02.RGB"
-#define IMG_GUARD_IDLE_R  "grdr02.rgb"
+#define IMG_GUARD         "GUARD1L.RGB"
+#define IMG_GUARD_IDLE_L  "GUARD1L.RGB"
+#define IMG_GUARD_IDLE_R  "GUARD1R.RGB"
 #define IMG_GROUND        "ground.rgb"
 
 #define IMG_SPLASH_DISPLAY_TIME          5000 // longer if music playing
