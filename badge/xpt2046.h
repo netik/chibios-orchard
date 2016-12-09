@@ -36,4 +36,6 @@
 extern uint16_t xptGet (uint8_t);
 extern void xptTest (void);
 
+#define XPT_TOUCH_THRESHOLD		3700
+
 #endif /* _XPT2406_H_ */
