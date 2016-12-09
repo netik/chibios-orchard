@@ -140,7 +140,7 @@ void xptTest(void)
 	while (1) {
 		z1 = xptGet (XPT_CHAN_Z1);
 		z2 = xptGet (XPT_CHAN_Z2);
-		if ((z2 - z1) < 3500) {
+		if ((z2 - z1) < XPT_TOUCH_THRESHOLD) {
 			chprintf (stream, "press(%d:%d): ", z1, z2);
 			v = xptGet (XPT_CHAN_X);
 			chprintf (stream, "X: %d ", v);

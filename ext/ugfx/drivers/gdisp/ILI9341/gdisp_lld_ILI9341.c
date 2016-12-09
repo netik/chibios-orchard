@@ -148,7 +148,8 @@ LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
 	write_index(g, 0xb1);
 	// frame rate
 	write_data(g, 0x00);
-	write_data(g, 0x1B); //70
+	/* Set the refresh rate to max (119 fps) for cleaner scrolling */
+	write_data(g, 0x10);
 	//----------------Gamma---------------------------------
 	write_index(g, 0xf2); // 3Gamma Function Disable
 	write_data(g, 0x08);

@@ -13,6 +13,9 @@
 
 #include <string.h>
 
+#define MCUFRIEND
+
+#ifdef MCUFRIEND
 static const float calibrationData[] = {
 	-0.06661,		// ax
 	0.00031,		// bx
@@ -21,6 +24,18 @@ static const float calibrationData[] = {
 	0.08950,		// by
 	-13.79760		// cy
 };
+#endif
+
+#ifdef EASTRISING
+static const float calibrationData[] = {
+	0.06682,		// ax
+	0.00092,		// bx
+	-19.87325,		// cx
+	0.00074,		// ay
+	0.09192,		// by
+	-22.00080		// cy
+};
+#endif
  
 bool_t LoadMouseCalibration(unsigned instance, void *data, size_t sz)
 {
@@ -79,7 +94,7 @@ static bool_t read_xyz(GMouse *m, GMouseReading *prd) {
 	z1 = xptGet (XPT_CHAN_Z1);
 	z2 = xptGet (XPT_CHAN_Z2);
 
-	if ((z2 - z1) < 3500)
+	if ((z2 - z1) < XPT_TOUCH_THRESHOLD)
 		prd->z = 4095 - (z2 - z1);
 	else
 		prd->z = 0;
