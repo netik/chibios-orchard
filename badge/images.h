@@ -29,6 +29,8 @@ Matthew (graphics,art)\r\n\r\n"
 #define IMG_GUARD_IDLE_L  "GUARD1L.RGB"
 #define IMG_GUARD_IDLE_R  "GUARD1R.RGB"
 #define IMG_GROUND        "ground.rgb"
+#define IMG_BLOCK         "block.rgb"
+#define IMG_ATTACK        "attack.rgb"
 
 #define IMG_SPLASH_DISPLAY_TIME          5000 // longer if music playing
 #define IMG_SPLASH_NO_SOUND_DISPLAY_TIME 1000

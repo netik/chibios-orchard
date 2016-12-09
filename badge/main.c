@@ -13,6 +13,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 */
+#include <string.h>
 
 #include "ch.h"
 #include "hal.h"
@@ -175,6 +176,21 @@ static void print_mcu_info(void) {
   chprintf(stream, "CPU clock: %dMHz Bus clock: %dMHz\r\n",
      (KINETIS_SYSCLK_FREQUENCY / 1000000),
      (KINETIS_BUSCLK_FREQUENCY / 1000000));
+}
+
+static void radio_ping_handler(KW01_PKT *pkt) {
+  user u;
+
+  chprintf(stream, "\r\nGot a ping --  %02x -> %02x : %02x (signal strength: -%ddBm)\r\n",
+	   pkt->kw01_hdr.kw01_src,
+           pkt->kw01_hdr.kw01_dst,
+           pkt->kw01_hdr.kw01_prot,
+           (uint8_t)KW01_RSSI(pkt->kw01_rssi));
+
+  /* Why is this offset 11? */
+  memcpy(&u, pkt->kw01_payload + 11, sizeof(u));
+  chprintf(stream, "\r\nmaybe from %s level %d seq %d ttl %d ptype %d incombat %d hp %d\r\n", u.name, u.level, u.seq, u.ttl, u.p_type, u.in_combat, u.hp );
+  enemyAdd(&u);
 }
 
 /*
@@ -356,7 +372,6 @@ int main(void)
   randInit ();
 
   /* we're goood */
-
   configStart ();
   config = getConfig ();
   chprintf(stream, "HW UDID: 0x");
@@ -389,6 +404,9 @@ int main(void)
   evtTableHook(orchard_events, orchard_app_terminated, orchard_app_restart);
   orchardAppRestart();
 
+  /* handle radio events for ping */
+  radioHandlerSet(radioDriver, RADIO_PROTOCOL_PING, radio_ping_handler);
+  
   while (TRUE)
     chEvtDispatch(evtHandlers(orchard_events), chEvtWaitOne(ALL_EVENTS));
 }

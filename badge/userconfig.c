@@ -78,7 +78,7 @@ static void init_config(userconfig *config) {
   config->in_combat = 0;
   
   /* stats, dunno if we will use */
-  config->hp = 1000;
+  config->hp = maxhp(1);
   config->xp = 0;
   config->gold = 500;
   config->level = 1;

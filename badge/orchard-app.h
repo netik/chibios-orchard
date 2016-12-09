@@ -54,7 +54,7 @@ void enemiesSort(void);
 void enemiesLock(void);
 void enemiesUnlock(void);
 uint8_t enemyCount(void);
-
+user *enemyAdd(user *u);
 user **enemiesGet(void);
 
 #define MAX_ENEMIES  16   // max # of enemies to track

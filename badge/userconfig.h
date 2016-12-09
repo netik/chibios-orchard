@@ -11,8 +11,10 @@
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0
-#define CONFIG_VERSION    1
+#define CONFIG_VERSION    10
 #define CONFIG_NAME_MAXLEN 10
+
+#define maxhp(level) ((level-1) * 100) + 337
 
 typedef enum _player_type {
   p_pleeb,
@@ -65,16 +67,20 @@ typedef struct userconfig {
 #define ATTACK_ISCRIT   ( 1 << 6 )
 
 #define ATTACK_HI       ( 1 << 5 )
-#define ATTACK_MED      ( 1 << 4 )
+#define ATTACK_MID      ( 1 << 4 )
 #define ATTACK_LOW      ( 1 << 3 )
 
 #define BLOCK_HI   ( 1 << 2 )
-#define BLOCK_MED  ( 1 << 1 )
+#define BLOCK_MID  ( 1 << 1 )
 #define BLOCK_LOW  ( 1 << 0 )
+
+/* use these for clearing out the bitfield */
+#define ATTACK_MASK 0x38
+#define BLOCK_MASK 0x07
 
 typedef struct _userpkt {
   /* this is a shortened form of userdata for transmission */
-  /* appx 40 bytes, max is 66 (AES limitiation) */
+  /* appx 52 bytes, max is 66 (AES limitiation) */
 
   /* stash this away for future attacks/lookups */
   /* unique network ID determined from use of lower 64 bits of SIM-UID */
@@ -86,15 +92,23 @@ typedef struct _userpkt {
 
   /* Player Payload */
   char name[CONFIG_NAME_MAXLEN];  /* 16 */
-  player_type p_type;       /* 1 */
+  player_type p_type;     /* 1 */
   uint8_t in_combat;      /* 1 */        
   uint16_t hp;            /* 2 */
   uint8_t level;          /* 1 */
 
+  /* Player stats, used in ping packet */
+  uint16_t won;           /* 2 */
+  uint16_t lost;          /* 2 */
+  uint16_t gold;          /* 2 */
+  uint16_t xp;            /* 2 */
+
   /* Battle Payload */
-  /* A bitwise map indicating the attack and block --  see ATTACK_ and BLOCK_ operators above. */
+  /* A bitwise map indicating the attack and block -- see ATTACK_ and
+     BLOCK_ operators above. */
   uint8_t attack_bitmap;  
   uint8_t damage;         /* 1 */
+
 } user;
 
 extern void configStart(void);

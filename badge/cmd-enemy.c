@@ -104,7 +104,7 @@ void cmd_enemysim(BaseSequentialStream *chp, int argc, char *argv[]) {
       enemies[i]->hp = 1137;
       enemies[i]->level = 9;
 
-      chsnprintf(tmp, sizeof(tmp), "test-%d",i);
+      chsnprintf(tmp, sizeof(tmp), "test%05d",i);
       strncpy(enemies[i]->name, tmp, CONFIG_NAME_MAXLEN);
     }
     osalMutexUnlock(&enemies_mutex);

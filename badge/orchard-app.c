@@ -51,7 +51,6 @@ uint8_t shout_ok;
 
 static void run_ping(void *arg) {
   (void)arg;
-  //  chprintf(stream, "DEBUG: run_ping\r\n");
   chSysLockFromISR();
   chEvtBroadcastI(&ping_timeout);
   chVTSetI(&ping_timer, MS2ST(PING_MIN_INTERVAL), run_ping, NULL);
@@ -59,9 +58,9 @@ static void run_ping(void *arg) {
 }
 
 void enemy_cleanup(void) {
-/* Called periodically to decrement credits and de-alloc enemies
- * we haven't seen in a while 
- */
+  /* Called periodically to decrement credits and de-alloc enemies
+   * we haven't seen in a while 
+   */
   uint32_t i;
 
   osalMutexLock(&enemies_mutex);
@@ -78,8 +77,7 @@ void enemy_cleanup(void) {
   osalMutexUnlock(&enemies_mutex);
 }
 
-
-static void handle_ping_timeout(eventid_t id) {
+static void execute_ping(eventid_t id) {
   (void) id;
 
   KW01_PKT pkt;
@@ -89,24 +87,33 @@ static void handle_ping_timeout(eventid_t id) {
   /* time to send a ping. */
   /* build packet */
   user upkt;
-  upkt.ttl = 4;
+  memset (&upkt, 0, sizeof(user));
+  
   upkt.netid = config->netid;
-  strncpy(upkt.name, config->name, CONFIG_NAME_MAXLEN);
-  upkt.in_combat = config->in_combat;
-  upkt.hp = config->hp;
-  upkt.level = config->level;
 
+  // seq always 1 for ping. We do not send TTL.
+  upkt.seq   = 1; 
+
+  strncpy(upkt.name, config->name, CONFIG_NAME_MAXLEN);
+
+  // copy the user data into the packet for transmission
+  upkt.p_type    = config->p_type;
+  upkt.in_combat = config->in_combat;
+  upkt.hp        = config->hp;
+  upkt.level     = config->level;
+  upkt.won       = config->won;
+  upkt.lost      = config->lost;
+  upkt.gold      = config->gold;
+  upkt.xp        = config->xp;
+
+  // attack bitmap and damage are blank during a ping
   memcpy(pkt.kw01_payload, &upkt, sizeof(upkt));
 	 
   radioSend (&KRADIO1, RADIO_BROADCAST_ADDRESS,  RADIO_PROTOCOL_PING,
 	     KRADIO1.kw01_maxlen - KW01_PKT_HDRLEN,
 	     &pkt);
   
-  // cleanup every other ping we send, to make sure friends that are
-  // nearby build up credit over time to max credits
-
-  // if the system is unstable, tweak this parameter to reduce the
-  // clean-up rate
+  // while we're at it, clean up the enemy list every two pings
   if( cleanup_state ) {
     enemy_cleanup();
     chEvtBroadcast(&radio_app);
@@ -350,7 +357,7 @@ void orchardAppInit(void) {
   // set up our ping timer
   chVTReset(&ping_timer);
   //  evtTableHook(orchard_events, radio_page, handle_radio_page);
-  evtTableHook(orchard_events, ping_timeout, handle_ping_timeout);
+  evtTableHook(orchard_events, ping_timeout, execute_ping);
   chVTSet(&ping_timer, MS2ST(PING_MIN_INTERVAL), run_ping, NULL);  // todo: randomize this
 
   // initalize the seen-enemies list
@@ -382,12 +389,13 @@ uint8_t enemyCount(void) {
   return count;
 }
 
-user *enemy_lookup(char *name) {
+user *enemy_lookup(user *u) {
   // return an enemy record by name (bad?)
   osalMutexLock(&enemies_mutex);
+
   for( int i = 0; i < MAX_ENEMIES; i++ ) {
     if (enemies[i] != NULL) {
-      if (strcmp(enemies[i]->name, name) == 0) {
+      if (enemies[i]->netid == u->netid) { 
 	osalMutexUnlock(&enemies_mutex);
 	return enemies[i];
       }
@@ -398,20 +406,25 @@ user *enemy_lookup(char *name) {
   return NULL;
 }
 
-user *enemy_add(char *name) {
+user *enemyAdd(user *u) {
   user *record;
   uint32_t i;
 
-  record = enemy_lookup(name);
-  if( record != NULL )
+  record = enemy_lookup(u);
+  if( record != NULL ) {
+    if(record->ttl < ENEMIES_TTL_MAX)
+      record->ttl++;
+
     return record;  // enemy already exists, don't add it again
+  }
 
   osalMutexLock(&enemies_mutex);
+
   for( i = 0; i < MAX_ENEMIES; i++ ) {
     if( enemies[i] == NULL ) {
       enemies[i] = (user *) chHeapAlloc(NULL, sizeof(user));
+      memcpy(enemies[i], u, sizeof(user));
       enemies[i]->ttl = ENEMIES_TTL_INITIAL;
-      strncpy(enemies[i]->name, name, CONFIG_NAME_MAXLEN);
       osalMutexUnlock(&enemies_mutex);
       return enemies[i];
     }
