@@ -47,62 +47,35 @@ typedef enum _fight_state {
   ENEMY_DEAD
 } fight_state;
 
-const GWidgetStyle AttackButtonStyle = {
-  HTML2COLOR(0x000000),		// window background
-  HTML2COLOR(0x2A8FCD),               // focused
-  
-  // enabled color set
-  {
-    HTML2COLOR(0xffffff),		// text
-    HTML2COLOR(0xC0C0C0),		// edge
-    HTML2COLOR(0xf06060),		// fill
-    HTML2COLOR(0x404040),		// progress - inactive area
-  },
-  
-  // disabled color set
-  {
-    HTML2COLOR(0x808080),		// text
-    HTML2COLOR(0x404040),		// edge
-    HTML2COLOR(0x404040),		// fill
-    HTML2COLOR(0x004000),		// progress - active area
-  },
-    
-  // pressed color set
-  {
-    HTML2COLOR(0xff0000),		// text
-    HTML2COLOR(0x00ff00),		// edge
-    HTML2COLOR(0x0000ff),		// fill
-    HTML2COLOR(0xffff00),		// progress - active area
-  },
-};
 
-const GWidgetStyle OkButtonStyle = {
-  HTML2COLOR(0x000000),		// window background
-  HTML2COLOR(0x2A8FCD),               // focused
-  
-  // enabled color set
+// WidgetStyle: RedButton
+const GWidgetStyle RedButtonStyle = {
+  HTML2COLOR(0xff0000),              // background
+  HTML2COLOR(0xff6666),              // focus
+
+  // Enabled color set
   {
-    HTML2COLOR(0xffffff),		// text
-    HTML2COLOR(0xC0C0C0),		// edge
-    HTML2COLOR(0x60f060),		// fill
-    HTML2COLOR(0x404040),		// progress - inactive area
+    HTML2COLOR(0xffffff),         // text
+    HTML2COLOR(0x800000),         // edge
+    HTML2COLOR(0xff0000),         // fill
+    HTML2COLOR(0x008000),         // progress (inactive area)
   },
-  
-  // disabled color set
+
+  // Disabled color set
   {
-    HTML2COLOR(0x808080),		// text
-    HTML2COLOR(0x404040),		// edge
-    HTML2COLOR(0x404040),		// fill
-    HTML2COLOR(0x004000),		// progress - active area
+    HTML2COLOR(0x808080),         // text
+    HTML2COLOR(0x404040),         // edge
+    HTML2COLOR(0x404040),         // fill
+    HTML2COLOR(0x004000),         // progress (active area)
   },
-    
-  // pressed color set
+
+  // Pressed color set
   {
-    HTML2COLOR(0xff0000),		// text
-    HTML2COLOR(0x00ff00),		// edge
-    HTML2COLOR(0x0000ff),		// fill
-    HTML2COLOR(0xffff00),		// progress - active area
-  },
+    HTML2COLOR(0xFFFFFF),         // text
+    HTML2COLOR(0x800000),         // edge
+    HTML2COLOR(0xff6a71),         // fill
+    HTML2COLOR(0x008000),         // progress (active area)
+  }
 };
 
 extern orchard_app_instance instance;
@@ -368,7 +341,7 @@ static void draw_select_buttons(FightHandles *p) {
   p->ghNextEnemy = gwinButtonCreate(0, &wi);
 
   // Fight
-  gwinSetDefaultStyle(&AttackButtonStyle, FALSE);
+  gwinSetDefaultStyle(&RedButtonStyle, FALSE);
   gwinSetDefaultFont(gdispOpenFont(FONT_FIXED));
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
@@ -549,7 +522,7 @@ static void screen_demand_draw(void) {
   gwinSetDefaultFont(gdispOpenFont(FONT_FIXED));
 
   // draw UI
-  gwinSetDefaultStyle(&AttackButtonStyle, FALSE);
+  gwinSetDefaultStyle(&RedButtonStyle, FALSE);
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
   wi.g.x = 30;
@@ -559,7 +532,7 @@ static void screen_demand_draw(void) {
   wi.text = "NOPE";
   p->ghDeny = gwinButtonCreate(0, &wi);
   
-  gwinSetDefaultStyle(&AttackButtonStyle, FALSE);
+  gwinSetDefaultStyle(&RedButtonStyle, FALSE);
 
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
