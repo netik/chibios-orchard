@@ -77,7 +77,7 @@ static void shout_event (OrchardAppContext *context,
 
 			/* Display a confirmation message */
 
-			font = gdispOpenFont(FONT_SM);
+			font = gdispOpenFont(FONT_FIXED);
 			gdispDrawStringBox (0, (gdispGetHeight() / 2) -
 				gdispGetFontMetric(font, fontHeight),
 				gdispGetWidth(),
