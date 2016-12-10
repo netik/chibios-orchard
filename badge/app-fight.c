@@ -918,6 +918,12 @@ static void fight_exit(OrchardAppContext *context) {
     gwinDestroy (p->ghAttack);
   }
 
+  if (p->ghDeny != NULL)
+      gwinDestroy (p->ghDeny);
+
+  if (p->ghAccept != NULL)
+      gwinDestroy (p->ghAccept);
+
   geventDetachSource (&p->glFight, NULL);
   geventRegisterCallback (&p->glFight, NULL, NULL);
 
