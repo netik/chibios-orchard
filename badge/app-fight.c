@@ -728,12 +728,13 @@ static void screen_waitapproval_draw(void) {
 
 static void sendGamePacket(uint8_t protocol) {
   // sends a game packet to current_enemy
-  userconfig *config = getConfig();
+  userconfig *config;
   user upkt;
-  KW01_PKT pkt;
  
-  // clear the packet
-  memset (pkt.kw01_payload, 0, sizeof(pkt.kw01_payload));
+  config = getConfig();
+
+  memset (&upkt, 0, sizeof(upkt));
+
   upkt.ttl = 4;
   strncpy(upkt.name, config->name, CONFIG_NAME_MAXLEN);
   upkt.in_combat = config->in_combat;
@@ -741,12 +742,8 @@ static void sendGamePacket(uint8_t protocol) {
   upkt.level = config->level;
   upkt.p_type = config->p_type;
   
-  memcpy(pkt.kw01_payload, &upkt, sizeof(upkt));
-	 
   radioSend (&KRADIO1, current_enemy.netid,
-	     protocol,
-	     KRADIO1.kw01_maxlen - KW01_PKT_HDRLEN,
-	     &pkt);
+	     protocol, sizeof(upkt), &upkt);
 }
 
 static void end_fight(void) {

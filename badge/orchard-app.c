@@ -78,15 +78,16 @@ void enemy_cleanup(void) {
 }
 
 static void execute_ping(eventid_t id) {
+  userconfig * config;
+  user upkt;
+
   (void) id;
 
-  KW01_PKT pkt;
-  userconfig *config = getConfig();
-  memset (pkt.kw01_payload, 0, sizeof(pkt.kw01_payload));
-  
+  config = getConfig();
+
   /* time to send a ping. */
   /* build packet */
-  user upkt;
+
   memset (&upkt, 0, sizeof(user));
   
   upkt.netid = config->netid;
@@ -106,12 +107,8 @@ static void execute_ping(eventid_t id) {
   upkt.gold      = config->gold;
   upkt.xp        = config->xp;
 
-  // attack bitmap and damage are blank during a ping
-  memcpy(pkt.kw01_payload, &upkt, sizeof(upkt));
-	 
   radioSend (&KRADIO1, RADIO_BROADCAST_ADDRESS,  RADIO_PROTOCOL_PING,
-	     KRADIO1.kw01_maxlen - KW01_PKT_HDRLEN,
-	     &pkt);
+	     sizeof (upkt), &upkt);
   
   // while we're at it, clean up the enemy list every two pings
   if( cleanup_state ) {

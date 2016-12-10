@@ -35,15 +35,32 @@
 
 #define KW01_DELAY 1000
 
+/*
+ * Note:
+ * We send structures over the radio for game play purposes (user
+ * data, battle stats, etc...). Sometimes its convenient to be able
+ * simply cast the received packet payload to one of these structures
+ * so that we can access the contents without having to copy them.
+ * The problem is that some of the structure members are longwords,
+ * and the Cortex-M requires that longword accesses occur at longword-aligned
+ * addresses, otherwise you get an unaligned access trap. In order to
+ * ensure that this works, the payload also has to be longword-algigned,
+ * and for that to happen, the header must be a multiple of 4 bytes in
+ * size. We therefore pad out the header to ensure this is the case.
+ */
+
 #ifdef KW01_RADIO_HWFILTER
 #define KW01_PKT_MAXLEN 66	/* Max packet size (FIFO size) */
-#define KW01_PKT_HDRLEN 3
+#define KW01_PKT_HDRLEN 4
 #define KW01_PKT_AES_MAXLEN 48	/* Max packet size with AES and filtering on */
 #else
 #define KW01_PKT_MAXLEN 64	/* Max packet size (FIFO size) */
-#define KW01_PKT_HDRLEN 9
+#define KW01_PKT_HDRLEN 12
 #define KW01_PKT_AES_MAXLEN 64	/* Max packet size with AES and filtering off */
 #endif
+
+#define KW01_PKT_PAYLOADLEN	(KW01_PKT_MAXLEN - KW01_PKT_HDRLEN)
+
 #define KW01_PKT_HANDLERS_MAX 4
 
 #ifdef KW01_RADIO_HWFILTER
@@ -72,27 +89,25 @@
  * enabled. Everything else is defined by the user.
  */
 
-#pragma pack(1)
 typedef struct kw01_pkt_hdr {
 #ifdef KW01_RADIO_HWFILTER
 	uint8_t		kw01_dst;	/* Destination node */
 	uint8_t		kw01_src;	/* Source node */
+	uint16_t	kw01_prot;	/* Protocol type */
 #else
 	uint32_t	kw01_dst;	/* Destination node */
 	uint32_t	kw01_src;	/* Source node */
+	uint32_t	kw01_prot;	/* Protocol type */
 #endif
-	uint8_t		kw01_prot;	/* Protocol type */
 } KW01_PKT_HDR;
-#pragma pack()
 
-#pragma pack(1)
 typedef struct kw01_pkt {
 	uint8_t		kw01_rssi;	/* Signal strength reading */
 	uint8_t		kw01_length;	/* Total frame length */
+	uint8_t		kw01_pad[2];
 	KW01_PKT_HDR	kw01_hdr;
 	uint8_t		kw01_payload[KW01_PKT_MAXLEN - KW01_PKT_HDRLEN];
 } KW01_PKT;
-#pragma pack()
 
 typedef void (*KW01_PKT_FUNC)(KW01_PKT *);
 

@@ -23,9 +23,9 @@ static void shout_start (OrchardAppContext *context)
 	OrchardUiContext * keyboardUiContext;
 	char * p;
 
-	p = chHeapAlloc (NULL, KW01_PKT_AES_MAXLEN - KW01_PKT_HDRLEN);
+	p = chHeapAlloc (NULL, KW01_PKT_PAYLOADLEN);
 
-	memset (p, 0, KW01_PKT_AES_MAXLEN - KW01_PKT_HDRLEN);
+	memset (p, 0, KW01_PKT_PAYLOADLEN);
 
         keyboardUiContext = chHeapAlloc(NULL, sizeof(OrchardUiContext));
 	keyboardUiContext->itemlist = (const char **)chHeapAlloc(NULL,
@@ -33,7 +33,7 @@ static void shout_start (OrchardAppContext *context)
 	keyboardUiContext->itemlist[0] =
                 "Shout something,\npress ENTER when done";
 	keyboardUiContext->itemlist[1] = p;
-	keyboardUiContext->total = KRADIO1.kw01_maxlen - KW01_PKT_HDRLEN;
+	keyboardUiContext->total = KW01_PKT_PAYLOADLEN;
 
 	context->instance->ui = getUiByName ("keyboard");
 	context->instance->uicontext = keyboardUiContext;
@@ -69,8 +69,7 @@ static void shout_event (OrchardAppContext *context,
 			/* Send the message */
 
 			radioSend (&KRADIO1, RADIO_BROADCAST_ADDRESS,
-				RADIO_PROTOCOL_SHOUT,
-				KW01_PKT_AES_MAXLEN - KW01_PKT_HDRLEN,
+				RADIO_PROTOCOL_SHOUT, KW01_PKT_PAYLOADLEN,
 				keyboardUiContext->itemlist[1]);
 
 			chHeapFree ((char *)keyboardUiContext->itemlist[1]);
