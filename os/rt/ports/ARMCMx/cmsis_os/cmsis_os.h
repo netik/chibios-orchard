@@ -76,7 +76,7 @@
 /**
  * @brief   System tick frequency.
  */
-#define osKernelSysTickFrequency    CH_CFG_FREQUENCY
+#define osKernelSysTickFrequency    CH_CFG_ST_FREQUENCY
 
 /*===========================================================================*/
 /* Module pre-compile time settings.                                         */
@@ -338,7 +338,7 @@ const osTimerDef_t os_timer_def_##name = {                                  \
 /**
  * @brief   Define a Mutex.
  */
-#if defined (osObjectsExternal)
+#if defined(osObjectsExternal)
 #define osMutexDef(name) extern const osMutexDef_t os_mutex_def_##name
 #else
 #define osMutexDef(name)  const osMutexDef_t os_mutex_def_##name = {0}
@@ -352,7 +352,7 @@ const osTimerDef_t os_timer_def_##name = {                                  \
 /**
  * @brief   Define a Semaphore.
  */
-#if defined (osObjectsExternal)
+#if defined(osObjectsExternal)
 #define osSemaphoreDef(name)                                                \
   extern const osSemaphoreDef_t os_semaphore_def_##name
 #else                            // define the object
@@ -391,7 +391,7 @@ const osPoolDef_t os_pool_def_##name = {                                    \
 /**
  * @brief   Define a Message Queue.
  */
-#if defined (osObjectsExternal)
+#if defined(osObjectsExternal)
 #define osMessageQDef(name, queue_sz, type)                                 \
   extern const osMessageQDef_t os_messageQ_def_##name
 #else
@@ -502,7 +502,7 @@ static inline osStatus osThreadYield(void) {
  */
 static inline osPriority osThreadGetPriority(osThreadId thread_id) {
 
-  return thread_id->p_prio;
+  return (osPriority)(NORMALPRIO - thread_id->p_prio);
 }
 
 /**

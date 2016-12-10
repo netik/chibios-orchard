@@ -62,18 +62,38 @@
 /*
  * ADC driver system settings.
  */
-#define STM32_ADC_USE_ADC1                  FALSE
-#define STM32_ADC_ADC12_DMA_PRIORITY        2
-#define STM32_ADC_ADC12_IRQ_PRIORITY        5
-#define STM32_ADC_ADC12_DMA_IRQ_PRIORITY    5
-#define STM32_ADC_ADC12_CLOCK_MODE          ADC_CCR_CKMODE_AHB_DIV1
 #define STM32_ADC_DUAL_MODE                 FALSE
+#define STM32_ADC_COMPACT_SAMPLES           FALSE
+#define STM32_ADC_USE_ADC1                  FALSE
+#define STM32_ADC_USE_ADC2                  FALSE
+#define STM32_ADC_ADC1_DMA_STREAM           STM32_DMA_STREAM_ID(1, 1)
+#define STM32_ADC_ADC2_DMA_STREAM           STM32_DMA_STREAM_ID(2, 1)
+#define STM32_ADC_ADC1_DMA_PRIORITY         2
+#define STM32_ADC_ADC2_DMA_PRIORITY         2
+#define STM32_ADC_ADC12_IRQ_PRIORITY        5
+#define STM32_ADC_ADC1_DMA_IRQ_PRIORITY     5
+#define STM32_ADC_ADC2_DMA_IRQ_PRIORITY     5
+#define STM32_ADC_ADC12_CLOCK_MODE          ADC_CCR_CKMODE_AHB_DIV1
 
 /*
  * CAN driver system settings.
  */
 #define STM32_CAN_USE_CAN1                  FALSE
 #define STM32_CAN_CAN1_IRQ_PRIORITY         11
+
+/*
+ * DAC driver system settings.
+ */
+#define STM32_DAC_DUAL_MODE                 FALSE
+#define STM32_DAC_USE_DAC1_CH1              TRUE
+#define STM32_DAC_USE_DAC1_CH2              TRUE
+#define STM32_DAC_USE_DAC2_CH1              TRUE
+#define STM32_DAC_DAC1_CH1_IRQ_PRIORITY     10
+#define STM32_DAC_DAC1_CH2_IRQ_PRIORITY     10
+#define STM32_DAC_DAC2_CH1_IRQ_PRIORITY     10
+#define STM32_DAC_DAC1_CH1_DMA_PRIORITY     2
+#define STM32_DAC_DAC1_CH2_DMA_PRIORITY     2
+#define STM32_DAC_DAC2_CH1_DMA_PRIORITY     2
 
 /*
  * EXT driver system settings.
@@ -114,6 +134,7 @@
 #define STM32_I2C_USE_I2C1                  FALSE
 #define STM32_I2C_BUSY_TIMEOUT              50
 #define STM32_I2C_I2C1_IRQ_PRIORITY         10
+#define STM32_I2C_USE_DMA                   TRUE
 #define STM32_I2C_I2C1_DMA_PRIORITY         1
 #define STM32_I2C_DMA_ERROR_HOOK(i2cp)      osalSysHalt("DMA failure")
 
@@ -175,5 +196,10 @@
 #define STM32_UART_USART2_DMA_PRIORITY      0
 #define STM32_UART_USART3_DMA_PRIORITY      0
 #define STM32_UART_DMA_ERROR_HOOK(uartp)    osalSysHalt("DMA failure")
+
+/*
+ * WDG driver system settings.
+ */
+#define STM32_WDG_USE_IWDG                  FALSE
 
 #endif /* _MCUCONF_H_ */

@@ -165,6 +165,13 @@
 #if !defined(HAL_USE_USB) || defined(__DOXYGEN__)
 #define HAL_USE_USB                 TRUE
 #endif
+
+/**
+ * @brief   Enables the WDG subsystem.
+ */
+#if !defined(HAL_USE_WDG) || defined(__DOXYGEN__)
+#define HAL_USE_WDG                 TRUE
+#endif
 /** @} */
 
 /*===========================================================================*/
@@ -318,7 +325,7 @@
  * @brief   Serial buffers size.
  * @details Configuration parameter, you can change the depth of the queue
  *          buffers depending on the requirements of your application.
- * @note    The default is 64 bytes for both the transmission and receive
+ * @note    The default is 16 bytes for both the transmission and receive
  *          buffers.
  */
 #if !defined(SERIAL_BUFFERS_SIZE) || defined(__DOXYGEN__)
@@ -337,11 +344,19 @@
  * @brief   Serial over USB buffers size.
  * @details Configuration parameter, the buffer size must be a multiple of
  *          the USB data endpoint maximum packet size.
- * @note    The default is 64 bytes for both the transmission and receive
+ * @note    The default is 256 bytes for both the transmission and receive
  *          buffers.
  */
 #if !defined(SERIAL_USB_BUFFERS_SIZE) || defined(__DOXYGEN__)
 #define SERIAL_USB_BUFFERS_SIZE     256
+#endif
+
+/**
+ * @brief   Serial over USB number of buffers.
+ * @note    The default is 2 buffers.
+ */
+#if !defined(SERIAL_USB_BUFFERS_NUMBER) || defined(__DOXYGEN__)
+#define SERIAL_USB_BUFFERS_NUMBER   2
 #endif
 /** @} */
 
@@ -366,6 +381,46 @@
  */
 #if !defined(SPI_USE_MUTUAL_EXCLUSION) || defined(__DOXYGEN__)
 #define SPI_USE_MUTUAL_EXCLUSION    TRUE
+#endif
+/** @} */
+
+/*===========================================================================*/
+/**
+ * @name UART driver related setting
+ * @{
+ */
+/*===========================================================================*/
+
+/**
+ * @brief   Enables synchronous APIs.
+ * @note    Disabling this option saves both code and data space.
+ */
+#if !defined(UART_USE_WAIT) || defined(__DOXYGEN__)
+#define UART_USE_WAIT               TRUE
+#endif
+
+/**
+ * @brief   Enables the @p uartAcquireBus() and @p uartReleaseBus() APIs.
+ * @note    Disabling this option saves both code and data space.
+ */
+#if !defined(UART_USE_MUTUAL_EXCLUSION) || defined(__DOXYGEN__)
+#define UART_USE_MUTUAL_EXCLUSION   TRUE
+#endif
+/** @} */
+
+/*===========================================================================*/
+/**
+ * @name USB driver related setting
+ * @{
+ */
+/*===========================================================================*/
+
+/**
+ * @brief   Enables synchronous APIs.
+ * @note    Disabling this option saves both code and data space.
+ */
+#if !defined(USB_USE_WAIT) || defined(__DOXYGEN__)
+#define USB_USE_WAIT                TRUE
 #endif
 /** @} */
 

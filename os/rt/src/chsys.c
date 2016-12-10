@@ -65,7 +65,7 @@
 static void _idle_thread(void *p) {
 
   (void)p;
-  chRegSetThreadName("idle");
+
   while (true) {
     /*lint -save -e522 [2.2] Apparently no side effects because it contains
       an asm instruction.*/
@@ -128,18 +128,32 @@ void chSysInit(void) {
      adjacent to its stack area.*/
   currp->p_stklimit = &__main_thread_stack_base__;
 #endif
+
+#if CH_DBG_STATISTICS == TRUE
+  /* Starting measurement for this thread.*/
+  chTMStartMeasurementX(&currp->p_stats);
+#endif
+
   chSysEnable();
 
+#if CH_CFG_USE_REGISTRY == TRUE
   /* Note, &ch_debug points to the string "main" if the registry is
-     active, else the parameter is ignored.*/
+     active.*/
   chRegSetThreadName((const char *)&ch_debug);
+#endif
 
 #if CH_CFG_NO_IDLE_THREAD == FALSE
+  {
   /* This thread has the lowest priority in the system, its role is just to
      serve interrupts in its context while keeping the lowest energy saving
      mode compatible with the system status.*/
-  (void) chThdCreateStatic(ch.idle_thread_wa, sizeof(ch.idle_thread_wa),
-                           IDLEPRIO, (tfunc_t)_idle_thread, NULL);
+    thread_t *tp =  chThdCreateStatic(ch.idle_thread_wa,
+                                      sizeof(ch.idle_thread_wa),
+                                      IDLEPRIO,
+                                      (tfunc_t)_idle_thread,
+                                      NULL);
+    chRegSetThreadNameX(tp, "idle");
+  }
 #endif
 }
 

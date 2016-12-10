@@ -118,8 +118,8 @@
  * @api
  */
 #define MS2ST(msec)                                                         \
-  ((systime_t)((((uint32_t)(msec)) *                                        \
-                ((uint32_t)CH_CFG_ST_FREQUENCY) + 999UL) / 1000UL))
+  ((systime_t)(((((uint32_t)(msec)) *                                       \
+                 ((uint32_t)CH_CFG_ST_FREQUENCY)) + 999UL) / 1000UL))
 
 /**
  * @brief   Microseconds to system ticks.
@@ -132,8 +132,8 @@
  * @api
  */
 #define US2ST(usec)                                                         \
-  ((systime_t)((((uint32_t)(usec)) *                                        \
-                ((uint32_t)CH_CFG_ST_FREQUENCY) + 999999UL) / 1000000UL))
+  ((systime_t)(((((uint32_t)(usec)) *                                       \
+                 ((uint32_t)CH_CFG_ST_FREQUENCY)) + 999999UL) / 1000000UL))
 
 /**
  * @brief   System ticks to seconds.
@@ -285,7 +285,7 @@ static inline bool chVTIsTimeWithinX(systime_t time,
                                      systime_t start,
                                      systime_t end) {
 
-  return (bool)((time - start) < (end - start));
+  return (bool)((systime_t)(time - start) < (systime_t)(end - start));
 }
 
 /**
@@ -322,6 +322,42 @@ static inline bool chVTIsSystemTimeWithinX(systime_t start, systime_t end) {
 static inline bool chVTIsSystemTimeWithin(systime_t start, systime_t end) {
 
   return chVTIsTimeWithinX(chVTGetSystemTime(), start, end);
+}
+
+/**
+ * @brief   Returns the time interval until the next timer event.
+ * @note    The return value is not perfectly accurate and can report values
+ *          in excess of @p CH_CFG_ST_TIMEDELTA ticks.
+ * @note    The interval returned by this function is only meaningful if
+ *          more timers are not added to the list until the returned time.
+ *
+ * @param[out] timep    pointer to a variable that will contain the time
+ *                      interval until the next timer elapses. This pointer
+ *                      can be @p NULL if the information is not required.
+ * @return              The time, in ticks, until next time event.
+ * @retval false        if the timers list is empty.
+ * @retval true         if the timers list contains at least one timer.
+ *
+ * @iclass
+ */
+static inline bool chVTGetTimersStateI(systime_t *timep) {
+
+  chDbgCheckClassI();
+
+  if (&ch.vtlist == (virtual_timers_list_t *)ch.vtlist.vt_next) {
+    return false;
+  }
+
+  if (timep != NULL) {
+#if CH_CFG_ST_TIMEDELTA == 0
+    *timep = ch.vtlist.vt_next->vt_delta;
+#else
+    *timep = ch.vtlist.vt_lasttime + ch.vtlist.vt_next->vt_delta +
+             CH_CFG_ST_TIMEDELTA - chVTGetSystemTimeX();
+#endif
+  }
+
+  return true;
 }
 
 /**

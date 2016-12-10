@@ -1,11 +1,10 @@
 
 *** ChibiOS/RT test suite
 ***
-*** Kernel:       3.0.0p3
-*** Compiled:     Apr 13 2015 - 21:27:30
-*** Compiler:     GCC 4.9.3 20150303 (release) [ARM/embedded-4_9-branch revision
- 221220]
-*** Architecture: ARMv7-ME
+*** Kernel:       3.1.0
+*** Compiled:     Jan  6 2016 - 11:01:25
+*** Compiler:     GCC 4.9.3 20150529 (release) [ARM/embedded-4_9-branch revision 227977]
+*** Architecture: ARMv7E-M
 *** Core Variant: Cortex-M4F
 *** Port Info:    Advanced kernel mode
 *** Platform:     STM32F303xC Analog & DSP
@@ -120,7 +119,7 @@
 --- Result: SUCCESS
 ----------------------------------------------------------------------------
 --- Test Case 12.6 (Benchmark, threads, create only)
---- Score : 193008 threads/S
+--- Score : 193007 threads/S
 --- Result: SUCCESS
 ----------------------------------------------------------------------------
 --- Test Case 12.7 (Benchmark, mass reschedule, 5 threads)
@@ -132,7 +131,7 @@
 --- Result: SUCCESS
 ----------------------------------------------------------------------------
 --- Test Case 12.9 (Benchmark, I/O Queues throughput)
---- Score : 616632 bytes/S
+--- Score : 619284 bytes/S
 --- Result: SUCCESS
 ----------------------------------------------------------------------------
 --- Test Case 12.10 (Benchmark, virtual timers set/reset)
@@ -162,3 +161,4 @@
 ----------------------------------------------------------------------------
 
 Final result: SUCCESS
+

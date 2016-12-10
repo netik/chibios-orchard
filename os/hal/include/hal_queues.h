@@ -49,7 +49,7 @@ typedef struct io_queue io_queue_t;
 /**
  * @brief   Queue notification callback type.
  *
- * @param[in] qp        the queue pointer.
+ * @param[in] qp        the queue pointer
  */
 typedef void (*qnotify_t)(io_queue_t *qp);
 
@@ -62,8 +62,8 @@ typedef void (*qnotify_t)(io_queue_t *qp);
  *          lock zone and is non-blocking.
  */
 struct io_queue {
-  threads_queue_t       q_waiting;  /**< @brief Waiting thread.             */
-  size_t                q_counter;  /**< @brief Resources counter.          */
+  threads_queue_t       q_waiting;  /**< @brief Queue of waiting threads.   */
+  volatile size_t       q_counter;  /**< @brief Resources counter.          */
   uint8_t               *q_buffer;  /**< @brief Pointer to the queue buffer.*/
   uint8_t               *q_top;     /**< @brief Pointer to the first
                                          location after the buffer.         */
@@ -80,7 +80,7 @@ struct io_queue {
 /**
  * @brief   Returns the queue's buffer size.
  *
- * @param[in] qp        pointer to a @p io_queue_t structure.
+ * @param[in] qp        pointer to a @p io_queue_t structure
  * @return              The buffer size.
  *
  * @xclass
@@ -95,7 +95,7 @@ struct io_queue {
  * @details Returns the used space if used on an input queue or the empty
  *          space if used on an output queue.
  *
- * @param[in] qp        pointer to a @p io_queue_t structure.
+ * @param[in] qp        pointer to a @p io_queue_t structure
  * @return              The buffer space.
  *
  * @iclass
@@ -106,7 +106,7 @@ struct io_queue {
  * @brief   Returns the queue application-defined link.
  * @note    This function can be called in any context.
  *
- * @param[in] qp        pointer to a @p io_queue_t structure.
+ * @param[in] qp        pointer to a @p io_queue_t structure
  * @return              The application-defined link.
  *
  * @special
@@ -153,29 +153,31 @@ typedef io_queue_t input_queue_t;
 #define iqGetEmptyI(iqp) (qSizeX(iqp) - qSpaceI(iqp))
 
 /**
- * @brief   Evaluates to @p TRUE if the specified input queue is empty.
+ * @brief   Evaluates to @p true if the specified input queue is empty.
  *
- * @param[in] iqp       pointer to an @p input_queue_t structure.
+ * @param[in] iqp       pointer to an @p input_queue_t structure
  * @return              The queue status.
- * @retval FALSE        if the queue is not empty.
- * @retval TRUE         if the queue is empty.
+ * @retval false        if the queue is not empty.
+ * @retval true         if the queue is empty.
  *
  * @iclass
  */
 #define iqIsEmptyI(iqp) ((bool)(qSpaceI(iqp) == 0U))
 
 /**
- * @brief   Evaluates to @p TRUE if the specified input queue is full.
+ * @brief   Evaluates to @p true if the specified input queue is full.
  *
- * @param[in] iqp       pointer to an @p input_queue_t structure.
+ * @param[in] iqp       pointer to an @p input_queue_t structure
  * @return              The queue status.
- * @retval FALSE        if the queue is not full.
- * @retval TRUE         if the queue is full.
+ * @retval false        if the queue is not full.
+ * @retval true         if the queue is full.
  *
  * @iclass
  */
-#define iqIsFullI(iqp) ((bool)(((iqp)->q_wrptr == (iqp)->q_rdptr) &&        \
-                               ((iqp)->q_counter != 0U)))
+#define iqIsFullI(iqp)                                                      \
+  /*lint -save -e9007 [13.5] No side effects, a pointer is passed.*/        \
+  ((bool)(((iqp)->q_wrptr == (iqp)->q_rdptr) && ((iqp)->q_counter != 0U)))  \
+  /*lint -restore*/
 
 /**
  * @brief   Input queue read.
@@ -191,42 +193,6 @@ typedef io_queue_t input_queue_t;
  */
 #define iqGet(iqp) iqGetTimeout(iqp, TIME_INFINITE)
 /** @} */
-
-/**
- * @brief   Data part of a static input queue initializer.
- * @details This macro should be used when statically initializing an
- *          input queue that is part of a bigger structure.
- *
- * @param[in] name      the name of the input queue variable
- * @param[in] buffer    pointer to the queue buffer area
- * @param[in] size      size of the queue buffer area
- * @param[in] inotify   input notification callback pointer
- * @param[in] link      application defined pointer
- */
-#define _INPUTQUEUE_DATA(name, buffer, size, inotify, link) {               \
-  NULL,                                                                     \
-  0U,                                                                       \
-  (uint8_t *)(buffer),                                                      \
-  (uint8_t *)(buffer) + (size),                                             \
-  (uint8_t *)(buffer),                                                      \
-  (uint8_t *)(buffer),                                                      \
-  (inotify),                                                                \
-  (link)                                                                    \
-}
-
-/**
- * @brief   Static input queue initializer.
- * @details Statically initialized input queues require no explicit
- *          initialization using @p iqInit().
- *
- * @param[in] name      the name of the input queue variable
- * @param[in] buffer    pointer to the queue buffer area
- * @param[in] size      size of the queue buffer area
- * @param[in] inotify   input notification callback pointer
- * @param[in] link      application defined pointer
- */
-#define INPUTQUEUE_DECL(name, buffer, size, inotify, link)                  \
-  input_queue_t name = _INPUTQUEUE_DATA(name, buffer, size, inotify, link)
 
 /**
  * @extends io_queue_t
@@ -267,25 +233,27 @@ typedef io_queue_t output_queue_t;
 #define oqGetEmptyI(oqp) qSpaceI(oqp)
 
 /**
- * @brief   Evaluates to @p TRUE if the specified output queue is empty.
+ * @brief   Evaluates to @p true if the specified output queue is empty.
  *
- * @param[in] oqp       pointer to an @p output_queue_t structure.
+ * @param[in] oqp       pointer to an @p output_queue_t structure
  * @return              The queue status.
- * @retval FALSE        if the queue is not empty.
- * @retval TRUE         if the queue is empty.
+ * @retval false        if the queue is not empty.
+ * @retval true         if the queue is empty.
  *
  * @iclass
  */
-#define oqIsEmptyI(oqp) ((bool)(((oqp)->q_wrptr == (oqp)->q_rdptr) &&       \
-                                ((oqp)->q_counter != 0U)))
+#define oqIsEmptyI(oqp)                                                     \
+  /*lint -save -e9007 [13.5] No side effects, a pointer is passed.*/        \
+  ((bool)(((oqp)->q_wrptr == (oqp)->q_rdptr) && ((oqp)->q_counter != 0U)))  \
+  /*lint -restore*/
 
 /**
- * @brief   Evaluates to @p TRUE if the specified output queue is full.
+ * @brief   Evaluates to @p true if the specified output queue is full.
  *
- * @param[in] oqp       pointer to an @p output_queue_t structure.
+ * @param[in] oqp       pointer to an @p output_queue_t structure
  * @return              The queue status.
- * @retval FALSE        if the queue is not full.
- * @retval TRUE         if the queue is full.
+ * @retval false        if the queue is not full.
+ * @retval true         if the queue is full.
  *
  * @iclass
  */
@@ -307,42 +275,6 @@ typedef io_queue_t output_queue_t;
  */
 #define oqPut(oqp, b) oqPutTimeout(oqp, b, TIME_INFINITE)
  /** @} */
-
-/**
- * @brief   Data part of a static output queue initializer.
- * @details This macro should be used when statically initializing an
- *          output queue that is part of a bigger structure.
- *
- * @param[in] name      the name of the output queue variable
- * @param[in] buffer    pointer to the queue buffer area
- * @param[in] size      size of the queue buffer area
- * @param[in] onotify   output notification callback pointer
- * @param[in] link      application defined pointer
- */
-#define _OUTPUTQUEUE_DATA(name, buffer, size, onotify, link) {              \
-  NULL,                                                                     \
-  (size),                                                                   \
-  (uint8_t *)(buffer),                                                      \
-  (uint8_t *)(buffer) + (size),                                             \
-  (uint8_t *)(buffer),                                                      \
-  (uint8_t *)(buffer),                                                      \
-  (onotify),                                                                \
-  (link)                                                                    \
-}
-
-/**
- * @brief   Static output queue initializer.
- * @details Statically initialized output queues require no explicit
- *          initialization using @p oqInit().
- *
- * @param[in] name      the name of the output queue variable
- * @param[in] buffer    pointer to the queue buffer area
- * @param[in] size      size of the queue buffer area
- * @param[in] onotify   output notification callback pointer
- * @param[in] link      application defined pointer
- */
-#define OUTPUTQUEUE_DECL(name, buffer, size, onotify, link)                 \
-  output_queue_t name = _OUTPUTQUEUE_DATA(name, buffer, size, onotify, link)
 
 #ifdef __cplusplus
 extern "C" {

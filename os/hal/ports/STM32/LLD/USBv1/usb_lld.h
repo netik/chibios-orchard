@@ -88,6 +88,23 @@
 #define STM32_USB_USB1_LP_IRQ_PRIORITY      14
 #endif
 
+/**
+ * @brief   Enables isochronous support.
+ * @note    Isochronous support requires special handling and this makes the
+ *          code size increase significantly.
+ */
+#if !defined(STM32_USB_USE_ISOCHRONOUS) || defined(__DOXYGEN__)
+#define STM32_USB_USE_ISOCHRONOUS           FALSE
+#endif
+
+/**
+ * @brief   Use faster copy for packets.
+ * @note    Makes the driver larger.
+ */
+#if !defined(STM32_USB_USE_FAST_COPY) || defined(__DOXYGEN__)
+#define STM32_USB_USE_FAST_COPY             FALSE
+#endif
+
 /*===========================================================================*/
 /* Derived constants and error checks.                                       */
 /*===========================================================================*/
@@ -140,10 +157,6 @@
  */
 typedef struct {
   /**
-   * @brief   Buffer mode, queue or linear.
-   */
-  bool                          txqueued;
-  /**
    * @brief   Requested transmit transfer size.
    */
   size_t                        txsize;
@@ -151,31 +164,27 @@ typedef struct {
    * @brief   Transmitted bytes so far.
    */
   size_t                        txcnt;
-  union {
-    struct {
-      /**
-       * @brief   Pointer to the transmission linear buffer.
-       */
-      const uint8_t             *txbuf;
-    } linear;
-    struct {
-      /**
-       * @brief   Pointer to the output queue.
-       */
-      output_queue_t            *txqueue;
-    } queue;
-    /* End of the mandatory fields.*/
-  } mode;
+  /**
+   * @brief   Pointer to the transmission linear buffer.
+   */
+  const uint8_t                 *txbuf;
+#if (USB_USE_WAIT == TRUE) || defined(__DOXYGEN__)
+  /**
+   * @brief   Waiting thread.
+   */
+  thread_reference_t            thread;
+#endif
+  /* End of the mandatory fields.*/
+  /**
+   * @brief   Size of the last transmitted packet.
+   */
+  size_t                        txlast;
 } USBInEndpointState;
 
 /**
  * @brief   Type of an OUT endpoint state structure.
  */
 typedef struct {
-  /**
-   * @brief   Buffer mode, queue or linear.
-   */
-  bool                          rxqueued;
   /**
    * @brief   Requested receive transfer size.
    */
@@ -184,20 +193,16 @@ typedef struct {
    * @brief   Received bytes so far.
    */
   size_t                        rxcnt;
-  union {
-    struct {
-      /**
-       * @brief   Pointer to the receive linear buffer.
-       */
-      uint8_t                   *rxbuf;
-    } linear;
-    struct {
-      /**
-       * @brief   Pointer to the input queue.
-       */
-      input_queue_t            *rxqueue;
-    } queue;
-  } mode;
+  /**
+   * @brief   Pointer to the receive linear buffer.
+   */
+  uint8_t                       *rxbuf;
+#if (USB_USE_WAIT == TRUE) || defined(__DOXYGEN__)
+  /**
+   * @brief   Waiting thread.
+   */
+  thread_reference_t            thread;
+#endif
   /* End of the mandatory fields.*/
   /**
    * @brief   Number of packets to receive.
@@ -227,36 +232,34 @@ typedef struct {
   usbepcallback_t               setup_cb;
   /**
    * @brief   IN endpoint notification callback.
-   * @details This field must be set to @p NULL if the IN endpoint is not
-   *          used.
+   * @details This field must be set to @p NULL if callback is not required.
    */
   usbepcallback_t               in_cb;
   /**
    * @brief   OUT endpoint notification callback.
-   * @details This field must be set to @p NULL if the OUT endpoint is not
-   *          used.
+   * @details This field must be set to @p NULL if callback is not required.
    */
   usbepcallback_t               out_cb;
   /**
    * @brief   IN endpoint maximum packet size.
-   * @details This field must be set to zero if the IN endpoint is not
-   *          used.
+   * @details This field must be set to zero if the IN endpoint is not used.
    */
   uint16_t                      in_maxsize;
   /**
    * @brief   OUT endpoint maximum packet size.
-   * @details This field must be set to zero if the OUT endpoint is not
-   *          used.
+   * @details This field must be set to zero if the OUT endpoint is not used.
    */
   uint16_t                      out_maxsize;
   /**
    * @brief   @p USBEndpointState associated to the IN endpoint.
-   * @details This structure maintains the state of the IN endpoint.
+   * @details This field must be set to @p NULL if the IN endpoint is not
+   *          used.
    */
   USBInEndpointState            *in_state;
   /**
    * @brief   @p USBEndpointState associated to the OUT endpoint.
-   * @details This structure maintains the state of the OUT endpoint.
+   * @details This field must be set to @p NULL if the OUT endpoint is not
+   *          used.
    */
   USBOutEndpointState           *out_state;
   /* End of the mandatory fields.*/
@@ -370,6 +373,10 @@ struct USBDriver {
    * @brief   Current USB device configuration.
    */
   uint8_t                       configuration;
+  /**
+   * @brief   State of the driver when a suspend happened.
+   */
+  usbstate_t                    saved_state;
 #if defined(USB_DRIVER_EXT_FIELDS)
   USB_DRIVER_EXT_FIELDS
 #endif
@@ -431,6 +438,16 @@ struct USBDriver {
 #endif
 #endif /* STM32_USB_HAS_BCDR */
 
+#if defined(STM32L1XX)
+#if !defined(usb_lld_connect_bus)
+#define usb_lld_connect_bus(usbp) (SYSCFG->PMC |= SYSCFG_PMC_USB_PU)
+#endif
+
+#if !defined(usb_lld_disconnect_bus)
+#define usb_lld_disconnect_bus(usbp) (SYSCFG->PMC &= ~SYSCFG_PMC_USB_PU)
+#endif
+#endif /* STM32L1XX */
+
 /*===========================================================================*/
 /* External declarations.                                                    */
 /*===========================================================================*/
@@ -452,8 +469,6 @@ extern "C" {
   usbepstatus_t usb_lld_get_status_in(USBDriver *usbp, usbep_t ep);
   usbepstatus_t usb_lld_get_status_out(USBDriver *usbp, usbep_t ep);
   void usb_lld_read_setup(USBDriver *usbp, usbep_t ep, uint8_t *buf);
-  void usb_lld_prepare_receive(USBDriver *usbp, usbep_t ep);
-  void usb_lld_prepare_transmit(USBDriver *usbp, usbep_t ep);
   void usb_lld_start_out(USBDriver *usbp, usbep_t ep);
   void usb_lld_start_in(USBDriver *usbp, usbep_t ep);
   void usb_lld_stall_out(USBDriver *usbp, usbep_t ep);

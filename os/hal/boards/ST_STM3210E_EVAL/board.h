@@ -39,7 +39,7 @@
  *       verify the STM32 model mounted on your board. The change also
  *       affects your linker script.
  */
-#define STM32F10X_XL
+#define STM32F103xG
 
 /*
  * IO pins assignments.
@@ -237,6 +237,16 @@
                          PIN_INPUT(14)          | /* Joy Left.          */  \
                          PIN_INPUT(15))           /* Joy Up.            */
 #define VAL_GPIOGODR    0xFFFFF7FF
+
+/*
+ * USB bus activation macro, required by the USB driver.
+ */
+#define usb_lld_connect_bus(usbp) palClearPad(GPIOB, GPIOB_USB_DISC)
+
+/*
+ * USB bus de-activation macro, required by the USB driver.
+ */
+#define usb_lld_disconnect_bus(usbp) palSetPad(GPIOB, GPIOB_USB_DISC)
 
 #if !defined(_FROM_ASM_)
 #ifdef __cplusplus

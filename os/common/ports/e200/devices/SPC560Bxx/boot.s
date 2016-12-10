@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -153,37 +150,37 @@ _ivinit:
 
         .globl      IVORS
 IVORS:
-IVOR0:  b           IVOR0
+        b           _IVOR0
         .align      4
-IVOR1:  b           _IVOR1
+        b           _IVOR1
         .align      4
-IVOR2:  b           _IVOR2
+        b           _IVOR2
         .align      4
-IVOR3:  b           _IVOR3
+        b           _IVOR3
         .align      4
-IVOR4:  b           _IVOR4
+        b           _IVOR4
         .align      4
-IVOR5:  b           _IVOR5
+        b           _IVOR5
         .align      4
-IVOR6:  b           _IVOR6
+        b           _IVOR6
         .align      4
-IVOR7:  b           _IVOR7
+        b           _IVOR7
         .align      4
-IVOR8:  b           _IVOR8
+        b           _IVOR8
         .align      4
-IVOR9:  b           _IVOR9
+        b           _IVOR9
         .align      4
-IVOR10: b           _IVOR10
+        b           _IVOR10
         .align      4
-IVOR11: b           _IVOR11
+        b           _IVOR11
         .align      4
-IVOR12: b           _IVOR12
+        b           _IVOR12
         .align      4
-IVOR13: b           _IVOR13
+        b           _IVOR13
         .align      4
-IVOR14: b           _IVOR14
+        b           _IVOR14
         .align      4
-IVOR15: b           _IVOR15
+        b           _IVOR15
 
         .section    .handlers, "ax"
 
@@ -194,7 +191,6 @@ IVOR15: b           _IVOR15
         .weak       _IVOR0,  _IVOR1,  _IVOR2,  _IVOR3,  _IVOR4,  _IVOR5
         .weak       _IVOR6,  _IVOR7,  _IVOR8,  _IVOR9,  _IVOR10, _IVOR11
         .weak       _IVOR12, _IVOR13, _IVOR14, _IVOR15
-        .weak       _unhandled_exception
 _IVOR0:
 _IVOR1:
 _IVOR2:
@@ -209,6 +205,7 @@ _IVOR12:
 _IVOR13:
 _IVOR14:
 _IVOR15:
+        .global     _unhandled_exception
 _unhandled_exception:
         b           _unhandled_exception
 

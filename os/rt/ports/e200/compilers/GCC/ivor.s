@@ -41,11 +41,6 @@
 #include "chcore.h"
 
 #if !defined(__DOXYGEN__)
-        /*
-         * INTC registers address.
-         */
-        .equ  INTC_IACKR, 0xfff48010
-        .equ  INTC_EOIR,  0xfff48018
 
         .section    .handlers, "ax"
 
@@ -98,10 +93,13 @@ _IVOR10:
         lis         %r3, 0x0800             /* DIS bit mask.                */
         mtspr       336, %r3                /* TSR register.                */
 
-#if PPC_USE_IRQ_PREEMPTION
-        /* Allows preemption while executing the software handler.*/
-        wrteei      1
+        /* Restoring pre-IRQ MSR register value.*/
+        mfSRR1      %r0
+#if !PPC_USE_IRQ_PREEMPTION
+        /* No preemption, keeping EE disabled.*/
+        se_bclri    %r0, 16                 /* EE = bit 16.                 */
 #endif
+        mtMSR       %r0
 
 #if CH_DBG_SYSTEM_STATE_CHECK
         bl          _dbg_check_enter_isr
@@ -168,16 +166,19 @@ _IVOR4:
         mtspr       272, %r0
 
         /* Software vector address from the INTC register.*/
-        lis         %r3, INTC_IACKR@h
-        ori         %r3, %r3, INTC_IACKR@l  /* IACKR register address.      */
+        lis         %r3, INTC_IACKR_ADDR@h
+        ori         %r3, %r3, INTC_IACKR_ADDR@l /* IACKR register address.  */
         lwz         %r3, 0(%r3)             /* IACKR register value.        */
         lwz         %r3, 0(%r3)
         mtCTR       %r3                     /* Software handler address.    */
 
-#if PPC_USE_IRQ_PREEMPTION
-        /* Allows preemption while executing the software handler.*/
-        wrteei      1
+        /* Restoring pre-IRQ MSR register value.*/
+        mfSRR1      %r0
+#if !PPC_USE_IRQ_PREEMPTION
+        /* No preemption, keeping EE disabled.*/
+        se_bclri    %r0, 16                 /* EE = bit 16.                 */
 #endif
+        mtMSR       %r0
 
         /* Exectes the software handler.*/
         bctrl
@@ -189,8 +190,8 @@ _IVOR4:
 
         /* Informs the INTC that the interrupt has been served.*/
         mbar        0
-        lis         %r3, INTC_EOIR@h
-        ori         %r3, %r3, INTC_EOIR@l
+        lis         %r3, INTC_EOIR_ADDR@h
+        ori         %r3, %r3, INTC_EOIR_ADDR@l
         stw         %r3, 0(%r3)             /* Writing any value should do. */
 
         /* Common IVOR epilogue code, context restore.*/

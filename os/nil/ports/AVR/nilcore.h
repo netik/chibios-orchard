@@ -123,15 +123,6 @@
 #if !defined(_FROM_ASM_)
 
 /**
- * @brief   Type of system time.
- */
-#if (NIL_CFG_ST_RESOLUTION == 32) || defined(__DOXYGEN__)
-typedef uint32_t systime_t;
-#else
-typedef uint16_t systime_t;
-#endif
-
-/**
  * @brief   Type of stack and memory alignment enforcement.
  */
 typedef uint8_t stkalign_t;
@@ -161,6 +152,9 @@ struct port_intctx {
   uint8_t       r4;
   uint8_t       r3;
   uint8_t       r2;
+#ifdef __AVR_3_BYTE_PC__
+  uint8_t       pcx;
+#endif
   uint8_t       pcl;
   uint8_t       pch;
 };
@@ -176,6 +170,19 @@ struct port_intctx {
  * @details This code usually setup the context switching frame represented
  *          by an @p port_intctx structure.
  */
+#ifdef __AVR_3_BYTE_PC__
+#define PORT_SETUP_CONTEXT(tp, wend, pf, arg) {                             \
+    (tp)->ctxp = (struct port_intctx*)(((uint8_t *)(wend)) -                \
+                                         sizeof(struct port_intctx));       \
+    (tp)->ctxp->r2  = (int)pf;                                              \
+    (tp)->ctxp->r3  = (int)pf >> 8;                                         \
+    (tp)->ctxp->r4  = (int)arg;                                             \
+    (tp)->ctxp->r5  = (int)arg >> 8;                                        \
+    (tp)->ctxp->pcx = (int)0;                                               \
+    (tp)->ctxp->pcl = (int)_port_thread_start >> 8;                         \
+    (tp)->ctxp->pch = (int)_port_thread_start;                              \
+}
+#else /* __AVR_3_BYTE_PC__ */
 #define PORT_SETUP_CONTEXT(tp, wend, pf, arg) {                             \
     (tp)->ctxp = (struct port_intctx*)(((uint8_t *)(wend)) -                \
                                          sizeof(struct port_intctx));       \
@@ -186,7 +193,7 @@ struct port_intctx {
     (tp)->ctxp->pcl = (int)_port_thread_start >> 8;                         \
     (tp)->ctxp->pch = (int)_port_thread_start;                              \
 }
-
+#endif /* __AVR_3_BYTE_PC__ */
 /**
  * @brief   Computes the thread working area global size.
  * @note    There is no need to perform alignments in this macro.

@@ -76,7 +76,7 @@
 #define CH_STATE_SNDMSGQ    (tstate_t)12     /**< @brief Sending a message,
                                                   in queue.                 */
 #define CH_STATE_SNDMSG     (tstate_t)13     /**< @brief Sent a message,
-                                                  waiting answer.          */
+                                                  waiting answer.           */
 #define CH_STATE_WTMSG      (tstate_t)14     /**< @brief Waiting for a
                                                   message.                  */
 #define CH_STATE_FINAL      (tstate_t)15     /**< @brief Thread terminated. */
@@ -180,7 +180,7 @@ struct ch_threads_list {
 /**
  * @brief   Generic threads bidirectional linked list header and element.
  */
-struct ch_threads_queue{
+struct ch_threads_queue {
   thread_t              *p_next;    /**< @brief Next in the list/queue.     */
   thread_t              *p_prev;    /**< @brief Previous in the queue.      */
 };
@@ -476,7 +476,7 @@ struct ch_system {
    */
   kernel_stats_t        kernel_stats;
 #endif
-#if CH_CFG_NO_IDLE_THREAD == FALSE
+#if (CH_CFG_NO_IDLE_THREAD == FALSE) || defined(__DOXYGEN__)
   /**
    * @brief   Idle thread working area.
    */
@@ -770,7 +770,7 @@ static inline void chSchPreemption(void) {
     }
   }
 #else /* CH_CFG_TIME_QUANTUM == 0 */
-  if (p1 >= p2) {
+  if (p1 > p2) {
     chSchDoRescheduleAhead();
   }
 #endif /* CH_CFG_TIME_QUANTUM == 0 */

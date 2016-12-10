@@ -181,8 +181,10 @@ struct port_intctx {};
 /* Includes the sub-architecture-specific part.*/
 #if (CORTEX_MODEL == 0) || (CORTEX_MODEL == 1)
 #include "nilcore_v6m.h"
-#elif (CORTEX_MODEL == 3) || (CORTEX_MODEL == 4)
+#elif (CORTEX_MODEL == 3) || (CORTEX_MODEL == 4) || (CORTEX_MODEL == 7)
 #include "nilcore_v7m.h"
+#else
+#error "unknown Cortex-M variant"
 #endif
 
 #if !defined(_FROM_ASM_)

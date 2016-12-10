@@ -170,16 +170,21 @@ PRE_MAKE_ALL_RULE_HOOK:
 
 POST_MAKE_ALL_RULE_HOOK:
 
-$(OBJS): | $(BUILDDIR)
+$(OBJS): | $(BUILDDIR) $(OBJDIR) $(LSTDIR)
 
-$(BUILDDIR) $(OBJDIR) $(LSTDIR):
+$(BUILDDIR):
 ifneq ($(USE_VERBOSE_COMPILE),yes)
 	@echo Compiler Options
 	@echo $(CC) -c $(CFLAGS) -I. $(IINCDIR) main.c -o main.o
 	@echo
 endif
-	mkdir -p $(OBJDIR)
-	mkdir -p $(LSTDIR)
+	@mkdir -p $(BUILDDIR)
+
+$(OBJDIR):
+	@mkdir -p $(OBJDIR)
+
+$(LSTDIR):
+	@mkdir -p $(LSTDIR)
 
 $(ACPPOBJS) : $(OBJDIR)/%.o : %.cpp Makefile
 ifeq ($(USE_VERBOSE_COMPILE),yes)
@@ -235,7 +240,7 @@ else
 	@$(CC) -c $(ASXFLAGS) $(TOPT) -I. $(IINCDIR) $< -o $@
 endif
 
-%.elf: $(OBJS) $(LDSCRIPT)
+$(BUILDDIR)/$(PROJECT).elf: $(OBJS) $(LDSCRIPT)
 ifeq ($(USE_VERBOSE_COMPILE),yes)
 	@echo
 	$(LD) $(OBJS) $(LDFLAGS) $(LIBS) -o $@
@@ -244,7 +249,7 @@ else
 	@$(LD) $(OBJS) $(LDFLAGS) $(LIBS) -o $@
 endif
 
-%.hex: %.elf $(LDSCRIPT)
+%.hex: %.elf
 ifeq ($(USE_VERBOSE_COMPILE),yes)
 	$(HEX) $< $@
 else
@@ -252,7 +257,7 @@ else
 	@$(HEX) $< $@
 endif
 
-%.bin: %.elf $(LDSCRIPT)
+%.bin: %.elf
 ifeq ($(USE_VERBOSE_COMPILE),yes)
 	$(BIN) $< $@
 else
@@ -260,7 +265,7 @@ else
 	@$(BIN) $< $@
 endif
 
-%.dmp: %.elf $(LDSCRIPT)
+%.dmp: %.elf
 ifeq ($(USE_VERBOSE_COMPILE),yes)
 	$(OD) $(ODFLAGS) $< > $@
 	$(SZ) $<
@@ -271,7 +276,7 @@ else
 	@$(SZ) $<
 endif
 
-%.list: %.elf $(LDSCRIPT)
+%.list: %.elf
 ifeq ($(USE_VERBOSE_COMPILE),yes)
 	$(OD) -S $< > $@
 else

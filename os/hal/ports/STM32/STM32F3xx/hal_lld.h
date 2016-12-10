@@ -29,12 +29,15 @@
  *          - STM32F301x8 for Analog & DSP devices.
  *          - STM32F302x8 for Analog & DSP devices.
  *          - STM32F302xC for Analog & DSP devices.
+ *          - STM32F302xE for Analog & DSP devices.
  *          - STM32F303x8 for Analog & DSP devices.
  *          - STM32F303xC for Analog & DSP devices.
+ *          - STM32F303xE for Analog & DSP devices.
  *          - STM32F318xx for Analog & DSP devices.
  *          - STM32F328xx for Analog & DSP devices.
  *          - STM32F334x8 for Analog & DSP devices.
  *          - STM32F358xx for Analog & DSP devices.
+ *          - STM32F398xx for Analog & DSP devices.
  *          .
  *
  * @addtogroup HAL
@@ -63,11 +66,17 @@
 #elif defined(STM32F302xC)
 #define PLATFORM_NAME           "STM32F302xC Analog & DSP"
 
+#elif defined(STM32F302xE)
+#define PLATFORM_NAME           "STM32F302xE Analog & DSP"
+
 #elif defined(STM32F303x8)
 #define PLATFORM_NAME           "STM32F303x8 Analog & DSP"
 
 #elif defined(STM32F303xC)
 #define PLATFORM_NAME           "STM32F303xC Analog & DSP"
+
+#elif defined(STM32F303xE)
+#define PLATFORM_NAME           "STM32F303xE Analog & DSP"
 
 #elif defined(STM32F318xx)
 #define PLATFORM_NAME           "STM32F318xx Analog & DSP"
@@ -80,6 +89,9 @@
 
 #elif defined(STM32F358xx)
 #define PLATFORM_NAME           "STM32F358xx Analog & DSP"
+
+#elif defined(STM32F398xx)
+#define PLATFORM_NAME           "STM32F398xx Analog & DSP"
 
 #else
 #error "STM32F3xx device not specified"
@@ -588,14 +600,6 @@
 #error "HSI not enabled, required by STM32_I2C2SW"
 #endif
 
-#if STM32_TIM1SW == STM32_TIM1SW_HSI
-#error "HSI not enabled, required by STM32_TIM1SW"
-#endif
-
-#if STM32_TIM8SW == STM32_TIM8SW_HSI
-#error "HSI not enabled, required by STM32_TIM8SW"
-#endif
-
 #if (STM32_SW == STM32_SW_PLL) && (STM32_PLLSRC == STM32_PLLSRC_HSI)
 #error "HSI not enabled, required by STM32_SW and STM32_PLLSRC"
 #endif
@@ -905,7 +909,7 @@
 /**
  * @brief   ADC34 frequency.
  */
-#if (STM32_ADC43PRES == STM32_ADC34PRES_NOCLOCK) || defined(__DOXYGEN__)
+#if (STM32_ADC34PRES == STM32_ADC34PRES_NOCLOCK) || defined(__DOXYGEN__)
 #define STM32_ADC34CLK              0
 #elif STM32_ADC34PRES == STM32_ADC34PRES_DIV1
 #define STM32_ADC34CLK              (STM32_PLLCLKOUT / 1)
@@ -974,9 +978,9 @@
 #define STM32_USART1CLK             STM32_PCLK2
 #elif STM32_USART1SW == STM32_USART1SW_SYSCLK
 #define STM32_USART1CLK             STM32_SYSCLK
-#elif STM32_USART1SW == STM32_USART1SW_LSECLK
+#elif STM32_USART1SW == STM32_USART1SW_LSE
 #define STM32_USART1CLK             STM32_LSECLK
-#elif STM32_USART1SW == STM32_USART1SW_HSICLK
+#elif STM32_USART1SW == STM32_USART1SW_HSI
 #define STM32_USART1CLK             STM32_HSICLK
 #else
 #error "invalid source selected for USART1 clock"
@@ -989,9 +993,9 @@
 #define STM32_USART2CLK             STM32_PCLK1
 #elif STM32_USART2SW == STM32_USART2SW_SYSCLK
 #define STM32_USART2CLK             STM32_SYSCLK
-#elif STM32_USART2SW == STM32_USART2SW_LSECLK
+#elif STM32_USART2SW == STM32_USART2SW_LSE
 #define STM32_USART2CLK             STM32_LSECLK
-#elif STM32_USART2SW == STM32_USART2SW_HSICLK
+#elif STM32_USART2SW == STM32_USART2SW_HSI
 #define STM32_USART2CLK             STM32_HSICLK
 #else
 #error "invalid source selected for USART2 clock"
@@ -1004,9 +1008,9 @@
 #define STM32_USART3CLK             STM32_PCLK1
 #elif STM32_USART3SW == STM32_USART3SW_SYSCLK
 #define STM32_USART3CLK             STM32_SYSCLK
-#elif STM32_USART3SW == STM32_USART3SW_LSECLK
+#elif STM32_USART3SW == STM32_USART3SW_LSE
 #define STM32_USART3CLK             STM32_LSECLK
-#elif STM32_USART3SW == STM32_USART3SW_HSICLK
+#elif STM32_USART3SW == STM32_USART3SW_HSI
 #define STM32_USART3CLK             STM32_HSICLK
 #else
 #error "invalid source selected for USART3 clock"
@@ -1019,9 +1023,9 @@
 #define STM32_UART4CLK             STM32_PCLK1
 #elif STM32_UART4SW == STM32_UART4SW_SYSCLK
 #define STM32_UART4CLK             STM32_SYSCLK
-#elif STM32_UART4SW == STM32_UART4SW_LSECLK
+#elif STM32_UART4SW == STM32_UART4SW_LSE
 #define STM32_UART4CLK             STM32_LSECLK
-#elif STM32_UART4SW == STM32_UART4SW_HSICLK
+#elif STM32_UART4SW == STM32_UART4SW_HSI
 #define STM32_UART4CLK             STM32_HSICLK
 #else
 #error "invalid source selected for UART4 clock"
@@ -1034,9 +1038,9 @@
 #define STM32_UART5CLK             STM32_PCLK1
 #elif STM32_UART5SW == STM32_UART5SW_SYSCLK
 #define STM32_UART5CLK             STM32_SYSCLK
-#elif STM32_UART5SW == STM32_UART5SW_LSECLK
+#elif STM32_UART5SW == STM32_UART5SW_LSE
 #define STM32_UART5CLK             STM32_LSECLK
-#elif STM32_UART5SW == STM32_UART5SW_HSICLK
+#elif STM32_UART5SW == STM32_UART5SW_HSI
 #define STM32_UART5CLK             STM32_HSICLK
 #else
 #error "invalid source selected for UART5 clock"

@@ -36,7 +36,7 @@
  * @brief   CMSIS system core clock variable.
  * @note    It is declared in system_stm32f10x.h.
  */
-uint32_t SystemCoreClock = STM32_SYSCLK;
+uint32_t SystemCoreClock = STM32_HCLK;
 
 /*===========================================================================*/
 /* Driver local variables and types.                                         */
@@ -91,6 +91,28 @@ static void hal_lld_backup_domain_init(void) {
 /*===========================================================================*/
 /* Driver interrupt handlers.                                                */
 /*===========================================================================*/
+
+#if defined(STM32_DMA_REQUIRED) || defined(__DOXYGEN__)
+#if defined(STM32_DMA2_CH45_HANDLER) || defined(__DOXYGEN__)
+/**
+ * @brief   DMA2 streams 4 and 5 shared ISR.
+ *
+ * @isr
+ */
+OSAL_IRQ_HANDLER(STM32_DMA2_CH45_HANDLER) {
+
+  OSAL_IRQ_PROLOGUE();
+
+  /* Check on channel 4 of DMA2.*/
+  dmaServeInterrupt(STM32_DMA2_STREAM4);
+
+  /* Check on channel 5 of DMA2.*/
+  dmaServeInterrupt(STM32_DMA2_STREAM5);
+
+  OSAL_IRQ_EPILOGUE();
+}
+#endif /* defined(STM32_DMA2_CH45_HANDLER) */
+#endif /* defined(STM32_DMA_REQUIRED) */
 
 /*===========================================================================*/
 /* Driver exported functions.                                                */
@@ -154,7 +176,7 @@ void stm32_clock_init(void) {
 #if STM32_HSE_ENABLED
 #if defined(STM32_HSE_BYPASS)
   /* HSE Bypass.*/
-  RCC->CR |= RCC_CR_HSEBYP;
+  RCC->CR |= RCC_CR_HSEON | RCC_CR_HSEBYP;
 #endif
   /* HSE activation.*/
   RCC->CR |= RCC_CR_HSEON;

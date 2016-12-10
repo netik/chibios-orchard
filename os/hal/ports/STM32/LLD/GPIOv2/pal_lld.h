@@ -16,7 +16,7 @@
 
 /**
  * @file    STM32/GPIOv2/pal_lld.h
- * @brief   STM32L1xx/STM32F2xx/STM32F4xx GPIO low level driver header.
+ * @brief   STM32 PAL low level driver header.
  *
  * @addtogroup PAL
  * @{
@@ -64,10 +64,10 @@
 #endif
 #define PAL_STM32_OSPEED_HIGHEST        (3U << 3U)
 
-#define PAL_STM32_PUDR_MASK             (3U << 5U)
-#define PAL_STM32_PUDR_FLOATING         (0U << 5U)
-#define PAL_STM32_PUDR_PULLUP           (1U << 5U)
-#define PAL_STM32_PUDR_PULLDOWN         (2U << 5U)
+#define PAL_STM32_PUPDR_MASK            (3U << 5U)
+#define PAL_STM32_PUPDR_FLOATING        (0U << 5U)
+#define PAL_STM32_PUPDR_PULLUP          (1U << 5U)
+#define PAL_STM32_PUPDR_PULLDOWN        (2U << 5U)
 
 #define PAL_STM32_ALTERNATE_MASK        (15U << 7U)
 #define PAL_STM32_ALTERNATE(n)          ((n) << 7U)
@@ -104,13 +104,13 @@
  * @brief   Input pad with weak pull up resistor.
  */
 #define PAL_MODE_INPUT_PULLUP           (PAL_STM32_MODE_INPUT |             \
-                                         PAL_STM32_PUDR_PULLUP)
+                                         PAL_STM32_PUPDR_PULLUP)
 
 /**
  * @brief   Input pad with weak pull down resistor.
  */
 #define PAL_MODE_INPUT_PULLDOWN         (PAL_STM32_MODE_INPUT |             \
-                                         PAL_STM32_PUDR_PULLDOWN)
+                                         PAL_STM32_PUPDR_PULLDOWN)
 
 /**
  * @brief   Analog input mode.
@@ -143,6 +143,8 @@
 #undef GPIOG
 #undef GPIOH
 #undef GPIOI
+#undef GPIOJ
+#undef GPIOK
 
 /**
  * @name    GPIO ports definitions
@@ -157,11 +159,61 @@
 #define GPIOG                           ((stm32_gpio_t *)GPIOG_BASE)
 #define GPIOH                           ((stm32_gpio_t *)GPIOH_BASE)
 #define GPIOI                           ((stm32_gpio_t *)GPIOI_BASE)
+#define GPIOJ                           ((stm32_gpio_t *)GPIOJ_BASE)
+#define GPIOK                           ((stm32_gpio_t *)GPIOK_BASE)
 /** @} */
 
 /*===========================================================================*/
 /* I/O Ports Types and constants.                                            */
 /*===========================================================================*/
+
+/**
+ * @name    Port related definitions
+ * @{
+ */
+/**
+ * @brief   Width, in bits, of an I/O port.
+ */
+#define PAL_IOPORTS_WIDTH 16
+
+/**
+ * @brief   Whole port mask.
+ * @details This macro specifies all the valid bits into a port.
+ */
+#define PAL_WHOLE_PORT ((ioportmask_t)0xFFFF)
+/** @} */
+
+/**
+ * @name    Line handling macros
+ * @{
+ */
+/**
+ * @brief   Forms a line identifier.
+ * @details A port/pad pair are encoded into an @p ioline_t type. The encoding
+ *          of this type is platform-dependent.
+ * @note    In this driver the pad number is encoded in the lower 4 bits of
+ *          the GPIO address which are guaranteed to be zero.
+ */
+#define PAL_LINE(port, pad)                                                 \
+  ((ioline_t)((uint32_t)(port)) | ((uint32_t)(pad)))
+
+/**
+ * @brief   Decodes a port identifier from a line identifier.
+ */
+#define PAL_PORT(line)                                                      \
+  ((stm32_gpio_t *)(((uint32_t)(line)) & 0xFFFFFFF0U))
+
+/**
+ * @brief   Decodes a pad identifier from a line identifier.
+ */
+#define PAL_PAD(line)                                                       \
+  ((uint32_t)((uint32_t)(line) & 0x0000000FU))
+
+/**
+ * @brief   Value identifying an invalid line.
+ */
+#define PAL_NOLINE                      0U
+/** @} */
 
 /**
  * @brief   STM32 GPIO registers block.
@@ -251,28 +303,30 @@ typedef struct {
   /** @brief Port I setup data.*/
   stm32_gpio_setup_t    PIData;
 #endif
+#if STM32_HAS_GPIOJ || defined(__DOXYGEN__)
+  /** @brief Port I setup data.*/
+  stm32_gpio_setup_t    PJData;
+#endif
+#if STM32_HAS_GPIOK || defined(__DOXYGEN__)
+  /** @brief Port I setup data.*/
+  stm32_gpio_setup_t    PKData;
+#endif
 } PALConfig;
 
 /**
- * @brief   Width, in bits, of an I/O port.
- */
-#define PAL_IOPORTS_WIDTH 16
-
-/**
- * @brief   Whole port mask.
- * @details This macro specifies all the valid bits into a port.
- */
-#define PAL_WHOLE_PORT ((ioportmask_t)0xFFFF)
-
-/**
- * @brief   Digital I/O port sized unsigned type.
+ * @brief   Type of digital I/O port sized unsigned integer.
  */
 typedef uint32_t ioportmask_t;
 
 /**
- * @brief   Digital I/O modes.
+ * @brief   Type of digital I/O modes.
  */
 typedef uint32_t iomode_t;
+
+/**
+ * @brief   Type of an I/O line.
+ */
+typedef uint32_t ioline_t;
 
 /**
  * @brief   Port Identifier.
@@ -349,6 +403,20 @@ typedef stm32_gpio_t * ioportid_t;
  */
 #if STM32_HAS_GPIOI || defined(__DOXYGEN__)
 #define IOPORT9         GPIOI
+#endif
+
+/**
+ * @brief   GPIO port J identifier.
+ */
+#if STM32_HAS_GPIOJ || defined(__DOXYGEN__)
+#define IOPORT10        GPIOJ
+#endif
+
+/**
+ * @brief   GPIO port K identifier.
+ */
+#if STM32_HAS_GPIOK || defined(__DOXYGEN__)
+#define IOPORT11        GPIOK
 #endif
 
 /*===========================================================================*/

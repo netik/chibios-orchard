@@ -14,8 +14,10 @@
     limitations under the License.
 */
 
-#include "ch.h"
 #include "hal.h"
+
+/* Virtual serial port over USB.*/
+SerialUSBDriver SDU1;
 
 /*
  * Endpoints to be used for USBD2.
@@ -283,7 +285,15 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
 
     chSysUnlockFromISR();
     return;
+  case USB_EVENT_UNCONFIGURED:
+    return;
   case USB_EVENT_SUSPEND:
+    chSysLockFromISR();
+
+    /* Disconnection event on suspend.*/
+    sduDisconnectI(&SDU1);
+
+    chSysUnlockFromISR();
     return;
   case USB_EVENT_WAKEUP:
     return;
@@ -294,13 +304,25 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
 }
 
 /*
+ * Handles the USB driver global events.
+ */
+static void sof_handler(USBDriver *usbp) {
+
+  (void)usbp;
+
+  osalSysLockFromISR();
+  sduSOFHookI(&SDU1);
+  osalSysUnlockFromISR();
+}
+
+/*
  * USB driver configuration.
  */
 const USBConfig usbcfg = {
   usb_event,
   get_descriptor,
   sduRequestsHook,
-  NULL
+  sof_handler
 };
 
 /*

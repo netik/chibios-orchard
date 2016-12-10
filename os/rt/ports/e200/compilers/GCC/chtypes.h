@@ -51,18 +51,6 @@
 /** @} */
 
 /**
- * @name    Derived generic types
- * @{
- */
-typedef volatile int8_t     vint8_t;        /**< Volatile signed 8 bits.    */
-typedef volatile uint8_t    vuint8_t;       /**< Volatile unsigned 8 bits.  */
-typedef volatile int16_t    vint16_t;       /**< Volatile signed 16 bits.   */
-typedef volatile uint16_t   vuint16_t;      /**< Volatile unsigned 16 bits. */
-typedef volatile int32_t    vint32_t;       /**< Volatile signed 32 bits.   */
-typedef volatile uint32_t   vuint32_t;      /**< Volatile unsigned 32 bits. */
-/** @} */
-
-/**
  * @name    Kernel types
  * @{
  */
@@ -98,7 +86,7 @@ typedef uint32_t            ucnt_t;         /**< Generic unsigned counter.  */
 /**
  * @brief   Optimized thread function declaration macro.
  */
-#define PORT_THD_FUNCTION(tname, arg) msg_t tname(void *arg)
+#define PORT_THD_FUNCTION(tname, arg) void tname(void *arg)
 
 #endif /* _CHTYPES_H_ */
 

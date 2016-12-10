@@ -43,6 +43,12 @@ ifeq ($(USE_VERBOSE_COMPILE),)
   USE_VERBOSE_COMPILE = no
 endif
 
+# If enabled, this option makes the build process faster by not compiling
+# modules not used in the current configuration.
+ifeq ($(USE_SMART_BUILD),)
+  USE_SMART_BUILD = yes
+endif
+
 #
 # Build global options
 ##############################################################################
@@ -82,7 +88,7 @@ include $(CHIBIOS)/os/hal/ports/SPC5/SPC560Dxx/platform.mk
 include $(CHIBIOS)/os/hal/osal/nil/osal.mk
 include $(CHIBIOS)/os/nil/nil.mk
 include $(CHIBIOS)/os/nil/ports/e200/compilers/GCC/mk/port_spc560dxx.mk
-#include $(CHIBIOS)/test/nil/test.mk
+include $(CHIBIOS)/test/nil/test.mk
 
 # Define linker script file here
 LDSCRIPT= $(PORTLD)/SPC560D40.ld
@@ -137,10 +143,10 @@ MOT  = $(CP) -O srec
 BIN  = $(CP) -O binary
 
 # Define C warning options here
-CWARN = -Wall -Wextra -Wstrict-prototypes
+CWARN = -Wall -Wextra -Wundef -Wstrict-prototypes
 
 # Define C++ warning options here
-CPPWARN = -Wall -Wextra
+CPPWARN = -Wall -Wextra -Wundef
 
 #
 # Compiler settings

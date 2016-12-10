@@ -1,27 +1,24 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
  * @file    vectors.s
  * @brief   SPC56x vectors table.
  *
- * @addtogroup PPC_CORE
+ * @addtogroup PPC_GCC_CORE
  * @{
  */
 
@@ -799,6 +796,15 @@ _vectors:
 #if PPC_NUM_VECTORS > 1008
         .long       vector1008, vector1009, vector1010, vector1011
 #endif
+#if PPC_NUM_VECTORS > 1012
+        .long       vector1012, vector1013, vector1014, vector1015
+#endif
+#if PPC_NUM_VECTORS > 1016
+        .long       vector1016, vector1017, vector1018, vector1019
+#endif
+#if PPC_NUM_VECTORS > 1020
+        .long       vector1020, vector1021, vector1022, vector1023
+#endif
 
         .text
         .align      2
@@ -1559,6 +1565,15 @@ _vectors:
 #endif
 #if PPC_NUM_VECTORS > 1008
         .weak       vector1008, vector1009, vector1010, vector1011
+#endif
+#if PPC_NUM_VECTORS > 1012
+        .weak       vector1012, vector1013, vector1014, vector1015
+#endif
+#if PPC_NUM_VECTORS > 1016
+        .weak       vector1016, vector1017, vector1018, vector1019
+#endif
+#if PPC_NUM_VECTORS > 1020
+        .weak       vector1020, vector1021, vector1022, vector1023
 #endif
 
 vector0:
@@ -2585,6 +2600,7 @@ vector1020:
 vector1021:
 vector1022:
 vector1023:
+         b          _unhandled_irq
 
         .weak       _unhandled_irq
         .type       _unhandled_irq, @function

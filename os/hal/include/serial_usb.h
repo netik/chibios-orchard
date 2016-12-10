@@ -27,81 +27,11 @@
 
 #if (HAL_USE_SERIAL_USB == TRUE) || defined(__DOXYGEN__)
 
+#include "usb_cdc.h"
+
 /*===========================================================================*/
 /* Driver constants.                                                         */
 /*===========================================================================*/
-
-/**
- * @name    CDC specific messages.
- * @{
- */
-#define CDC_SEND_ENCAPSULATED_COMMAND       0x00
-#define CDC_GET_ENCAPSULATED_RESPONSE       0x01
-#define CDC_SET_COMM_FEATURE                0x02
-#define CDC_GET_COMM_FEATURE                0x03
-#define CDC_CLEAR_COMM_FEATURE              0x04
-#define CDC_SET_AUX_LINE_STATE              0x10
-#define CDC_SET_HOOK_STATE                  0x11
-#define CDC_PULSE_SETUP                     0x12
-#define CDC_SEND_PULSE                      0x13
-#define CDC_SET_PULSE_TIME                  0x14
-#define CDC_RING_AUX_JACK                   0x15
-#define CDC_SET_LINE_CODING                 0x20
-#define CDC_GET_LINE_CODING                 0x21
-#define CDC_SET_CONTROL_LINE_STATE          0x22
-#define CDC_SEND_BREAK                      0x23
-#define CDC_SET_RINGER_PARMS                0x30
-#define CDC_GET_RINGER_PARMS                0x31
-#define CDC_SET_OPERATION_PARMS             0x32
-#define CDC_GET_OPERATION_PARMS             0x33
-/** @} */
-
-/**
- * @name    CDC classes
- * @{
- */
-#define CDC_COMMUNICATION_INTERFACE_CLASS   0x02
-#define CDC_DATA_INTERFACE_CLASS            0x0A
-/** @} */
-
-/**
- * @name    CDC subclasses
- * @{
- */
-#define CDC_ABSTRACT_CONTROL_MODEL          0x02
-/** @} */
-
-/**
- * @name    CDC descriptors
- * @{
- */
-#define CDC_CS_INTERFACE                    0x24
-/** @} */
-
-/**
- * @name    CDC subdescriptors
- * @{
- */
-#define CDC_HEADER                          0x00
-#define CDC_CALL_MANAGEMENT                 0x01
-#define CDC_ABSTRACT_CONTROL_MANAGEMENT     0x02
-#define CDC_UNION                           0x06
-/** @} */
-
-/**
- * @name    Line Control bit definitions.
- * @{
- */
-#define LC_STOP_1                           0
-#define LC_STOP_1P5                         1
-#define LC_STOP_2                           2
-
-#define LC_PARITY_NONE                      0
-#define LC_PARITY_ODD                       1
-#define LC_PARITY_EVEN                      2
-#define LC_PARITY_MARK                      3
-#define LC_PARITY_SPACE                     4
-/** @} */
 
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */
@@ -121,6 +51,14 @@
 #if !defined(SERIAL_USB_BUFFERS_SIZE) || defined(__DOXYGEN__)
 #define SERIAL_USB_BUFFERS_SIZE     256
 #endif
+
+/**
+ * @brief   Serial over USB number of buffers.
+ * @note    The default is 2 buffers.
+ */
+#if !defined(SERIAL_USB_BUFFERS_NUMBER) || defined(__DOXYGEN__)
+#define SERIAL_USB_BUFFERS_NUMBER   2
+#endif
 /** @} */
 
 /*===========================================================================*/
@@ -134,16 +72,6 @@
 /*===========================================================================*/
 /* Driver data structures and types.                                         */
 /*===========================================================================*/
-
-/**
- * @brief   Type of Line Coding structure.
- */
-typedef struct {
-  uint8_t                       dwDTERate[4];
-  uint8_t                       bCharFormat;
-  uint8_t                       bParityType;
-  uint8_t                       bDataBits;
-} cdc_linecoding_t;
 
 /**
  * @brief Driver state machine possible states.
@@ -179,6 +107,8 @@ typedef struct {
   usbep_t                   bulk_out;
   /**
    * @brief   Interrupt IN endpoint used for notifications.
+   * @note    If set to zero then the INT endpoint is assumed to be not
+   *          present, USB descriptors must be changed accordingly.
    */
   usbep_t                   int_in;
 } SerialUSBConfig;
@@ -190,14 +120,16 @@ typedef struct {
   _base_asynchronous_channel_data                                           \
   /* Driver state.*/                                                        \
   sdustate_t                state;                                          \
-  /* Input queue.*/                                                         \
-  input_queue_t             iqueue;                                         \
+  /* Input buffers queue.*/                                                 \
+  input_buffers_queue_t     ibqueue;                                        \
   /* Output queue.*/                                                        \
-  output_queue_t            oqueue;                                         \
+  output_buffers_queue_t    obqueue;                                        \
   /* Input buffer.*/                                                        \
-  uint8_t                   ib[SERIAL_USB_BUFFERS_SIZE];                    \
+  uint8_t                   ib[BQ_BUFFER_SIZE(SERIAL_USB_BUFFERS_NUMBER,    \
+                                              SERIAL_USB_BUFFERS_SIZE)];    \
   /* Output buffer.*/                                                       \
-  uint8_t                   ob[SERIAL_USB_BUFFERS_SIZE];                    \
+  uint8_t                   ob[BQ_BUFFER_SIZE(SERIAL_USB_BUFFERS_NUMBER,    \
+                                              SERIAL_USB_BUFFERS_SIZE)];    \
   /* End of the mandatory fields.*/                                         \
   /* Current configuration data.*/                                          \
   const SerialUSBConfig     *config;
@@ -245,8 +177,10 @@ extern "C" {
   void sduObjectInit(SerialUSBDriver *sdup);
   void sduStart(SerialUSBDriver *sdup, const SerialUSBConfig *config);
   void sduStop(SerialUSBDriver *sdup);
+  void sduDisconnectI(SerialUSBDriver *sdup);
   void sduConfigureHookI(SerialUSBDriver *sdup);
   bool sduRequestsHook(USBDriver *usbp);
+  void sduSOFHookI(SerialUSBDriver *sdup);
   void sduDataTransmitted(USBDriver *usbp, usbep_t ep);
   void sduDataReceived(USBDriver *usbp, usbep_t ep);
   void sduInterruptTransmitted(USBDriver *usbp, usbep_t ep);

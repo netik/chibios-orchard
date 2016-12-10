@@ -93,15 +93,15 @@
 /*
  * DAC driver system settings.
  */
-#define STM32_DAC_USE_CHN1                  TRUE
-#define STM32_DAC_USE_CHN2                  FALSE
-#define STM32_DAC_CHN1_IRQ_PRIORITY         10
-#define STM32_DAC_CHN2_IRQ_PRIORITY         10
-#define STM32_DAC_CHN1_DMA_PRIORITY         2
-#define STM32_DAC_CHN2_DMA_PRIORITY         2
-#define STM32_DAC_DMA_ERROR_HOOK(dacp)      osalSysHalt()
-#define STM32_DAC_CHN1_DMA_STREAM           STM32_DMA_STREAM_ID(1, 3)
-#define STM32_DAC_CHN2_DMA_STREAM           STM32_DMA_STREAM_ID(1, 4)
+#define STM32_DAC_DUAL_MODE                 FALSE
+#define STM32_DAC_USE_DAC1_CH1              TRUE
+#define STM32_DAC_USE_DAC1_CH2              TRUE
+#define STM32_DAC_DAC1_CH1_IRQ_PRIORITY     10
+#define STM32_DAC_DAC1_CH2_IRQ_PRIORITY     10
+#define STM32_DAC_DAC1_CH1_DMA_PRIORITY     2
+#define STM32_DAC_DAC1_CH2_DMA_PRIORITY     2
+#define STM32_DAC_DAC1_CH1_DMA_STREAM       STM32_DMA_STREAM_ID(1, 5)
+#define STM32_DAC_DAC1_CH2_DMA_STREAM       STM32_DMA_STREAM_ID(1, 6)
 
 /*
  * EXT driver system settings.
@@ -129,7 +129,7 @@
 #define STM32_GPT_USE_TIM3                  FALSE
 #define STM32_GPT_USE_TIM4                  FALSE
 #define STM32_GPT_USE_TIM5                  FALSE
-#define STM32_GPT_USE_TIM6                  FALSE
+#define STM32_GPT_USE_TIM6                  TRUE
 #define STM32_GPT_USE_TIM7                  FALSE
 #define STM32_GPT_USE_TIM8                  FALSE
 #define STM32_GPT_USE_TIM9                  FALSE
@@ -333,5 +333,10 @@
 #define STM32_USB_OTG_THREAD_PRIO           LOWPRIO
 #define STM32_USB_OTG_THREAD_STACK_SIZE     128
 #define STM32_USB_OTGFIFO_FILL_BASEPRI      0
+
+/*
+ * WDG driver system settings.
+ */
+#define STM32_WDG_USE_IWDG                  FALSE
 
 #endif /* _MCUCONF_H_ */

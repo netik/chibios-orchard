@@ -42,7 +42,7 @@
 /**
  * @brief   USART1 driver enable switch.
  * @details If set to @p TRUE the support for USART1 is included.
- * @note    The default is @p TRUE.
+ * @note    The default is @p FALSE.
  */
 #if !defined(STM32_SERIAL_USE_USART1) || defined(__DOXYGEN__)
 #define STM32_SERIAL_USE_USART1             FALSE
@@ -51,7 +51,7 @@
 /**
  * @brief   USART2 driver enable switch.
  * @details If set to @p TRUE the support for USART2 is included.
- * @note    The default is @p TRUE.
+ * @note    The default is @p FALSE.
  */
 #if !defined(STM32_SERIAL_USE_USART2) || defined(__DOXYGEN__)
 #define STM32_SERIAL_USE_USART2             FALSE
@@ -60,7 +60,7 @@
 /**
  * @brief   USART3 driver enable switch.
  * @details If set to @p TRUE the support for USART3 is included.
- * @note    The default is @p TRUE.
+ * @note    The default is @p FALSE.
  */
 #if !defined(STM32_SERIAL_USE_USART3) || defined(__DOXYGEN__)
 #define STM32_SERIAL_USE_USART3             FALSE
@@ -69,7 +69,7 @@
 /**
  * @brief   UART4 driver enable switch.
  * @details If set to @p TRUE the support for UART4 is included.
- * @note    The default is @p TRUE.
+ * @note    The default is @p FALSE.
  */
 #if !defined(STM32_SERIAL_USE_UART4) || defined(__DOXYGEN__)
 #define STM32_SERIAL_USE_UART4              FALSE
@@ -78,7 +78,7 @@
 /**
  * @brief   UART5 driver enable switch.
  * @details If set to @p TRUE the support for UART5 is included.
- * @note    The default is @p TRUE.
+ * @note    The default is @p FALSE.
  */
 #if !defined(STM32_SERIAL_USE_UART5) || defined(__DOXYGEN__)
 #define STM32_SERIAL_USE_UART5              FALSE
@@ -87,10 +87,37 @@
 /**
  * @brief   USART6 driver enable switch.
  * @details If set to @p TRUE the support for USART6 is included.
- * @note    The default is @p TRUE.
+ * @note    The default is @p FALSE.
  */
 #if !defined(STM32_SERIAL_USE_USART6) || defined(__DOXYGEN__)
 #define STM32_SERIAL_USE_USART6             FALSE
+#endif
+
+/**
+ * @brief   UART7 driver enable switch.
+ * @details If set to @p TRUE the support for UART7 is included.
+ * @note    The default is @p FALSE.
+ */
+#if !defined(STM32_SERIAL_USE_UART7) || defined(__DOXYGEN__)
+#define STM32_SERIAL_USE_UART7              FALSE
+#endif
+
+/**
+ * @brief   UART8 driver enable switch.
+ * @details If set to @p TRUE the support for UART8 is included.
+ * @note    The default is @p FALSE.
+ */
+#if !defined(STM32_SERIAL_USE_UART8) || defined(__DOXYGEN__)
+#define STM32_SERIAL_USE_UART8              FALSE
+#endif
+
+/**
+ * @brief   LPUART1 driver enable switch.
+ * @details If set to @p TRUE the support for LPUART is included.
+ * @note    The default is @p FALSE.
+ */
+#if !defined(STM32_SERIAL_USE_LPUART1) || defined(__DOXYGEN__)
+#define STM32_SERIAL_USE_LPUART1            FALSE
 #endif
 
 /**
@@ -115,6 +142,14 @@
 #endif
 
 /**
+ * @brief   USART3..8 interrupt priority level setting.
+ * @note    Only valid on those devices with a shared IRQ.
+ */
+#if !defined(STM32_SERIAL_USART3_8_PRIORITY) || defined(__DOXYGEN__)
+#define STM32_SERIAL_USART3_8_PRIORITY      12
+#endif
+
+/**
  * @brief   UART4 interrupt priority level setting.
  */
 #if !defined(STM32_SERIAL_UART4_PRIORITY) || defined(__DOXYGEN__)
@@ -133,6 +168,27 @@
  */
 #if !defined(STM32_SERIAL_USART6_PRIORITY) || defined(__DOXYGEN__)
 #define STM32_SERIAL_USART6_PRIORITY        12
+#endif
+
+/**
+ * @brief   UART7 interrupt priority level setting.
+ */
+#if !defined(STM32_SERIAL_UART7_PRIORITY) || defined(__DOXYGEN__)
+#define STM32_SERIAL_UART7_PRIORITY         12
+#endif
+
+/**
+ * @brief   UART8 interrupt priority level setting.
+ */
+#if !defined(STM32_SERIAL_UART8_PRIORITY) || defined(__DOXYGEN__)
+#define STM32_SERIAL_UART8_PRIORITY         12
+#endif
+
+/**
+ * @brief   LPUART1 interrupt priority level setting.
+ */
+#if !defined(STM32_SERIAL_LPUART1_PRIORITY) || defined(__DOXYGEN__)
+#define STM32_SERIAL_LPUART1_PRIORITY       12
 #endif
 /** @} */
 
@@ -164,9 +220,23 @@
 #error "USART6 not present in the selected device"
 #endif
 
+#if STM32_SERIAL_USE_UART7 && !STM32_HAS_UART7
+#error "UART7 not present in the selected device"
+#endif
+
+#if STM32_SERIAL_USE_UART8 && !STM32_HAS_UART8
+#error "UART8 not present in the selected device"
+#endif
+
+#if STM32_SERIAL_USE_LPUART1 && !STM32_HAS_LPUART1
+#error "LPUART1 not present in the selected device"
+#endif
+
 #if !STM32_SERIAL_USE_USART1 && !STM32_SERIAL_USE_USART2 &&                 \
     !STM32_SERIAL_USE_USART3 && !STM32_SERIAL_USE_UART4  &&                 \
-    !STM32_SERIAL_USE_UART5  && !STM32_SERIAL_USE_USART6
+    !STM32_SERIAL_USE_UART5  && !STM32_SERIAL_USE_USART6 &&                 \
+    !STM32_SERIAL_USE_UART7  && !STM32_SERIAL_USE_UART8  &&                 \
+    !STM32_SERIAL_USE_LPUART1
 #error "SERIAL driver activated but no USART/UART peripheral assigned"
 #endif
 
@@ -198,6 +268,21 @@
 #if STM32_SERIAL_USE_USART6 &&                                              \
     !OSAL_IRQ_IS_VALID_PRIORITY(STM32_SERIAL_USART6_PRIORITY)
 #error "Invalid IRQ priority assigned to USART6"
+#endif
+
+#if STM32_SERIAL_USE_UART7 &&                                               \
+    !OSAL_IRQ_IS_VALID_PRIORITY(STM32_SERIAL_UART7_PRIORITY)
+#error "Invalid IRQ priority assigned to UART7"
+#endif
+
+#if STM32_SERIAL_USE_UART8 &&                                               \
+    !OSAL_IRQ_IS_VALID_PRIORITY(STM32_SERIAL_UART8_PRIORITY)
+#error "Invalid IRQ priority assigned to UART8"
+#endif
+
+#if STM32_SERIAL_USE_LPUART1 &&                                               \
+    !OSAL_IRQ_IS_VALID_PRIORITY(STM32_SERIAL_LPUART1_PRIORITY)
+#error "Invalid IRQ priority assigned to LPUART1"
 #endif
 
 /*===========================================================================*/
@@ -286,6 +371,15 @@ extern SerialDriver SD5;
 #endif
 #if STM32_SERIAL_USE_USART6 && !defined(__DOXYGEN__)
 extern SerialDriver SD6;
+#endif
+#if STM32_SERIAL_USE_UART7 && !defined(__DOXYGEN__)
+extern SerialDriver SD7;
+#endif
+#if STM32_SERIAL_USE_UART8 && !defined(__DOXYGEN__)
+extern SerialDriver SD8;
+#endif
+#if STM32_SERIAL_USE_LPUART1 && !defined(__DOXYGEN__)
+extern SerialDriver LPSD1;
 #endif
 
 #ifdef __cplusplus

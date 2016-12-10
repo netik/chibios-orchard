@@ -48,8 +48,6 @@
 
 /**
  * @brief   Memory get function.
- * @note    This type must be assignment compatible with the @p chMemAlloc()
- *          function.
  */
 typedef void *(*memgetfunc_t)(size_t size);
 
@@ -82,7 +80,7 @@ typedef void *(*memgetfunc_t)(size_t size);
 
 /**
  * @brief   Returns whatever a pointer or memory size is aligned to
- *          the type @p align_t.
+ *          the type @p stkalign_t.
  */
 #define MEM_IS_ALIGNED(p)   (((size_t)(p) & MEM_ALIGN_MASK) == 0U)
 /** @} */

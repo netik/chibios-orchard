@@ -199,6 +199,36 @@
 /** @} */
 
 /**
+ * @name    DAC peripheral specific RCC operations
+ * @{
+ */
+/**
+ * @brief   Enables the DAC1 peripheral clock.
+ *
+ * @param[in] lp        low power enable flag
+ *
+ * @api
+ */
+#define rccEnableDAC1(lp) rccEnableAPB1(RCC_APB1ENR_DACEN, lp)
+
+/**
+ * @brief   Disables the DAC1 peripheral clock.
+ *
+ * @param[in] lp        low power enable flag
+ *
+ * @api
+ */
+#define rccDisableDAC1(lp) rccDisableAPB1(RCC_APB1ENR_DACEN, lp)
+
+/**
+ * @brief   Resets the DAC1 peripheral.
+ *
+ * @api
+ */
+#define rccResetDAC1() rccResetAPB1(RCC_APB1RSTR_DACRST)
+/** @} */
+
+/**
  * @name    Backup domain interface specific RCC operations
  * @{
  */
@@ -1018,6 +1048,29 @@
  * @api
  */
 #define rccResetUSB() rccResetAPB1(RCC_APB1RSTR_USBRST)
+/** @} */
+
+/**
+ * @name    FSMC peripherals specific RCC operations
+ * @{
+ */
+/**
+ * @brief   Enables the FSMC peripheral clock.
+ *
+ * @param[in] lp        low power enable flag
+ *
+ * @api
+ */
+#define rccEnableFSMC(lp) rccEnableAHB(RCC_AHBENR_FSMCEN, lp)
+
+/**
+ * @brief   Disables the FSMC peripheral clock.
+ *
+ * @param[in] lp        low power enable flag
+ *
+ * @api
+ */
+#define rccDisableFSMC(lp) rccDisableAHB(RCC_AHBENR_FSMCEN, lp)
 /** @} */
 
 /*===========================================================================*/

@@ -343,7 +343,7 @@ static inline void chSysEnable(void) {
  *
  * @special
  */
-static inline void chSysLock(void)  {
+static inline void chSysLock(void) {
 
   port_lock();
   _stats_start_measure_crit_thd();
@@ -366,7 +366,7 @@ static inline void chSysUnlock(void) {
      the ready list.*/
   chDbgAssert((ch.rlist.r_queue.p_next == (thread_t *)&ch.rlist.r_queue) ||
               (ch.rlist.r_current->p_prio >= ch.rlist.r_queue.p_next->p_prio),
-              "priority violation, missing reschedule");
+              "priority order violation");
 
   port_unlock();
 }

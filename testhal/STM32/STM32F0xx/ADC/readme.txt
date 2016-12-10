@@ -12,7 +12,6 @@ The application demonstrates the use of the STM32F0xx ADC driver.
 
 ** Board Setup **
 
-- Remove the LCD module.
 - Connect PC0 to 3.3V and PC1 to GND for analog measurements.
 
 ** Build Procedure **

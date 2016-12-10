@@ -125,15 +125,21 @@ static time_t rtc_encode(const RTCDateTime *timespec) {
  *
  * @notapi
  */
-static void rtc_decode(uint32_t tv_sec, uint32_t tv_msec,
-                                    RTCDateTime *timespec) {
+static void rtc_decode(uint32_t tv_sec,
+                       uint32_t tv_msec,
+                       RTCDateTime *timespec) {
   struct tm tim;
-  struct tm *canary;
+  struct tm *t;
 
   /* If the conversion is successful the function returns a pointer
      to the object the result was written into.*/
-  canary = localtime_r((time_t *)&(tv_sec), &tim);
-  osalDbgCheck(&tim == canary);
+#if defined(__GNUC__) || defined(__CC_ARM)
+  t = localtime_r((time_t *)&(tv_sec), &tim);
+  osalDbgAssert(t != NULL, "conversion failed");
+#else
+  struct tm *t = localtime(&tv_sec);
+  memcpy(&tim, t, sizeof(struct tm));
+#endif
 
   rtcConvertStructTmToDateTime(&tim, tv_msec, timespec);
 }
@@ -190,7 +196,7 @@ void rtc_lld_set_prescaler(void) {
   syssts_t sts;
 
   /* Entering a reentrant critical zone.*/
-  sts = chSysGetStatusAndLockX();
+  sts = osalSysGetStatusAndLockX();
 
   rtc_acquire_access();
   RTC->PRLH = (uint16_t)((STM32_RTCCLK - 1) >> 16) & 0x000F;
@@ -198,7 +204,7 @@ void rtc_lld_set_prescaler(void) {
   rtc_release_access();
 
   /* Leaving a reentrant critical zone.*/
-  chSysRestoreStatusX(sts);
+  osalSysRestoreStatusX(sts);
 }
 
 /**
@@ -284,7 +290,7 @@ void rtc_lld_set_alarm(RTCDriver *rtcp,
   (void)alarm_number;
 
   /* Entering a reentrant critical zone.*/
-  sts = chSysGetStatusAndLockX();
+  sts = osalSysGetStatusAndLockX();
 
   rtc_acquire_access();
   if (alarmspec != NULL) {
@@ -298,7 +304,7 @@ void rtc_lld_set_alarm(RTCDriver *rtcp,
   rtc_release_access();
 
   /* Leaving a reentrant critical zone.*/
-  chSysRestoreStatusX(sts);
+  osalSysRestoreStatusX(sts);
 }
 
 /**
@@ -321,7 +327,7 @@ void rtc_lld_get_alarm(RTCDriver *rtcp,
   (void)alarm_number;
 
   /* Entering a reentrant critical zone.*/
-  sts = chSysGetStatusAndLockX();
+  sts = osalSysGetStatusAndLockX();
 
   /* Required because access to ALR.*/
   rtc_apb1_sync();
@@ -329,7 +335,7 @@ void rtc_lld_get_alarm(RTCDriver *rtcp,
   alarmspec->tv_sec = ((rtcp->rtc->ALRH << 16) + rtcp->rtc->ALRL);
 
   /* Leaving a reentrant critical zone.*/
-  chSysRestoreStatusX(sts);
+  osalSysRestoreStatusX(sts);
 }
 
 /**
@@ -347,7 +353,7 @@ void rtc_lld_set_callback(RTCDriver *rtcp, rtccb_t callback) {
   syssts_t sts;
 
   /* Entering a reentrant critical zone.*/
-  sts = chSysGetStatusAndLockX();
+  sts = osalSysGetStatusAndLockX();
 
   if (callback != NULL) {
 
@@ -367,7 +373,7 @@ void rtc_lld_set_callback(RTCDriver *rtcp, rtccb_t callback) {
   }
 
   /* Leaving a reentrant critical zone.*/
-  chSysRestoreStatusX(sts);
+  osalSysRestoreStatusX(sts);
 }
 
 /**
@@ -388,7 +394,7 @@ void rtcSTM32GetSecMsec(RTCDriver *rtcp, uint32_t *tv_sec, uint32_t *tv_msec) {
   osalDbgCheck((NULL != tv_sec) && (NULL != rtcp));
 
   /* Entering a reentrant critical zone.*/
-  sts = chSysGetStatusAndLockX();
+  sts = osalSysGetStatusAndLockX();
 
   /* Required because access to CNT and DIV.*/
   rtc_apb1_sync();
@@ -400,7 +406,7 @@ void rtcSTM32GetSecMsec(RTCDriver *rtcp, uint32_t *tv_sec, uint32_t *tv_msec) {
   } while ((*tv_sec) != (((uint32_t)(rtcp->rtc->CNTH) << 16) + rtcp->rtc->CNTL));
 
   /* Leaving a reentrant critical zone.*/
-  chSysRestoreStatusX(sts);
+  osalSysRestoreStatusX(sts);
 
   if (NULL != tv_msec)
     *tv_msec = (((uint32_t)STM32_RTCCLK - 1 - time_frac) * 1000) / STM32_RTCCLK;
@@ -421,7 +427,7 @@ void rtcSTM32SetSec(RTCDriver *rtcp, uint32_t tv_sec) {
   osalDbgCheck(NULL != rtcp);
 
   /* Entering a reentrant critical zone.*/
-  sts = chSysGetStatusAndLockX();
+  sts = osalSysGetStatusAndLockX();
 
   rtc_acquire_access();
   rtcp->rtc->CNTH = (uint16_t)(tv_sec >> 16);
@@ -429,7 +435,7 @@ void rtcSTM32SetSec(RTCDriver *rtcp, uint32_t tv_sec) {
   rtc_release_access();
 
   /* Leaving a reentrant critical zone.*/
-  chSysRestoreStatusX(sts);
+  osalSysRestoreStatusX(sts);
 }
 
 #endif /* HAL_USE_RTC */

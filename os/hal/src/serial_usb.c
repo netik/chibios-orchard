@@ -50,50 +50,110 @@ static cdc_linecoding_t linecoding = {
 /* Driver local functions.                                                   */
 /*===========================================================================*/
 
+static bool sdu_start_receive(SerialUSBDriver *sdup) {
+  uint8_t *buf;
+
+  /* If the USB driver is not in the appropriate state then transactions
+     must not be started.*/
+  if ((usbGetDriverStateI(sdup->config->usbp) != USB_ACTIVE) ||
+      (sdup->state != SDU_READY)) {
+    return true;
+  }
+
+  /* Checking if there is already a transaction ongoing on the endpoint.*/
+  if (usbGetReceiveStatusI(sdup->config->usbp, sdup->config->bulk_in)) {
+    return true;
+  }
+
+  /* Checking if there is a buffer ready for incoming data.*/
+  buf = ibqGetEmptyBufferI(&sdup->ibqueue);
+  if (buf == NULL) {
+    return true;
+  }
+
+  /* Buffer found, starting a new transaction.*/
+  usbStartReceiveI(sdup->config->usbp, sdup->config->bulk_out,
+                   buf, SERIAL_USB_BUFFERS_SIZE);
+
+  return false;
+}
+
 /*
  * Interface implementation.
  */
 
 static size_t write(void *ip, const uint8_t *bp, size_t n) {
 
-  return oqWriteTimeout(&((SerialUSBDriver *)ip)->oqueue, bp,
-                        n, TIME_INFINITE);
+  if (usbGetDriverStateI(((SerialUSBDriver *)ip)->config->usbp) != USB_ACTIVE) {
+    return 0;
+  }
+
+  return obqWriteTimeout(&((SerialUSBDriver *)ip)->obqueue, bp,
+                         n, TIME_INFINITE);
 }
 
 static size_t read(void *ip, uint8_t *bp, size_t n) {
 
-  return iqReadTimeout(&((SerialUSBDriver *)ip)->iqueue, bp,
-                       n, TIME_INFINITE);
+  if (usbGetDriverStateI(((SerialUSBDriver *)ip)->config->usbp) != USB_ACTIVE) {
+    return 0;
+  }
+
+  return ibqReadTimeout(&((SerialUSBDriver *)ip)->ibqueue, bp,
+                        n, TIME_INFINITE);
 }
 
 static msg_t put(void *ip, uint8_t b) {
 
-  return oqPutTimeout(&((SerialUSBDriver *)ip)->oqueue, b, TIME_INFINITE);
+  if (usbGetDriverStateI(((SerialUSBDriver *)ip)->config->usbp) != USB_ACTIVE) {
+    return MSG_RESET;
+  }
+
+  return obqPutTimeout(&((SerialUSBDriver *)ip)->obqueue, b, TIME_INFINITE);
 }
 
 static msg_t get(void *ip) {
 
-  return iqGetTimeout(&((SerialUSBDriver *)ip)->iqueue, TIME_INFINITE);
+  if (usbGetDriverStateI(((SerialUSBDriver *)ip)->config->usbp) != USB_ACTIVE) {
+    return MSG_RESET;
+  }
+
+  return ibqGetTimeout(&((SerialUSBDriver *)ip)->ibqueue, TIME_INFINITE);
 }
 
 static msg_t putt(void *ip, uint8_t b, systime_t timeout) {
 
-  return oqPutTimeout(&((SerialUSBDriver *)ip)->oqueue, b, timeout);
+  if (usbGetDriverStateI(((SerialUSBDriver *)ip)->config->usbp) != USB_ACTIVE) {
+    return MSG_RESET;
+  }
+
+  return obqPutTimeout(&((SerialUSBDriver *)ip)->obqueue, b, timeout);
 }
 
 static msg_t gett(void *ip, systime_t timeout) {
 
-  return iqGetTimeout(&((SerialUSBDriver *)ip)->iqueue, timeout);
+  if (usbGetDriverStateI(((SerialUSBDriver *)ip)->config->usbp) != USB_ACTIVE) {
+    return MSG_RESET;
+  }
+
+  return ibqGetTimeout(&((SerialUSBDriver *)ip)->ibqueue, timeout);
 }
 
 static size_t writet(void *ip, const uint8_t *bp, size_t n, systime_t timeout) {
 
-  return oqWriteTimeout(&((SerialUSBDriver *)ip)->oqueue, bp, n, timeout);
+  if (usbGetDriverStateI(((SerialUSBDriver *)ip)->config->usbp) != USB_ACTIVE) {
+    return 0;
+  }
+
+  return obqWriteTimeout(&((SerialUSBDriver *)ip)->obqueue, bp, n, timeout);
 }
 
 static size_t readt(void *ip, uint8_t *bp, size_t n, systime_t timeout) {
 
-  return iqReadTimeout(&((SerialUSBDriver *)ip)->iqueue, bp, n, timeout);
+  if (usbGetDriverStateI(((SerialUSBDriver *)ip)->config->usbp) != USB_ACTIVE) {
+    return 0;
+  }
+
+  return ibqReadTimeout(&((SerialUSBDriver *)ip)->ibqueue, bp, n, timeout);
 }
 
 static const struct SerialUSBDriverVMT vmt = {
@@ -102,48 +162,23 @@ static const struct SerialUSBDriverVMT vmt = {
 };
 
 /**
- * @brief   Notification of data removed from the input queue.
+ * @brief   Notification of empty buffer released into the input buffers queue.
  *
- * @param[in] qp        the queue pointer.
+ * @param[in] bqp       the buffers queue pointer.
  */
-static void inotify(io_queue_t *qp) {
-  size_t n, maxsize;
-  SerialUSBDriver *sdup = qGetLink(qp);
-
-  /* If the USB driver is not in the appropriate state then transactions
-     must not be started.*/
-  if ((usbGetDriverStateI(sdup->config->usbp) != USB_ACTIVE) ||
-      (sdup->state != SDU_READY)) {
-    return;
-  }
-
-  /* If there is in the queue enough space to hold at least one packet and
-     a transaction is not yet started then a new transaction is started for
-     the available space.*/
-  maxsize = sdup->config->usbp->epc[sdup->config->bulk_out]->out_maxsize;
-  if (!usbGetReceiveStatusI(sdup->config->usbp, sdup->config->bulk_out)) {
-    if ((n = iqGetEmptyI(&sdup->iqueue)) >= maxsize) {
-      osalSysUnlock();
-
-      n = (n / maxsize) * maxsize;
-      usbPrepareQueuedReceive(sdup->config->usbp,
-                              sdup->config->bulk_out,
-                              &sdup->iqueue, n);
-
-      osalSysLock();
-      (void) usbStartReceiveI(sdup->config->usbp, sdup->config->bulk_out);
-    }
-  }
+static void ibnotify(io_buffers_queue_t *bqp) {
+  SerialUSBDriver *sdup = bqGetLinkX(bqp);
+  (void) sdu_start_receive(sdup);
 }
 
 /**
- * @brief   Notification of data inserted into the output queue.
+ * @brief   Notification of filled buffer inserted into the output buffers queue.
  *
- * @param[in] qp        the queue pointer.
+ * @param[in] bqp       the buffers queue pointer.
  */
-static void onotify(io_queue_t *qp) {
+static void obnotify(io_buffers_queue_t *bqp) {
   size_t n;
-  SerialUSBDriver *sdup = qGetLink(qp);
+  SerialUSBDriver *sdup = bqGetLinkX(bqp);
 
   /* If the USB driver is not in the appropriate state then transactions
      must not be started.*/
@@ -152,18 +187,13 @@ static void onotify(io_queue_t *qp) {
     return;
   }
 
-  /* If there is not an ongoing transaction and the output queue contains
-     data then a new transaction is started.*/
+  /* Checking if there is already a transaction ongoing on the endpoint.*/
   if (!usbGetTransmitStatusI(sdup->config->usbp, sdup->config->bulk_in)) {
-    if ((n = oqGetFullI(&sdup->oqueue)) > 0U) {
-      osalSysUnlock();
-
-      usbPrepareQueuedTransmit(sdup->config->usbp,
-                               sdup->config->bulk_in,
-                               &sdup->oqueue, n);
-
-      osalSysLock();
-      (void) usbStartTransmitI(sdup->config->usbp, sdup->config->bulk_in);
+    /* Trying to get a full buffer.*/
+    uint8_t *buf = obqGetFullBufferI(&sdup->obqueue, &n);
+    if (buf != NULL) {
+      /* Buffer found, starting a new transaction.*/
+      usbStartTransmitI(sdup->config->usbp, sdup->config->bulk_in, buf, n);
     }
   }
 }
@@ -196,8 +226,12 @@ void sduObjectInit(SerialUSBDriver *sdup) {
   sdup->vmt = &vmt;
   osalEventObjectInit(&sdup->event);
   sdup->state = SDU_STOP;
-  iqObjectInit(&sdup->iqueue, sdup->ib, SERIAL_USB_BUFFERS_SIZE, inotify, sdup);
-  oqObjectInit(&sdup->oqueue, sdup->ob, SERIAL_USB_BUFFERS_SIZE, onotify, sdup);
+  ibqObjectInit(&sdup->ibqueue, sdup->ib,
+                SERIAL_USB_BUFFERS_SIZE, SERIAL_USB_BUFFERS_NUMBER,
+                ibnotify, sdup);
+  obqObjectInit(&sdup->obqueue, sdup->ob,
+                SERIAL_USB_BUFFERS_SIZE, SERIAL_USB_BUFFERS_NUMBER,
+                obnotify, sdup);
 }
 
 /**
@@ -218,7 +252,9 @@ void sduStart(SerialUSBDriver *sdup, const SerialUSBConfig *config) {
                 "invalid state");
   usbp->in_params[config->bulk_in - 1U]   = sdup;
   usbp->out_params[config->bulk_out - 1U] = sdup;
-  usbp->in_params[config->int_in - 1U]    = sdup;
+  if (config->int_in > 0U) {
+    usbp->in_params[config->int_in - 1U]  = sdup;
+  }
   sdup->config = config;
   sdup->state = SDU_READY;
   osalSysUnlock();
@@ -239,21 +275,40 @@ void sduStop(SerialUSBDriver *sdup) {
   osalDbgCheck(sdup != NULL);
 
   osalSysLock();
+
   osalDbgAssert((sdup->state == SDU_STOP) || (sdup->state == SDU_READY),
                 "invalid state");
 
   /* Driver in stopped state.*/
   usbp->in_params[sdup->config->bulk_in - 1U]   = NULL;
   usbp->out_params[sdup->config->bulk_out - 1U] = NULL;
-  usbp->in_params[sdup->config->int_in - 1U]    = NULL;
+  if (sdup->config->int_in > 0U) {
+    usbp->in_params[sdup->config->int_in - 1U]  = NULL;
+  }
   sdup->state = SDU_STOP;
+
+  /* Enforces a disconnection.*/
+  sduDisconnectI(sdup);
+  osalOsRescheduleS();
+
+  osalSysUnlock();
+}
+
+/**
+ * @brief   USB device disconnection handler.
+ * @note    If this function is not called from an ISR then an explicit call
+ *          to @p osalOsRescheduleS() in necessary afterward.
+ *
+ * @param[in] sdup      pointer to a @p SerialUSBDriver object
+ *
+ * @iclass
+ */
+void sduDisconnectI(SerialUSBDriver *sdup) {
 
   /* Queues reset in order to signal the driver stop to the application.*/
   chnAddFlagsI(sdup, CHN_DISCONNECTED);
-  iqResetI(&sdup->iqueue);
-  iqResetI(&sdup->oqueue);
-  osalOsRescheduleS();
-  osalSysUnlock();
+  ibqResetI(&sdup->ibqueue);
+  obqResetI(&sdup->obqueue);
 }
 
 /**
@@ -264,16 +319,11 @@ void sduStop(SerialUSBDriver *sdup) {
  * @iclass
  */
 void sduConfigureHookI(SerialUSBDriver *sdup) {
-  USBDriver *usbp = sdup->config->usbp;
 
-  iqResetI(&sdup->iqueue);
-  oqResetI(&sdup->oqueue);
+  ibqResetI(&sdup->ibqueue);
+  obqResetI(&sdup->obqueue);
   chnAddFlagsI(sdup, CHN_CONNECTED);
-
-  /* Starts the first OUT transaction immediately.*/
-  usbPrepareQueuedReceive(usbp, sdup->config->bulk_out, &sdup->iqueue,
-                          usbp->epc[sdup->config->bulk_out]->out_maxsize);
-  (void) usbStartReceiveI(usbp, sdup->config->bulk_out);
+  (void) sdu_start_receive(sdup);
 }
 
 /**
@@ -313,14 +363,51 @@ bool sduRequestsHook(USBDriver *usbp) {
 }
 
 /**
+ * @brief   SOF handler.
+ * @details The SOF interrupt is used for automatic flushing of incomplete
+ *          buffers pending in the output queue.
+ *
+ * @param[in] sdup      pointer to a @p SerialUSBDriver object
+ *
+ * @iclass
+ */
+void sduSOFHookI(SerialUSBDriver *sdup) {
+
+  /* If the USB driver is not in the appropriate state then transactions
+     must not be started.*/
+  if ((usbGetDriverStateI(sdup->config->usbp) != USB_ACTIVE) ||
+      (sdup->state != SDU_READY)) {
+    return;
+  }
+
+  /* If there is already a transaction ongoing then another one cannot be
+     started.*/
+  if (usbGetTransmitStatusI(sdup->config->usbp, sdup->config->bulk_in)) {
+    return;
+  }
+
+  /* Checking if there only a buffer partially filled, if so then it is
+     enforced in the queue and transmitted.*/
+  if (obqTryFlushI(&sdup->obqueue)) {
+    size_t n;
+    uint8_t *buf = obqGetFullBufferI(&sdup->obqueue, &n);
+
+    osalDbgAssert(buf != NULL, "queue is empty");
+
+    usbStartTransmitI(sdup->config->usbp, sdup->config->bulk_in, buf, n);
+  }
+}
+
+/**
  * @brief   Default data transmitted callback.
  * @details The application must use this function as callback for the IN
  *          data endpoint.
  *
  * @param[in] usbp      pointer to the @p USBDriver object
- * @param[in] ep        endpoint number
+ * @param[in] ep        IN endpoint number
  */
 void sduDataTransmitted(USBDriver *usbp, usbep_t ep) {
+  uint8_t *buf;
   size_t n;
   SerialUSBDriver *sdup = usbp->in_params[ep - 1U];
 
@@ -329,18 +416,22 @@ void sduDataTransmitted(USBDriver *usbp, usbep_t ep) {
   }
 
   osalSysLockFromISR();
+
+  /* Signaling that space is available in the output queue.*/
   chnAddFlagsI(sdup, CHN_OUTPUT_EMPTY);
 
-  /*lint -save -e9013 [15.7] There is no else because it is not needed.*/
-  if ((n = oqGetFullI(&sdup->oqueue)) > 0U) {
+  /* Freeing the buffer just transmitted, if it was not a zero size packet.*/
+  if (usbp->epc[ep]->in_state->txsize > 0U) {
+    obqReleaseEmptyBufferI(&sdup->obqueue);
+  }
+
+  /* Checking if there is a buffer ready for transmission.*/
+  buf = obqGetFullBufferI(&sdup->obqueue, &n);
+
+  if (buf != NULL) {
     /* The endpoint cannot be busy, we are in the context of the callback,
        so it is safe to transmit without a check.*/
-    osalSysUnlockFromISR();
-
-    usbPrepareQueuedTransmit(usbp, ep, &sdup->oqueue, n);
-
-    osalSysLockFromISR();
-    (void) usbStartTransmitI(usbp, ep);
+    usbStartTransmitI(usbp, ep, buf, n);
   }
   else if ((usbp->epc[ep]->in_state->txsize > 0U) &&
            ((usbp->epc[ep]->in_state->txsize &
@@ -349,14 +440,12 @@ void sduDataTransmitted(USBDriver *usbp, usbep_t ep) {
        size. Otherwise the recipient may expect more data coming soon and
        not return buffered data to app. See section 5.8.3 Bulk Transfer
        Packet Size Constraints of the USB Specification document.*/
-    osalSysUnlockFromISR();
+    usbStartTransmitI(usbp, ep, usbp->setup, 0);
 
-    usbPrepareQueuedTransmit(usbp, ep, &sdup->oqueue, 0);
-
-    osalSysLockFromISR();
-    (void) usbStartTransmitI(usbp, ep);
   }
-  /*lint -restore*/
+  else {
+    /* Nothing to transmit.*/
+  }
 
   osalSysUnlockFromISR();
 }
@@ -367,33 +456,29 @@ void sduDataTransmitted(USBDriver *usbp, usbep_t ep) {
  *          data endpoint.
  *
  * @param[in] usbp      pointer to the @p USBDriver object
- * @param[in] ep        endpoint number
+ * @param[in] ep        OUT endpoint number
  */
 void sduDataReceived(USBDriver *usbp, usbep_t ep) {
-  size_t n, maxsize;
   SerialUSBDriver *sdup = usbp->out_params[ep - 1U];
-
   if (sdup == NULL) {
     return;
   }
 
   osalSysLockFromISR();
+
+  /* Signaling that data is available in the input queue.*/
   chnAddFlagsI(sdup, CHN_INPUT_AVAILABLE);
 
-  /* Writes to the input queue can only happen when there is enough space
-     to hold at least one packet.*/
-  maxsize = usbp->epc[ep]->out_maxsize;
-  if ((n = iqGetEmptyI(&sdup->iqueue)) >= maxsize) {
-    /* The endpoint cannot be busy, we are in the context of the callback,
-       so a packet is in the buffer for sure.*/
-    osalSysUnlockFromISR();
+  /* Posting the filled buffer in the queue.*/
+  ibqPostFullBufferI(&sdup->ibqueue,
+                     usbGetReceiveTransactionSizeX(sdup->config->usbp,
+                                                   sdup->config->bulk_out));
 
-    n = (n / maxsize) * maxsize;
-    usbPrepareQueuedReceive(usbp, ep, &sdup->iqueue, n);
+  /* The endpoint cannot be busy, we are in the context of the callback,
+     so a packet is in the buffer for sure. Trying to get a free buffer
+     for the next transaction.*/
+  sdu_start_receive(sdup);
 
-    osalSysLockFromISR();
-    (void) usbStartReceiveI(usbp, ep);
-  }
   osalSysUnlockFromISR();
 }
 

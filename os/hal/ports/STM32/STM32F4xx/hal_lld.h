@@ -33,6 +33,7 @@
  *            High-performance STM32 F-4 devices.
  *          - STM32F401xC, STM32F401xE for High-performance STM32 F-4 devices.
  *          - STM32F411xE for High-performance STM32 F-4 devices.
+ *          - STM32F446xx for High-performance STM32 F-4 devices.
  *          .
  *
  * @addtogroup HAL
@@ -59,6 +60,9 @@
  */
 #if defined(STM32F439xx) || defined(__DOXYGEN__)
 #define PLATFORM_NAME           "STM32F439 High Performance with DSP and FPU"
+
+#elif defined(STM32F446xx)
+#define PLATFORM_NAME           "STM32F446 High Performance with DSP and FPU"
 
 #elif defined(STM32F429xx)
 #define PLATFORM_NAME           "STM32F429 High Performance with DSP and FPU"
@@ -90,8 +94,17 @@
 #elif defined(STM32F411xE)
 #define PLATFORM_NAME           "STM32F411xE High Performance with DSP and FPU"
 
-#elif defined(STM32F2XX)
-#define PLATFORM_NAME           "STM32F2xx High Performance"
+#elif defined(STM32F205xx)
+#define PLATFORM_NAME           "STM32F405 High Performance"
+
+#elif defined(STM32F215xx)
+#define PLATFORM_NAME           "STM32F415 High Performance"
+
+#elif defined(STM32F207xx)
+#define PLATFORM_NAME           "STM32F407 High Performance"
+
+#elif defined(STM32F217xx)
+#define PLATFORM_NAME           "STM32F417 High Performance"
 
 #else
 #error "STM32F2xx/F4xx device not specified"
@@ -102,13 +115,9 @@
  * @name    Absolute Maximum Ratings
  * @{
  */
-/**
- * @name    Absolute Maximum Ratings
- * @{
- */
 #if defined(STM32F427xx) || defined(STM32F437xx) ||                         \
     defined(STM32F429xx) || defined(STM32F439xx) ||                         \
-    defined(__DOXYGEN__)
+    defined(STM32F446xx) || defined(__DOXYGEN__)
 /**
  * @brief   Absolute maximum system clock.
  */
@@ -288,9 +297,9 @@
  * @name    PWR_CR register bits definitions
  * @{
  */
-#define STM32_VOS_SCALE3        (PWR_CR_VOS_0)
-#define STM32_VOS_SCALE2        (PWR_CR_VOS_1)
-#define STM32_VOS_SCALE1        (PWR_CR_VOS_1 | PWR_CR_VOS_0)
+#define STM32_VOS_SCALE3        0x00004000
+#define STM32_VOS_SCALE2        0x00008000
+#define STM32_VOS_SCALE1        0x0000C000
 #define STM32_PLS_MASK          (7 << 5)    /**< PLS bits mask.             */
 #define STM32_PLS_LEV0          (0 << 5)    /**< PVD level 0.               */
 #define STM32_PLS_LEV1          (1 << 5)    /**< PVD level 1.               */
@@ -306,11 +315,11 @@
  * @name    RCC_PLLCFGR register bits definitions
  * @{
  */
-#define STM32_PLLP_MASK			(3 << 16)	/**< PLLP mask.                 */
-#define STM32_PLLP_DIV2			(0 << 16)	/**< PLL clock divided by 2.    */
-#define STM32_PLLP_DIV4			(1 << 16)	/**< PLL clock divided by 4.    */
-#define STM32_PLLP_DIV6			(2 << 16)   /**< PLL clock divided by 6.    */
-#define STM32_PLLP_DIV8			(3 << 16)   /**< PLL clock divided by 8.    */
+#define STM32_PLLP_MASK         (3 << 16)   /**< PLLP mask.                 */
+#define STM32_PLLP_DIV2         (0 << 16)   /**< PLL clock divided by 2.    */
+#define STM32_PLLP_DIV4         (1 << 16)   /**< PLL clock divided by 4.    */
+#define STM32_PLLP_DIV6         (2 << 16)   /**< PLL clock divided by 6.    */
+#define STM32_PLLP_DIV8         (3 << 16)   /**< PLL clock divided by 8.    */
 
 #define STM32_PLLSRC_HSI        (0 << 22)   /**< PLL clock source is HSI.   */
 #define STM32_PLLSRC_HSE        (1 << 22)   /**< PLL clock source is HSE.   */
@@ -336,14 +345,14 @@
 #define STM32_HPRE_DIV256       (14 << 4)   /**< SYSCLK divided by 256.     */
 #define STM32_HPRE_DIV512       (15 << 4)   /**< SYSCLK divided by 512.     */
 
-#define STM32_PPRE1_MASK        (7 << 10)	/**< PPRE1 mask.                */
+#define STM32_PPRE1_MASK        (7 << 10)   /**< PPRE1 mask.                */
 #define STM32_PPRE1_DIV1        (0 << 10)   /**< HCLK divided by 1.         */
 #define STM32_PPRE1_DIV2        (4 << 10)   /**< HCLK divided by 2.         */
 #define STM32_PPRE1_DIV4        (5 << 10)   /**< HCLK divided by 4.         */
 #define STM32_PPRE1_DIV8        (6 << 10)   /**< HCLK divided by 8.         */
 #define STM32_PPRE1_DIV16       (7 << 10)   /**< HCLK divided by 16.        */
 
-#define STM32_PPRE2_MASK        (7 << 13)	/**< PPRE2 mask.                */
+#define STM32_PPRE2_MASK        (7 << 13)   /**< PPRE2 mask.                */
 #define STM32_PPRE2_DIV1        (0 << 13)   /**< HCLK divided by 1.         */
 #define STM32_PPRE2_DIV2        (4 << 13)   /**< HCLK divided by 2.         */
 #define STM32_PPRE2_DIV4        (5 << 13)   /**< HCLK divided by 4.         */
@@ -376,17 +385,11 @@
 #define STM32_MCO2PRE_DIV4      (6 << 27)   /**< MCO2 divided by 4.         */
 #define STM32_MCO2PRE_DIV5      (7 << 27)   /**< MCO2 divided by 5.         */
 
-#define STM32_MCO2SEL_MASK      (3U << 30)  /**< MCO2 mask.                 */
-#define STM32_MCO2SEL_SYSCLK    (0U << 30)  /**< SYSCLK clock on MCO2 pin.  */
-#define STM32_MCO2SEL_PLLI2S    (1U << 30)  /**< PLLI2S clock on MCO2 pin.  */
-#define STM32_MCO2SEL_HSE       (2U << 30)  /**< HSE clock on MCO2 pin.     */
-#define STM32_MCO2SEL_PLL       (3U << 30)  /**< PLL clock on MCO2 pin.     */
-
-#define STM32_RTC_NOCLOCK       (0 << 8)    /**< No clock.                  */
-#define STM32_RTC_LSE           (1 << 8)    /**< LSE used as RTC clock.     */
-#define STM32_RTC_LSI           (2 << 8)    /**< LSI used as RTC clock.     */
-#define STM32_RTC_HSE           (3 << 8)    /**< HSE divided by programmable
-                                                 prescaler used as RTC clock*/
+#define STM32_MCO2SEL_MASK      (3 << 30)   /**< MCO2 mask.                 */
+#define STM32_MCO2SEL_SYSCLK    (0 << 30)   /**< SYSCLK clock on MCO2 pin.  */
+#define STM32_MCO2SEL_PLLI2S    (1 << 30)   /**< PLLI2S clock on MCO2 pin.  */
+#define STM32_MCO2SEL_HSE       (2 << 30)   /**< HSE clock on MCO2 pin.     */
+#define STM32_MCO2SEL_PLL       (3 << 30)   /**< PLL clock on MCO2 pin.     */
 
 /**
  * @name    RCC_PLLI2SCFGR register bits definitions
@@ -630,32 +633,32 @@
 #endif
 
 /**
- * @brief   MC01 clock source value.
- * @note    The default value outputs HSI clock on MC01 pin.
+ * @brief   MCO1 clock source value.
+ * @note    The default value outputs HSI clock on MCO1 pin.
  */
 #if !defined(STM32_MCO1SEL) || defined(__DOXYGEN__)
 #define STM32_MCO1SEL               STM32_MCO1SEL_HSI
 #endif
 
 /**
- * @brief   MC01 prescaler value.
- * @note    The default value outputs HSI clock on MC01 pin.
+ * @brief   MCO1 prescaler value.
+ * @note    The default value outputs HSI clock on MCO1 pin.
  */
 #if !defined(STM32_MCO1PRE) || defined(__DOXYGEN__)
 #define STM32_MCO1PRE               STM32_MCO1PRE_DIV1
 #endif
 
 /**
- * @brief   MC02 clock source value.
- * @note    The default value outputs SYSCLK / 5 on MC02 pin.
+ * @brief   MCO2 clock source value.
+ * @note    The default value outputs SYSCLK / 5 on MCO2 pin.
  */
 #if !defined(STM32_MCO2SEL) || defined(__DOXYGEN__)
 #define STM32_MCO2SEL               STM32_MCO2SEL_SYSCLK
 #endif
 
 /**
- * @brief   MC02 prescaler value.
- * @note    The default value outputs SYSCLK / 5 on MC02 pin.
+ * @brief   MCO2 prescaler value.
+ * @note    The default value outputs SYSCLK / 5 on MCO2 pin.
  */
 #if !defined(STM32_MCO2PRE) || defined(__DOXYGEN__)
 #define STM32_MCO2PRE               STM32_MCO2PRE_DIV5
@@ -682,6 +685,30 @@
  */
 #if !defined(STM32_PLLI2SR_VALUE) || defined(__DOXYGEN__)
 #define STM32_PLLI2SR_VALUE         5
+#endif
+
+/**
+ * @brief   PLLSAIQ value.
+ * @note    The allowed values are 2..15.
+ */
+#if !defined(STM32_PLLSAIQ_VALUE) || defined(__DOXYGEN__)
+#define STM32_PLLSAIQ_VALUE         8
+#endif
+
+/**
+ * @brief   PLLSAIQ value.
+ * @note    The allowed values are 49..432.
+ */
+#if !defined(STM32_PLLSAIN_VALUE) || defined(__DOXYGEN__)
+#define STM32_PLLSAIN_VALUE         120
+#endif
+
+/**
+ * @brief   PLLSAIQ value.
+ * @note    The allowed values are 2..7.
+ */
+#if !defined(STM32_PLLSAIR_VALUE) || defined(__DOXYGEN__)
+#define STM32_PLLSAIR_VALUE         4
 #endif
 /** @} */
 
@@ -711,7 +738,8 @@
  * @note    The values are valid for 2.7V to 3.6V supply range.
  */
 #if defined(STM32F429_439xx) || defined(STM32F427_437xx) ||                 \
-    defined(STM32F40_41xxx) || defined(__DOXYGEN__)
+    defined(STM32F40_41xxx)  || defined(STM32F446xx)     ||                 \
+    defined(__DOXYGEN__)
 #if ((STM32_VDD >= 270) && (STM32_VDD <= 360)) || defined(__DOXYGEN__)
 #define STM32_0WS_THRESHOLD         30000000
 #define STM32_1WS_THRESHOLD         60000000
@@ -1121,7 +1149,7 @@
 
 /* Calculating VOS settings, it is different for each sub-platform.*/
 #if defined(STM32F429_439xx) || defined(STM32F427_437xx) ||                 \
-    defined(__DOXYGEN__)
+    defined(STM32F446xx)     || defined(__DOXYGEN__)
 #if STM32_SYSCLK <= 120000000
 #define STM32_VOS                   STM32_VOS_SCALE3
 #define STM32_OVERDRIVE_REQUIRED    FALSE
@@ -1251,7 +1279,7 @@
  */
 #if (STM32_I2SSRC == STM32_I2SSRC_PLLI2S) || defined(__DOXYGEN__)
 /**
- * @brief   PLL activation flag.
+ * @brief   PLLI2S activation flag.
  */
 #define STM32_ACTIVATE_PLLI2S       TRUE
 #else
@@ -1276,6 +1304,41 @@
 #define STM32_PLLI2SR               (STM32_PLLI2SR_VALUE << 28)
 #else
 #error "invalid STM32_PLLI2SR_VALUE value specified"
+#endif
+
+/**
+ * @brief   PLLSAI activation flag.
+ */
+#define STM32_ACTIVATE_PLLSAI       FALSE
+
+/**
+ * @brief   STM32_PLLSAIN field.
+ */
+#if ((STM32_PLLSAIN_VALUE >= 49) && (STM32_PLLSAIN_VALUE <= 432)) ||        \
+    defined(__DOXYGEN__)
+#define STM32_PLLSAIN               (STM32_PLLSAIN_VALUE << 6)
+#else
+#error "invalid STM32_PLLSAIN_VALUE value specified"
+#endif
+
+/**
+ * @brief   STM32_PLLSAIQ field.
+ */
+#if ((STM32_PLLSAIQ_VALUE >= 2) && (STM32_PLLSAIQ_VALUE <= 15)) ||          \
+    defined(__DOXYGEN__)
+#define STM32_PLLSAIQ               (STM32_PLLSAIQ_VALUE << 24)
+#else
+#error "invalid STM32_PLLSAIR_VALUE value specified"
+#endif
+
+/**
+ * @brief   STM32_PLLSAIR field.
+ */
+#if ((STM32_PLLSAIR_VALUE >= 2) && (STM32_PLLSAIR_VALUE <= 7)) ||           \
+    defined(__DOXYGEN__)
+#define STM32_PLLSAIR               (STM32_PLLSAIR_VALUE << 28)
+#else
+#error "invalid STM32_PLLSAIR_VALUE value specified"
 #endif
 
 /**

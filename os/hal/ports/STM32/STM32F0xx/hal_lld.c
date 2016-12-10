@@ -36,7 +36,7 @@
  * @brief   CMSIS system core clock variable.
  * @note    It is declared in system_stm32f0xx.h.
  */
-uint32_t SystemCoreClock = STM32_SYSCLK;
+uint32_t SystemCoreClock = STM32_HCLK;
 
 /*===========================================================================*/
 /* Driver local variables and types.                                         */
@@ -92,6 +92,125 @@ static void hal_lld_backup_domain_init(void) {
 /*===========================================================================*/
 /* Driver interrupt handlers.                                                */
 /*===========================================================================*/
+
+#if defined(STM32_DMA_REQUIRED) || defined(__DOXYGEN__)
+#if defined(STM32_DMA1_CH23_HANDLER) || defined(__DOXYGEN__)
+/**
+ * @brief   DMA1 streams 2 and 3 shared ISR.
+ * @note    It is declared here because this device has a non-standard
+ *          DMA shared IRQ handler.
+ *
+ * @isr
+ */
+OSAL_IRQ_HANDLER(STM32_DMA1_CH23_HANDLER) {
+
+  OSAL_IRQ_PROLOGUE();
+
+  /* Check on channel 2.*/
+  dmaServeInterrupt(STM32_DMA1_STREAM2);
+
+  /* Check on channel 3.*/
+  dmaServeInterrupt(STM32_DMA1_STREAM3);
+
+  OSAL_IRQ_EPILOGUE();
+}
+#endif /* defined(STM32_DMA1_CH23_HANDLER) */
+
+#if defined(STM32_DMA1_CH4567_HANDLER) || defined(__DOXYGEN__)
+/**
+ * @brief   DMA1 streams 4, 5, 6 and 7 shared ISR.
+ *
+ * @isr
+ */
+OSAL_IRQ_HANDLER(STM32_DMA1_CH4567_HANDLER) {
+
+  OSAL_IRQ_PROLOGUE();
+
+  /* Check on channel 4.*/
+  dmaServeInterrupt(STM32_DMA1_STREAM4);
+
+  /* Check on channel 5.*/
+  dmaServeInterrupt(STM32_DMA1_STREAM5);
+
+#if STM32_DMA1_NUM_CHANNELS > 5
+  /* Check on channel 6.*/
+  dmaServeInterrupt(STM32_DMA1_STREAM6);
+#endif
+
+#if STM32_DMA1_NUM_CHANNELS > 6
+  /* Check on channel 7.*/
+  dmaServeInterrupt(STM32_DMA1_STREAM7);
+#endif
+
+  OSAL_IRQ_EPILOGUE();
+}
+#endif /* defined(STM32_DMA1_CH4567_HANDLER) */
+
+#if defined(STM32_DMA12_CH23_CH12_HANDLER) || defined(__DOXYGEN__)
+/**
+ * @brief   DMA1 streams 2 and 3, DMA2 streams 1 and 1 shared ISR.
+ * @note    It is declared here because this device has a non-standard
+ *          DMA shared IRQ handler.
+ *
+ * @isr
+ */
+OSAL_IRQ_HANDLER(STM32_DMA12_CH23_CH12_HANDLER) {
+
+  OSAL_IRQ_PROLOGUE();
+
+  /* Check on channel 2 of DMA1.*/
+  dmaServeInterrupt(STM32_DMA1_STREAM2);
+
+  /* Check on channel 3 of DMA1.*/
+  dmaServeInterrupt(STM32_DMA1_STREAM3);
+
+  /* Check on channel 1 of DMA2.*/
+  dmaServeInterrupt(STM32_DMA2_STREAM1);
+
+  /* Check on channel 2 of DMA2.*/
+  dmaServeInterrupt(STM32_DMA2_STREAM2);
+
+  OSAL_IRQ_EPILOGUE();
+}
+#endif /* defined(STM32_DMA12_CH23_CH12_HANDLER) */
+
+#if defined(STM32_DMA12_CH4567_CH345_HANDLER) || defined(__DOXYGEN__)
+/**
+ * @brief   DMA1 streams 4, 5, 6 and 7, DMA2 streams 3, 4 and 5 shared ISR.
+ * @note    It is declared here because this device has a non-standard
+ *          DMA shared IRQ handler.
+ *
+ * @isr
+ */
+OSAL_IRQ_HANDLER(STM32_DMA12_CH4567_CH345_HANDLER) {
+
+  OSAL_IRQ_PROLOGUE();
+
+  /* Check on channel 4 of DMA1.*/
+  dmaServeInterrupt(STM32_DMA1_STREAM4);
+
+  /* Check on channel 5 of DMA1.*/
+  dmaServeInterrupt(STM32_DMA1_STREAM5);
+
+  /* Check on channel 6 of DMA1.*/
+  dmaServeInterrupt(STM32_DMA1_STREAM6);
+
+  /* Check on channel 7 of DMA1.*/
+  dmaServeInterrupt(STM32_DMA1_STREAM7);
+
+  /* Check on channel 3 of DMA2.*/
+  dmaServeInterrupt(STM32_DMA2_STREAM3);
+
+  /* Check on channel 4 of DMA2.*/
+  dmaServeInterrupt(STM32_DMA2_STREAM4);
+
+  /* Check on channel 5 of DMA2.*/
+  dmaServeInterrupt(STM32_DMA2_STREAM5);
+
+  OSAL_IRQ_EPILOGUE();
+}
+#endif /* defined(STM32_DMA12_CH4567_CH345_HANDLER) */
+#endif /* defined(STM32_DMA_REQUIRED) */
 
 /*===========================================================================*/
 /* Driver exported functions.                                                */
@@ -188,11 +307,14 @@ void stm32_clock_init(void) {
 #endif
 
   /* Clock settings.*/
-  RCC->CFGR  = STM32_MCOSEL | STM32_PLLMUL | STM32_PLLSRC |
-               STM32_ADCPRE | STM32_PPRE   | STM32_HPRE;
+  RCC->CFGR  = STM32_PLLNODIV | STM32_MCOPRE | STM32_MCOSEL | STM32_PLLMUL |
+               STM32_PLLSRC   | STM32_PPRE   | STM32_HPRE;
   RCC->CFGR2 = STM32_PREDIV;
-  RCC->CFGR3 = STM32_ADCSW  | STM32_USBSW  | STM32_CECSW  |
-               STM32_I2C1SW | STM32_USART1SW;
+#if STM32_CECSW == STM32_CECSW_OFF
+  RCC->CFGR3 = STM32_USBSW  | STM32_I2C1SW | STM32_USART1SW;
+#else
+  RCC->CFGR3 = STM32_USBSW  | STM32_CECSW  | STM32_I2C1SW | STM32_USART1SW;
+#endif
 
 #if STM32_ACTIVATE_PLL
   /* PLL activation.*/

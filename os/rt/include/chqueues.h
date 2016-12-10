@@ -76,7 +76,7 @@ typedef void (*qnotify_t)(io_queue_t *qp);
  */
 struct io_queue {
   threads_queue_t       q_waiting;  /**< @brief Queue of waiting threads.   */
-  size_t                q_counter;  /**< @brief Resources counter.          */
+  volatile size_t       q_counter;  /**< @brief Resources counter.          */
   uint8_t               *q_buffer;  /**< @brief Pointer to the queue buffer.*/
   uint8_t               *q_top;     /**< @brief Pointer to the first location
                                                 after the buffer.           */
@@ -195,7 +195,7 @@ typedef io_queue_t output_queue_t;
 /**
  * @brief   Returns the queue's buffer size.
  *
- * @param[in] qp        pointer to a @p io_queue_t structure.
+ * @param[in] qp        pointer to a @p io_queue_t structure
  * @return              The buffer size.
  *
  * @xclass
@@ -210,7 +210,7 @@ typedef io_queue_t output_queue_t;
  * @details Returns the used space if used on an input queue or the empty
  *          space if used on an output queue.
  *
- * @param[in] qp        pointer to a @p io_queue_t structure.
+ * @param[in] qp        pointer to a @p io_queue_t structure
  * @return              The buffer space.
  *
  * @iclass
@@ -220,7 +220,7 @@ typedef io_queue_t output_queue_t;
 /**
  * @brief   Returns the queue application-defined link.
  *
- * @param[in] qp        pointer to a @p io_queue_t structure.
+ * @param[in] qp        pointer to a @p io_queue_t structure
  * @return              The application-defined link.
  *
  * @xclass
@@ -293,7 +293,7 @@ static inline size_t chIQGetEmptyI(input_queue_t *iqp) {
 /**
  * @brief   Evaluates to @p true if the specified input queue is empty.
  *
- * @param[in] iqp       pointer to an @p input_queue_t structure.
+ * @param[in] iqp       pointer to an @p input_queue_t structure
  * @return              The queue status.
  * @retval false        if the queue is not empty.
  * @retval true         if the queue is empty.
@@ -310,7 +310,7 @@ static inline bool chIQIsEmptyI(input_queue_t *iqp) {
 /**
  * @brief   Evaluates to @p true if the specified input queue is full.
  *
- * @param[in] iqp       pointer to an @p input_queue_t structure.
+ * @param[in] iqp       pointer to an @p input_queue_t structure
  * @return              The queue status.
  * @retval false        if the queue is not full.
  * @retval true         if the queue is full.
@@ -321,7 +321,9 @@ static inline bool chIQIsFullI(input_queue_t *iqp) {
 
   chDbgCheckClassI();
 
+  /*lint -save -e9007 [13.5] No side effects.*/
   return (bool)((iqp->q_wrptr == iqp->q_rdptr) && (iqp->q_counter != 0U));
+  /*lint -restore*/
 }
 
 /**
@@ -376,7 +378,7 @@ static inline size_t chOQGetEmptyI(output_queue_t *oqp) {
 /**
  * @brief   Evaluates to @p true if the specified output queue is empty.
  *
- * @param[in] oqp       pointer to an @p output_queue_t structure.
+ * @param[in] oqp       pointer to an @p output_queue_t structure
  * @return              The queue status.
  * @retval false        if the queue is not empty.
  * @retval true         if the queue is empty.
@@ -387,13 +389,15 @@ static inline bool chOQIsEmptyI(output_queue_t *oqp) {
 
   chDbgCheckClassI();
 
+  /*lint -save -e9007 [13.5] No side effects.*/
   return (bool)((oqp->q_wrptr == oqp->q_rdptr) && (oqp->q_counter != 0U));
+  /*lint -restore*/
 }
 
 /**
  * @brief   Evaluates to @p true if the specified output queue is full.
  *
- * @param[in] oqp       pointer to an @p output_queue_t structure.
+ * @param[in] oqp       pointer to an @p output_queue_t structure
  * @return              The queue status.
  * @retval false        if the queue is not full.
  * @retval true         if the queue is full.

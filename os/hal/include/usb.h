@@ -228,13 +228,19 @@
 #define USB_EP_MODE_TYPE_ISOC           0x0001U /**< Isochronous endpoint.  */
 #define USB_EP_MODE_TYPE_BULK           0x0002U /**< Bulk endpoint.         */
 #define USB_EP_MODE_TYPE_INTR           0x0003U /**< Interrupt endpoint.    */
-#define USB_EP_MODE_LINEAR_BUFFER       0x0000U /**< Linear buffer mode.    */
-#define USB_EP_MODE_QUEUE_BUFFER        0x0010U /**< Queue buffer mode.     */
 /** @} */
 
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */
 /*===========================================================================*/
+
+/**
+ * @brief   Enables synchronous APIs.
+ * @note    Disabling this option saves both code and data space.
+ */
+#if !defined(USB_USE_WAIT) || defined(__DOXYGEN__)
+#define USB_USE_WAIT                        FALSE
+#endif
 
 /*===========================================================================*/
 /* Derived constants and error checks.                                       */
@@ -258,11 +264,12 @@ typedef uint8_t usbep_t;
  * @brief   Type of a driver state machine possible states.
  */
 typedef enum {
-  USB_UNINIT   = 0,                     /**< Not initialized.               */
-  USB_STOP     = 1,                     /**< Stopped.                       */
-  USB_READY    = 2,                     /**< Ready, after bus reset.        */
-  USB_SELECTED = 3,                     /**< Address assigned.              */
-  USB_ACTIVE   = 4                      /**< Active, configuration selected.*/
+  USB_UNINIT    = 0,                    /**< Not initialized.               */
+  USB_STOP      = 1,                    /**< Stopped.                       */
+  USB_READY     = 2,                    /**< Ready, after bus reset.        */
+  USB_SELECTED  = 3,                    /**< Address assigned.              */
+  USB_ACTIVE    = 4,                    /**< Active, configuration selected.*/
+  USB_SUSPENDED = 5                     /**< Suspended, low power mode.     */
 } usbstate_t;
 
 /**
@@ -294,9 +301,10 @@ typedef enum {
   USB_EVENT_RESET = 0,                  /**< Driver has been reset by host. */
   USB_EVENT_ADDRESS = 1,                /**< Address assigned.              */
   USB_EVENT_CONFIGURED = 2,             /**< Configuration selected.        */
-  USB_EVENT_SUSPEND = 3,                /**< Entering suspend mode.         */
-  USB_EVENT_WAKEUP = 4,                 /**< Leaving suspend mode.          */
-  USB_EVENT_STALLED = 5                 /**< Endpoint 0 error, stalled.     */
+  USB_EVENT_UNCONFIGURED = 3,           /**< Configuration removed.         */
+  USB_EVENT_SUSPEND = 4,                /**< Entering suspend mode.         */
+  USB_EVENT_WAKEUP = 5,                 /**< Leaving suspend mode.          */
+  USB_EVENT_STALLED = 6                 /**< Endpoint 0 error, stalled.     */
 } usbevent_t;
 
 /**
@@ -403,9 +411,9 @@ typedef const USBDescriptor * (*usbgetdescriptor_t)(USBDriver *usbp,
  * @param[in] usbp      pointer to the @p USBDriver object
  * @return              The current frame number.
  *
- * @api
+ * @xclass
  */
-#define usbGetFrameNumber(usbp) usb_lld_get_frame_number(usbp)
+#define usbGetFrameNumberX(usbp) usb_lld_get_frame_number(usbp)
 
 /**
  * @brief   Returns the status of an IN endpoint.
@@ -445,9 +453,9 @@ typedef const USBDescriptor * (*usbgetdescriptor_t)(USBDriver *usbp,
  * @param[in] ep        endpoint number
  * @return              Received data size.
  *
- * @iclass
+ * @xclass
  */
-#define usbGetReceiveTransactionSizeI(usbp, ep)                             \
+#define usbGetReceiveTransactionSizeX(usbp, ep)                             \
   usb_lld_get_transaction_size(usbp, ep)
 
 /**
@@ -460,7 +468,7 @@ typedef const USBDescriptor * (*usbgetdescriptor_t)(USBDriver *usbp,
  * @param[in] n         number of bytes to be transferred
  * @param[in] endcb     callback to be invoked after the transfer or @p NULL
  *
- * @api
+ * @special
  */
 #define usbSetupTransfer(usbp, buf, n, endcb) {                             \
   (usbp)->ep0next  = (buf);                                                 \
@@ -536,10 +544,24 @@ typedef const USBDescriptor * (*usbgetdescriptor_t)(USBDriver *usbp,
  *
  * @notapi
  */
+#if (USB_USE_WAIT == TRUE) || defined(__DOXYGEN__)
 #define _usb_isr_invoke_in_cb(usbp, ep) {                                   \
   (usbp)->transmitting &= ~(1 << (ep));                                     \
-  (usbp)->epc[ep]->in_cb(usbp, ep);                                         \
+  if ((usbp)->epc[ep]->in_cb != NULL) {                                     \
+    (usbp)->epc[ep]->in_cb(usbp, ep);                                       \
+  }                                                                         \
+  osalSysLockFromISR();                                                     \
+  osalThreadResumeI(&(usbp)->epc[ep]->in_state->thread, MSG_OK);            \
+  osalSysUnlockFromISR();                                                   \
 }
+#else
+#define _usb_isr_invoke_in_cb(usbp, ep) {                                   \
+  (usbp)->transmitting &= ~(1 << (ep));                                     \
+  if ((usbp)->epc[ep]->in_cb != NULL) {                                     \
+    (usbp)->epc[ep]->in_cb(usbp, ep);                                       \
+  }                                                                         \
+}
+#endif
 
 /**
  * @brief   Common ISR code, OUT endpoint event.
@@ -549,10 +571,25 @@ typedef const USBDescriptor * (*usbgetdescriptor_t)(USBDriver *usbp,
  *
  * @notapi
  */
+#if (USB_USE_WAIT == TRUE) || defined(__DOXYGEN__)
 #define _usb_isr_invoke_out_cb(usbp, ep) {                                  \
   (usbp)->receiving &= ~(1 << (ep));                                        \
-  (usbp)->epc[ep]->out_cb(usbp, ep);                                        \
+  if ((usbp)->epc[ep]->out_cb != NULL) {                                    \
+    (usbp)->epc[ep]->out_cb(usbp, ep);                                      \
+  }                                                                         \
+  osalSysLockFromISR();                                                     \
+  osalThreadResumeI(&(usbp)->epc[ep]->out_state->thread,                    \
+                    usbGetReceiveTransactionSizeX(usbp, ep));               \
+  osalSysUnlockFromISR();                                                   \
 }
+#else
+#define _usb_isr_invoke_out_cb(usbp, ep) {                                  \
+  (usbp)->receiving &= ~(1 << (ep));                                        \
+  if ((usbp)->epc[ep]->out_cb != NULL) {                                    \
+    (usbp)->epc[ep]->out_cb(usbp, ep);                                      \
+  }                                                                         \
+}
+#endif
 /** @} */
 
 /*===========================================================================*/
@@ -570,19 +607,19 @@ extern "C" {
                         const USBEndpointConfig *epcp);
   void usbDisableEndpointsI(USBDriver *usbp);
   void usbReadSetupI(USBDriver *usbp, usbep_t ep, uint8_t *buf);
-  void usbPrepareReceive(USBDriver *usbp, usbep_t ep,
-                         uint8_t *buf, size_t n);
-  void usbPrepareTransmit(USBDriver *usbp, usbep_t ep,
-                          const uint8_t *buf, size_t n);
-  void usbPrepareQueuedReceive(USBDriver *usbp, usbep_t ep,
-                               input_queue_t *iqp, size_t n);
-  void usbPrepareQueuedTransmit(USBDriver *usbp, usbep_t ep,
-                                output_queue_t *oqp, size_t n);
-  bool usbStartReceiveI(USBDriver *usbp, usbep_t ep);
-  bool usbStartTransmitI(USBDriver *usbp, usbep_t ep);
+  void usbStartReceiveI(USBDriver *usbp, usbep_t ep,
+                        uint8_t *buf, size_t n);
+  void usbStartTransmitI(USBDriver *usbp, usbep_t ep,
+                         const uint8_t *buf, size_t n);
+#if USB_USE_WAIT == TRUE
+  msg_t usbReceive(USBDriver *usbp, usbep_t ep, uint8_t *buf, size_t n);
+  msg_t usbTransmit(USBDriver *usbp, usbep_t ep, const uint8_t *buf, size_t n);
+#endif
   bool usbStallReceiveI(USBDriver *usbp, usbep_t ep);
   bool usbStallTransmitI(USBDriver *usbp, usbep_t ep);
   void _usb_reset(USBDriver *usbp);
+  void _usb_suspend(USBDriver *usbp);
+  void _usb_wakeup(USBDriver *usbp);
   void _usb_ep0setup(USBDriver *usbp, usbep_t ep);
   void _usb_ep0in(USBDriver *usbp, usbep_t ep);
   void _usb_ep0out(USBDriver *usbp, usbep_t ep);

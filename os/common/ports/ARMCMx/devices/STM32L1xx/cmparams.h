@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -60,7 +57,17 @@
 /* If the device type is not externally defined, for example from the Makefile,
    then a file named board.h is included. This file must contain a device
    definition compatible with the vendor include file.*/
-#if !defined(STM32L1XX_MD) && !defined(STM32L1XX_MDP) && !defined(STM32L1XX_HD)
+#if !defined(STM32L100xB)  && !defined(STM32L100xBA) &&                     \
+    !defined(STM32L100xC)  && !defined(STM32L151xB)  &&                     \
+    !defined(STM32L151xBA) && !defined(STM32L151xC)  &&                     \
+    !defined(STM32L151xCA) && !defined(STM32L151xD)  &&                     \
+    !defined(STM32L151xDX) && !defined(STM32L151xE)  &&                     \
+    !defined(STM32L152xB)  && !defined(STM32L152xBA) &&                     \
+    !defined(STM32L152xC)  && !defined(STM32L152xCA) &&                     \
+    !defined(STM32L152xD)  && !defined(STM32L152xDX) &&                     \
+    !defined(STM32L152xE)  && !defined(STM32L162xC)  &&                     \
+    !defined(STM32L162xCA) && !defined(STM32L162xD)  &&                     \
+    !defined(STM32L162xDX) && !defined(STM32L162xE)
 #include "board.h"
 #endif
 
@@ -76,6 +83,9 @@
 #if CORTEX_PRIORITY_BITS != __NVIC_PRIO_BITS
 #error "CMSIS __NVIC_PRIO_BITS mismatch"
 #endif
+
+/* Fix for yet another consistency error in ST headers.*/
+#define SVCall_IRQn SVC_IRQn
 
 #endif /* !defined(_FROM_ASM_) */
 

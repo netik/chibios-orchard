@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -57,6 +54,13 @@
 #endif
 
 /**
+ * @brief   Core initialization switch.
+ */
+#if !defined(CRT0_INIT_CORE) || defined(__DOXYGEN__)
+#define CRT0_INIT_CORE                      TRUE
+#endif
+
+/**
  * @brief   Stack segments initialization switch.
  */
 #if !defined(CRT0_STACKS_FILL_PATTERN) || defined(__DOXYGEN__)
@@ -82,6 +86,13 @@
  */
 #if !defined(CRT0_INIT_BSS) || defined(__DOXYGEN__)
 #define CRT0_INIT_BSS                       TRUE
+#endif
+
+/**
+ * @brief   RAM areas initialization switch.
+ */
+#if !defined(CRT0_INIT_RAM_AREAS) || defined(__DOXYGEN__)
+#define CRT0_INIT_RAM_AREAS                 TRUE
 #endif
 
 /**
@@ -128,6 +139,11 @@ Reset_Handler:
                 movs    r0, #CRT0_CONTROL_INIT
                 msr     CONTROL, r0
                 isb
+
+#if CRT0_INIT_CORE == TRUE
+                /* Core initialization.*/
+                bl      __core_init
+#endif
 
                 /* Early initialization..*/
                 bl      __early_init
@@ -192,6 +208,11 @@ bloop:
 endbloop:
 #endif
 
+#if CRT0_INIT_RAM_AREAS == TRUE
+                /* RAM areas initialization.*/
+                bl      __init_ram_areas
+#endif
+
                 /* Late initialization..*/
                 bl      __late_init
 
@@ -212,7 +233,7 @@ endinitloop:
                 /* Main program invocation, r0 contains the returned value.*/
                 bl      main
 
-#if CRT0_CALL_CONSTRUCTORS == TRUE
+#if CRT0_CALL_DESTRUCTORS == TRUE
                 /* Destructors invocation.*/
                 ldr     r4, =__fini_array_start
                 ldr     r5, =__fini_array_end

@@ -102,8 +102,23 @@
  *          @p nilcore_timer.h, if this option is enabled then the file
  *          @p nilcore_timer_alt.h is included instead.
  */
-#if !defined(PORT_USE_ALT_TIMER)
+#if !defined(PORT_USE_ALT_TIMER) || defined(__DOXYGEN__)
 #define PORT_USE_ALT_TIMER              FALSE
+#endif
+
+/**
+ * @brief   Use VLE instruction set.
+ * @note    This parameter is usually set in the Makefile.
+ */
+#if !defined(PPC_USE_VLE) || defined(__DOXYGEN__)
+#define PPC_USE_VLE                     TRUE
+#endif
+
+/**
+ * @brief   Enables the use of the @p WFI instruction.
+ */
+#if !defined(PPC_ENABLE_WFI_IDLE) || defined(__DOXYGEN__)
+#define PPC_ENABLE_WFI_IDLE             FALSE
 #endif
 
 /*===========================================================================*/
@@ -288,6 +303,18 @@ struct port_intctx {
  *          port implementation.
  */
 #define PORT_FAST_IRQ_HANDLER(id) void id(void)
+
+/**
+ * @brief   Priority level verification macro.
+ */
+#define PORT_IRQ_IS_VALID_PRIORITY(n)                                       \
+  (((n) >= 0U) && ((n) < INTC_PRIORITY_LEVELS))
+
+/**
+ * @brief   Priority level verification macro.
+ */
+#define PORT_IRQ_IS_VALID_KERNEL_PRIORITY(n)                                \
+    (((n) >= 0U) && ((n) < INTC_PRIORITY_LEVELS))
 
 /**
  * @brief   Performs a context switch between two threads.

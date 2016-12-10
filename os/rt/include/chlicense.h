@@ -144,13 +144,12 @@
 #define CH_LICENSE_MAX_DEPLOY               CH_DEPLOY_UNLIMITED
 
 #elif CH_LICENSE == CH_LICENSE_COMMERCIAL_FREE
-#include "chcustomer.h"
 #define CH_LICENSE_TYPE_STRING              "Zero Cost Registered License"
-#define CH_LICENSE_ID_STRING                CH_CUSTOMER_ID_STRING
-#define CH_LICENSE_ID_CODE                  CH_CUSTOMER_ID_CODE
+#define CH_LICENSE_ID_STRING                "N/A"
+#define CH_LICENSE_ID_CODE                  "2015-0000"
 #define CH_LICENSE_MODIFIABLE_CODE          FALSE
 #define CH_LICENSE_FEATURES                 CH_FEATURES_INTERMEDIATE
-#define CH_LICENSE_MAX_DEPLOY               200
+#define CH_LICENSE_MAX_DEPLOY               500
 
 #elif CH_LICENSE == CH_LICENSE_COMMERCIAL_DEVELOPER
 #include "chcustomer.h"
@@ -159,7 +158,7 @@
 #define CH_LICENSE_ID_CODE                  CH_CUSTOMER_ID_CODE
 #define CH_LICENSE_MODIFIABLE_CODE          TRUE
 #define CH_LICENSE_FEATURES                 CH_FEATURES_FULL
-#define CH_LICENSE_DEPLOY_LIMIT             2000
+#define CH_LICENSE_DEPLOY_LIMIT             5000
 
 #elif CH_LICENSE == CH_LICENSE_COMMERCIAL_FULL
 #include "chcustomer.h"
@@ -194,11 +193,7 @@
     #error "CH_CFG_ST_TIMEDELTA > 2, High Resolution Time functionality restricted"
   #endif
 
-  #if CH_CFG_USE_TM
-    #error "CH_CFG_USE_TM == TRUE, Time Measurement functionality restricted"
-  #endif
-
-  #if CH_DBG_STATISTICS
+  #if CH_DBG_STATISTICS == TRUE
     #error "CH_DBG_STATISTICS == TRUE, Statistics functionality restricted"
   #endif
 
@@ -208,15 +203,19 @@
       #error "CH_CFG_ST_TIMEDELTA > 0, Tick-Less functionality restricted"
     #endif
 
-    #if CH_CFG_USE_MUTEXES_RECURSIVE
+    #if CH_CFG_USE_TM == TRUE
+      #error "CH_CFG_USE_TM == TRUE, Time Measurement functionality restricted"
+    #endif
+
+    #if CH_CFG_USE_MUTEXES_RECURSIVE == TRUE
       #error "CH_CFG_USE_MUTEXES_RECURSIVE == TRUE, Recursive Mutexes functionality restricted"
     #endif
 
-    #if CH_CFG_USE_CONDVARS
+    #if CH_CFG_USE_CONDVARS == TRUE
       #error "CH_CFG_USE_CONDVARS == TRUE, Condition Variables functionality restricted"
     #endif
 
-    #if CH_CFG_USE_DYNAMIC
+    #if CH_CFG_USE_DYNAMIC == TRUE
       #error "CH_CFG_USE_DYNAMIC == TRUE, Dynamic Threads functionality restricted"
     #endif
   #endif /* CH_LICENSE_FEATURES == CH_FEATURES_BASIC */

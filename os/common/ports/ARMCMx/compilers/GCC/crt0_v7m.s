@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -55,6 +52,17 @@
 /*===========================================================================*/
 
 /**
+ * @brief   FPU initialization switch.
+ */
+#if !defined(CRT0_INIT_FPU) || defined(__DOXYGEN__)
+#if defined(CORTEX_USE_FPU) || defined(__DOXYGEN__)
+#define CRT0_INIT_FPU                       CORTEX_USE_FPU
+#else
+#define CRT0_INIT_FPU                       FALSE
+#endif
+#endif
+
+/**
  * @brief   Control special register initialization value.
  * @details The system is setup to run in privileged mode using the PSP
  *          stack (dual stack mode).
@@ -62,6 +70,13 @@
 #if !defined(CRT0_CONTROL_INIT) || defined(__DOXYGEN__)
 #define CRT0_CONTROL_INIT                   (CONTROL_USE_PSP |              \
                                              CONTROL_MODE_PRIVILEGED)
+#endif
+
+/**
+ * @brief   Core initialization switch.
+ */
+#if !defined(CRT0_INIT_CORE) || defined(__DOXYGEN__)
+#define CRT0_INIT_CORE                      TRUE
 #endif
 
 /**
@@ -93,6 +108,13 @@
 #endif
 
 /**
+ * @brief   RAM areas initialization switch.
+ */
+#if !defined(CRT0_INIT_RAM_AREAS) || defined(__DOXYGEN__)
+#define CRT0_INIT_RAM_AREAS                 TRUE
+#endif
+
+/**
  * @brief   Constructors invocation switch.
  */
 #if !defined(CRT0_CALL_CONSTRUCTORS) || defined(__DOXYGEN__)
@@ -104,17 +126,6 @@
  */
 #if !defined(CRT0_CALL_DESTRUCTORS) || defined(__DOXYGEN__)
 #define CRT0_CALL_DESTRUCTORS               TRUE
-#endif
-
-/**
- * @brief   FPU initialization switch.
- */
-#if !defined(CRT0_INIT_FPU) || defined(__DOXYGEN__)
-#if defined(CORTEX_USE_FPU) || defined(__DOXYGEN__)
-#define CRT0_INIT_FPU                       CORTEX_USE_FPU
-#else
-#define CRT0_INIT_FPU                       FALSE
-#endif
 #endif
 
 /**
@@ -171,6 +182,8 @@ Reset_Handler:
                 movw    r1, #SCB_FPCCR & 0xFFFF
                 movt    r1, #SCB_FPCCR >> 16
                 str     r0, [r1]
+                dsb
+                isb
 
                 /* CPACR initialization.*/
                 movw    r0, #CRT0_CPACR_INIT & 0xFFFF
@@ -178,6 +191,8 @@ Reset_Handler:
                 movw    r1, #SCB_CPACR & 0xFFFF
                 movt    r1, #SCB_CPACR >> 16
                 str     r0, [r1]
+                dsb
+                isb
 
                 /* FPU FPSCR initially cleared.*/
                 mov     r0, #0
@@ -199,7 +214,12 @@ Reset_Handler:
                 msr     CONTROL, r0
                 isb
 
-                /* Early initialization..*/
+#if CRT0_INIT_CORE == TRUE
+                /* Core initialization.*/
+                bl      __core_init
+#endif
+
+                /* Early initialization.*/
                 bl      __early_init
 
 #if CRT0_INIT_STACKS == TRUE
@@ -230,9 +250,9 @@ psloop:
 #if CRT0_INIT_DATA == TRUE
                 /* Data initialization. Note, it assumes that the DATA size
                   is a multiple of 4 so the linker file must ensure this.*/
-                ldr     r1, =_textdata
-                ldr     r2, =_data
-                ldr     r3, =_edata
+                ldr     r1, =_textdata_start
+                ldr     r2, =_data_start
+                ldr     r3, =_data_end
 dloop:
                 cmp     r2, r3
                 ittt    lo
@@ -254,6 +274,11 @@ bloop:
                 blo     bloop
 #endif
 
+#if CRT0_INIT_RAM_AREAS == TRUE
+                /* RAM areas initialization.*/
+                bl      __init_ram_areas
+#endif
+
                 /* Late initialization..*/
                 bl      __late_init
 
@@ -273,7 +298,7 @@ endinitloop:
                 /* Main program invocation, r0 contains the returned value.*/
                 bl      main
 
-#if CRT0_CALL_CONSTRUCTORS == TRUE
+#if CRT0_CALL_DESTRUCTORS == TRUE
                 /* Destructors invocation.*/
                 ldr     r4, =__fini_array_start
                 ldr     r5, =__fini_array_end

@@ -32,10 +32,23 @@
 /* Driver local definitions.                                                 */
 /*===========================================================================*/
 
-#define TRDT_VALUE              5
+#define TRDT_VALUE_FS           5
+#define TRDT_VALUE_HS           9
 
 #define EP0_MAX_INSIZE          64
 #define EP0_MAX_OUTSIZE         64
+
+#if defined(STM32F7XX)
+#define GCCFG_INIT_VALUE        GCCFG_PWRDWN
+#else
+#if defined(BOARD_OTG_NOVBUSSENS)
+#define GCCFG_INIT_VALUE        (GCCFG_NOVBUSSENS | GCCFG_VBUSASEN |        \
+                                 GCCFG_VBUSBSEN | GCCFG_PWRDWN)
+#else
+#define GCCFG_INIT_VALUE        (GCCFG_VBUSASEN | GCCFG_VBUSBSEN |          \
+                                 GCCFG_PWRDWN)
+#endif
+#endif
 
 /*===========================================================================*/
 /* Driver exported variables.                                                */
@@ -122,7 +135,7 @@ static void otg_core_reset(USBDriver *usbp) {
   while ((otgp->GRSTCTL & GRSTCTL_CSRST) != 0)
     ;
 
-  osalSysPolledDelayX(12);
+  osalSysPolledDelayX(18);
 
   /* Wait AHB idle condition.*/
   while ((otgp->GRSTCTL & GRSTCTL_AHBIDL) == 0)
@@ -134,32 +147,11 @@ static void otg_disable_ep(USBDriver *usbp) {
   unsigned i;
 
   for (i = 0; i <= usbp->otgparams->num_endpoints; i++) {
-    /* Disable only if enabled because this sentence in the manual:
-       "The application must set this bit only if Endpoint Enable is
-        already set for this endpoint".*/
-    if ((otgp->ie[i].DIEPCTL & DIEPCTL_EPENA) != 0) {
-      otgp->ie[i].DIEPCTL = DIEPCTL_EPDIS;
-      /* Wait for endpoint disable.*/
-      while (!(otgp->ie[i].DIEPINT & DIEPINT_EPDISD))
-        ;
-    }
-    else
-      otgp->ie[i].DIEPCTL = 0;
+    otgp->ie[i].DIEPCTL = 0;
     otgp->ie[i].DIEPTSIZ = 0;
     otgp->ie[i].DIEPINT = 0xFFFFFFFF;
-    /* Disable only if enabled because this sentence in the manual:
-       "The application must set this bit only if Endpoint Enable is
-        already set for this endpoint".
-       Note that the attempt to disable the OUT EP0 is ignored by the
-       hardware but the code is simpler this way.*/
-    if ((otgp->oe[i].DOEPCTL & DOEPCTL_EPENA) != 0) {
-      otgp->oe[i].DOEPCTL = DOEPCTL_EPDIS;
-      /* Wait for endpoint disable.*/
-      while (!(otgp->oe[i].DOEPINT & DOEPINT_OTEPDIS))
-        ;
-    }
-    else
-      otgp->oe[i].DOEPCTL = 0;
+
+    otgp->oe[i].DOEPCTL = 0;
     otgp->oe[i].DOEPTSIZ = 0;
     otgp->oe[i].DOEPINT = 0xFFFFFFFF;
   }
@@ -173,7 +165,7 @@ static void otg_rxfifo_flush(USBDriver *usbp) {
   while ((otgp->GRSTCTL & GRSTCTL_RXFFLSH) != 0)
     ;
   /* Wait for 3 PHY Clocks.*/
-  osalSysPolledDelayX(12);
+  osalSysPolledDelayX(18);
 }
 
 static void otg_txfifo_flush(USBDriver *usbp, uint32_t fifo) {
@@ -183,7 +175,7 @@ static void otg_txfifo_flush(USBDriver *usbp, uint32_t fifo) {
   while ((otgp->GRSTCTL & GRSTCTL_TXFFLSH) != 0)
     ;
   /* Wait for 3 PHY Clocks.*/
-  osalSysPolledDelayX(12);
+  osalSysPolledDelayX(18);
 }
 
 /**
@@ -217,30 +209,6 @@ static uint32_t otg_ram_alloc(USBDriver *usbp, size_t size) {
 }
 
 /**
- * @brief   Pushes a series of words into a FIFO.
- *
- * @param[in] fifop     pointer to the FIFO register
- * @param[in] buf       pointer to the words buffer, not necessarily word
- *                      aligned
- * @param[in] n         number of words to push
- *
- * @return              A pointer after the last word pushed.
- *
- * @notapi
- */
-static uint8_t *otg_do_push(volatile uint32_t *fifop, uint8_t *buf, size_t n) {
-
-  while (n > 0) {
-    /* Note, this line relies on the Cortex-M3/M4 ability to perform
-       unaligned word accesses and on the LSB-first memory organization.*/
-    *fifop = *((PACKED_VAR uint32_t *)buf);
-    buf += 4;
-    n--;
-  }
-  return buf;
-}
-
-/**
  * @brief   Writes to a TX FIFO.
  *
  * @param[in] fifop     pointer to the FIFO register
@@ -253,89 +221,16 @@ static void otg_fifo_write_from_buffer(volatile uint32_t *fifop,
                                        const uint8_t *buf,
                                        size_t n) {
 
-  otg_do_push(fifop, (uint8_t *)buf, (n + 3) / 4);
-}
+  osalDbgAssert(n > 0, "is zero");
 
-/**
- * @brief   Writes to a TX FIFO fetching data from a queue.
- *
- * @param[in] fifop     pointer to the FIFO register
- * @param[in] oqp       pointer to an @p output_queue_t object
- * @param[in] n         maximum number of bytes to copy
- *
- * @notapi
- */
-static void otg_fifo_write_from_queue(volatile uint32_t *fifop,
-                                      output_queue_t *oqp,
-                                      size_t n) {
-  size_t ntogo;
-
-  ntogo = n;
-  while (ntogo > 0) {
-    uint32_t w, i;
-    size_t nw = ntogo / 4;
-
-    if (nw > 0) {
-      size_t streak;
-      uint32_t nw2end = (oqp->q_top - oqp->q_rdptr) / 4;
-
-      ntogo -= (streak = nw <= nw2end ? nw : nw2end) * 4;
-      oqp->q_rdptr = otg_do_push(fifop, oqp->q_rdptr, streak);
-      if (oqp->q_rdptr >= oqp->q_top) {
-        oqp->q_rdptr = oqp->q_buffer;
-        continue;
-      }
-    }
-
-    /* If this condition is not satisfied then there is a word lying across
-       queue circular buffer boundary or there are some remaining bytes.*/
-    if (ntogo <= 0)
+  while (true) {
+    *fifop = *((uint32_t *)buf);
+    if (n <= 4) {
       break;
-
-    /* One byte at time.*/
-    w = 0;
-    i = 0;
-    while ((ntogo > 0) && (i < 4)) {
-      w |= (uint32_t)*oqp->q_rdptr++ << (i * 8);
-      if (oqp->q_rdptr >= oqp->q_top)
-        oqp->q_rdptr = oqp->q_buffer;
-      ntogo--;
-      i++;
     }
-    *fifop = w;
-  }
-
-  /* Updating queue.*/
-  osalSysLock();
-  oqp->q_counter += n;
-  osalThreadDequeueAllI(&oqp->q_waiting, Q_OK);
-  osalOsRescheduleS();
-  osalSysUnlock();
-}
-
-/**
- * @brief   Pops a series of words from a FIFO.
- *
- * @param[in] fifop     pointer to the FIFO register
- * @param[in] buf       pointer to the words buffer, not necessarily word
- *                      aligned
- * @param[in] n         number of words to push
- *
- * @return              A pointer after the last word pushed.
- *
- * @notapi
- */
-static uint8_t *otg_do_pop(volatile uint32_t *fifop, uint8_t *buf, size_t n) {
-
-  while (n > 0) {
-    uint32_t w = *fifop;
-    /* Note, this line relies on the Cortex-M3/M4 ability to perform
-       unaligned word accesses and on the LSB-first memory organization.*/
-    *((PACKED_VAR uint32_t *)buf) = w;
+    n -= 4;
     buf += 4;
-    n--;
   }
-  return buf;
 }
 
 /**
@@ -352,76 +247,19 @@ static void otg_fifo_read_to_buffer(volatile uint32_t *fifop,
                                     uint8_t *buf,
                                     size_t n,
                                     size_t max) {
+  uint32_t w = 0;
+  size_t i = 0;
 
-  n = (n + 3) / 4;
-  max = (max + 3) / 4;
-  while (n) {
-    uint32_t w = *fifop;
-    if (max) {
-      /* Note, this line relies on the Cortex-M3/M4 ability to perform
-         unaligned word accesses and on the LSB-first memory organization.*/
-      *((PACKED_VAR uint32_t *)buf) = w;
-      buf += 4;
-      max--;
+  while (i < n) {
+    if ((i & 3) == 0){
+      w = *fifop;
     }
-    n--;
+    if (i < max) {
+      *buf++ = (uint8_t)w;
+      w >>= 8;
+    }
+    i++;
   }
-}
-
-/**
- * @brief   Reads a packet from the RXFIFO.
- *
- * @param[in] fifop     pointer to the FIFO register
- * @param[in] iqp       pointer to an @p input_queue_t object
- * @param[in] n         number of bytes to pull from the FIFO
- *
- * @notapi
- */
-static void otg_fifo_read_to_queue(volatile uint32_t *fifop,
-                                   input_queue_t *iqp,
-                                   size_t n) {
-  size_t ntogo;
-
-  ntogo = n;
-  while (ntogo > 0) {
-    uint32_t w, i;
-    size_t nw = ntogo / 4;
-
-    if (nw > 0) {
-      size_t streak;
-      uint32_t nw2end = (iqp->q_wrptr - iqp->q_wrptr) / 4;
-
-      ntogo -= (streak = nw <= nw2end ? nw : nw2end) * 4;
-      iqp->q_wrptr = otg_do_pop(fifop, iqp->q_wrptr, streak);
-      if (iqp->q_wrptr >= iqp->q_top) {
-        iqp->q_wrptr = iqp->q_buffer;
-        continue;
-      }
-    }
-
-    /* If this condition is not satisfied then there is a word lying across
-       queue circular buffer boundary or there are some remaining bytes.*/
-    if (ntogo <= 0)
-      break;
-
-    /* One byte at time.*/
-    w = *fifop;
-    i = 0;
-    while ((ntogo > 0) && (i < 4)) {
-      *iqp->q_wrptr++ = (uint8_t)(w >> (i * 8));
-      if (iqp->q_wrptr >= iqp->q_top)
-        iqp->q_wrptr = iqp->q_buffer;
-      ntogo--;
-      i++;
-    }
-  }
-
-  /* Updating queue.*/
-  osalSysLock();
-  iqp->q_counter += n;
-  osalThreadDequeueAllI(&iqp->q_waiting, Q_OK);
-  osalOsRescheduleS();
-  osalSysUnlock();
 }
 
 /**
@@ -447,20 +285,12 @@ static void otg_rxfifo_handler(USBDriver *usbp) {
   case GRXSTSP_OUT_DATA:
     cnt = (sts & GRXSTSP_BCNT_MASK) >> GRXSTSP_BCNT_OFF;
     ep  = (sts & GRXSTSP_EPNUM_MASK) >> GRXSTSP_EPNUM_OFF;
-    if (usbp->epc[ep]->out_state->rxqueued) {
-      /* Queue associated.*/
-      otg_fifo_read_to_queue(usbp->otg->FIFO[0],
-                             usbp->epc[ep]->out_state->mode.queue.rxqueue,
-                             cnt);
-    }
-    else {
-      otg_fifo_read_to_buffer(usbp->otg->FIFO[0],
-                              usbp->epc[ep]->out_state->mode.linear.rxbuf,
-                              cnt,
-                              usbp->epc[ep]->out_state->rxsize -
-                              usbp->epc[ep]->out_state->rxcnt);
-      usbp->epc[ep]->out_state->mode.linear.rxbuf += cnt;
-    }
+    otg_fifo_read_to_buffer(usbp->otg->FIFO[0],
+                            usbp->epc[ep]->out_state->rxbuf,
+                            cnt,
+                            usbp->epc[ep]->out_state->rxsize -
+                            usbp->epc[ep]->out_state->rxcnt);
+    usbp->epc[ep]->out_state->rxbuf += cnt;
     usbp->epc[ep]->out_state->rxcnt += cnt;
     break;
   case GRXSTSP_OUT_GLOBAL_NAK:
@@ -481,12 +311,12 @@ static void otg_rxfifo_handler(USBDriver *usbp) {
 static bool otg_txfifo_handler(USBDriver *usbp, usbep_t ep) {
 
   /* The TXFIFO is filled until there is space and data to be transmitted.*/
-  while (TRUE) {
+  while (true) {
     uint32_t n;
 
     /* Transaction end condition.*/
     if (usbp->epc[ep]->in_state->txcnt >= usbp->epc[ep]->in_state->txsize)
-      return TRUE;
+      return true;
 
     /* Number of bytes remaining in current transaction.*/
     n = usbp->epc[ep]->in_state->txsize - usbp->epc[ep]->in_state->txcnt;
@@ -496,25 +326,15 @@ static bool otg_txfifo_handler(USBDriver *usbp, usbep_t ep) {
     /* Checks if in the TXFIFO there is enough space to accommodate the
        next packet.*/
     if (((usbp->otg->ie[ep].DTXFSTS & DTXFSTS_INEPTFSAV_MASK) * 4) < n)
-      return FALSE;
+      return false;
 
 #if STM32_USB_OTGFIFO_FILL_BASEPRI
     __set_BASEPRI(CORTEX_PRIO_MASK(STM32_USB_OTGFIFO_FILL_BASEPRI));
 #endif
-    /* Handles the two cases: linear buffer or queue.*/
-    if (usbp->epc[ep]->in_state->txqueued) {
-      /* Queue associated.*/
-      otg_fifo_write_from_queue(usbp->otg->FIFO[ep],
-                                usbp->epc[ep]->in_state->mode.queue.txqueue,
-                                n);
-    }
-    else {
-      /* Linear buffer associated.*/
-      otg_fifo_write_from_buffer(usbp->otg->FIFO[ep],
-                                 usbp->epc[ep]->in_state->mode.linear.txbuf,
-                                 n);
-      usbp->epc[ep]->in_state->mode.linear.txbuf += n;
-    }
+    otg_fifo_write_from_buffer(usbp->otg->FIFO[ep],
+                               usbp->epc[ep]->in_state->txbuf,
+                               n);
+    usbp->epc[ep]->in_state->txbuf += n;
 #if STM32_USB_OTGFIFO_FILL_BASEPRI
   __set_BASEPRI(0);
 #endif
@@ -549,7 +369,6 @@ static void otg_epin_handler(USBDriver *usbp, usbep_t ep) {
          cover the remaining.*/
       isp->txsize = isp->totsize - isp->txsize;
       isp->txcnt  = 0;
-      usb_lld_prepare_transmit(usbp, ep);
       osalSysLockFromISR();
       usb_lld_start_in(usbp, ep);
       osalSysUnlockFromISR();
@@ -595,19 +414,82 @@ static void otg_epout_handler(USBDriver *usbp, usbep_t ep) {
     /* Receive transfer complete.*/
     USBOutEndpointState *osp = usbp->epc[ep]->out_state;
 
-    if (osp->rxsize < osp->totsize) {
+    /* A short packet always terminates a transaction.*/
+    if (((osp->rxcnt % usbp->epc[ep]->out_maxsize) == 0) &&
+        (osp->rxsize < osp->totsize)) {
       /* In case the transaction covered only part of the total transfer
          then another transaction is immediately started in order to
          cover the remaining.*/
       osp->rxsize = osp->totsize - osp->rxsize;
       osp->rxcnt  = 0;
-      usb_lld_prepare_receive(usbp, ep);
-      chSysLockFromISR();
+      osalSysLockFromISR();
       usb_lld_start_out(usbp, ep);
-      chSysUnlockFromISR();
+      osalSysUnlockFromISR();
     }
     else {
       /* End on OUT transfer.*/
+      _usb_isr_invoke_out_cb(usbp, ep);
+    }
+  }
+}
+
+/**
+ * @brief   Isochronous IN transfer failed handler.
+ *
+ * @param[in] usbp      pointer to the @p USBDriver object
+ *
+ * @notapi
+ */
+static void otg_isoc_in_failed_handler(USBDriver *usbp) {
+  usbep_t ep;
+  stm32_otg_t *otgp = usbp->otg;
+
+  for (ep = 0; ep <= usbp->otgparams->num_endpoints; ep++) {
+    if (((otgp->ie[ep].DIEPCTL & DIEPCTL_EPTYP_MASK) == DIEPCTL_EPTYP_ISO) &&
+        ((otgp->ie[ep].DIEPCTL & DIEPCTL_EPENA) != 0)) {
+      /* Endpoint enabled -> ISOC IN transfer failed */
+      /* Disable endpoint */
+      otgp->ie[ep].DIEPCTL |= (DIEPCTL_EPDIS | DIEPCTL_SNAK);
+      while (otgp->ie[ep].DIEPCTL & DIEPCTL_EPENA)
+        ;
+
+      /* Flush FIFO */
+      otg_txfifo_flush(usbp, ep);
+
+      /* Prepare data for next frame */
+      _usb_isr_invoke_in_cb(usbp, ep);
+
+      /* Pump out data for next frame */
+      osalSysLockFromISR();
+      otgp->DIEPEMPMSK &= ~(1 << ep);
+      usbp->txpending |= (1 << ep);
+      osalThreadResumeI(&usbp->wait, MSG_OK);
+      osalSysUnlockFromISR();
+    }
+  }
+}
+
+/**
+ * @brief   Isochronous OUT transfer failed handler.
+ *
+ * @param[in] usbp      pointer to the @p USBDriver object
+ *
+ * @notapi
+ */
+static void otg_isoc_out_failed_handler(USBDriver *usbp) {
+  usbep_t ep;
+  stm32_otg_t *otgp = usbp->otg;
+
+  for (ep = 0; ep <= usbp->otgparams->num_endpoints; ep++) {
+    if (((otgp->oe[ep].DOEPCTL & DOEPCTL_EPTYP_MASK) == DOEPCTL_EPTYP_ISO) &&
+        ((otgp->oe[ep].DOEPCTL & DOEPCTL_EPENA) != 0)) {
+      /* Endpoint enabled -> ISOC OUT transfer failed */
+      /* Disable endpoint */
+      /* FIXME: Core stucks here */
+      /*otgp->oe[ep].DOEPCTL |= (DOEPCTL_EPDIS | DOEPCTL_SNAK);
+      while (otgp->oe[ep].DOEPCTL & DOEPCTL_EPENA)
+        ;*/
+      /* Prepare transfer for next frame */
       _usb_isr_invoke_out_cb(usbp, ep);
     }
   }
@@ -630,18 +512,68 @@ static void usb_lld_serve_interrupt(USBDriver *usbp) {
 
   /* Reset interrupt handling.*/
   if (sts & GINTSTS_USBRST) {
+
+    /* Resetting pending operations.*/
+    usbp->txpending = 0;
+
+    /* Default reset action.*/
     _usb_reset(usbp);
-    _usb_isr_invoke_event_cb(usbp, USB_EVENT_RESET);
+
+    /* Preventing execution of more handlers, the core has been reset.*/
+    return;
+  }
+
+  /* Wake-up handling.*/
+  if (sts & GINTSTS_WKUPINT) {
+    /* If clocks are gated off, turn them back on (may be the case if
+       coming out of suspend mode).*/
+    if (otgp->PCGCCTL & (PCGCCTL_STPPCLK | PCGCCTL_GATEHCLK)) {
+      /* Set to zero to un-gate the USB core clocks.*/
+      otgp->PCGCCTL &= ~(PCGCCTL_STPPCLK | PCGCCTL_GATEHCLK);
+    }
+
+    /* Clear the Remote Wake-up Signaling.*/
+    otgp->DCTL |= DCTL_RWUSIG;
+
+    _usb_wakeup(usbp);
+  }
+
+  /* Suspend handling.*/
+  if (sts & GINTSTS_USBSUSP) {
+
+    /* Resetting pending operations.*/
+    usbp->txpending = 0;
+
+    /* Default suspend action.*/
+    _usb_suspend(usbp);
   }
 
   /* Enumeration done.*/
   if (sts & GINTSTS_ENUMDNE) {
-    (void)otgp->DSTS;
+    /* Full or High speed timing selection.*/
+    if ((otgp->DSTS & DSTS_ENUMSPD_MASK) == DSTS_ENUMSPD_HS_480) {
+      otgp->GUSBCFG = (otgp->GUSBCFG & ~(GUSBCFG_TRDT_MASK)) |
+                      GUSBCFG_TRDT(TRDT_VALUE_HS);
+    }
+    else {
+      otgp->GUSBCFG = (otgp->GUSBCFG & ~(GUSBCFG_TRDT_MASK)) |
+                      GUSBCFG_TRDT(TRDT_VALUE_FS);
+    }
   }
 
   /* SOF interrupt handling.*/
   if (sts & GINTSTS_SOF) {
     _usb_isr_invoke_sof_cb(usbp);
+  }
+
+  /* Isochronous IN failed handling */
+  if (sts & GINTSTS_IISOIXFR) {
+    otg_isoc_in_failed_handler(usbp);
+  }
+
+  /* Isochronous OUT failed handling */
+  if (sts & GINTSTS_IISOOXFR) {
+    otg_isoc_out_failed_handler(usbp);
   }
 
   /* RX FIFO not empty handling.*/
@@ -808,50 +740,95 @@ void usb_lld_start(USBDriver *usbp) {
 
   if (usbp->state == USB_STOP) {
     /* Clock activation.*/
+
 #if STM32_USB_USE_OTG1
     if (&USBD1 == usbp) {
       /* OTG FS clock enable and reset.*/
-      rccEnableOTG_FS(FALSE);
+      rccEnableOTG_FS(false);
       rccResetOTG_FS();
 
       /* Enables IRQ vector.*/
       nvicEnableVector(STM32_OTG1_NUMBER, STM32_USB_OTG1_IRQ_PRIORITY);
+
+      /* - Forced device mode.
+         - USB turn-around time = TRDT_VALUE_FS.
+         - Full Speed 1.1 PHY.*/
+      otgp->GUSBCFG = GUSBCFG_FDMOD | GUSBCFG_TRDT(TRDT_VALUE_FS) |
+                      GUSBCFG_PHYSEL;
+
+      /* 48MHz 1.1 PHY.*/
+      otgp->DCFG = 0x02200000 | DCFG_DSPD_FS11;
     }
 #endif
+
 #if STM32_USB_USE_OTG2
     if (&USBD2 == usbp) {
       /* OTG HS clock enable and reset.*/
-      rccEnableOTG_HS(FALSE);
+      rccEnableOTG_HS(false);
       rccResetOTG_HS();
 
+      /* ULPI clock is managed depending on the presence of an external
+         PHY.*/
+#if defined(BOARD_OTG2_USES_ULPI)
+      rccEnableOTG_HSULPI(true);
+#else
       /* Workaround for the problem described here:
-         http://forum.chibios.org/phpbb/viewtopic.php?f=16&t=1798 */
-      rccDisableOTG_HSULPI(TRUE);
+         http://forum.chibios.org/phpbb/viewtopic.php?f=16&t=1798.*/
+      rccDisableOTG_HSULPI(true);
+#endif
 
       /* Enables IRQ vector.*/
       nvicEnableVector(STM32_OTG2_NUMBER, STM32_USB_OTG2_IRQ_PRIORITY);
+
+      /* - Forced device mode.
+         - USB turn-around time = TRDT_VALUE_HS or TRDT_VALUE_FS.*/
+#if defined(BOARD_OTG2_USES_ULPI)
+      /* High speed ULPI PHY.*/
+      otgp->GUSBCFG = GUSBCFG_FDMOD | GUSBCFG_TRDT(TRDT_VALUE_HS) |
+                      GUSBCFG_SRPCAP | GUSBCFG_HNPCAP;
+#else
+      otgp->GUSBCFG = GUSBCFG_FDMOD | GUSBCFG_TRDT(TRDT_VALUE_FS) |
+                      GUSBCFG_PHYSEL;
+#endif
+
+#if defined(BOARD_OTG2_USES_ULPI)
+#if STM32_USE_USB_OTG2_HS
+      /* USB 2.0 High Speed PHY in HS mode.*/
+      otgp->DCFG = 0x02200000 | DCFG_DSPD_HS;
+#else
+      /* USB 2.0 High Speed PHY in FS mode.*/
+      otgp->DCFG = 0x02200000 | DCFG_DSPD_HS_FS;
+#endif
+#else
+      /* 48MHz 1.1 PHY.*/
+      otgp->DCFG = 0x02200000 | DCFG_DSPD_FS11;
+#endif
     }
 #endif
 
+    /* Clearing mask of TXFIFOs to be filled.*/
     usbp->txpending = 0;
-
-    /* - Forced device mode.
-       - USB turn-around time = TRDT_VALUE.
-       - Full Speed 1.1 PHY.*/
-    otgp->GUSBCFG = GUSBCFG_FDMOD | GUSBCFG_TRDT(TRDT_VALUE) | GUSBCFG_PHYSEL;
-
-    /* 48MHz 1.1 PHY.*/
-    otgp->DCFG = 0x02200000 | DCFG_DSPD_FS11;
 
     /* PHY enabled.*/
     otgp->PCGCCTL = 0;
 
-    /* Internal FS PHY activation.*/
-#if defined(BOARD_OTG_NOVBUSSENS)
-    otgp->GCCFG = GCCFG_NOVBUSSENS | GCCFG_VBUSASEN | GCCFG_VBUSBSEN |
-                  GCCFG_PWRDWN;
+    /* VBUS sensing and transceiver enabled.*/
+    otgp->GOTGCTL = GOTGCTL_BVALOEN | GOTGCTL_BVALOVAL;
+
+#if defined(BOARD_OTG2_USES_ULPI)
+#if STM32_USB_USE_OTG1
+    if (&USBD1 == usbp) {
+      otgp->GCCFG = GCCFG_INIT_VALUE;
+    }
+#endif
+
+#if STM32_USB_USE_OTG2
+    if (&USBD2 == usbp) {
+      otgp->GCCFG = 0;
+    }
+#endif
 #else
-    otgp->GCCFG = GCCFG_VBUSASEN | GCCFG_VBUSBSEN | GCCFG_PWRDWN;
+    otgp->GCCFG = GCCFG_INIT_VALUE;
 #endif
 
     /* Soft core reset.*/
@@ -869,12 +846,17 @@ void usb_lld_start(USBDriver *usbp) {
     otgp->DOEPMSK  = 0;
     otgp->DAINTMSK = 0;
     if (usbp->config->sof_cb == NULL)
-      otgp->GINTMSK  = GINTMSK_ENUMDNEM | GINTMSK_USBRSTM /*| GINTMSK_USBSUSPM |
-                       GINTMSK_ESUSPM  |*/;
+      otgp->GINTMSK  = GINTMSK_ENUMDNEM | GINTMSK_USBRSTM | GINTMSK_USBSUSPM |
+                       GINTMSK_ESUSPM | GINTMSK_SRQM | GINTMSK_WKUM |
+                       GINTMSK_IISOIXFRM | GINTMSK_IISOOXFRM;
     else
-      otgp->GINTMSK  = GINTMSK_ENUMDNEM | GINTMSK_USBRSTM /*| GINTMSK_USBSUSPM |
-                       GINTMSK_ESUSPM */ | GINTMSK_SOFM;
-    otgp->GINTSTS  = 0xFFFFFFFF;         /* Clears all pending IRQs, if any. */
+      otgp->GINTMSK  = GINTMSK_ENUMDNEM | GINTMSK_USBRSTM | GINTMSK_USBSUSPM |
+                       GINTMSK_ESUSPM | GINTMSK_SRQM | GINTMSK_WKUM |
+                       GINTMSK_IISOIXFRM | GINTMSK_IISOOXFRM |
+                       GINTMSK_SOFM;
+
+    /* Clears all pending IRQs, if any. */
+    otgp->GINTSTS  = 0xFFFFFFFF;
 
 #if defined(_CHIBIOS_RT_)
     /* Creates the data pump thread. Note, it is created only once.*/
@@ -915,17 +897,20 @@ void usb_lld_stop(USBDriver *usbp) {
     otgp->GAHBCFG    = 0;
     otgp->GCCFG      = 0;
 
-#if STM32_USB_USE_USB1
+#if STM32_USB_USE_OTG1
     if (&USBD1 == usbp) {
       nvicDisableVector(STM32_OTG1_NUMBER);
-      rccDisableOTG1(FALSE);
+      rccDisableOTG_FS(false);
     }
 #endif
 
-#if STM32_USB_USE_USB2
+#if STM32_USB_USE_OTG2
     if (&USBD2 == usbp) {
       nvicDisableVector(STM32_OTG2_NUMBER);
-      rccDisableOTG2(FALSE);
+      rccDisableOTG_HS(false);
+#if defined(BOARD_OTG2_USES_ULPI)
+      rccDisableOTG_HSULPI(true)
+#endif
     }
 #endif
   }
@@ -945,17 +930,17 @@ void usb_lld_reset(USBDriver *usbp) {
   /* Flush the Tx FIFO.*/
   otg_txfifo_flush(usbp, 0);
 
+  /* Endpoint interrupts all disabled and cleared.*/
+  otgp->DIEPEMPMSK = 0;
+  otgp->DAINTMSK   = DAINTMSK_OEPM(0) | DAINTMSK_IEPM(0);
+
   /* All endpoints in NAK mode, interrupts cleared.*/
   for (i = 0; i <= usbp->otgparams->num_endpoints; i++) {
     otgp->ie[i].DIEPCTL = DIEPCTL_SNAK;
     otgp->oe[i].DOEPCTL = DOEPCTL_SNAK;
-    otgp->ie[i].DIEPINT = 0xFF;
-    otgp->oe[i].DOEPINT = 0xFF;
+    otgp->ie[i].DIEPINT = 0xFFFFFFFF;
+    otgp->oe[i].DOEPINT = 0xFFFFFFFF;
   }
-
-  /* Endpoint interrupts all disabled and cleared.*/
-  otgp->DAINT = 0xFFFFFFFF;
-  otgp->DAINTMSK = DAINTMSK_OEPM(0) | DAINTMSK_IEPM(0);
 
   /* Resets the FIFO memory allocator.*/
   otg_ram_reset(usbp);
@@ -1030,7 +1015,7 @@ void usb_lld_init_endpoint(USBDriver *usbp, usbep_t ep) {
 
   /* OUT endpoint activation or deactivation.*/
   otgp->oe[ep].DOEPTSIZ = 0;
-  if (usbp->epc[ep]->out_cb != NULL) {
+  if (usbp->epc[ep]->out_state != NULL) {
     otgp->oe[ep].DOEPCTL = ctl | DOEPCTL_MPSIZ(usbp->epc[ep]->out_maxsize);
     otgp->DAINTMSK |= DAINTMSK_OEPM(ep);
   }
@@ -1041,7 +1026,7 @@ void usb_lld_init_endpoint(USBDriver *usbp, usbep_t ep) {
 
   /* IN endpoint activation or deactivation.*/
   otgp->ie[ep].DIEPTSIZ = 0;
-  if (usbp->epc[ep]->in_cb != NULL) {
+  if (usbp->epc[ep]->in_state != NULL) {
     /* FIFO allocation for the IN endpoint.*/
     fsize = usbp->epc[ep]->in_maxsize / 4;
     if (usbp->epc[ep]->in_multiplier > 1)
@@ -1149,59 +1134,6 @@ void usb_lld_read_setup(USBDriver *usbp, usbep_t ep, uint8_t *buf) {
 }
 
 /**
- * @brief   Prepares for a receive operation.
- *
- * @param[in] usbp      pointer to the @p USBDriver object
- * @param[in] ep        endpoint number
- *
- * @notapi
- */
-void usb_lld_prepare_receive(USBDriver *usbp, usbep_t ep) {
-  uint32_t pcnt;
-  USBOutEndpointState *osp = usbp->epc[ep]->out_state;
-
-  /* Transfer initialization.*/
-  osp->totsize = osp->rxsize;
-  if ((ep == 0) && (osp->rxsize  > EP0_MAX_OUTSIZE))
-      osp->rxsize = EP0_MAX_OUTSIZE;
-
-  pcnt = (osp->rxsize + usbp->epc[ep]->out_maxsize - 1) /
-         usbp->epc[ep]->out_maxsize;
-  usbp->otg->oe[ep].DOEPTSIZ = DOEPTSIZ_STUPCNT(3) | DOEPTSIZ_PKTCNT(pcnt) |
-                               DOEPTSIZ_XFRSIZ(osp->rxsize);
-
-}
-
-/**
- * @brief   Prepares for a transmit operation.
- *
- * @param[in] usbp      pointer to the @p USBDriver object
- * @param[in] ep        endpoint number
- *
- * @notapi
- */
-void usb_lld_prepare_transmit(USBDriver *usbp, usbep_t ep) {
-  USBInEndpointState *isp = usbp->epc[ep]->in_state;
-
-  /* Transfer initialization.*/
-  isp->totsize = isp->txsize;
-  if (isp->txsize == 0) {
-    /* Special case, sending zero size packet.*/
-    usbp->otg->ie[ep].DIEPTSIZ = DIEPTSIZ_PKTCNT(1) | DIEPTSIZ_XFRSIZ(0);
-  }
-  else {
-    if ((ep == 0) && (isp->txsize  > EP0_MAX_INSIZE))
-      isp->txsize = EP0_MAX_INSIZE;
-
-    /* Normal case.*/
-    uint32_t pcnt = (isp->txsize + usbp->epc[ep]->in_maxsize - 1) /
-                    usbp->epc[ep]->in_maxsize;
-    usbp->otg->ie[ep].DIEPTSIZ = DIEPTSIZ_PKTCNT(pcnt) |
-                                 DIEPTSIZ_XFRSIZ(isp->txsize);
-  }
-}
-
-/**
  * @brief   Starts a receive operation on an OUT endpoint.
  *
  * @param[in] usbp      pointer to the @p USBDriver object
@@ -1210,8 +1142,38 @@ void usb_lld_prepare_transmit(USBDriver *usbp, usbep_t ep) {
  * @notapi
  */
 void usb_lld_start_out(USBDriver *usbp, usbep_t ep) {
+  uint32_t pcnt, rxsize;
+  USBOutEndpointState *osp = usbp->epc[ep]->out_state;
 
-  usbp->otg->oe[ep].DOEPCTL |= DOEPCTL_CNAK;
+  /* Transfer initialization.*/
+  osp->totsize = osp->rxsize;
+  if ((ep == 0) && (osp->rxsize > EP0_MAX_OUTSIZE))
+      osp->rxsize = EP0_MAX_OUTSIZE;
+
+  /* Transaction size is rounded to a multiple of packet size because the
+     following requirement in the RM:
+     "For OUT transfers, the transfer size field in the endpoint's transfer
+     size register must be a multiple of the maximum packet size of the
+     endpoint, adjusted to the Word boundary".*/
+  pcnt   = (osp->rxsize + usbp->epc[ep]->out_maxsize - 1U) /
+           usbp->epc[ep]->out_maxsize;
+  rxsize = (pcnt * usbp->epc[ep]->out_maxsize + 3U) & 0xFFFFFFFCU;
+
+  /*Setting up transaction parameters in DOEPTSIZ.*/
+  usbp->otg->oe[ep].DOEPTSIZ = DOEPTSIZ_STUPCNT(3) | DOEPTSIZ_PKTCNT(pcnt) |
+                               DOEPTSIZ_XFRSIZ(rxsize);
+
+  /* Special case of isochronous endpoint.*/
+  if ((usbp->epc[ep]->ep_mode & USB_EP_MODE_TYPE) == USB_EP_MODE_TYPE_ISOC) {
+    /* Odd/even bit toggling for isochronous endpoint.*/
+    if (usbp->otg->DSTS & DSTS_FNSOF_ODD)
+      usbp->otg->oe[ep].DOEPCTL |= DOEPCTL_SEVNFRM;
+    else
+      usbp->otg->oe[ep].DOEPCTL |= DOEPCTL_SODDFRM;
+  }
+
+  /* Starting operation.*/
+  usbp->otg->oe[ep].DOEPCTL |= DOEPCTL_EPENA | DOEPCTL_CNAK;
 }
 
 /**
@@ -1223,7 +1185,36 @@ void usb_lld_start_out(USBDriver *usbp, usbep_t ep) {
  * @notapi
  */
 void usb_lld_start_in(USBDriver *usbp, usbep_t ep) {
+  USBInEndpointState *isp = usbp->epc[ep]->in_state;
 
+  /* Transfer initialization.*/
+  isp->totsize = isp->txsize;
+  if (isp->txsize == 0) {
+    /* Special case, sending zero size packet.*/
+    usbp->otg->ie[ep].DIEPTSIZ = DIEPTSIZ_PKTCNT(1) | DIEPTSIZ_XFRSIZ(0);
+  }
+  else {
+    if ((ep == 0) && (isp->txsize > EP0_MAX_INSIZE))
+      isp->txsize = EP0_MAX_INSIZE;
+
+    /* Normal case.*/
+    uint32_t pcnt = (isp->txsize + usbp->epc[ep]->in_maxsize - 1) /
+                    usbp->epc[ep]->in_maxsize;
+    /* TODO: Support more than one packet per frame for isochronous transfers.*/
+    usbp->otg->ie[ep].DIEPTSIZ = DIEPTSIZ_MCNT(1) | DIEPTSIZ_PKTCNT(pcnt) |
+                                 DIEPTSIZ_XFRSIZ(isp->txsize);
+  }
+
+  /* Special case of isochronous endpoint.*/
+  if ((usbp->epc[ep]->ep_mode & USB_EP_MODE_TYPE) == USB_EP_MODE_TYPE_ISOC) {
+    /* Odd/even bit toggling.*/
+    if (usbp->otg->DSTS & DSTS_FNSOF_ODD)
+      usbp->otg->ie[ep].DIEPCTL |= DIEPCTL_SEVNFRM;
+    else
+      usbp->otg->ie[ep].DIEPCTL |= DIEPCTL_SODDFRM;
+  }
+
+  /* Starting operation.*/
   usbp->otg->ie[ep].DIEPCTL |= DIEPCTL_EPENA | DIEPCTL_CNAK;
   usbp->otg->DIEPEMPMSK |= DIEPEMPMSK_INEPTXFEM(ep);
 }
@@ -1285,7 +1276,7 @@ void usb_lld_clear_in(USBDriver *usbp, usbep_t ep) {
  * @details This function must be executed by a system thread in order to
  *          make the USB driver work.
  * @note    The data copy part of the driver is implemented in this thread
- *          in order to not perform heavy tasks withing interrupt handlers.
+ *          in order to not perform heavy tasks within interrupt handlers.
  *
  * @param[in] p         pointer to the @p USBDriver object
  *
