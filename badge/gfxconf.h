@@ -178,7 +178,7 @@
 //    #define GWIN_NEED_IMAGE                          FALSE
 //        #define GWIN_NEED_IMAGE_ANIMATION            FALSE
 //    #define GWIN_NEED_RADIO                          FALSE
-//    #define GWIN_NEED_LIST                           TRUE
+#define GWIN_NEED_LIST                           TRUE
 //        #define GWIN_NEED_LIST_IMAGES                FALSE
 #define GWIN_NEED_PROGRESSBAR                    FALSE
 #define GWIN_PROGRESSBAR_AUTO                    FALSE

@@ -164,6 +164,7 @@ static void radio_app_event(eventid_t id) {
   OrchardAppEvent evt;
 
   evt.type = radioEvent;
+  evt.radio.pPkt = NULL; /* Avoid confusion with other callback */
   if( !ui_override )
     instance.app->event(instance.context, &evt);
 }

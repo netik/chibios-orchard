@@ -15,6 +15,14 @@ static uint32_t sender;
 
 static void notify_handler(KW01_PKT * pkt)
 {
+	userconfig * config;
+
+	config = getConfig();
+
+	if (pkt->kw01_hdr.kw01_dst != RADIO_BROADCAST_ADDRESS &&
+	    pkt->kw01_hdr.kw01_dst != config->netid)
+		return;
+
 	memcpy (buf, pkt->kw01_payload, pkt->kw01_length);
 	sender = pkt->kw01_hdr.kw01_src;
 
@@ -58,11 +66,11 @@ static void notify_start(OrchardAppContext *context)
 	    id, font, White, justifyCenter);
 	gdispDrawStringBox (0, (gdispGetHeight() / 2), 
 	    gdispGetWidth(), gdispGetFontMetric(font, fontHeight),
-	    buf, font, Blue, justifyCenter);
+	    buf, font, Green, justifyCenter);
 	gdispCloseFont (font);
 	playVictory ();
 
-	chThdSleepMilliseconds (4000);
+	chThdSleepMilliseconds (5000);
 
 	orchardAppExit ();
 

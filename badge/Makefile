@@ -133,9 +133,11 @@ CSRC = main.c \
        app-update.c \
        app-credits.c \
        app-shout.c \
+       app-chat.c \
        app-default.c \
        app-setup.c \
        ui-keyboard.c \
+       ui-list.c \
        rand.c \
        sound.c \
        led.c \

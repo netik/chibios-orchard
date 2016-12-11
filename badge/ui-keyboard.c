@@ -48,6 +48,9 @@ static uint8_t handle_input (char * name, uint8_t max,
 	case GKEY_ENTER:
 		r = 1;
 		break;
+	case '@':
+		r = 0xFF;
+		break;
 	default:
 		if (p->pos == max) {
 			pwmToneStart (400);
@@ -128,6 +131,7 @@ static void keyboard_event(OrchardAppContext *context,
 	GEvent * pe;
 	char * name;
 	uint8_t max;
+	uint8_t ret;
 
 	p = context->instance->uicontext->priv;
 
@@ -144,8 +148,12 @@ static void keyboard_event(OrchardAppContext *context,
 	name = (char *)context->instance->uicontext->itemlist[1];
 	max = context->instance->uicontext->total;
 
-	if (handle_input (name, max, pk, p) != 0)
+	ret = handle_input (name, max, pk, p);
+
+	if (ret != 0) {
+		context->instance->uicontext->total = ret;
 		chEvtBroadcast (&ui_completed);
+	}
 
 	return;  
 }
@@ -162,8 +170,6 @@ static void keyboard_exit(OrchardAppContext *context)
 	gwinDestroy (p->ghKeyboard);
 
 	gdispCloseFont (p->font);
-
-	gdispClear (Black);
 
 	chHeapFree (p);
 	context->instance->uicontext->priv = NULL;

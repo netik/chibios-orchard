@@ -27,7 +27,7 @@ static void name_start(OrchardAppContext *context)
 	keyboardUiContext->itemlist[0] =
 		"Type in your name,\npress ENTER when done";
 	keyboardUiContext->itemlist[1] = config->name;
-	keyboardUiContext->total = CONFIG_NAME_MAXLEN - 1;
+	keyboardUiContext->total = CONFIG_NAME_MAXLEN;
 
     	context->instance->ui = getUiByName("keyboard");
 	context->instance->uicontext = keyboardUiContext;
