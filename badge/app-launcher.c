@@ -93,6 +93,7 @@ static void redraw_list(struct launcher_list *list) {
   uint8_t visible_apps;
   uint8_t app_modulus;
   uint8_t max_list;
+  uint8_t drawn;
 
   userconfig *config = getConfig();
 
@@ -116,7 +117,13 @@ static void redraw_list(struct launcher_list *list) {
   width = gdispGetWidth();
   height = gdispGetFontMetric(font, fontHeight);
 
-  totalheight = gdispGetHeight();
+  /*
+   * When calculating the number of visible apps to show, don't forget
+   * to factor in the space at the bottom of the screen being used for
+   * the selection buttons, otherwise we might draw over them.
+   */
+
+  totalheight = gdispGetHeight() - 50;
   visible_apps = (uint8_t) (totalheight - header_height) / height;
   
   app_modulus = (uint8_t) list->selected / visible_apps;
@@ -124,7 +131,8 @@ static void redraw_list(struct launcher_list *list) {
   max_list = (app_modulus + 1) * visible_apps;
   if( max_list > list->total )
     max_list = list->total;
-  
+
+  drawn = 0;  
   for (i = app_modulus * visible_apps; i < max_list; i++) {
     color_t draw_color = White;
     
@@ -137,12 +145,16 @@ static void redraw_list(struct launcher_list *list) {
 		    width, height, Black);
       draw_color = White;
     }
-    
-     
     gdispDrawStringBox(0, header_height + (i - app_modulus * visible_apps) * height,
                        width, height,
                        list->items[i].name, font, draw_color, justifyCenter);
+    drawn++;
   }
+
+  /* Blank any leftover area */
+
+  gdispFillArea (0, header_height + (drawn * height),
+    gdispGetWidth(), (visible_apps - drawn) * height, Black);
 
   gdispCloseFont(font);
   gdispFlush();
