@@ -199,7 +199,7 @@ static void chat_event (OrchardAppContext *context,
 					radioSend (&KRADIO1,
 					    enemies[p->peer]->netid,
 					    RADIO_PROTOCOL_CHAT,
-					    strlen (p->txbuf), p->txbuf);
+					    strlen (p->txbuf) + 1, p->txbuf);
 					memset (p->txbuf, 0, sizeof(p->txbuf));
 					p->uiCtx.total = KW01_PKT_PAYLOADLEN;
 					listUi->start (context);
