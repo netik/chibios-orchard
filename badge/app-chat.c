@@ -1,3 +1,35 @@
+/*-
+ * Copyright (c) 2016
+ *      Bill Paul <wpaul@windriver.com>.  All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. All advertising materials mentioning features or use of this software
+ *    must display the following acknowledgement:
+ *      This product includes software developed by Bill Paul.
+ * 4. Neither the name of the author nor the names of any co-contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY Bill Paul AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL Bill Paul OR THE VOICES IN HIS HEAD
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+ * THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "orchard-app.h"
 #include "orchard-ui.h"
 #include "radio.h"
@@ -8,7 +40,6 @@
 
 #define CHAT_STS_COLD		0x01
 #define CHAT_STS_CHATTING	0x02
-#define CHAT_STS_GOT_MSG	0x04
 
 static uint8_t chat_sts = CHAT_STS_COLD;
 
@@ -16,15 +47,22 @@ typedef struct _ChatHandles {
 	char *			listitems[MAX_ENEMIES + 1];
 	OrchardUiContext	uiCtx;
 	char			txbuf[KW01_PKT_PAYLOADLEN];
-	char			rxbuf[KW01_PKT_PAYLOADLEN];
-	uint32_t		sender;
+	char			rxbuf[CONFIG_NAME_MAXLEN +
+				    KW01_PKT_PAYLOADLEN + 3];
+	int			peer;
 } ChatHandles;
 
 static ChatHandles * pHandles;
 
 static void chat_handler(KW01_PKT * pkt)
 {
+	/* Drop this message if the chat app isn't running. */
+
+	if (chat_sts != CHAT_STS_CHATTING)
+		return;
+
 	orchardAppRadioCallback (pkt);
+
         return;
 }
 
@@ -46,6 +84,8 @@ static void chat_start (OrchardAppContext *context)
 	userconfig * config;
 	int i;
 
+	enemies = enemiesGet();
+
 	if (chat_sts == CHAT_STS_COLD) {
 		p = chHeapAlloc(NULL, sizeof(ChatHandles));
 		context->priv = p;
@@ -54,7 +94,6 @@ static void chat_start (OrchardAppContext *context)
 
 		p->listitems[0] = "Select a badge/user";
 
-		enemies = enemiesGet();
 		for (i = 0; i < MAX_ENEMIES; i++) {
 			if (enemies[i] == NULL)
 				break;
@@ -89,16 +128,15 @@ static void chat_start (OrchardAppContext *context)
 		chsnprintf (p->txbuf, sizeof(p->txbuf), "%s WANTS TO CHAT!",
 			config->name);
 
-		radioSend (&KRADIO1, p->sender, RADIO_PROTOCOL_SHOUT,
-			strlen(p->txbuf), p->txbuf);
+		radioSend (&KRADIO1, enemies[p->peer]->netid,
+		    RADIO_PROTOCOL_SHOUT, strlen (p->txbuf), p->txbuf);
 
 		p->listitems[0] = "Type @ to exit";
 		memset (p->txbuf, 0, sizeof(p->txbuf));
 		p->listitems[1] = p->txbuf;
 
 		p->uiCtx.itemlist = (const char **)p->listitems;
-		p->uiCtx.total = KW01_PKT_PAYLOADLEN;
-
+		p->uiCtx.total = KW01_PKT_PAYLOADLEN - 1;
 		context->instance->ui = getUiByName ("keyboard");
 		context->instance->uicontext = &p->uiCtx;
         	context->instance->ui->start (context);
@@ -116,6 +154,7 @@ static void chat_event (OrchardAppContext *context,
 	KW01_PKT * pkt;
 	user ** enemies;
 
+	enemies = enemiesGet ();
 	p = context->priv;
 	listUi = context->instance->ui;
 	listUiContext = context->instance->uicontext;
@@ -127,10 +166,11 @@ static void chat_event (OrchardAppContext *context,
 		/* Terminate UI */
 		pkt = event->radio.pPkt;
 		if (pkt->kw01_hdr.kw01_prot == RADIO_PROTOCOL_CHAT &&
-		    pkt->kw01_hdr.kw01_src == p->sender) {
+		    pkt->kw01_hdr.kw01_src == enemies[p->peer]->netid) {
 			listUi->exit (context);
 			memset (p->rxbuf, 0, sizeof(p->rxbuf));
-			memcpy (p->rxbuf, pkt->kw01_payload, pkt->kw01_length);
+			chsnprintf (p->rxbuf, sizeof(p->rxbuf), "<%s> %s",
+			    enemies[p->peer]->name, pkt->kw01_payload);
 			p->listitems[0] = p->rxbuf;
 			listUi->start (context);
 		}
@@ -145,9 +185,7 @@ static void chat_event (OrchardAppContext *context,
 
 			if (context->instance->ui == getUiByName ("list")) {
 				listUi->exit (context);
-				enemies = enemiesGet();
-				p->sender =
-					enemies[listUiContext->total]->netid;
+				p->peer = listUiContext->selected;
 				chat_sts = CHAT_STS_CHATTING;
 				orchardAppRun(orchardAppByName ("Radio Chat"));
 			} else {
@@ -158,7 +196,8 @@ static void chat_event (OrchardAppContext *context,
 					orchardAppExit ();
 				} else {
 					listUi->exit (context);
-					radioSend (&KRADIO1, p->sender,
+					radioSend (&KRADIO1,
+					    enemies[p->peer]->netid,
 					    RADIO_PROTOCOL_CHAT,
 					    strlen (p->txbuf), p->txbuf);
 					memset (p->txbuf, 0, sizeof(p->txbuf));
