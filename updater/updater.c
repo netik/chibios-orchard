@@ -122,9 +122,9 @@ int updater (void)
 	int i;
 	int total;
 	uint8_t * p;
-	uint8_t * src = (uint8_t *)0x20001000;
+	uint8_t * src = (uint8_t *)UPDATER_DATBUF;
 	uint8_t * dst = (uint8_t *)0x0;
-	FATFS * fs = (FATFS *)0x20000000;
+	FATFS * fs = (FATFS *)UPDATER_FATFS;
 
 	/* Disable all interrupts */
 

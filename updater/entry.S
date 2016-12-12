@@ -30,18 +30,27 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _UPDATER_H_
-#define _UPDATER_H_
+#define _ASM
+#include "updater.h"
 
-#define UPDATER_STACK		0x1FFFF800	/* Stack */
-#define UPDATER_FATFS		0x20000000	/* FatFs structure */
-#define UPDATER_DATBUF		0x20001000	/* 1024-byte data buffer */
-#define UPDATER_BASE		0x00001400	/* Start of updater binary */
+	.cpu		cortex-m0
+	.fpu		softvfp
 
-#define UPDATER_NAME		"UPDATER.BIN"
-#define UPDATER_SIZE		7168
+	.thumb
 
-#ifndef _ASM
-typedef void (*isr)(void);
-#endif
-#endif /* _UPDATER_H_ */
+	.file		"entry.s"
+	.text
+
+	.section	.text.main,"ax",%progbits
+	.align		1
+	.code		16
+	.thumb_func
+	.type		main, %function
+
+	.globl		main
+
+	/* Load an initial stack, then jump to the updater code */
+main:
+	ldr	r0, = #UPDATER_STACK
+	mov	sp, r0
+	b	updater
