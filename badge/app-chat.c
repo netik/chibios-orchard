@@ -129,7 +129,7 @@ static void chat_start (OrchardAppContext *context)
 			config->name);
 
 		radioSend (&KRADIO1, enemies[p->peer]->netid,
-		    RADIO_PROTOCOL_SHOUT, strlen (p->txbuf), p->txbuf);
+		    RADIO_PROTOCOL_SHOUT, strlen (p->txbuf) + 1, p->txbuf);
 
 		p->listitems[0] = "Type @ to exit";
 		memset (p->txbuf, 0, sizeof(p->txbuf));

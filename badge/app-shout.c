@@ -101,7 +101,8 @@ static void shout_event (OrchardAppContext *context,
 			/* Send the message */
 
 			radioSend (&KRADIO1, RADIO_BROADCAST_ADDRESS,
-			    RADIO_PROTOCOL_SHOUT, keyboardUiContext->selected,
+			    RADIO_PROTOCOL_SHOUT,
+			    keyboardUiContext->selected + 1,
 			    keyboardUiContext->itemlist[1]);
 
 			chHeapFree ((char *)keyboardUiContext->itemlist[1]);

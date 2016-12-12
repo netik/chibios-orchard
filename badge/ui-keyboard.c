@@ -52,29 +52,62 @@ typedef struct _KeyboardHandles {
 	uint8_t		pos;
 } KeyboardHandles;
 
+/*
+ * The console widget does not implement backspace, so we have to
+ * do it here. Note: this function is only compatible with the
+ * console widget if history support is turned off. When it's on, the
+ * console widget maintains an internal buffer of the screen contents
+ * which we can't erase. (We build the console widget with history
+ * support disabled.)
+ */
+
+static void backspace (KeyboardHandles * p)
+{
+	GConsoleObject * cons;
+	uint8_t w;
+	uint8_t h;
+
+	h = gdispGetFontMetric (p->font, fontHeight);
+	w = gdispGetFontMetric (p->font, fontMaxWidth);
+	cons = (GConsoleObject *)p->ghConsole;
+
+	/* Adjust the cursor position */
+
+	if (cons->cx == 0) {
+		cons->cy -= h;
+		cons->cx = gdispGetWidth() - w;
+	} else
+		cons->cx -= w;
+
+	/*
+	 * Black out the character under the cursor. uGFX does not
+	 * actually draw anything when you ask it to render a space,
+	 * so we have to do this manually.
+	 */
+
+	gdispGFillArea (p->ghConsole->display, cons->cx, cons->cy,
+           w, h, cons->g.bgcolor);
+
+	return;
+}
+
 static uint8_t handle_input (char * name, uint8_t max,
 	GEventKeyboard * pk, KeyboardHandles * p)
 {
-	GConsoleObject * cons;
 	uint8_t r;
-	uint8_t y;
-
+	
 	if (pk->bytecount == 0)
 		return (0);
 
-	cons = (GConsoleObject *)p->ghConsole;
-
-	cons->cx = 0;
-	y = cons->cy;
-	gdispGFillArea (p->ghConsole->display, cons->cx, cons->cy,
-	    gdispGetWidth(), gdispGetFontMetric (p->font, fontHeight), Black);
-
 	switch (pk->c[0]) {
 	case GKEY_BACKSPACE:
-		p->pos--;
-		name[p->pos] = 0x0;
-		gwinPrintf (p->ghConsole, "%s_", name);
-		cons->cy = y;
+		if (p->pos != 0) {
+			p->pos--;
+			name[p->pos] = 0x0;
+			backspace (p);
+			backspace (p);
+			gwinPutChar (p->ghConsole, '_');
+		}
 		r = 0;
 		break;
 	case GKEY_ENTER:
@@ -91,9 +124,9 @@ static uint8_t handle_input (char * name, uint8_t max,
 		} else {
 			name[p->pos] = pk->c[0];
 			p->pos++;
+			backspace (p);
+			gwinPrintf (p->ghConsole, "%c_", pk->c[0]);
 		}
-		gwinPrintf (p->ghConsole, "%s_", name);
-		cons->cy = y;
 		r = 0;
 		break;
 	}
