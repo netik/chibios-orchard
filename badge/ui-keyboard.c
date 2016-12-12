@@ -184,6 +184,7 @@ static void keyboard_event(OrchardAppContext *context,
 
 	if (ret != 0) {
 		context->instance->uicontext->total = ret;
+		context->instance->uicontext->selected = p->pos;
 		chEvtBroadcast (&ui_completed);
 	}
 

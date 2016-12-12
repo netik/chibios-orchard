@@ -65,7 +65,7 @@ static void shout_start (OrchardAppContext *context)
 	keyboardUiContext->itemlist[0] =
                 "Shout something,\npress ENTER when done";
 	keyboardUiContext->itemlist[1] = p;
-	keyboardUiContext->total = KW01_PKT_PAYLOADLEN;
+	keyboardUiContext->total = KW01_PKT_PAYLOADLEN - 1;
 
 	context->instance->ui = getUiByName ("keyboard");
 	context->instance->uicontext = keyboardUiContext;
@@ -101,8 +101,8 @@ static void shout_event (OrchardAppContext *context,
 			/* Send the message */
 
 			radioSend (&KRADIO1, RADIO_BROADCAST_ADDRESS,
-				RADIO_PROTOCOL_SHOUT, KW01_PKT_PAYLOADLEN,
-				keyboardUiContext->itemlist[1]);
+			    RADIO_PROTOCOL_SHOUT, keyboardUiContext->selected,
+			    keyboardUiContext->itemlist[1]);
 
 			chHeapFree ((char *)keyboardUiContext->itemlist[1]);
 

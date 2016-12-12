@@ -97,7 +97,7 @@ static void chat_start (OrchardAppContext *context)
 		for (i = 0; i < MAX_ENEMIES; i++) {
 			if (enemies[i] == NULL)
 				break;
-			p->listitems[i+ 1] = enemies[i]->name;
+			p->listitems[i + 1] = enemies[i]->name;
 		}
 
 		if (i == 0) {
@@ -148,31 +148,31 @@ static void chat_start (OrchardAppContext *context)
 static void chat_event (OrchardAppContext *context,
 	const OrchardAppEvent *event)
 {
-	OrchardUiContext * listUiContext;
-	const OrchardUi * listUi;
+	OrchardUiContext * uiContext;
+	const OrchardUi * ui;
 	ChatHandles * p;
 	KW01_PKT * pkt;
 	user ** enemies;
 
 	enemies = enemiesGet ();
 	p = context->priv;
-	listUi = context->instance->ui;
-	listUiContext = context->instance->uicontext;
+	ui = context->instance->ui;
+	uiContext = context->instance->uicontext;
 
 	if (event->type == ugfxEvent)
-		listUi->event (context, event);
+		ui->event (context, event);
 
 	if (event->type == radioEvent && event->radio.pPkt != NULL) {
 		/* Terminate UI */
 		pkt = event->radio.pPkt;
 		if (pkt->kw01_hdr.kw01_prot == RADIO_PROTOCOL_CHAT &&
 		    pkt->kw01_hdr.kw01_src == enemies[p->peer]->netid) {
-			listUi->exit (context);
+			ui->exit (context);
 			memset (p->rxbuf, 0, sizeof(p->rxbuf));
 			chsnprintf (p->rxbuf, sizeof(p->rxbuf), "<%s> %s",
 			    enemies[p->peer]->name, pkt->kw01_payload);
 			p->listitems[0] = p->rxbuf;
-			listUi->start (context);
+			ui->start (context);
 		}
 	}
 
@@ -184,25 +184,27 @@ static void chat_event (OrchardAppContext *context,
 		    (event->ui.flags == uiOK)) {
 
 			if (context->instance->ui == getUiByName ("list")) {
-				listUi->exit (context);
-				p->peer = listUiContext->selected;
+				ui->exit (context);
+				p->peer = uiContext->selected;
 				chat_sts = CHAT_STS_CHATTING;
 				orchardAppRun(orchardAppByName ("Radio Chat"));
 			} else {
 				/* 0xFF means exit chat */
-				if (listUiContext->total == 0xFF) {
-					listUi->exit (context);
+				if (uiContext->total == 0xFF) {
+					ui->exit (context);
 					chat_sts = CHAT_STS_COLD;
 					orchardAppExit ();
 				} else {
-					listUi->exit (context);
+					ui->exit (context);
+					p->txbuf[uiContext->selected] = 0x0;
 					radioSend (&KRADIO1,
 					    enemies[p->peer]->netid,
 					    RADIO_PROTOCOL_CHAT,
-					    strlen (p->txbuf) + 1, p->txbuf);
+					    uiContext->selected, p->txbuf);
 					memset (p->txbuf, 0, sizeof(p->txbuf));
-					p->uiCtx.total = KW01_PKT_PAYLOADLEN;
-					listUi->start (context);
+					p->uiCtx.total =
+					    KW01_PKT_PAYLOADLEN - 1;
+					ui->start (context);
 				}
 			}
 		}
