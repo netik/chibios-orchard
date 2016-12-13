@@ -112,6 +112,8 @@ static uint8_t handle_input (char * name, uint8_t max,
 		break;
 	case GKEY_ENTER:
 		r = 1;
+		backspace (p);
+		gwinPrintf (p->ghConsole, "\n");
 		break;
 	case '@':
 		r = 0xFF;
@@ -192,6 +194,7 @@ static void keyboard_event(OrchardAppContext *context,
 	const OrchardAppEvent *event)
 {
  	GEventKeyboard * pk;
+	GConsoleObject * cons;
 	KeyboardHandles * p;
 	GEvent * pe;
 	char * name;
@@ -199,6 +202,20 @@ static void keyboard_event(OrchardAppContext *context,
 	uint8_t ret;
 
 	p = context->instance->uicontext->priv;
+
+	if (event->type == uiEvent) {
+		cons = (GConsoleObject *)p->ghConsole;
+		gdispGFillArea (p->ghConsole->display, 0, 0,
+		    gdispGetWidth (), gdispGetHeight () / 2, cons->g.bgcolor);
+		cons->cx = 0;
+		cons->cy = 0;
+		gwinPrintf (p->ghConsole, "%s\n\n",
+	    		context->instance->uicontext->itemlist[0]);
+		if (event->ui.flags == uiCancel)
+			p->pos = 0;
+		gwinPrintf (p->ghConsole, "%s_",
+		    context->instance->uicontext->itemlist[1]);
+	}
 
 	if (event->type != ugfxEvent)
 		return;
