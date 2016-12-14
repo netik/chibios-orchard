@@ -94,11 +94,21 @@ static void list_start (OrchardAppContext *context)
 static void list_event(OrchardAppContext *context,
 	const OrchardAppEvent *event)
 {
+	ListHandles * p;
 	GEvent * pe;
 	GEventGWinList * ple;
 	OrchardUiContext * ctx;
 
 	ctx = context->instance->uicontext;
+	p = ctx->priv;
+
+        if (event->type == uiEvent) {
+		/* Add a new item */
+		if (event->ui.flags == uiOK) {
+			gwinListAddItem (p->ghList,
+			    ctx->itemlist[ctx->selected], FALSE);
+		}
+	}
 
 	if (event->type != ugfxEvent)
 		return;

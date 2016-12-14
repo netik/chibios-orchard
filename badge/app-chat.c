@@ -36,18 +36,63 @@
 #include "fontlist.h"
 #include "sound.h"
 
+#include <stdlib.h>
 #include <string.h>
 
+#define MAX_PEERS	50
+#define MAX_PEERMEM	(CONFIG_NAME_MAXLEN + 10)
+
 typedef struct _ChatHandles {
-	char *			listitems[MAX_ENEMIES + 1];
+	char *			listitems[MAX_PEERS + 2];
 	OrchardUiContext	uiCtx;
 	char			txbuf[KW01_PKT_PAYLOADLEN];
-	char			rxbuf[CONFIG_NAME_MAXLEN +
-				    KW01_PKT_PAYLOADLEN + 3];
+	char			rxbuf[MAX_PEERMEM + KW01_PKT_PAYLOADLEN + 3];
+	uint8_t 		peers;
 	int			peer;
+	uint32_t		netid;
 } ChatHandles;
 
 extern orchard_app_instance instance;
+
+static int insert_peer (OrchardAppContext * context, KW01_PKT * pkt)
+{
+	ChatHandles *	p;
+	int		i;
+	char 		peer[9];
+	user *		u;
+
+	p = context->priv;
+
+	/* If the peer list is full, return */
+
+	if (p->peers == MAX_PEERS)
+		return (-1);
+
+	chsnprintf (peer, sizeof(peer), "%08X", pkt->kw01_hdr.kw01_src);
+
+	u = (user *)pkt->kw01_payload;
+
+	for (i = 2; i < p->peers; i++) {
+		/*
+		 * Already an entry for this badge, update the name,
+		 * then exit.
+		 */
+		if (strncmp (p->listitems[i], peer, 8) == 0) {
+			memcpy (p->listitems[i] + 8, u->name,
+			    strlen (u->name) + 1);
+			return (-1);
+		}
+	}
+
+	/* No match, add a new entry */
+
+	p->listitems[p->peers] = chHeapAlloc (NULL, MAX_PEERMEM);
+	chsnprintf (p->listitems[p->peers], MAX_PEERMEM, "%s:%s",
+		peer, u->name);
+	p->peers++;
+
+	return (0);
+}
 
 static void chat_handler(KW01_PKT * pkt)
 {
@@ -67,8 +112,10 @@ static uint32_t chat_init (OrchardAppContext *context)
 
 	/* Install the chat protocol handler */
 
-	if (context == NULL)
-		radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_CHAT, chat_handler);
+	if (context == NULL) {
+		radioHandlerSet (&KRADIO1,
+		    RADIO_PROTOCOL_CHAT, chat_handler);
+	}
 
 	return (0);
 }
@@ -76,39 +123,17 @@ static uint32_t chat_init (OrchardAppContext *context)
 static void chat_start (OrchardAppContext *context)
 {
 	ChatHandles * p;
-	font_t font;
-	user ** enemies;
-	int i;
-
-	enemies = enemiesGet();
 
 	p = chHeapAlloc(NULL, sizeof(ChatHandles));
+	memset (p, 0, sizeof(ChatHandles));
 	context->priv = p;
-	gdispClear (Black);
+	p->peers = 2;
 
-	p->listitems[0] = "Select a badge/user";
-
-	for (i = 0; i < MAX_ENEMIES; i++) {
-		if (enemies[i] == NULL)
-			break;
-		p->listitems[i + 1] = enemies[i]->name;
-	}
-
-	if (i == 0) {
-		font = gdispOpenFont(FONT_FIXED);
-		gdispDrawStringBox (0, (gdispGetHeight() / 2) -
-		    gdispGetFontMetric(font, fontHeight),
-		    gdispGetWidth(),
-		    gdispGetFontMetric (font, fontHeight),
-		    "No badges found!", font, Red, justifyCenter);
-		gdispCloseFont (font);
-		chThdSleepMilliseconds (4000);
-		orchardAppExit ();
-		return;
-	}
+	p->listitems[0] = "Scanning for users...";
+	p->listitems[1] = "Exit";
 
 	p->uiCtx.itemlist = (const char **)p->listitems;
-	p->uiCtx.total = i;
+	p->uiCtx.total = 1;
 
 	context->instance->ui = getUiByName ("list");
 	context->instance->uicontext = &p->uiCtx;
@@ -125,26 +150,41 @@ static void chat_event (OrchardAppContext *context,
 	ChatHandles * p;
 	KW01_PKT * pkt;
 	userconfig * config;
-	user ** enemies;
 	OrchardAppEvent e;
+	char * c;
+	int i;
 
-	enemies = enemiesGet ();
 	p = context->priv;
 	ui = context->instance->ui;
 	uiContext = context->instance->uicontext;
+	config = getConfig();
 
 	if (event->type == ugfxEvent)
 		ui->event (context, event);
 
 	if (event->type == radioEvent && event->radio.pPkt != NULL) {
 		pkt = event->radio.pPkt;
+
+		/* A char message arrived, update the text display. */
+
 		if (pkt->kw01_hdr.kw01_prot == RADIO_PROTOCOL_CHAT &&
-		    pkt->kw01_hdr.kw01_src == enemies[p->peer]->netid) {
+		    pkt->kw01_hdr.kw01_dst == config->netid) {
 			chsnprintf (p->rxbuf, sizeof(p->rxbuf), "<%s> %s",
-			    enemies[p->peer]->name, pkt->kw01_payload);
+			    p->listitems[p->peer], pkt->kw01_payload);
 			p->listitems[0] = p->rxbuf;
 			/* Tell the keyboard UI to redraw */
 			e.type = uiEvent;
+			ui->event (context, &e);
+		}
+
+		/* A new ping message arrived, update the user list. */
+
+		if (pkt->kw01_hdr.kw01_prot == RADIO_PROTOCOL_PING &&
+		    ui == getUiByName ("list") &&
+		    insert_peer (context, pkt) != -1) {
+			uiContext->selected = p->peers - 1;
+			e.type = uiEvent;
+			e.ui.flags = uiOK;
 			ui->event (context, &e);
 		}
 	}
@@ -159,22 +199,60 @@ static void chat_event (OrchardAppContext *context,
 		 * If this is the list ui exiting, it means we chose a
 		 * user to chat with. Now switch to the keyboard ui.
 		 */
-		if (context->instance->ui == getUiByName ("list")) {
+		if (ui == getUiByName ("list")) {
 			ui->exit (context);
-			p->peer = uiContext->selected;
-			config = getConfig();
+
+			/* User chose the "EXIT" selection, bail out. */
+
+			if (uiContext->selected == 0) {
+				orchardAppExit ();
+				return;
+			}
+
+			/*
+			 * This is a little messy. Now that we've chosen
+			 * a user to talk to, we need their netid to use
+			 * as the destination address for the radio packet
+			 * header. We don't want to waste the RAM to save
+			 * a netid in addition to the name string, so instead
+			 * we recover the netid of the chosen user from
+			 * the name string and cache it.
+			 */
+
+			p->peer = uiContext->selected + 1;
+			c = &p->listitems[p->peer][8];
+			*c = '\0';
+			p->netid = strtoul (p->listitems[p->peer], NULL, 16);
+			*c = ':';
+
+			/*
+			 * Now that we chose a peer, release any memory
+			 * for the other peers.
+			 */
+
+			for (i = 2; i < p->peers; i++) {
+				if (i == p->peer)
+					continue;
+				if (p->listitems[i] != NULL) {
+					chHeapFree (p->listitems[i]);
+					p->listitems[i] = NULL;
+				}
+			}
+
+			/* Shout to the user that we want to talk to them. */
 
 			chsnprintf (p->txbuf, sizeof(p->txbuf),
 			    "%s WANTS TO CHAT!",
 			    config->name);
 
-			radioSend (&KRADIO1, enemies[p->peer]->netid,
-			    RADIO_PROTOCOL_SHOUT,
+			radioSend (&KRADIO1, p->netid, RADIO_PROTOCOL_SHOUT,
 			    strlen (p->txbuf) + 1, p->txbuf);
 
 			p->listitems[0] = "Type @ to exit";
 			memset (p->txbuf, 0, sizeof(p->txbuf));
 			p->listitems[1] = p->txbuf;
+
+			/* Load the keyboard UI. */
 
 			p->uiCtx.itemlist = (const char **)p->listitems;
 			p->uiCtx.total = KW01_PKT_PAYLOADLEN - 1;
@@ -188,7 +266,7 @@ static void chat_event (OrchardAppContext *context,
 				orchardAppExit ();
 			} else {
 				p->txbuf[uiContext->selected] = 0x0;
-				radioSend (&KRADIO1, enemies[p->peer]->netid,
+				radioSend (&KRADIO1, p->netid,
 				    RADIO_PROTOCOL_CHAT,
 				    uiContext->selected + 1, p->txbuf);
 				memset (p->txbuf, 0, sizeof(p->txbuf));
@@ -207,8 +285,13 @@ static void chat_event (OrchardAppContext *context,
 static void chat_exit (OrchardAppContext *context)
 {
 	ChatHandles * p;
+	int i;
 
 	p = context->priv;
+	for (i = 2; i < p->peers; i++) {
+		if (p->listitems[i] != NULL)
+			chHeapFree (p->listitems[i]);
+	}
 	chHeapFree (p);
 
 	return;
