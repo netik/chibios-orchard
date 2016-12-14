@@ -59,7 +59,8 @@ static void list_start (OrchardAppContext *context)
 	p->font = gdispOpenFont (FONT_FIXED);
 	gwinSetDefaultFont (p->font);
 
-	gdispClear (Blue);
+        gdispFillArea (0, 0, gdispGetWidth(),
+	    gdispGetFontMetric(p->font, fontHeight), Blue);
 
 	gdispDrawStringBox (0, 0, gdispGetWidth(),
 	    gdispGetFontMetric(p->font, fontHeight),
