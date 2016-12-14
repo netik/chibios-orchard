@@ -36,7 +36,7 @@
 #define UPDATER_STACK		0x1FFFF800	/* Stack */
 #define UPDATER_FATFS		0x20000000	/* FatFs structure */
 #define UPDATER_DATBUF		0x20001000	/* 1024-byte data buffer */
-#define UPDATER_BASE		0x00001400	/* Start of updater binary */
+#define UPDATER_BASE		0x20001400	/* Start of updater binary */
 
 #define UPDATER_NAME		"UPDATER.BIN"
 #define UPDATER_SIZE		7168
