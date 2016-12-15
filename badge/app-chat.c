@@ -73,15 +73,9 @@ static int insert_peer (OrchardAppContext * context, KW01_PKT * pkt)
 	u = (user *)pkt->kw01_payload;
 
 	for (i = 2; i < p->peers; i++) {
-		/*
-		 * Already an entry for this badge, update the name,
-		 * then exit.
-		 */
-		if (strncmp (p->listitems[i], peer, 8) == 0) {
-			memcpy (p->listitems[i] + 8, u->name,
-			    strlen (u->name) + 1);
+		/* Already an entry for this badge, just return. */
+		if (strncmp (p->listitems[i], peer, 8) == 0)
 			return (-1);
-		}
 	}
 
 	/* No match, add a new entry */
