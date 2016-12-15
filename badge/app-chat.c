@@ -65,7 +65,7 @@ static int insert_peer (OrchardAppContext * context, KW01_PKT * pkt)
 
 	/* If the peer list is full, return */
 
-	if (p->peers == MAX_PEERS)
+	if (p->peers == (MAX_PEERS + 2))
 		return (-1);
 
 	chsnprintf (peer, sizeof(peer), "%08X", pkt->kw01_hdr.kw01_src);
