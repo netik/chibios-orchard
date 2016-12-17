@@ -431,6 +431,8 @@ void pwmChanThreadPlay (const PWM_NOTE * p, uint8_t chan)
 		pState = &pwmState0;
 	else if (chan == PWM_CHAN_1)
 		pState = &pwmState1;
+	else
+		return;
 
 	/*
 	 * Cancel any currently playing tune and wait for the
