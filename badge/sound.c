@@ -72,6 +72,98 @@ static const PWM_NOTE soundGalaga1[] = {
   { 0, PWM_DURATION_END }
 };
 
+static const PWM_NOTE soundMsPacman0[] = {
+  { PWM_NOTE_OFF, 36 },
+  { 72, 11 },
+  { PWM_NOTE_OFF, 1 },
+  { 74, 11 },
+  { PWM_NOTE_OFF, 1 },
+  { 76, 11 },
+  { PWM_NOTE_OFF, 1 },
+  { 77, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 81, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 79, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 82, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 81, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 82, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 84, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 81, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 79, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 82, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 81, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 82, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 84, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 81, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 82, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 84, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 86, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 88, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 89, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 88, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 89, 35 },
+  { 0, PWM_DURATION_END }
+};
+
+static const PWM_NOTE soundMsPacman1[] = {
+  { PWM_NOTE_OFF, 72 },
+  { 41, 35 },
+  { PWM_NOTE_OFF, 37 },
+  { 36, 35 },
+  { PWM_NOTE_OFF, 37 },
+  { 41, 35 },
+  { PWM_NOTE_OFF, 37 },
+  { 43, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 45, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 46, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 43, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 45, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 43, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 41, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 45, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 43, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 41, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 40, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 43, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 41, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 36, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 41, 35 },
+  { 0, PWM_DURATION_END }
+};
+
 #ifdef notdef
 static const PWM_NOTE soundStart[] = {
   { NOTE_FS3, note32 * 3 },
@@ -145,6 +237,11 @@ void playStartupSong(void) {
   /* the galaga game start sound */
   pwmChanThreadPlay (soundGalaga0, PWM_CHAN_0);
   pwmChanThreadPlay (soundGalaga1, PWM_CHAN_1);
+}
+
+void playMsPacman(void) {
+  pwmChanThreadPlay (soundMsPacman0, PWM_CHAN_0);
+  pwmChanThreadPlay (soundMsPacman1, PWM_CHAN_1);
 }
 
 void playHardFail(void) {
