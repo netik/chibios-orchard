@@ -166,7 +166,9 @@ radioReceive (RADIODriver * radio)
 	uint8_t len;
 	uint8_t i;
 
+#ifdef notdef
 	palClearPad (GPIOB, 1);   /* Green */
+#endif
 
 	pkt = &radio->kw01_pkt;
 
@@ -186,7 +188,9 @@ radioReceive (RADIODriver * radio)
 	spiReceive (radio->kw01_spi, 1, &len);
 
 	if (len > radio->kw01_maxlen) {
+#ifdef notdef
 		palSetPad (GPIOB, 1);   /* Green */
+#endif
 		radioUnselect (radio);
 		return (-1);
 	}
@@ -199,7 +203,9 @@ radioReceive (RADIODriver * radio)
 
 	spiReceive (radio->kw01_spi, len, p);
 
+#ifdef notdef
 	palSetPad (GPIOB, 1);   /* Green */
+#endif
 
 	radioUnselect (radio);
 	radioRelease (radio);

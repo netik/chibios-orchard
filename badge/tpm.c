@@ -70,11 +70,37 @@
 #include "kinetis_tpm.h"
 #include "userconfig.h"
 
+/*
+ * This table represents the 127 available MIDI note frequencies.
+ * Using this table allows us to specify nots using a single byte.
+ * The note value is converted to a frequency in the tone start
+ * routines.
+ */
+
+static const uint16_t notes[128] = {
+	8,	9,	9,	10,	10,	11,	12,	12,
+	13,	14,	15,	15,	16,	17,	18,	19,
+	21,	22,	23,	24,	26,	28,	29,	31,
+	33,	35,	37,	39,	41,	44,	46,	49,
+	52,	55,	58,	62,	65,	69,	73,	78,
+	82,	87,	92,	98,	104,	110,	117,	123,
+	131,	139,	147,	156,	165,	175,	185,	196,
+	208,	220,	233,	247,	262,	277,	294,	311,
+	330,	349,	370,	392,	415,	440,	466,	494,
+	523,	554,	587,	622,	659,	698,	740,	784,
+	831,	880,	932,	988,	1047,	1109,	1175,	1245,
+	1319,	1397,	1480,	1568,	1661,	1760,	1865,	1976,
+	2093,	2217,	2349,	2489,	2637,	2794,	2960,	3136,
+	3322,	3520,	3729,	3951,	4186,	4435,	4699,	4978,
+	5274,	5588,	5920,	6272,	6645,	7040,	7459,	7902,
+	8372,	8870,	9397,	9956,	10548,	11175,	11840,	12544
+};
+
 static THD_WORKING_AREA(waThread0, 0);
 static THD_WORKING_AREA(waThread1, 0);
 
 typedef void (*tonestop)(void);
-typedef void (*tonestart)(uint32_t);
+typedef void (*tonestart)(uint8_t);
 
 typedef struct thread_state {
 	tonestop		toneStop;
@@ -84,7 +110,7 @@ typedef struct thread_state {
 	uint8_t			play;
 } THREAD_STATE;
 
-static THREAD_STATE	pwmState0 = {
+static THREAD_STATE pwmState0 = {
 	pwmChan0ToneStop,
 	pwmChan0ToneStart,
 	NULL,
@@ -92,7 +118,7 @@ static THREAD_STATE	pwmState0 = {
 	0
 };
 
-static THREAD_STATE	pwmState1 = {
+static THREAD_STATE pwmState1 = {
 	pwmChan1ToneStop,
 	pwmChan1ToneStart,
 	NULL,
@@ -157,7 +183,7 @@ static THD_FUNCTION(pwmThread, arg) {
 				} else if (p->pwm_note != PWM_NOTE_PAUSE) {
 					pState->toneStart (p->pwm_note);
 				}
-				chThdSleepMilliseconds (p->pwm_duration);
+				chThdSleepMilliseconds (p->pwm_duration * 8);
 				p++;
 			}
 		}
@@ -253,16 +279,20 @@ void pwmInit (void)
 * RETURNS: N/A
 */
 
-void pwmChan0ToneStart (uint32_t tone)
+void pwmChan0ToneStart (uint8_t tone)
 {
+	uint16_t		f;
+
+	f = notes[tone];
+
 	/* Disable timer */
 
 	TPM0->SC &= ~(TPM_SC_CMOD_LPTPM_CLK|TPM_SC_CMOD_LPTPM_EXTCLK);
 
 	/* Set modulus and pulse width */
 
-	TPM0->MOD = TPM_FREQ / tone;
-	TPM0->C[TPM_CHANNEL].V = (TPM_FREQ / tone) / 2;
+	TPM0->MOD = TPM_FREQ / f;
+	TPM0->C[TPM_CHANNEL].V = (TPM_FREQ / f) / 2;
 
 	/* Turn on timer */
 
@@ -282,16 +312,20 @@ void pwmChan0ToneStart (uint32_t tone)
 * RETURNS: N/A
 */
 
-void pwmChan1ToneStart (uint32_t tone)
+void pwmChan1ToneStart (uint8_t tone)
 {
+	uint16_t		f;
+
+	f = notes[tone];
+
 	/* Disable timer */
 
 	TPM1->SC &= ~(TPM_SC_CMOD_LPTPM_CLK|TPM_SC_CMOD_LPTPM_EXTCLK);
 
 	/* Set modulus and pulse width */
 
-	TPM1->MOD = TPM_FREQ / tone;
-	TPM1->C[TPM_CHANNEL].V = (TPM_FREQ / tone) / 2;
+	TPM1->MOD = TPM_FREQ / f;
+	TPM1->C[TPM_CHANNEL].V = (TPM_FREQ / f) / 2;
 
 	/* Turn on timer */
 
