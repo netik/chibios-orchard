@@ -85,13 +85,9 @@ typedef struct pwm_note {
 
 #define TPM_THREAD_PRIO	70
 
-#define PWM_CHAN_0		0
-#define PWM_CHAN_1		1
-#define PWM_CHAN_2		2
-
 #define pwmToneStart(x)		pwmChan0ToneStart(x)
 #define pwmToneStop(x)		pwmChan0ToneStop(x)
-#define pwmThreadPlay(x)	pwmChanThreadPlay(x, PWM_CHAN_0)
+#define pwmThreadPlay(x)	pwmChanThreadPlay(x, NULL, NULL)
 
 extern void pwmInit (void);
 
@@ -104,6 +100,7 @@ extern void pwmChan1ToneStop (void);
 extern void pwmChan2ToneStart (uint8_t);
 extern void pwmChan2ToneStop (void);
 
-extern void pwmChanThreadPlay (const PWM_NOTE *, uint8_t);
+extern void pwmChanThreadPlay (const PWM_NOTE *,
+	const PWM_NOTE *, const PWM_NOTE *);
 
 #endif /* _TPM_H_ */

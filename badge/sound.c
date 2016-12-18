@@ -273,14 +273,11 @@ void playTone(uint16_t freq, uint16_t duration) {
 
 void playStartupSong(void) {
   /* the galaga game start sound */
-  pwmChanThreadPlay (soundGalaga0, PWM_CHAN_2);
-  pwmChanThreadPlay (soundGalaga1, PWM_CHAN_1);
-  pwmChanThreadPlay (soundGalaga2, PWM_CHAN_0);
+  pwmChanThreadPlay (soundGalaga0, soundGalaga1, soundGalaga2);
 }
 
 void playMsPacman(void) {
-  pwmChanThreadPlay (soundMsPacman0, PWM_CHAN_0);
-  pwmChanThreadPlay (soundMsPacman1, PWM_CHAN_1);
+  pwmChanThreadPlay (soundMsPacman0, soundMsPacman1, NULL);
 }
 
 void playHardFail(void) {
