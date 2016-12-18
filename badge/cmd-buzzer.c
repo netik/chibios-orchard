@@ -67,7 +67,8 @@ static void buzzer_play(BaseSequentialStream *chp, int argc, char *argv[]) {
 
   switch(selection) {
   case 0:
-    pwmThreadPlay (NULL);
+    pwmChanThreadPlay (NULL, PWM_CHAN_0);
+    pwmChanThreadPlay (NULL, PWM_CHAN_1);
     break;
   case 1:
     playStartupSong();
@@ -89,6 +90,9 @@ static void buzzer_play(BaseSequentialStream *chp, int argc, char *argv[]) {
     break;
   case 7:
     playHit();
+    break;
+  case 8:
+    playMsPacman();
     break;
   default:
     chprintf(chp, "No songa specified\r\n");

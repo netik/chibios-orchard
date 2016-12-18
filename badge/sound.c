@@ -5,45 +5,162 @@
 #include "notes.h"
 #include "sound.h"
 
-#define note4  400 /* mS per quarter note @ 140bpm */
-#define note16 100 /* 16th note */
-#define note32 50  /* 32nd note */
+#define note4  50 /*400*/ /* mS per quarter note @ 140bpm */
+#define note16 12 /*100*/ /* 16th note */
+#define note32 5 /*50*/  /* 32nd note */
 
-static const PWM_NOTE soundGalaga[] = {
-  { NOTE_A5, note32 * 7 },
-  { NOTE_D5, note32 * 2 },
-  { NOTE_E5, note32 * 7 },
-  { NOTE_G5, note32 * 2 },
-  { NOTE_FS5, note32 * 7 },
-  { NOTE_D5, note32 * 2 },
-  { NOTE_E5, note32 * 7 },
-  { NOTE_B6, note32 * 2 },
-  { NOTE_A6, note32 * 7 },
-  { NOTE_D5, note32 * 2 },
-  { NOTE_E5, note32 * 7 },
-  { NOTE_G5, note32 * 2 },
-  { NOTE_FS5, note32 * 7 },
-  { NOTE_D5, note32 * 2 },
-  { NOTE_A6, note32 * 7 },
-  { NOTE_CS6, note32 * 2 },
-  { NOTE_D6, note32 * 7 },
-  { NOTE_C6, note32 * 2 },
-  { NOTE_AS5, note32 * 7 },
-  { NOTE_A5, note32 * 2 },
-  { NOTE_G5, note32 * 7 },
-  { NOTE_F5, note32 * 2 },
-  { NOTE_E5, note32 * 7 },
-  { NOTE_C5, note32 * 2 },
-  { NOTE_C6, note32 * 7 },
-  { NOTE_D6, note32 * 2 },
-  { NOTE_C6, note32 * 7 },
-  { NOTE_A6, 125 /*note32 * 3*/ },
-  { NOTE_B6, 125 /*note32 * 3*/ },
-  { NOTE_G5, 125 /*note32 * 3*/ },
-  { NOTE_E5, 125 /*note32 * 3*/ },
-  { NOTE_A6, 125 /*note32 * 3*/ },
-  { NOTE_FS5, 125 /*note32 * 3*/ },
-  { NOTE_E5, 125 /*note32 * 3*/ },
+static const PWM_NOTE soundGalaga0[] = {
+  { 67, 36 },
+  { 72, 18 },
+  { 74, 36 },
+  { 77, 18 },
+  { 76, 36 },
+  { 72, 18 },
+  { 74, 36 },
+  { 81, 18 },
+  { 79, 36 },
+  { 72, 18 },
+  { 74, 36 },
+  { 77, 18 },
+  { 76, 36 },
+  { 72, 18 },
+  { 79, 36 },
+  { 83, 18 },
+  { 84, 36 },
+  { 82, 18 },
+  { 80, 36 },
+  { 79, 18 },
+  { 77, 36 },
+  { 75, 18 },
+  { 74, 36 },
+  { 70, 18 },
+  { 82, 36 },
+  { 84, 18 },
+  { 82, 36 },
+  { 79, 18 },
+  { 81, 18 },
+  { 77, 18 },
+  { 74, 18 },
+  { 79, 18 },
+  { 76, 18 },
+  { 74, 18 },
+  { 0, PWM_DURATION_END }
+};
+
+static const PWM_NOTE soundGalaga1[] = {
+  { 67, 54 },
+  { 69, 36 },
+  { 72, 18 },
+  { 71, 54 },
+  { 67, 54 },
+  { 72, 54 },
+  { 74, 36 },
+  { 77, 18 },
+  { 76, 54 },
+  { 74, 54 },
+  { 75, 54 },
+  { 74, 36 },
+  { 72, 18 },
+  { 70, 54 },
+  { 75, 54 },
+  { 82, 54 },
+  { 79, 36 },
+  { 75, 18 },
+  { 74, 54 },
+  { 79, 36 },
+  { 76, 18 },
+  { 0, PWM_DURATION_END }
+};
+
+static const PWM_NOTE soundMsPacman0[] = {
+  { PWM_NOTE_OFF, 36 },
+  { 72, 11 },
+  { PWM_NOTE_OFF, 1 },
+  { 74, 11 },
+  { PWM_NOTE_OFF, 1 },
+  { 76, 11 },
+  { PWM_NOTE_OFF, 1 },
+  { 77, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 81, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 79, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 82, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 81, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 82, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 84, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 81, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 79, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 82, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 81, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 82, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 84, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 81, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 82, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 84, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 86, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 88, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 89, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 88, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 89, 35 },
+  { 0, PWM_DURATION_END }
+};
+
+static const PWM_NOTE soundMsPacman1[] = {
+  { PWM_NOTE_OFF, 72 },
+  { 41, 35 },
+  { PWM_NOTE_OFF, 37 },
+  { 36, 35 },
+  { PWM_NOTE_OFF, 37 },
+  { 41, 35 },
+  { PWM_NOTE_OFF, 37 },
+  { 43, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 45, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 46, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 43, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 45, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 43, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 41, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 45, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 43, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 41, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 40, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 43, 17 },
+  { PWM_NOTE_OFF, 1 },
+  { 41, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 36, 35 },
+  { PWM_NOTE_OFF, 1 },
+  { 41, 35 },
   { 0, PWM_DURATION_END }
 };
 
@@ -118,7 +235,13 @@ void playTone(uint16_t freq, uint16_t duration) {
 
 void playStartupSong(void) {
   /* the galaga game start sound */
-  pwmThreadPlay (soundGalaga);
+  pwmChanThreadPlay (soundGalaga0, PWM_CHAN_0);
+  pwmChanThreadPlay (soundGalaga1, PWM_CHAN_1);
+}
+
+void playMsPacman(void) {
+  pwmChanThreadPlay (soundMsPacman0, PWM_CHAN_0);
+  pwmChanThreadPlay (soundMsPacman1, PWM_CHAN_1);
 }
 
 void playHardFail(void) {

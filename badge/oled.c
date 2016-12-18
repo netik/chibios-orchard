@@ -20,7 +20,7 @@ void oledSDFail(void) {
   
   gdispDrawStringBox (0, 210, gdispGetWidth(),
 		      gdispGetFontMetric(font, fontHeight),
-		      "IDES OF MARCH | Defcon 25 (2016)",
+		      "IDES OF MARCH | Defcon 25 (2017)",
 		      font, White, justifyCenter);
   
   gdispDrawStringBox (0, 225, gdispGetWidth(),
@@ -59,7 +59,7 @@ void oledOrchardBanner(void)
 	
 	gdispDrawStringBox (0, 210, gdispGetWidth(),
 			    gdispGetFontMetric(font, fontHeight),
-			    "IDES OF MARCH | Defcon 25 (2016)",
+			    "IDES OF MARCH | Defcon 25 (2017)",
 			    font, White, justifyCenter);
 
 	gdispDrawStringBox (0, 225, gdispGetWidth(),

@@ -64,25 +64,37 @@
  * which measn to turn off the tone generator completely.
  */
 
+#pragma pack(1)
 typedef struct pwm_note {
-	uint16_t	pwm_note;
-	uint16_t	pwm_duration;
+	uint8_t		pwm_note;
+	uint8_t		pwm_duration;
 } PWM_NOTE;
+#pragma pack()
 
-#define PWM_DURATION_END	0xFFFF
-#define PWM_DURATION_LOOP	0xFFFE
-#define PWM_NOTE_PAUSE		0xFFFF
-#define PWM_NOTE_OFF		0xFFFE
+#define PWM_DURATION_END	0xFF
+#define PWM_DURATION_LOOP	0xFE
+#define PWM_NOTE_PAUSE		0xFF
+#define PWM_NOTE_OFF		0xFE
 
 /* TPM note player thread priority */
 
 #define TPM_THREAD_PRIO	70
 
+#define PWM_CHAN_0		0
+#define PWM_CHAN_1		1
+
+#define pwmToneStart(x)		pwmChan0ToneStart(x)
+#define pwmToneStop(x)		pwmChan0ToneStop(x)
+#define pwmThreadPlay(x)	pwmChanThreadPlay(x, PWM_CHAN_0)
+
 extern void pwmInit (void);
 
-extern void pwmToneStart (uint32_t);
-extern void pwmToneStop (void);
+extern void pwmChan0ToneStart (uint8_t);
+extern void pwmChan0ToneStop (void);
 
-extern void pwmThreadPlay (const PWM_NOTE *);
+extern void pwmChan1ToneStart (uint8_t);
+extern void pwmChan1ToneStop (void);
+
+extern void pwmChanThreadPlay (const PWM_NOTE *, uint8_t);
 
 #endif /* _TPM_H_ */

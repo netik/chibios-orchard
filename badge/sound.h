@@ -9,5 +9,6 @@ extern void playVictory(void);
 extern void playDefeat(void);
 extern void playDodge(void);
 extern void playHit(void);
+extern void playMsPacman(void);
 
 #endif /* __SOUND_H__ */

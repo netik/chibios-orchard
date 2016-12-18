@@ -113,7 +113,6 @@ static void execute_ping(eventid_t id) {
   // while we're at it, clean up the enemy list every two pings
   if( cleanup_state ) {
     enemy_cleanup();
-    chEvtBroadcast(&radio_app);
   }
   cleanup_state = !cleanup_state;
 }
@@ -157,16 +156,6 @@ static void ui_complete_cleanup(eventid_t id) {
   evt.ui.flags = uiOK;
 
   instance.app->event(instance.context, &evt);  
-}
-
-static void radio_app_event(eventid_t id) {
-  (void)id;
-  OrchardAppEvent evt;
-
-  evt.type = radioEvent;
-  evt.radio.pPkt = NULL; /* Avoid confusion with other callback */
-  if( !ui_override )
-    instance.app->event(instance.context, &evt);
 }
 
 static void terminate(eventid_t id) {
@@ -278,7 +267,6 @@ static THD_FUNCTION(orchard_app_thread, arg) {
   chRegSetThreadName("Orchard App");
 
   evtTableInit(orchard_app_events, 6);
-  evtTableHook(orchard_app_events, radio_app, radio_app_event);
   evtTableHook(orchard_app_events, ui_completed, ui_complete_cleanup);
   evtTableHook(orchard_app_events, orchard_app_terminate, terminate);
   evtTableHook(orchard_app_events, timer_expired, timer_event);
@@ -331,8 +319,7 @@ static THD_FUNCTION(orchard_app_thread, arg) {
   evtTableUnhook(orchard_app_events, timer_expired, timer_event);
   evtTableUnhook(orchard_app_events, orchard_app_terminate, terminate);
   evtTableUnhook(orchard_app_events, ui_completed, ui_complete_cleanup);
-  evtTableUnhook(orchard_app_events, radio_app, radio_app_event);
-  
+ 
   /* Atomically broadcasting the event source and terminating the thread,
      there is not a chSysUnlock() because the thread terminates upon return.*/
   chSysLock();

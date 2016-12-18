@@ -34,6 +34,7 @@
 #include "orchard-events.h"
 #include "orchard-ui.h"
 #include "tpm.h"
+#include "notes.h"
 
 #include <string.h>
 
@@ -120,7 +121,7 @@ static uint8_t handle_input (char * name, uint8_t max,
 		break;
 	default:
 		if (p->pos == max) {
-			pwmToneStart (400);
+			pwmToneStart (NOTE_C4);
 			chThdSleepMilliseconds (100);
 			pwmToneStop ();
 		} else {
