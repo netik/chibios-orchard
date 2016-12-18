@@ -62,8 +62,8 @@
  * large. This is a problem because the value field for a TPM channel,
  * which is used to set the mid-point of the pulse sycle, is only 16 bits
  * wide. To ensure the desired values will fit, we divide the master
- * clock using the pre-scaler. The default pre-scale factor is 8, which
- * allows for tones as low as 45Hz.
+ * clock using the pre-scaler. The default pre-scale factor is 32, which
+ * allows for tones as low as 22Hz.
  */
 
 #include "ch.h"

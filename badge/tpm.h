@@ -45,10 +45,10 @@
 #define TPM2_CHANNEL	0
 
 /*
- * We pre-scale the clock by a factor of 16
+ * We pre-scale the clock by a factor of 32
  */
 
-#define TPM_PRESCALE	8
+#define TPM_PRESCALE	32
 
 /*
  * Base TPM clock is the system clock (48MHz), which we divide by
