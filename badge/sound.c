@@ -10,6 +10,69 @@
 #define note32 5 /*50*/  /* 32nd note */
 
 static const PWM_NOTE soundGalaga0[] = {
+  { 67, 54 },
+  { 69, 36 },
+  { 72, 18 },
+  { 71, 54 },
+  { 67, 54 },
+  { 72, 54 },
+  { 74, 36 },
+  { 77, 18 },
+  { 76, 54 },
+  { 74, 54 },
+  { 75, 54 },
+  { 74, 36 },
+  { 72, 18 },
+  { 70, 54 },
+  { 75, 54 },
+  { 82, 54 },
+  { 79, 36 },
+  { 75, 18 },
+  { 74, 54 },
+  { 79, 36 },
+  { 76, 18 },
+  { 0, PWM_DURATION_END }
+};
+
+static const PWM_NOTE soundGalaga1[] = {
+  { 76, 36 },
+  { 67, 18 },
+  { 74, 36 },
+  { 69, 18 },
+  { 72, 36 },
+  { 67, 18 },
+  { 69, 36 },
+  { 72, 18 },
+  { 76, 36 },
+  { 67, 18 },
+  { 74, 36 },
+  { 69, 18 },
+  { 72, 36 },
+  { 67, 18 },
+  { 72, 36 },
+  { 79, 18 },
+  { 80, 36 },
+  { 79, 18 },
+  { 77, 36 },
+  { 75, 18 },
+  { 74, 36 },
+  { 72, 18 },
+  { 70, 36 },
+  { 74, 18 },
+  { 75, 36 },
+  { 77, 18 },
+  { 75, 36 },
+  { 72, 18 },
+  { 77, 18 },
+  { 74, 18 },
+  { 69, 18 },
+  { 74, 18 },
+  { 71, 18 },
+  { 69, 18 },
+  { 0, PWM_DURATION_END }
+};
+
+static const PWM_NOTE soundGalaga2[] = {
   { 67, 36 },
   { 72, 18 },
   { 74, 36 },
@@ -44,31 +107,6 @@ static const PWM_NOTE soundGalaga0[] = {
   { 79, 18 },
   { 76, 18 },
   { 74, 18 },
-  { 0, PWM_DURATION_END }
-};
-
-static const PWM_NOTE soundGalaga1[] = {
-  { 67, 54 },
-  { 69, 36 },
-  { 72, 18 },
-  { 71, 54 },
-  { 67, 54 },
-  { 72, 54 },
-  { 74, 36 },
-  { 77, 18 },
-  { 76, 54 },
-  { 74, 54 },
-  { 75, 54 },
-  { 74, 36 },
-  { 72, 18 },
-  { 70, 54 },
-  { 75, 54 },
-  { 82, 54 },
-  { 79, 36 },
-  { 75, 18 },
-  { 74, 54 },
-  { 79, 36 },
-  { 76, 18 },
   { 0, PWM_DURATION_END }
 };
 
@@ -235,8 +273,9 @@ void playTone(uint16_t freq, uint16_t duration) {
 
 void playStartupSong(void) {
   /* the galaga game start sound */
-  pwmChanThreadPlay (soundGalaga0, PWM_CHAN_0);
+  pwmChanThreadPlay (soundGalaga0, PWM_CHAN_2);
   pwmChanThreadPlay (soundGalaga1, PWM_CHAN_1);
+  pwmChanThreadPlay (soundGalaga2, PWM_CHAN_0);
 }
 
 void playMsPacman(void) {

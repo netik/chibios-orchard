@@ -35,10 +35,13 @@
  * tone generator. This simplifies the generation of music notes as
  * the hardware can be set to generate a square wave without having
  * jiggle GPIO pins in software. There are several pins available for TPM.
- * This module uses two: PTC2 form TPM0 channel 1 and PTB1 for TPM1
- * channel 1. On the Freescale/NXP KW019032 board, PTB1 is wired to
- * the green segment of the tri-color LED, but this doesn't affect
- * the pin usage for audio. 
+ * This module uses three: PTC2 form TPM0 channel 1 and PTB1 for TPM1
+ * channel 1 and PTB2 for TPM2 channel 0. On the Freescale/NXP KW019032
+ * board, PTB1 is wired to the green segment of the tri-color LED, but
+ * this doesn't affect the pin usage for audio. Also PTB2 is documented
+ * as being used for UART0 flow control, however it turns out that it's
+ * not being for that purpose by ChibiOS. (It doesn't look like the
+ * Kinetis UART driver in ChibiOS supports hardware flow control.)
  *
  * There is a ChibiOS PWM driver for the KW01, however its API is a little
  * clumsy to use for this application, so we use this code instead.
@@ -59,7 +62,7 @@
  * large. This is a problem because the value field for a TPM channel,
  * which is used to set the mid-point of the pulse sycle, is only 16 bits
  * wide. To ensure the desired values will fit, we divide the master
- * clock using the pre-scaler. The default pre-scale factor is 16, which
+ * clock using the pre-scaler. The default pre-scale factor is 8, which
  * allows for tones as low as 45Hz.
  */
 
@@ -98,6 +101,7 @@ static const uint16_t notes[128] = {
 
 static THD_WORKING_AREA(waThread0, 0);
 static THD_WORKING_AREA(waThread1, 0);
+static THD_WORKING_AREA(waThread2, 0);
 
 typedef void (*tonestop)(void);
 typedef void (*tonestart)(uint8_t);
@@ -121,6 +125,14 @@ static THREAD_STATE pwmState0 = {
 static THREAD_STATE pwmState1 = {
 	pwmChan1ToneStop,
 	pwmChan1ToneStart,
+	NULL,
+	NULL,
+	0
+};
+
+static THREAD_STATE pwmState2 = {
+	pwmChan2ToneStop,
+	pwmChan2ToneStart,
 	NULL,
 	NULL,
 	0
@@ -226,7 +238,7 @@ void pwmInit (void)
 
 	/* Enable clock gating for TPM0 */
 
-	SIM->SCGC6 |= SIM_SCGC6_TPM0 | SIM_SCGC6_TPM1;
+	SIM->SCGC6 |= SIM_SCGC6_TPM0 | SIM_SCGC6_TPM1 | SIM_SCGC6_TPM2;
 
 	/* Set prescaler factor. */
 
@@ -246,14 +258,16 @@ void pwmInit (void)
 
 	TPM0->SC = i;
 	TPM1->SC = i;
+	TPM2->SC = i;
 
 	/*
 	 * Initialize channel mode. We select edge-aligned PWM mode,
          * active low.
 	 */
 
-	TPM0->C[TPM_CHANNEL].SC = TPM_CnSC_MSB | TPM_CnSC_ELSB;
-	TPM1->C[TPM_CHANNEL].SC = TPM_CnSC_MSB | TPM_CnSC_ELSB;
+	TPM0->C[TPM0_CHANNEL].SC = TPM_CnSC_MSB | TPM_CnSC_ELSB;
+	TPM1->C[TPM1_CHANNEL].SC = TPM_CnSC_MSB | TPM_CnSC_ELSB;
+	TPM2->C[TPM2_CHANNEL].SC = TPM_CnSC_MSB | TPM_CnSC_ELSB;
 
 	/* Create PWM threads */
 
@@ -261,6 +275,8 @@ void pwmInit (void)
 		TPM_THREAD_PRIO, pwmThread, &pwmState0);
 	pwmState1.pThread = chThdCreateStatic(waThread1, sizeof(waThread1),
 		TPM_THREAD_PRIO, pwmThread, &pwmState1);
+	pwmState2.pThread = chThdCreateStatic(waThread2, sizeof(waThread2),
+		TPM_THREAD_PRIO, pwmThread, &pwmState2);
 
 	return;
 }
@@ -292,7 +308,8 @@ void pwmChan0ToneStart (uint8_t tone)
 	/* Set modulus and pulse width */
 
 	TPM0->MOD = TPM_FREQ / f;
-	TPM0->C[TPM_CHANNEL].V = (TPM_FREQ / f) / 2;
+	TPM0->C[TPM0_CHANNEL].V = (TPM_FREQ / f) / 2;
+	TPM0->CNT = 0;
 
 	/* Turn on timer */
 
@@ -306,8 +323,8 @@ void pwmChan0ToneStart (uint8_t tone)
 * pwmChan1ToneStart - start playing a tone on voice 1
 *
 * This function is the same as pwmChan0ToneStart(), except it works on
-* the second voice channel. This voice 1 chan be set to play a different
-* tone, completely independent of voice 0.
+* the second voice channel. This voice 1 channel be set to play a different
+* tone, completely independent of the others.
 *
 * RETURNS: N/A
 */
@@ -325,11 +342,46 @@ void pwmChan1ToneStart (uint8_t tone)
 	/* Set modulus and pulse width */
 
 	TPM1->MOD = TPM_FREQ / f;
-	TPM1->C[TPM_CHANNEL].V = (TPM_FREQ / f) / 2;
+	TPM1->C[TPM1_CHANNEL].V = (TPM_FREQ / f) / 2;
+	TPM1->CNT = 0;
 
 	/* Turn on timer */
 
 	TPM1->SC |= TPM_SC_CMOD_LPTPM_CLK;
+
+	return;
+}
+
+/******************************************************************************
+*
+* pwmChan2ToneStart - start playing a tone on voice 2
+*
+* This function is the same as pwmChan0ToneStart(), except it works on
+* the third voice channel. The voice 2 channel be set to play a different
+* tone, completely independent the others.
+*
+* RETURNS: N/A
+*/
+
+void pwmChan2ToneStart (uint8_t tone)
+{
+	uint16_t		f;
+
+	f = notes[tone];
+
+	/* Disable timer */
+
+	TPM2->SC &= ~(TPM_SC_CMOD_LPTPM_CLK|TPM_SC_CMOD_LPTPM_EXTCLK);
+
+	/* Set modulus and pulse width */
+
+	TPM2->MOD = TPM_FREQ / f;
+	TPM2->C[TPM2_CHANNEL].V = (TPM_FREQ / f) / 2;
+	TPM2->CNT = 0;
+
+	/* Turn on timer */
+
+	TPM2->SC |= TPM_SC_CMOD_LPTPM_CLK;
 
 	return;
 }
@@ -347,11 +399,10 @@ void pwmChan1ToneStart (uint8_t tone)
 
 void pwmChan0ToneStop (void)
 {
-	/* Turn off timer and clear modulus and pulse width */
+	/* Turn off timer and clear count */
  
 	TPM0->SC &= ~(TPM_SC_CMOD_LPTPM_CLK|TPM_SC_CMOD_LPTPM_EXTCLK);
-	TPM0->C[TPM_CHANNEL].V = 0;
-	TPM0->MOD = 0;
+	TPM0->CNT = 0;
 
 	return;
 }
@@ -368,11 +419,30 @@ void pwmChan0ToneStop (void)
 
 void pwmChan1ToneStop (void)
 {
-	/* Turn off timer and clear modulus and pulse width */
- 
+	/* Turn off timer and clear count */
+
 	TPM1->SC &= ~(TPM_SC_CMOD_LPTPM_CLK|TPM_SC_CMOD_LPTPM_EXTCLK);
-	TPM1->C[TPM_CHANNEL].V = 0;
-	TPM1->MOD = 0;
+	TPM1->CNT = 0;
+
+	return;
+}
+
+/******************************************************************************
+*
+* pwmChan2ToneStop - Turn off TPM voice 2
+*
+* This function is the same as pwmChan0ToneStop(), except it works on
+* the third voice channel.
+*
+* RETURNS: N/A
+*/
+
+void pwmChan2ToneStop (void)
+{
+	/* Turn off timer and clear count */
+ 
+	TPM2->SC &= ~(TPM_SC_CMOD_LPTPM_CLK|TPM_SC_CMOD_LPTPM_EXTCLK);
+	TPM2->CNT = 0;
 
 	return;
 }
@@ -386,10 +456,10 @@ void pwmChan1ToneStop (void)
 * structures. The <p> argument is a pointer to the array. Each PWM_NOTE
 * contains a frequency (pwm_note) and duration (pwm_duration). There
 * are two available channels and two music playing threads. A channel
-* can be specified using the <chan> argument which can be either PWM_CHAN_0
-* or PWM_CHAN_1. The music thread will program the PWM to play the note and
-* then pause for the duration period before moving on to the next note.
-* The following special cases are handled:
+* can be specified using the <chan> argument which can be PWM_CHAN_0,
+* PWM_CHAN1 or PWM_CHAN_2. The music thread will program the PWM to play
+* the note and then pause for the duration period before moving on to the
+* next nodeThe following special cases are handled:
 *
 * - If pwm_duration is PWM_DURATION_END, this indicates the end of the
 *   tune. The thread will go to sleep when it reaches the end of the tune
@@ -431,6 +501,8 @@ void pwmChanThreadPlay (const PWM_NOTE * p, uint8_t chan)
 		pState = &pwmState0;
 	else if (chan == PWM_CHAN_1)
 		pState = &pwmState1;
+	else if (chan == PWM_CHAN_2)
+		pState = &pwmState2;
 	else
 		return;
 

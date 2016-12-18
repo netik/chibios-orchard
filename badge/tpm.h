@@ -34,16 +34,21 @@
 #define _TPM_H_
 
 /*
- * We use TPM0 channel 1, which is wired to pin PTC2
+ * We use:
+ * TPM0 channel 1, which is wired to pin PTC2
+ * TPM1 channel 1, which is wired to pin PTB1
+ * TPM2 channel 0, which is wired to pin PTB2
  */
 
-#define TPM_CHANNEL	1
+#define TPM0_CHANNEL	1
+#define TPM1_CHANNEL	1
+#define TPM2_CHANNEL	0
 
 /*
  * We pre-scale the clock by a factor of 16
  */
 
-#define TPM_PRESCALE	16
+#define TPM_PRESCALE	8
 
 /*
  * Base TPM clock is the system clock (48MHz), which we divide by
@@ -82,6 +87,7 @@ typedef struct pwm_note {
 
 #define PWM_CHAN_0		0
 #define PWM_CHAN_1		1
+#define PWM_CHAN_2		2
 
 #define pwmToneStart(x)		pwmChan0ToneStart(x)
 #define pwmToneStop(x)		pwmChan0ToneStop(x)
@@ -94,6 +100,9 @@ extern void pwmChan0ToneStop (void);
 
 extern void pwmChan1ToneStart (uint8_t);
 extern void pwmChan1ToneStop (void);
+
+extern void pwmChan2ToneStart (uint8_t);
+extern void pwmChan2ToneStop (void);
 
 extern void pwmChanThreadPlay (const PWM_NOTE *, uint8_t);
 
