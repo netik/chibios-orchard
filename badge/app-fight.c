@@ -178,6 +178,7 @@ static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height,
   }
 
   gdispFillArea(x + remain,y+1,(width - remain),height-1, Black);
+
   gdispFillArea(x,y,remain,height, c);
   gdispDrawBox(x,y,width,height, c);
 }
@@ -485,6 +486,7 @@ static void screen_select_draw(int8_t initial) {
 		      gdispGetFontMetric(fontFF, fontHeight),
 		      enemies[current_enemy_idx]->name,
 		      fontFF, Yellow, justifyLeft);
+
   // level
   ypos = ypos + 25;
   chsnprintf(tmp, sizeof(tmp), "LEVEL %d", enemies[current_enemy_idx]->level);
@@ -513,6 +515,8 @@ static void screen_demand_draw(void) {
   GWidgetInit wi;
   font_t fontFF;
   FightHandles *p;
+  char tmp[40];
+  int xpos, ypos;
 
   // sadly, our handlers cannot pass us the context. Get it from the app
   p = instance.context->priv;
@@ -521,6 +525,26 @@ static void screen_demand_draw(void) {
   gdispClear(Black);
   gwinSetDefaultFont(gdispOpenFont(FONT_FIXED));
 
+  ypos = (gdispGetHeight() / 2) - 60;
+  xpos = 10;
+
+  putImageFile(IMG_GUARD_IDLE_R, POS_PLAYER2_X, POS_PLAYER2_Y);
+
+  gdispDrawStringBox (xpos,
+		      ypos,
+		      gdispGetWidth() - xpos,
+		      gdispGetFontMetric(fontFF, fontHeight),
+		      current_enemy.name,
+		      fontFF, Yellow, justifyLeft);
+  ypos=ypos+50;
+  chsnprintf(tmp, sizeof(tmp), "LEVEL %d", current_enemy.level);
+
+  gdispDrawStringBox (xpos,
+		      ypos,
+		      gdispGetWidth() - xpos,
+		      gdispGetFontMetric(fontFF, fontHeight),
+		      tmp,
+		      fontFF, Yellow, justifyLeft);  
   // draw UI
   gwinSetDefaultStyle(&RedButtonStyle, FALSE);
   gwinWidgetClearInit(&wi);
@@ -547,8 +571,9 @@ static void screen_demand_draw(void) {
 
   playAttacked();
   ticktock = DEFAULT_WAIT_TIME;
-  drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,ticktock, 1);
   last_tick_time = chVTGetSystemTime();
+  drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,ticktock, 1);
+
 }
 
 static void screen_vs_draw(void)  {
@@ -630,59 +655,6 @@ static void screen_select_close(OrchardAppContext *context) {
   p->ghAttack = NULL;
 }
 
-static void radio_battle_ack(KW01_PKT * pkt)
-{
-  (void)pkt;
-  // the remote user has ack'd the battle, we can start fighting.
-  radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_STARTBATTLE_ACK, NULL);
-  radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_DECLINED, NULL);
-  current_fight_state = VS_SCREEN;
-  screen_vs_draw();
-}
-
-static void radio_battle_declined(KW01_PKT * pkt)
-{
-  (void)pkt;
-  // we were declined.
-  radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_STARTBATTLE_ACK, NULL);
-  radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_DECLINED, NULL);
-
-  current_fight_state = ENEMY_SELECT;
-  screen_select_draw(TRUE);
-  draw_select_buttons(instance.context->priv);
-}
-
-static void radio_startbattle(KW01_PKT * pkt) {
-  /* handle an inbound request for a fight. */
-  if (current_fight_state == IDLE) {
-    /* we can accept a new fight */
-
-    // copy off pkt
-    memcpy(&current_enemy, pkt->kw01_payload + 11, sizeof(user));
-
-    // put up screen, accept fight from user foobar/badge foobar
-    current_fight_state = APPROVAL_DEMAND;
-
-    // start timer... 
-    ticktock = DEFAULT_WAIT_TIME;
-    playAttacked();
-    screen_demand_draw();
-  }
-}
-  
-static uint32_t fight_init(OrchardAppContext *context) {
-  (void)context;
-
-  if (context == NULL) {
-    /* This should only happen for auto-init */
-    radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_STARTBATTLE,
-		     radio_startbattle);
-    fight_received = 0;
-  }
-
-  return 0;
-}
-
 static void fight_start(OrchardAppContext *context) {
   FightHandles *p;
 
@@ -722,34 +694,35 @@ static void screen_waitapproval_draw(void) {
 
   // progress bar
   ticktock = DEFAULT_WAIT_TIME; // used to hold a generic timer value.
-  drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,ticktock, 1);
   last_tick_time = chVTGetSystemTime();
+  drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,ticktock, 1);
 }
 
-static void sendGamePacket(uint8_t protocol) {
+static void sendGamePacket(uint8_t opcode) {
   // sends a game packet to current_enemy
   userconfig *config;
   user upkt;
  
   config = getConfig();
-
   memset (&upkt, 0, sizeof(upkt));
 
   upkt.ttl = 4;
+  upkt.opcode = opcode;
   strncpy(upkt.name, config->name, CONFIG_NAME_MAXLEN);
+
   upkt.in_combat = config->in_combat;
   upkt.hp = config->hp;
   upkt.level = config->level;
   upkt.p_type = config->p_type;
   
-  radioSend (&KRADIO1, current_enemy.netid,
-	     protocol, sizeof(upkt), &upkt);
+  radioSend (&KRADIO1, current_enemy.netid, RADIO_PROTOCOL_FIGHT, sizeof(upkt), &upkt);
 }
 
 static void end_fight(void) {
   // set my incombat to true
   userconfig *config = getConfig();
   config->in_combat = 0;
+  current_fight_state = IDLE;
 }
 
 static void fight_event(OrchardAppContext *context,
@@ -765,7 +738,7 @@ static void fight_event(OrchardAppContext *context,
   //
   // this returns us to the badge screen on idle.
   // we don't want this for all states, just select and end-of-fight
-  if ( (event->type == timerEvent) && current_fight_state == ENEMY_SELECT ) {
+  if ( (event->type == timerEvent) && (current_fight_state == ENEMY_SELECT) ) {
       if( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) {
 	orchardAppRun(orchardAppByName("Badge"));
       }
@@ -785,8 +758,7 @@ static void fight_event(OrchardAppContext *context,
     if (ticktock <= 0) {
       orchardAppTimer(context, 0, false); // shut down the timer
       screen_alert_draw("TIMED OUT!");
-      radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_STARTBATTLE_ACK, NULL);
-      radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_DECLINED, NULL);
+      fight_received = 0;
       ledSetProgress(-1);
       end_fight();
       playHardFail();
@@ -815,24 +787,14 @@ static void fight_event(OrchardAppContext *context,
 	  return;
 	}
         if ( ((GEventGWinButton*)pe)->gwin == p->ghAttack) { 
-	  // Attack requested
+	  // we are attacking. 
 	  last_ui_time = chVTGetSystemTime();
 	  screen_select_close(context);
 	  memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(user));
 	  config->in_combat = true;
-	  sendGamePacket(RADIO_PROTOCOL_STARTBATTLE);
-	  
-	  //jna put this back later.
-	  // we are attacking
-	  // 	  current_fight_state = APPROVAL_WAIT;
-	  //	  screen_waitapproval_draw();
-	  
-	  // we are being attacked
-	  current_fight_state = APPROVAL_DEMAND;
-	  screen_demand_draw();
-	  
-	  radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_STARTBATTLE_ACK, radio_battle_ack);
-	  radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_DECLINED, radio_battle_declined);
+	  sendGamePacket(OP_STARTBATTLE);
+	  current_fight_state = APPROVAL_WAIT;
+	  screen_waitapproval_draw();
 	  return;
 	}
 	if ( ((GEventGWinButton*)pe)->gwin == p->ghDeny) { 
@@ -846,7 +808,7 @@ static void fight_event(OrchardAppContext *context,
 	  p->ghAccept = NULL;
 	  
 	  current_fight_state = IDLE;
-	  sendGamePacket(RADIO_PROTOCOL_DECLINED);
+	  sendGamePacket(OP_DECLINED);
 	  screen_alert_draw("Dulce bellum inexpertis.");
 	  chThdSleepMilliseconds(3000);
 	  orchardAppExit();
@@ -858,7 +820,7 @@ static void fight_event(OrchardAppContext *context,
 	  p->ghDeny = NULL;
 	  p->ghAccept = NULL;
 	  current_fight_state = VS_SCREEN;
-	  sendGamePacket(RADIO_PROTOCOL_STARTBATTLE_ACK);
+	  sendGamePacket(OP_STARTBATTLE_ACK);
 	  gdispClear(Black);
 	  screen_vs_draw();
 	  return;
@@ -934,6 +896,66 @@ static void fight_exit(OrchardAppContext *context) {
   return;
 }
 
-orchard_app("FIGHT", 0, fight_init, fight_start, fight_event, fight_exit);
+static void radio_updatestate(KW01_PKT * pkt)
+{
+  /* this is the state machine that handles transitions for the game via the radio */
+  user *u;
+  u = (user *)pkt->kw01_payload;
+  last_ui_time = chVTGetSystemTime(); // radio is a state-change, so reset this.
+  
+  chprintf(stream, "\r\ngot game packet\r\n");
+  
+  switch (current_fight_state) {
+  case IDLE:
+  case ENEMY_SELECT:
+    if (u->opcode == OP_STARTBATTLE) {
+      /* we can accept a new fight */
+      // copy off pkt
+      memcpy(&current_enemy, u, sizeof(user));
+      
+      // put up screen, accept fight from user foobar/badge foobar
+      current_fight_state = APPROVAL_DEMAND;
+      
+      // start timer...
+      last_tick_time = chVTGetSystemTime();
+      ticktock = DEFAULT_WAIT_TIME;
+      playAttacked();
+      screen_demand_draw();
+    }
+    break;
+  case APPROVAL_WAIT:
+    if (u->opcode == OP_STARTBATTLE_ACK) {
+      current_fight_state = VS_SCREEN;
+      screen_vs_draw();
+    }
+    break;
+  case APPROVAL_DEMAND:
+    if (u->opcode == OP_DECLINED) {
+      current_fight_state = ENEMY_SELECT;
+      screen_select_draw(TRUE);
+      draw_select_buttons(instance.context->priv);
+    }
+    break;
+  case MOVE_WAITACK:
+    break;
+  }
+
+}
+
+static uint32_t fight_init(OrchardAppContext *context) {
+  (void)context;
+
+  if (context == NULL) {
+    /* This should only happen for auto-init */
+    radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_FIGHT,
+		     radio_updatestate);
+    fight_received = 0;
+  }
+
+  return 0;
+}
+
+
+orchard_app("FIGHT", APP_FLAG_AUTOINIT, fight_init, fight_start, fight_event, fight_exit);
 
 

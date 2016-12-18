@@ -74,11 +74,7 @@
 #define RADIO_PROTOCOL_SHOUT	0x02	/* Broadcast message to all badges */
 #define RADIO_PROTOCOL_PING	0x03	/* Solicit ping ID from badges */
 
-#define RADIO_PROTOCOL_STARTBATTLE	0x80	/* battle was requested */
-#define RADIO_PROTOCOL_STARTBATTLE_ACK	0x81	/* battle was accepted */
-#define RADIO_PROTOCOL_DECLINED         0x82	/* battle was declined or invalid */
-#define RADIO_PROTOCOL_YOUGO	        0x84	/* my turn is done */
-#define RADIO_PROTOCOL_IMDEAD     	0x88	/* i died */
+#define RADIO_PROTOCOL_FIGHT	0x80	/* Fight */
 
 /*
  * Only the first byte of the packet header definition is defined

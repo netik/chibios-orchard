@@ -78,6 +78,13 @@ typedef struct userconfig {
 #define ATTACK_MASK 0x38
 #define BLOCK_MASK 0x07
 
+/* user->opcode */
+#define OP_STARTBATTLE      0x01   /* battle was requested */
+#define OP_STARTBATTLE_ACK  0x02   /* battle was accepted */
+#define OP_DECLINED         0x04   /* battle was declined or invalid */
+#define OP_YOUGO            0x08   /* my turn is done */
+#define OP_IMDEAD           0x0f   /* i died */
+
 typedef struct _userpkt {
   /* this is a shortened form of userdata for transmission */
   /* appx 52 bytes, max is 66 (AES limitiation) */
@@ -85,6 +92,7 @@ typedef struct _userpkt {
   /* stash this away for future attacks/lookups */
   /* unique network ID determined from use of lower 64 bits of SIM-UID */
   uint32_t netid;
+  uint8_t opcode;         /* 1 - BATTLE_OPCODE */
 
   /* Network Payload */
   uint16_t seq;           /* 2 */
