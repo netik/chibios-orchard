@@ -53,11 +53,6 @@
 #include "xpt2046_reg.h"
 #include "xpt2046.h"
 
-/* Current chip select setting */
-
-#define XPT_CHIP_SELECT_PORT	GPIOE
-#define XPT_CHIP_SELECT_PIN	19
-
 /******************************************************************************
 *
 * xptGet - issue command to XPT2046 chip and return result

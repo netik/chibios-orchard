@@ -49,6 +49,54 @@
 #define KINETIS_SYSCLK_FREQUENCY    48000000UL 
 #define KINETIS_MCG_MODE            KINETIS_MCG_MODE_PEE
 
+/* GPIO pin assignments */
+
+#define MMC_CHIP_SELECT_PORT	GPIOB
+#define MMC_CHIP_SELECT_PIN	0
+
+#define XPT_CHIP_SELECT_PORT	GPIOE
+#define XPT_CHIP_SELECT_PIN	19
+
+#define SCREEN_CHIP_SELECT_PORT	GPIOD
+#define SCREEN_CHIP_SELECT_PIN	4
+
+#define SCREEN_CMDDATA_PORT	GPIOE
+#define SCREEN_CMDDATA_PIN	18
+
+#define LED_CHAIN_PORT		GPIOE
+#define LED_CHAIN_PIN		17
+
+#define RED_LED_PORT		GPIOE
+#define RED_LED_PIN		16
+
+/* Note: actually PTB1 on Freedom board */
+
+#define GREEN_LED_PORT		GPIOD
+#define GREEN_LED_PIN		7
+
+#define BLUE_LED_PORT		GPIOB
+#define BLUE_LED_PIN		0
+
+/* Also used for LED chain. */
+
+#define BLUE_SOLO_LED_PORT	GPIOE
+#define BLUE_SOLO_LED_PIN	17
+
+#define TPM0_PORT		GPIOC
+#define TPM0_PIN		2
+
+#define TPM1_PORT		GPIOB
+#define TPM1_PIN		1
+
+#define TPM2_PORT		GPIOB
+#define TPM2_PIN		2
+
+#define RADIO_CHIP_SELECT_PORT	GPIOD
+#define RADIO_CHIP_SELECT_PIN	0
+
+#define RADIO_RESET_PORT	GPIOE
+#define RADIO_RESET_PIN		30
+
 /*
  * Check for board revision specification.
  */

@@ -43,8 +43,6 @@
 #else
 #include "mmc.h"
 #endif
-#define MMC_CHIP_SELECT_PORT	GPIOB
-#define MMC_CHIP_SELECT_PIN	0
 
 #include "gfx.h"
 #include "images.h"
@@ -66,8 +64,8 @@ uint8_t led_fb[48];
 static const SPIConfig spi1_config = {
   NULL,
   /* HW dependent part.*/
-  GPIOD,
-  0,
+  RADIO_CHIP_SELECT_PORT,
+  RADIO_CHIP_SELECT_PIN,
   0
 };
 
@@ -229,16 +227,16 @@ int main(void)
 
   /* Single color LED */
 
-  palSetPad (GPIOE, 17); /* Blue LED */
+  palSetPad (BLUE_SOLO_LED_PORT, BLUE_SOLO_LED_PIN); /* Blue LED */
  
   /* Multi-color LED */
  
-  palSetPad (GPIOE, 16);  /* Red */
-  palSetPad (GPIOB, 1);   /* Green */
-  palSetPad (GPIOB, 0);   /* Blue */
+  palSetPad (RED_LED_PORT, RED_LED_PIN);  /* Red */
+  palSetPad (GREEN_LED_PORT, GREEN_LED_PIN);   /* Green */
+  palSetPad (BLUE_LED_PORT, BLUE_LED_PIN);   /* Blue */
 
   /* Turn on the blue LED */
-  palClearPad (GPIOE, 17);
+  palClearPad (BLUE_SOLO_LED_PORT, BLUE_SOLO_LED_PIN);
   evtTableInit(orchard_events, 4);
 
   /* init the shell and show our banners */
@@ -272,10 +270,10 @@ int main(void)
    * with the probe for the SD card.
    */
 
-  palSetPad (GPIOB, 1);		/* MMC/SD card */
-  palSetPad (GPIOD, 4);		/* 240x320 display */
-  palSetPad (GPIOE, 18);	/* Touch controller */
-  palSetPad (GPIOE, 19);	/* Display command/data pin */
+  palSetPad (MMC_CHIP_SELECT_PORT, MMC_CHIP_SELECT_PIN);
+  palSetPad (SCREEN_CHIP_SELECT_PORT, SCREEN_CHIP_SELECT_PIN);
+  palSetPad (XPT_CHIP_SELECT_PORT, XPT_CHIP_SELECT_PIN);
+  palSetPad (SCREEN_CMDDATA_PORT, SCREEN_CMDDATA_PIN);
 
   /*
    * The following code works around what seems to be a problem with

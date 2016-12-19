@@ -144,7 +144,7 @@ const PALConfig pal_default_config =
   /* ECO9: Swap B0/D4 DC/INT to allow GPIOX to fire interrupts */
         /* PTD3*/ PAL_MODE_UNCONNECTED,     /* PTD4*/ PAL_MODE_ALTERNATIVE_2,    /* PTD5*/ PAL_MODE_ALTERNATIVE_2,
 #endif
-        /* PTD6*/ PAL_MODE_INPUT_ANALOG,   /* PTD7*/ PAL_MODE_ALTERNATIVE_3,   /* PTD8*/ PAL_MODE_UNCONNECTED,
+        /* PTD6*/ PAL_MODE_INPUT_ANALOG,   /* PTD7*/ PAL_MODE_OUTPUT_PUSHPULL,   /* PTD8*/ PAL_MODE_UNCONNECTED,
         /* PTD9*/ PAL_MODE_UNCONNECTED,     /*PTD10*/ PAL_MODE_UNCONNECTED,     /*PTD11*/ PAL_MODE_UNCONNECTED,
         /*PTD12*/ PAL_MODE_UNCONNECTED,     /*PTD13*/ PAL_MODE_UNCONNECTED,     /*PTD14*/ PAL_MODE_UNCONNECTED,
         /*PTD15*/ PAL_MODE_UNCONNECTED,     /*PTD16*/ PAL_MODE_UNCONNECTED,     /*PTD17*/ PAL_MODE_UNCONNECTED,
@@ -245,7 +245,8 @@ void __early_init(void) {
 
   /* Mux PTD0 as a GPIO, since it's used for Chip Select.*/
 
-  palSetPadMode (GPIOD, 0, PAL_MODE_OUTPUT_PUSHPULL);
+  palSetPadMode (RADIO_CHIP_SELECT_PORT, RADIO_CHIP_SELECT_PIN,
+    PAL_MODE_OUTPUT_PUSHPULL);
 
   /* Mux PTC5 as SCK */
 
@@ -261,15 +262,15 @@ void __early_init(void) {
 
   /* Force radio SPI select high. */
 
-  palSetPad (GPIOD, 0);
+  palSetPad (RADIO_CHIP_SELECT_PORT, RADIO_CHIP_SELECT_PIN);
 
   /* Reset the radio */
 
   palSetPadMode (GPIOE, 30, PAL_MODE_OUTPUT_PUSHPULL);
 
-  palSetPad (GPIOE, 30);
+  palSetPad (RADIO_RESET_PORT, RADIO_RESET_PIN);
   early_usleep (100);
-  palClearPad (GPIOE, 30);
+  palClearPad (RADIO_RESET_PORT, RADIO_RESET_PIN);
   early_usleep (500);
 
   /* Initialize SPI0 channel. Set for 16-bit writes. */
@@ -282,7 +283,7 @@ void __early_init(void) {
  
   /* Now program the radio to generate a 32Mhz clock output */
 
-  palClearPad (GPIOD, 0);
+  palClearPad (RADIO_CHIP_SELECT_PORT, RADIO_CHIP_SELECT_PIN);
   while ((SPI0->S & SPIx_S_SPTEF) == 0)
         ;
   SPI0->DH = KW01_DIOMAP2 | 0x80;
@@ -290,7 +291,7 @@ void __early_init(void) {
   while ((SPI0->S & SPIx_S_SPRF) == 0)
         ;
   (void) SPI0->DL;
-  palSetPad (GPIOD, 0);
+  palSetPad (RADIO_CHIP_SELECT_PORT, RADIO_CHIP_SELECT_PIN);
 
 #endif /* KINETIS_MCG_MODE_PEE */
 
