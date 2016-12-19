@@ -19,16 +19,6 @@
 #include "pit.h"
 #include "pit_reg.h"
 
-#define RADIO_REG_DIOMAPPING2   (0x26)
-#define RADIO_CLK_DIV1          (0x00)
-#define RADIO_CLK_DIV2          (0x01)
-#define RADIO_CLK_DIV4          (0x02)
-#define RADIO_CLK_DIV8          (0x03)
-#define RADIO_CLK_DIV16         (0x04)
-#define RADIO_CLK_DIV32         (0x05)
-#define RADIO_CLK_RC            (0x06)
-#define RADIO_CLK_OFF           (0x07)
-
 /*
 
 The part that I have has the following pins exposed:
