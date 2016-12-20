@@ -80,6 +80,9 @@ typedef struct pwm_note {
 #define PWM_DURATION_LOOP	0xFE
 #define PWM_NOTE_PAUSE		0xFF
 #define PWM_NOTE_OFF		0xFE
+#define PWM_NOTE_BUFEND		0xFD
+
+#define PWM_BUFSIZ		8
 
 /* TPM note player thread priority */
 
@@ -102,5 +105,7 @@ extern void pwmChan2ToneStop (void);
 
 extern void pwmChanThreadPlay (const PWM_NOTE *,
 	const PWM_NOTE *, const PWM_NOTE *);
+
+extern void pwmFileThreadPlay (char *);
 
 #endif /* _TPM_H_ */

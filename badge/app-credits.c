@@ -36,6 +36,10 @@
 #include "ffconf.h"
 #include "board_ILI9341.h"
 
+#include "tpm.h"
+
+extern mutex_t enemies_mutex;
+
 #define ILI9341_VSDEF	0x33
 #define ILI9341_VSADD	0x37
 
@@ -102,6 +106,7 @@ static void credits_start(OrchardAppContext *context)
 	GWidgetInit wi;
 	orientation_t o;
 
+
 	if (f_open (&f, "credits.rgb", FA_READ) != FR_OK) {
 		orchardAppExit ();
 		return;
@@ -109,6 +114,8 @@ static void credits_start(OrchardAppContext *context)
 
 	p = chHeapAlloc (NULL, sizeof(CreditsHandles));
 	context->priv = p;
+
+	pwmFileThreadPlay ("mario");
 
 	gwinWidgetClearInit (&wi);
 	wi.g.show = TRUE;
@@ -154,6 +161,8 @@ static void credits_start(OrchardAppContext *context)
 
 	if (p->stop == 0)
 		chThdSleepMilliseconds (800);
+
+	pwmFileThreadPlay (NULL);
 
 	orchardAppExit ();
 

@@ -2,6 +2,9 @@
 /  FatFs - FAT file system module configuration file
 /---------------------------------------------------------------------------*/
 
+#include "ch.h"
+#include "osal.h"
+
 #define _FFCONF 68020	/* Revision ID */
 
 /*---------------------------------------------------------------------------/
@@ -240,10 +243,13 @@
 /      can be opened simultaneously under file lock control. Note that the file
 /      lock control is independent of re-entrancy. */
 
+#ifndef UPDATER
+#define _FS_REENTRANT	1
+typedef mutex_t * _SYNC_t;
+#endif
 
-#define _FS_REENTRANT	0
 #define _FS_TIMEOUT		1000
-#define	_SYNC_t			HANDLE
+
 /* The option _FS_REENTRANT switches the re-entrancy (thread safe) of the FatFs
 /  module itself. Note that regardless of this option, file access to different
 /  volume is always re-entrant and volume control functions, f_mount(), f_mkfs()

@@ -72,10 +72,18 @@
 
 #include "ch.h"
 #include "hal.h"
+#include "chprintf.h"
 
 #include "tpm.h"
 #include "kinetis_tpm.h"
 #include "userconfig.h"
+
+#include "ff.h"
+#include "ffconf.h"
+
+#include <string.h>
+
+extern mutex_t enemies_mutex;
 
 /*
  * This table represents the 127 available MIDI note frequencies.
@@ -103,17 +111,22 @@ static const uint16_t notes[128] = {
 	8372,	8870,	9397,	9956,	10548,	11175,	11840,	12544
 };
 
-static THD_WORKING_AREA(waThread0, 16);
+static THD_WORKING_AREA(waThread0, 144);
 
 typedef struct thread_state {
 	PWM_NOTE *		pTune0;
 	PWM_NOTE *		pTune1;
 	PWM_NOTE *		pTune2;
 	thread_t *		pThread;
+	char *			pName;
 	uint8_t			play;
 } THREAD_STATE;
 
+static char fname[13];
+static 	FIL f[3];
+
 static THREAD_STATE pwmState0 = {
+	NULL,
 	NULL,
 	NULL,
 	NULL,
@@ -121,12 +134,16 @@ static THREAD_STATE pwmState0 = {
 	0
 };
 
+static PWM_NOTE buf0[PWM_BUFSIZ];
+static PWM_NOTE buf1[PWM_BUFSIZ];
+static PWM_NOTE buf2[PWM_BUFSIZ];
+
 static const PWM_NOTE dummy = { PWM_NOTE_OFF, PWM_DURATION_END };
 
 static uint8_t pwmSmallest (uint8_t * d)
 {
 	uint8_t i;
-	uint8_t smallest = 255;
+	uint8_t smallest = PWM_DURATION_END;
 
 	for (i = 0; i < 3; i++) {
 		if (d[i] < smallest)
@@ -146,7 +163,8 @@ static uint8_t pwmSmallest (uint8_t * d)
 * to a table of PWM_NOTE structures which indicate the frequency and duration
 * for each note in the tune. The last note in the table should have a
 * duration of PWM_DURATION_END. If the duration is PWM_DURATION_LOOP, then
-* the same tune will play over and over until pwmChanThreadPlay(NULL) is called.
+* the same tune will play over and over until pwmChanThreadPlay(NULL) is
+* called.
 *
 * RETURNS: N/A
 */
@@ -161,6 +179,11 @@ static THD_FUNCTION(pwmThread, arg) {
 	pState = (THREAD_STATE *)arg;
 	chRegSetThreadName ("pwm");
 	config = getConfig();
+	UINT br;
+
+	buf0[PWM_BUFSIZ - 1].pwm_note = PWM_NOTE_BUFEND;
+	buf1[PWM_BUFSIZ - 1].pwm_note = PWM_NOTE_BUFEND;
+	buf2[PWM_BUFSIZ - 1].pwm_note = PWM_NOTE_BUFEND;
 
 	while (1) {
 		chThdSleep (TIME_INFINITE);
@@ -170,9 +193,35 @@ static THD_FUNCTION(pwmThread, arg) {
 			pState->pTune0 = NULL;
 			pState->pTune1 = NULL;
 			pState->pTune2 = NULL;
+			pState->pName = NULL;
 		}
 		
 		while (pState->play) {
+
+			/*
+			 * If we've been asked to play a file, try to
+			 * open all the tracks.
+			 */
+
+			if (pState->pName != NULL) {
+				chsnprintf (fname, sizeof(fname), "%s0.bin",
+				    pState->pName);
+				if (f_open (&f[0], fname, FA_READ) == FR_OK)
+					pState->pTune0 = &buf0[PWM_BUFSIZ - 1];
+				else
+					pState->pTune0 = (PWM_NOTE *)&dummy;
+				fname[strlen(pState->pName)] = '1';
+				if (f_open (&f[1], fname, FA_READ) == FR_OK)
+					pState->pTune1 = &buf1[PWM_BUFSIZ - 1];
+				else
+					pState->pTune1 = (PWM_NOTE *)&dummy;
+				fname[strlen(pState->pName)] = '2';
+				if (f_open (&f[2], fname, FA_READ) == FR_OK)
+					pState->pTune2 = &buf2[PWM_BUFSIZ - 1];
+				else
+					pState->pTune2 = (PWM_NOTE *)&dummy;
+			}
+
 			p[0] = pState->pTune0;
 			p[1] = pState->pTune1;
 			p[2] = pState->pTune2;
@@ -186,38 +235,62 @@ static THD_FUNCTION(pwmThread, arg) {
 					pwmChan0ToneStop ();
 					pwmChan1ToneStop ();
 					pwmChan2ToneStop ();
-					pState->pTune0 = NULL;
-					pState->pTune1 = NULL;
-					pState->pTune2 = NULL;
 					break;
 				}
 
-				if (p[0]->pwm_duration == PWM_DURATION_END) {
+				if (p[0]->pwm_note == PWM_NOTE_BUFEND) {
+					f_read (&f[0], buf0,
+					    sizeof(PWM_NOTE) *
+					    (PWM_BUFSIZ - 1), &br);
+					p[0] = buf0;
+					d[0] = p[0]->pwm_duration;
+				}
+
+				if (p[1]->pwm_note == PWM_NOTE_BUFEND) {
+					f_read (&f[1], buf1,
+					    sizeof(PWM_NOTE) *
+					    (PWM_BUFSIZ - 1), &br);
+					p[1] = buf1;
+					d[1] = p[1]->pwm_duration;
+				}
+
+				if (p[2]->pwm_note == PWM_NOTE_BUFEND) {
+					f_read (&f[2], buf2,
+					    sizeof(PWM_NOTE) *
+					    (PWM_BUFSIZ - 1), &br);
+					p[2] = buf2;
+					d[2] = p[2]->pwm_duration;
+				}
+
+				if (p[0]->pwm_duration == PWM_DURATION_END)
 					pwmChan0ToneStop ();
-				}
 
-				if (p[1]->pwm_duration == PWM_DURATION_END) {
+				if (p[1]->pwm_duration == PWM_DURATION_END)
 					pwmChan1ToneStop ();
-				}
 
-				if (p[2]->pwm_duration == PWM_DURATION_END) {
+				if (p[2]->pwm_duration == PWM_DURATION_END)
 					pwmChan2ToneStop ();
-				}
 
 				if (d[0] == PWM_DURATION_END &&
 				    d[1] == PWM_DURATION_END &&
 				    d[2] == PWM_DURATION_END) {
 					if (pState->play)
 						pState->play--;
-					if (pState->play == 0) {
-						pState->pTune0 = NULL;
-						pState->pTune1 = NULL;
-						pState->pTune2 = NULL;
-					}
 					break;
 				}
 
 				if (p[0]->pwm_duration == PWM_DURATION_LOOP) {
+					pwmChan0ToneStop ();
+					break;
+				}
+
+				if (p[1]->pwm_duration == PWM_DURATION_LOOP) {
+					pwmChan0ToneStop ();
+					break;
+				}
+
+				if (p[2]->pwm_duration == PWM_DURATION_LOOP) {
+					pwmChan0ToneStop ();
 					break;
 				}
 
@@ -261,6 +334,22 @@ static THD_FUNCTION(pwmThread, arg) {
 					p[2]++;
 					d[2] = p[2]->pwm_duration;
 				}
+			}
+
+			/* Done playing song from a file, close the tracks. */
+
+			if (pState->pTune0 != (PWM_NOTE *)&dummy)
+				f_close (&f[0]);
+			if (pState->pTune1 != (PWM_NOTE *)&dummy)
+				f_close (&f[1]);
+			if (pState->pTune2 != (PWM_NOTE *)&dummy)
+				f_close (&f[2]);
+
+			if (pState->play == 0) {
+				pState->pTune0 = NULL;
+				pState->pTune1 = NULL;
+				pState->pTune2 = NULL;
+				pState->pName = NULL;
 			}
 		}
 	}
@@ -589,6 +678,57 @@ void pwmChanThreadPlay (const PWM_NOTE * p0, const PWM_NOTE * p1,
 		pState->pTune2 = (PWM_NOTE *)&dummy;
 	else
 		pState->pTune2 = (PWM_NOTE *)p2;
+	if (pState->play == 0) {
+		pState->play = 1;
+		t = pState->pThread;
+		chThdResume (&t, MSG_OK);
+	} else
+		pState->play = 2;
+
+	return;
+}
+
+/******************************************************************************
+*
+* pwmFileThreadPlay - Play a tune from the filesystem
+*
+* This function is similar to pwmChanThreadPlay(), except it plays music from
+* fimes stored in the SD card. The <pName> argument is the base name of a
+* set of MIDI track files stored on the SD card. For example, if there are
+* three tracks for a song called song0.bin, song1.bin and song2.bin, then
+* <pName> should just be "song" and the player thread will fill in the
+* rest of the file names automatically.
+*
+* The advantate to using this function is that allows for tunes of any length
+* without needing any additional space in flash.
+*
+* As with pwmChanThreadPlay(), songs played with pwmFileThreadPlay() can be
+* cancelled by calling pwmFileThreadPlay() with <pName> set to NULL.
+*
+* RETURNS: N/A
+*/
+
+void pwmFileThreadPlay (char * pName)
+{
+	THREAD_STATE * pState;
+	thread_t * t;
+
+	pState = &pwmState0;
+
+	/*
+	 * Cancel any currently playing tune and wait for the
+	 * player thread to go idle. We have to do this otherwise
+	 * our next command to play a tune might be ignored.
+	 */
+
+	if (pName == NULL) {
+		pState->play = 0;
+		while (pState->pName != NULL)
+			chThdSleepMicroseconds (10);
+		return;
+	}
+
+	pState->pName = pName;
 	if (pState->play == 0) {
 		pState->play = 1;
 		t = pState->pThread;
