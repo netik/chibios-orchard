@@ -294,19 +294,22 @@ static THD_FUNCTION(pwmThread, arg) {
 					break;
 				}
 
-				if (p[0]->pwm_note == PWM_NOTE_OFF) {
+				if (p[0]->pwm_note == PWM_NOTE_OFF ||
+				    p[0]->pwm_duration == PWM_DURATION_END) {
 					pwmChan0ToneStop ();
 				} else if (p[0]->pwm_note != PWM_NOTE_PAUSE) {
 					pwmChan0ToneStart (p[0]->pwm_note);
 				}
 
-				if (p[1]->pwm_note == PWM_NOTE_OFF) {
+				if (p[1]->pwm_note == PWM_NOTE_OFF ||
+				    p[1]->pwm_duration == PWM_DURATION_END) {
 					pwmChan1ToneStop ();
 				} else if (p[1]->pwm_note != PWM_NOTE_PAUSE) {
 					pwmChan1ToneStart (p[1]->pwm_note);
 				}
 
-				if (p[2]->pwm_note == PWM_NOTE_OFF) {
+				if (p[2]->pwm_note == PWM_NOTE_OFF ||
+				    p[2]->pwm_duration == PWM_DURATION_END) {
 					pwmChan2ToneStop ();
 				} else if (p[2]->pwm_note != PWM_NOTE_PAUSE) {
 					pwmChan2ToneStart (p[2]->pwm_note);
