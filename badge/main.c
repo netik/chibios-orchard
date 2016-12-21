@@ -386,6 +386,8 @@ int main(void)
   ledStart (16, led_fb);
   effectsStart ();
 
+  gfileMount ('F', "0:");
+
   if (config->sound_enabled) { 
     playStartupSong();
   }
