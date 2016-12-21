@@ -2,12 +2,18 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <math.h>
 
 #define MIDI_NOTES	128
 #define A_FREQ		440
 #define DURATION_SCALE	(3/8.0)
+
+#define PWM_DURATION_END        0xFF
+#define PWM_DURATION_LOOP       0xFE
+#define PWM_NOTE_PAUSE          0xFF
+#define PWM_NOTE_OFF            0xFE
 
 int midifreq[MIDI_NOTES];
 
@@ -29,6 +35,7 @@ static long long duration_get(long long on, long long off)
 int main (int argc, char * argv[])
 {
 	FILE * fp;
+	FILE * out;
 	size_t linecap;
 	ssize_t linelen;
 	char * line;
@@ -43,6 +50,7 @@ int main (int argc, char * argv[])
 	int dummy0;
 	int dummy1;
 	int dummy2;
+	uint8_t note[2];
 
 	/* Create the midi note to frequency conversion table */
 
@@ -55,6 +63,13 @@ int main (int argc, char * argv[])
 	fp = fopen ("midi.csv", "r");
 
 	if (fp == NULL) {
+		perror ("file open failed");
+		exit (1);
+	}
+
+	out = fopen ("midi.out", "w");
+
+	if (out == NULL) {
 		perror ("file open failed");
 		exit (1);
 	}
@@ -86,14 +101,22 @@ int main (int argc, char * argv[])
 					while (1) {
 						printf ("  { %d, 248 },\n",
 						    note_val);
+						note[0] = note_val;
+						note[1] = 248;
+						fwrite (&note, sizeof(note),
+						    1, out);
 						tmp -= 248;
 						if (tmp == 0 || tmp < 248)
 							break;
 					}
 				}
-				if (tmp != 0)
+				if (tmp != 0) {
 					printf ("  { %d, %lld },\n", note_val,
 					    tmp);
+					note[0] = note_val;
+					note[1] = tmp;
+					fwrite (&note, sizeof(note), 1, out);
+				}
 				note_time_on = duration;
 			} else {
 				note_time_on = duration;
@@ -110,14 +133,21 @@ int main (int argc, char * argv[])
 				if (tmp > 248) {
 					while (1) {
 					printf ("  { PWM_NOTE_OFF, 248 },\n");
-						tmp -= 248;
-						if (tmp == 0 || tmp < 248)
-							break;
+					note[0] = PWM_NOTE_OFF;
+					note[1] = 248;
+					fwrite (&note, sizeof(note), 1, out);
+					tmp -= 248;
+					if (tmp == 0 || tmp < 248)
+						break;
 					}
 				}
-				if (tmp != 0)
+				if (tmp != 0) {
 					printf ("  { PWM_NOTE_OFF, %lld },\n",
 					    tmp);
+					note[0] = PWM_NOTE_OFF;
+					note[1] = tmp;
+					fwrite (&note, sizeof(note), 1, out);
+				}
 			}
 		}
 #ifdef notdef
@@ -130,13 +160,20 @@ int main (int argc, char * argv[])
 
 			printf ("  { %d, %lld },\n", note_val,
 		    	    duration_get (note_time_off, note_time_on));
+			note[0] = note_val;
+			note[1] = duration_get (note_time_off, note_time_on);
+			fwrite (&note, sizeof(note), 1, out);
 		}
 #endif
 	}
 
 	printf ("  { 0, PWM_DURATION_END }\n");
+	note[0] = 0;
+	note[1] = PWM_DURATION_END;
+	fwrite (&note, sizeof(note), 1, out);
 
 	fclose (fp);
+	fclose (out);
 
 	exit (0);
 }
