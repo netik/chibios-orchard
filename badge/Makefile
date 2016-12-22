@@ -83,7 +83,7 @@ include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/startup_kl1x.mk
 # HAL-OSAL files (optional).
 include $(CHIBIOS)/os/hal/hal.mk
 include $(CHIBIOS)/os/hal/ports/KINETIS/KL1x/platform.mk
-include $(CHIBIOS)/os/hal/boards/KOSAGI_KW01_ORCHARD/board.mk
+include $(CHIBIOS)/os/hal/boards/NONSTANDARD_KW01_IDES_OF_MARCH/board.mk
 include $(CHIBIOS)/os/hal/osal/rt/osal.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk
@@ -94,7 +94,7 @@ include $(CHIBIOS)/test/rt/test.mk
 # uGFX includes
 GFXLIB =$(CHIBIOS)/ext/ugfx
 include $(GFXLIB)/gfx.mk
-include $(GFXLIB)/boards/base/Kosagi-KinetisW-OrchardBM15/board.mk
+include $(GFXLIB)/boards/base/Nonstandard-KW01-Ides-Of-March/board.mk
 include $(GFXLIB)/drivers/gdisp/ILI9341/driver.mk
 include $(GFXLIB)/drivers/ginput/touch/MCU/driver.mk
 

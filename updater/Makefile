@@ -46,8 +46,7 @@ CFLAGS+=  -mcpu=cortex-m0plus -Os -ggdb -fomit-frame-pointer		\
 	-DUPDATER -fdata-sections -fno-common -std=c99			\
 	-DCPU_MKL25Z128VLK4 -Wall -Wextra -Wstrict-prototypes		\
 	-DCORTEX_USE_FPU=FALSE -DTHUMB_PRESENT -mno-thumb-interwork	\
-	-DTHUMB_NO_INTERWORKING -mthumb -DTHUMB -msoft-float		\
-	-DORCHARD_BOARD_REV=EVT1B -I.					\
+	-DTHUMB_NO_INTERWORKING -mthumb -DTHUMB -msoft-float -I.	\
 	-I../badge -I../os/common/ports/ARMCMx/devices/KL1x		\
 	-I../os/ext/CMSIS/include -I../os/ext/CMSIS/KINETIS		\
 	-I../os/rt/include -I../os/rt/ports/ARMCMx			\
@@ -55,7 +54,7 @@ CFLAGS+=  -mcpu=cortex-m0plus -Os -ggdb -fomit-frame-pointer		\
 	-I../os/hal/osal/rt  -I../ext/C90TFS/include			\
 	-I../os/hal/include -I../os/hal/ports/common/ARMCMx		\
 	-I../os/hal/ports/KINETIS/KL1x -D__VTOR_PRESENT=1		\
-	-I../os/hal/boards/KOSAGI_KW01_ORCHARD				\
+	-I../os/hal/boards/NONSTANDARD_KW01_IDES_OF_MARCH		\
 	-I../ext/fatfs/src -DDRV_MMC=0 -UDRV_CFC -flto
 
 ASFLAGS= $(CFLAGS)
