@@ -24,17 +24,33 @@
 /*
  * Board identifier.
  */
-#define BOARD_KOSAGI_ORCHARD
+
+#define BOARD_KW01_IDES_OF_MARCH
 #define BOARD_NAME                  "KW01 Ides Of March"
 
-/* Ides of March KW012 when using FEI mode. */
+/*
+ * The Ides of March design is derived from the Freescale/NXP
+ * Freedom KW019032 reference board. The following configuration actually works
+ * with both boards, except for the green blinky LED used to indicate radio RX
+ * activity. (We need the pin for the Freedom board's green LED for one of the
+ * sound channels.) If you ignore that, they both work the same.
+ * 
+ * There are two possible CPU clocking options: one is to use the internal
+ * 32.768KHz reference oscillator (FEI mode) and the other is to use the clock
+ * from radio, which uses a 32MHz reference crystal (PEE mode). Both yield a
+ * 48Mhz CPU clock and 24MHz bus clock. It's not clear just how accurate or
+ * stable the internal reference clock is though, so we prefer the external
+ * reference clock for now.
+ */
+
+/* Ides of March KW01 when using FEI mode. */
 
 #if notdef
 #define KINETIS_SYSCLK_FREQUENCY    47972352UL
 #define KINETIS_MCG_MODE            KINETIS_MCG_MODE_FEI
 #endif
 
-/* Ides of March KW012 when using PEE mode. */
+/* Ides of March KW01 when using PEE mode. */
 
 /* External 32 MHz clock from radio with PLL for 48 MHz core/system clock. */
 #define KINETIS_SYSCLK_FREQUENCY    48000000UL 
