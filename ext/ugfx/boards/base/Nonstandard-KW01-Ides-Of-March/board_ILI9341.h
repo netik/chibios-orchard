@@ -65,7 +65,7 @@ static inline void release_bus(GDisplay *g) {
 
 static inline void write_index(GDisplay *g, uint16_t index) {
 	(void) g;
-	palClearPad (GPIOE, 18);
+	palClearPad (SCREEN_CMDDATA_PORT, SCREEN_CMDDATA_PIN);
 	SPI1->DL = index & 0xFF;
 	while ((SPI1->S & SPIx_S_SPTEF) == 0)
 		;
@@ -74,7 +74,7 @@ static inline void write_index(GDisplay *g, uint16_t index) {
 
 static inline void write_data(GDisplay *g, uint16_t data) {
 	(void) g;
-	palSetPad (GPIOE, 18);
+	palSetPad (SCREEN_CMDDATA_PORT, SCREEN_CMDDATA_PIN);
 	SPI1->DL = data & 0xFF;
 	while ((SPI1->S & SPIx_S_SPTEF) == 0)
 		;

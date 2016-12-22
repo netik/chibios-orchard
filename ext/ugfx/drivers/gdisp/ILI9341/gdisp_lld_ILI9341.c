@@ -56,7 +56,7 @@
 
 static void set_viewport(GDisplay *g) {
 	write_index (g, 0x2A);
-	palSetPad (GPIOE, 18);
+	palSetPad (SCREEN_CMDDATA_PORT, SCREEN_CMDDATA_PIN);
 	SPI1->DL = (g->p.x >> 8);
 	SPI1->DL = (uint8_t) g->p.x;
 	SPI1->DL = (g->p.x + g->p.cx - 1) >> 8;
@@ -65,7 +65,7 @@ static void set_viewport(GDisplay *g) {
 		;
 
 	write_index (g, 0x2B);
-	palSetPad (GPIOE, 18);
+	palSetPad (SCREEN_CMDDATA_PORT, SCREEN_CMDDATA_PIN);
 	SPI1->DL = (g->p.y >> 8);
 	SPI1->DL = (uint8_t) g->p.y;
 	SPI1->DL = (g->p.y + g->p.cy - 1) >> 8;
@@ -256,7 +256,7 @@ LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
 		while ((SPI1->S & SPIx_S_SPTEF) == 0)
 			;
 	        SPI1->C2 |= SPIx_C2_SPMODE;
-	        palSetPad (GPIOE, 18);
+	        palSetPad (SCREEN_CMDDATA_PORT, SCREEN_CMDDATA_PIN);
 	}
 	LLDSPEC	void gdisp_lld_write_color(GDisplay *g) {
 		while ((SPI1->S & SPIx_S_TNEAREF) == 0)
