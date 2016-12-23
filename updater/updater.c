@@ -77,7 +77,7 @@
  * the CPU to restart the system.
  *
  * Once it runs, the updater takes over full control of the CPU. All
- * previous RAM contents remain, but are ignored. The is kept small
+ * previous RAM contents remain, but are ignored. The code is kept small
  * in order to fit in about 5KB of memory so that it will fit in RAM
  * with enough space left over for some data buffers and the stack.
  *
@@ -164,7 +164,7 @@ int updater (void)
 
 	/* Make sure the SD card chip select is in the right state */
 
-	palSetPad (GPIOB, 1);	/* MMC/SD card */
+	palSetPad (MMC_CHIP_SELECT_PORT, MMC_CHIP_SELECT_PIN);
 
 	/* Enable the PIT (for the fatfs timer) */
 
@@ -183,7 +183,7 @@ int updater (void)
 	if (mmc_disk_initialize () != FR_OK ||
 	    f_mount (fs, "0:", 1) != FR_OK ||
 	    f_open (&f, "BADGE.BIN", FA_READ) != FR_OK) {
-		palClearPad (GPIOE, 16);
+		palClearPad (RED_LED_PORT, RED_LED_PIN);
 		while (1) {}
 	}
 

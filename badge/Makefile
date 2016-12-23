@@ -83,7 +83,7 @@ include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/startup_kl1x.mk
 # HAL-OSAL files (optional).
 include $(CHIBIOS)/os/hal/hal.mk
 include $(CHIBIOS)/os/hal/ports/KINETIS/KL1x/platform.mk
-include $(CHIBIOS)/os/hal/boards/KOSAGI_KW01_ORCHARD/board.mk
+include $(CHIBIOS)/os/hal/boards/NONSTANDARD_KW01_IDES_OF_MARCH/board.mk
 include $(CHIBIOS)/os/hal/osal/rt/osal.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk
@@ -94,7 +94,7 @@ include $(CHIBIOS)/test/rt/test.mk
 # uGFX includes
 GFXLIB =$(CHIBIOS)/ext/ugfx
 include $(GFXLIB)/gfx.mk
-include $(GFXLIB)/boards/base/Kosagi-KinetisW-OrchardBM15/board.mk
+include $(GFXLIB)/boards/base/Nonstandard-KW01-Ides-Of-March/board.mk
 include $(GFXLIB)/drivers/gdisp/ILI9341/driver.mk
 include $(GFXLIB)/drivers/ginput/touch/MCU/driver.mk
 
@@ -251,15 +251,8 @@ CPPWARN = -Wall -Wextra
 #     BC1     bootcamp key layout v1
 KEY_LAYOUT ?= BC1
 
-# Board revision values:
-#     EVT1    first rev of Burning Man board
-#     EVT1B   first rev of the Bootcamp 2015 board
-BOARD_REV ?= EVT1B
-
-# ORCHARD_REV_EVT1   is the burning man 1st rev board
-# ORCHARD_REV_EVT1B  is the bootcamp 1st rev board
 # List all user C define here, like -D_DEBUG=1
-UDEFS = -DKEY_LAYOUT=LAYOUT_$(KEY_LAYOUT) -DORCHARD_BOARD_REV=ORCHARD_REV_$(BOARD_REV)
+UDEFS =
 
 # Define ASM defines here
 UADEFS =

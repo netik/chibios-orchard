@@ -40,7 +40,8 @@
 #define P_FLASH_BASE            0x00000000
 #define FLEXNVM_BASE            FSL_FEATURE_FLASH_FLEX_NVM_START_ADDRESS
 #define EERAM_BASE              FSL_FEATURE_FLASH_FLEX_RAM_START_ADDRESS
-#define P_FLASH_SIZE            (FSL_FEATURE_FLASH_PFLASH_BLOCK_SIZE * FSL_FEATURE_FLASH_PFLASH_BLOCK_COUNT)
+#define P_FLASH_SIZE            (FSL_FEATURE_FLASH_PFLASH_BLOCK_SIZE * \
+				FSL_FEATURE_FLASH_PFLASH_BLOCK_COUNT)
 
 #define READ_NORMAL_MARGIN        0x00
 #define READ_USER_MARGIN          0x01
@@ -50,7 +51,7 @@
 
 const pFLASHCOMMANDSEQUENCE g_FlashLaunchCommand = FlashCommandSequence;
 
-// Freescale's Flash Standard Software Driver Structure
+/* Freescale's Flash Standard Software Driver Structure */
 static const FLASH_SSD_CONFIG flashSSDConfig =
 {
     FTFx_REG_BASE,          /* FTFx control register base */

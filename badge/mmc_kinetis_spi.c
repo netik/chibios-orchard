@@ -42,8 +42,10 @@
 #include "mmc.h"
 
 /* Peripheral controls (Platform dependent) */
-#define CS_LOW()	palClearPad (GPIOB, 0);	/* Set MMC_CS = low */
-#define	CS_HIGH()	palSetPad (GPIOB, 0);	/* Set MMC_CS = high */
+#define CS_LOW() 		/* Set MMC_CS = low */		\
+	palClearPad (MMC_CHIP_SELECT_PORT, MMC_CHIP_SELECT_PIN)
+#define	CS_HIGH()		/* Set MMC_CS = high */		\
+	palSetPad (MMC_CHIP_SELECT_PORT, MMC_CHIP_SELECT_PIN)
 #define MMC_CD		1			/* Test if card detected.   yes:true, no:false, default:true */
 #define MMC_WP		0			/* Test if write protected. yes:true, no:false, default:false */
 #define	FCLK_SLOW()				/* Set SPI slow clock (100-400kHz) */

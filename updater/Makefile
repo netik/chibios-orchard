@@ -54,6 +54,7 @@ CFLAGS+=  -mcpu=cortex-m0plus -Os -ggdb -fomit-frame-pointer		\
 	-I../os/hal/osal/rt  -I../ext/C90TFS/include			\
 	-I../os/hal/include -I../os/hal/ports/common/ARMCMx		\
 	-I../os/hal/ports/KINETIS/KL1x -D__VTOR_PRESENT=1		\
+	-I../os/hal/boards/NONSTANDARD_KW01_IDES_OF_MARCH		\
 	-I../ext/fatfs/src -DDRV_MMC=0 -UDRV_CFC -flto
 
 ASFLAGS= $(CFLAGS)

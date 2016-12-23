@@ -166,9 +166,7 @@ radioReceive (RADIODriver * radio)
 	uint8_t len;
 	uint8_t i;
 
-#ifdef notdef
-	palClearPad (GPIOB, 1);   /* Green */
-#endif
+	palClearPad (GREEN_LED_PORT, GREEN_LED_PIN);   /* Green */
 
 	pkt = &radio->kw01_pkt;
 
@@ -188,9 +186,7 @@ radioReceive (RADIODriver * radio)
 	spiReceive (radio->kw01_spi, 1, &len);
 
 	if (len > radio->kw01_maxlen) {
-#ifdef notdef
-		palSetPad (GPIOB, 1);   /* Green */
-#endif
+		palSetPad (GREEN_LED_PORT, GREEN_LED_PIN);   /* Green */
 		radioUnselect (radio);
 		return (-1);
 	}
@@ -203,9 +199,7 @@ radioReceive (RADIODriver * radio)
 
 	spiReceive (radio->kw01_spi, len, p);
 
-#ifdef notdef
-	palSetPad (GPIOB, 1);   /* Green */
-#endif
+	palSetPad (GREEN_LED_PORT, GREEN_LED_PIN);   /* Green */
 
 	radioUnselect (radio);
 	radioRelease (radio);
@@ -307,9 +301,9 @@ radioReset (RADIODriver * radio)
 
         /* Assert the reset pin for 1 millisecond */
 
-        palSetPad (GPIOE, 30);
+        palSetPad (RADIO_RESET_PORTE, RADIO_RESET_PIN);
         chThdSleepMilliseconds (1);
-        palClearPad (GPIOE, 30);
+        palClearPad (RADIO_RESET_PORTE, RADIO_RESET_PIN);
 
  	/* Now wait for the chip to get its brains in order. */
 
@@ -1044,10 +1038,10 @@ radioSend (RADIODriver * radio, uint32_t dest, uint8_t prot,
 
 	radioAcquire (radio);
 
-	palClearPad (GPIOE, 16);  /* Red */
+	palClearPad (RED_LED_PORT, RED_LED_PIN);  /* Red */
 
 	if (radioModeSet (radio, KW01_MODE_STANDBY) != 0) {
-		palSetPad (GPIOE, 16);  /* Red */
+		palSetPad (RED_LED_PORT, RED_LED_PIN);  /* Red */
 		radioRelease (radio);
 		return (-1);
 	}
@@ -1084,7 +1078,7 @@ radioSend (RADIODriver * radio, uint32_t dest, uint8_t prot,
 
 	radioUnselect (radio);
 
-	palSetPad (GPIOE, 16);  /* Red */
+	palSetPad (RED_LED_PORT, RED_LED_PIN);  /* Red */
 
 	if (radioModeSet (radio, KW01_MODE_TX) != 0) {
 		radioRelease (radio);

@@ -360,6 +360,9 @@ static void radio_unload_packet(eventid_t id) {
   /* Read the "length" byte */
   spiReceive(radio->driver, sizeof(pkt), &pkt);
 
+  if (pkt.length > 66)
+    pkt.length = 66;
+
   uint8_t payload[pkt.length - sizeof(pkt)];
 
   /* read the remainder of the packet */
