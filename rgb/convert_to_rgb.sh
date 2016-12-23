@@ -20,13 +20,13 @@ fi
 
 filename=$1
 newfilename=${filename%.*}.rgb
-
+newfilename=`echo ${newfilename} | tr A-Z a-z`
 width=`${IDENTIFY} -format %w $filename`
 height=`${IDENTIFY} -format %h $filename`
 
-
+echo $newfilename
 ${RGBHDR} $width $height
-${FFMPEG} -vcodec jpegls -i $filename -vcodec rawvideo -f rawvideo -pix_fmt rgb565 out.raw
+${FFMPEG} -loglevel panic -vcodec jpegls -i $filename -vcodec rawvideo -f rawvideo -pix_fmt rgb565 out.raw 
 
 cat hdr.rgb out.raw > ${newfilename}
     

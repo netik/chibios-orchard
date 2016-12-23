@@ -7,3 +7,6 @@ debug/
 *~
 __pycache__
 *.pyc
+*.o
+#*#
+

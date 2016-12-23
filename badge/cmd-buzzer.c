@@ -96,7 +96,7 @@ static void buzzer_play(BaseSequentialStream *chp, int argc, char *argv[]) {
     playMsPacman();
     break;
   default:
-    chprintf(chp, "No songa specified\r\n");
+    chprintf(chp, "No song specified\r\n");
   }
   
 }
