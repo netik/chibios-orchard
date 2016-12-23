@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# take everything from my art folder and convert it.
-
-cp /Volumes/Saferoom/Artwork/Badge/*.jpg jpg
-
 # clean out the dir
 rm jpg/mirrored/*
 rm rgb/*
