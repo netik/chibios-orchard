@@ -38,8 +38,6 @@
 
 #include "tpm.h"
 
-extern mutex_t enemies_mutex;
-
 #define ILI9341_VSDEF	0x33
 #define ILI9341_VSADD	0x37
 

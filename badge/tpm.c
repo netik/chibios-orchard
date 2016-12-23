@@ -83,8 +83,6 @@
 
 #include <string.h>
 
-extern mutex_t enemies_mutex;
-
 /*
  * This table represents the 127 available MIDI note frequencies.
  * Using this table allows us to specify nots using a single byte.
