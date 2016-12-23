@@ -394,12 +394,20 @@ user *enemy_lookup(user *u) {
 user *enemyAdd(user *u) {
   user *record;
   uint32_t i;
-
+  uint32_t oldttl;
   record = enemy_lookup(u);
-  if( record != NULL ) {
-    if(record->ttl < ENEMIES_TTL_MAX)
-      record->ttl++;
 
+  if( record != NULL ) {
+    /* update name and stats */
+    oldttl = record->ttl;
+    if(record->ttl < ENEMIES_TTL_MAX) {
+      oldttl++;
+    }
+
+    osalMutexLock(&enemies_mutex);
+    memcpy(record, u, sizeof(user));
+    record->ttl = oldttl;
+    osalMutexUnlock(&enemies_mutex);
     return record;  // enemy already exists, don't add it again
   }
 
