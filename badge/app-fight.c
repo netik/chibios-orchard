@@ -86,7 +86,6 @@ static int current_enemy_idx = 0;
 
 static uint32_t last_ui_time = 0;
 static uint32_t last_tick_time = 0;
-static uint8_t fight_received = 0;
 
 static uint8_t attackbitmap = 0;
 int16_t ticktock = DEFAULT_WAIT_TIME; // used to hold a generic timer value. 
@@ -569,9 +568,6 @@ static void screen_demand_draw(void) {
 
   gwinSetDefaultStyle(&BlackWidgetStyle, FALSE);
 
-  playAttacked();
-  ticktock = DEFAULT_WAIT_TIME;
-  last_tick_time = chVTGetSystemTime();
   drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,ticktock, 1);
 
 }
@@ -606,6 +602,12 @@ static void screen_vs_draw(void)  {
   ypos = ypos +  gdispGetFontMetric(fontSM, fontHeight);
 
   if (current_fight_state == VS_SCREEN) {
+    gdispFillArea(0,
+		  ypos,
+		  gdispGetWidth(),
+		  gdispGetFontMetric(fontSM, fontHeight),
+		  Black);
+
     blinkText(0,
 	      110,
 	      gdispGetWidth(),
@@ -656,10 +658,9 @@ static void screen_select_close(OrchardAppContext *context) {
 }
 
 static void fight_start(OrchardAppContext *context) {
-  FightHandles *p;
-
+  FightHandles *p = context->priv;
   user **enemies = enemiesGet();
-  (void)context;
+  
   p = chHeapAlloc (NULL, sizeof(FightHandles));
   memset(p, 0, sizeof(FightHandles));
   context->priv = p;
@@ -667,27 +668,36 @@ static void fight_start(OrchardAppContext *context) {
   // fires once a second for updates. 
   orchardAppTimer(context, 1000, true);
   last_ui_time = chVTGetSystemTime();
-  
-  if (enemyCount() > 0) {
-    // render the select page. 
-    screen_select_draw(TRUE);
-    draw_select_buttons(p);
-    
-    geventListenerInit(&p->glFight);
-    gwinAttachListener(&p->glFight);
-    geventRegisterCallback (&p->glFight, orchardAppUgfxCallback, &p->glFight);
 
-    if (enemies[current_enemy_idx] == NULL) {
-      nextEnemy();
+  // are we entering a fight?
+  switch (current_fight_state) {
+  case APPROVAL_DEMAND:
+    ticktock=DEFAULT_WAIT_TIME;
+    playAttacked();
+    screen_demand_draw();
+    break;
+  case IDLE:
+    if (enemyCount() > 0) {
+      screen_select_draw(TRUE);
+      draw_select_buttons(p);
+      if (enemies[current_enemy_idx] == NULL) {
+	nextEnemy();
+      }
+    } else {
+      // punt if no enemies
+      screen_alert_draw("NO ENEMIES NEARBY!");
+      chThdSleepMilliseconds(1000);
+      orchardAppExit();
+      return;
     }
-
-  } else {
-    // punt if no enemies
-    screen_alert_draw("NO ENEMIES NEARBY!");
-    chThdSleepMilliseconds(1000);
-    orchardAppExit();
   }
+
+  // if we got this far, we can enable listeners. 
+  geventListenerInit(&p->glFight);
+  gwinAttachListener(&p->glFight);
+  geventRegisterCallback (&p->glFight, orchardAppUgfxCallback, &p->glFight);
 }
+
 static void screen_waitapproval_draw(void) {
   gdispClear(Black);
   screen_vs_draw(); // draw the start of the vs screen
@@ -739,12 +749,12 @@ static void fight_event(OrchardAppContext *context,
   // this returns us to the badge screen on idle.
   // we don't want this for all states, just select and end-of-fight
   if ( (event->type == timerEvent) && (current_fight_state == ENEMY_SELECT) ) {
-      if( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) {
+    if( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) {
 	orchardAppRun(orchardAppByName("Badge"));
       }
       return;
   }
-  
+
   if ( (event->type == timerEvent) &&
        ( (current_fight_state == APPROVAL_WAIT) ||
 	 (current_fight_state == APPROVAL_DEMAND) ) &&
@@ -758,7 +768,6 @@ static void fight_event(OrchardAppContext *context,
     if (ticktock <= 0) {
       orchardAppTimer(context, 0, false); // shut down the timer
       screen_alert_draw("TIMED OUT!");
-      fight_received = 0;
       ledSetProgress(-1);
       end_fight();
       playHardFail();
@@ -807,9 +816,10 @@ static void fight_event(OrchardAppContext *context,
 	  p->ghDeny = NULL;
 	  p->ghAccept = NULL;
 	  
-	  current_fight_state = IDLE;
 	  sendGamePacket(OP_DECLINED);
 	  screen_alert_draw("Dulce bellum inexpertis.");
+	  ledSetProgress(-1);
+	  end_fight();
 	  chThdSleepMilliseconds(3000);
 	  orchardAppExit();
 	  return;
@@ -893,6 +903,7 @@ static void fight_exit(OrchardAppContext *context) {
   context->priv = NULL;
 
   config->in_combat = 0;
+  current_fight_state = IDLE;
   return;
 }
 
@@ -900,27 +911,24 @@ static void radio_updatestate(KW01_PKT * pkt)
 {
   /* this is the state machine that handles transitions for the game via the radio */
   user *u;
+  userconfig *config;
+ 
+  config = getConfig();
+  
   u = (user *)pkt->kw01_payload;
   last_ui_time = chVTGetSystemTime(); // radio is a state-change, so reset this.
-  
-  chprintf(stream, "\r\ngot game packet\r\n");
   
   switch (current_fight_state) {
   case IDLE:
   case ENEMY_SELECT:
-    if (u->opcode == OP_STARTBATTLE) {
+    if (u->opcode == OP_STARTBATTLE && config->in_combat == 0) {
       /* we can accept a new fight */
-      // copy off pkt
       memcpy(&current_enemy, u, sizeof(user));
-      
       // put up screen, accept fight from user foobar/badge foobar
       current_fight_state = APPROVAL_DEMAND;
-      
-      // start timer...
-      last_tick_time = chVTGetSystemTime();
-      ticktock = DEFAULT_WAIT_TIME;
-      playAttacked();
-      screen_demand_draw();
+
+      // actually enter our app. We will take care of the rest of this on init.
+      orchardAppRun(orchardAppByName("Fight"));
     }
     break;
   case APPROVAL_WAIT:
@@ -931,6 +939,7 @@ static void radio_updatestate(KW01_PKT * pkt)
     break;
   case APPROVAL_DEMAND:
     if (u->opcode == OP_DECLINED) {
+      chprintf(stream, "\r\nrecv deny\r\n");
       current_fight_state = ENEMY_SELECT;
       screen_select_draw(TRUE);
       draw_select_buttons(instance.context->priv);
@@ -943,18 +952,21 @@ static void radio_updatestate(KW01_PKT * pkt)
 }
 
 static uint32_t fight_init(OrchardAppContext *context) {
-  (void)context;
+  FightHandles *p;
 
   if (context == NULL) {
     /* This should only happen for auto-init */
     radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_FIGHT,
 		     radio_updatestate);
-    fight_received = 0;
+  } else {
+    p = chHeapAlloc (NULL, sizeof(FightHandles));
+    memset(p, 0, sizeof(FightHandles));
+    context->priv = p;
   }
 
   return 0;
 }
 
-orchard_app("FIGHT", APP_FLAG_AUTOINIT, fight_init, fight_start, fight_event, fight_exit);
+orchard_app("Fight", APP_FLAG_AUTOINIT, fight_init, fight_start, fight_event, fight_exit);
 
 
