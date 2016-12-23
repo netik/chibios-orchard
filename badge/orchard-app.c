@@ -9,7 +9,6 @@
 #include "orchard-events.h"
 #include "orchard-app.h"
 #include "orchard-ui.h"
-#include "paging.h"
 #include "led.h"
 #include "radio.h"
 
