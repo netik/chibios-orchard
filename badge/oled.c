@@ -12,7 +12,7 @@
 #include "buildtime.h"
 #include "fontlist.h"
 
-void oledSDFail(void) {
+void splash_footer(void) {
   font_t font;
 
   font = gdispOpenFont (FONT_SYS);
@@ -30,6 +30,12 @@ void oledSDFail(void) {
 
   gdispCloseFont (font);  
 
+}
+
+void oledSDFail(void) {
+  font_t font;
+  
+  splash_footer();
   font = gdispOpenFont (FONT_LG_SANS);
   
   gdispDrawStringBox (0, 0, gdispGetWidth(),
@@ -41,33 +47,17 @@ void oledSDFail(void) {
 
 void oledOrchardBanner(void)
 {
-	font_t font;
-	gdispImage myImage;
-
-	if (gdispImageOpenFile (&myImage,
-				IMG_SPLASH) == GDISP_IMAGE_ERR_OK) {
-	  gdispImageDraw (&myImage,
-			  0, 0,
-			  myImage.width,
-			  myImage.height, 0, 0);
-	  
-	  gdispImageClose (&myImage);
-	}
-
-        font = gdispOpenFont (FONT_SYS);
-	gwinSetDefaultFont (font);
-	
-	gdispDrawStringBox (0, 210, gdispGetWidth(),
-			    gdispGetFontMetric(font, fontHeight),
-			    "IDES OF MARCH | Defcon 25 (2017)",
-			    font, White, justifyCenter);
-
-	gdispDrawStringBox (0, 225, gdispGetWidth(),
-			    gdispGetFontMetric(font, fontHeight),
-			    BUILDTIME,
-			    font, White, justifyCenter);
-
-	gdispCloseFont (font);
-	/* orchardGfxEnd(); */
-	return;
+  gdispImage myImage;
+  
+  if (gdispImageOpenFile (&myImage,
+			  IMG_SPLASH) == GDISP_IMAGE_ERR_OK) {
+    gdispImageDraw (&myImage,
+		    0, 0,
+		    myImage.width,
+		    myImage.height, 0, 0);
+    
+    gdispImageClose (&myImage);
+  }
+  splash_footer();
+  return;
 }
