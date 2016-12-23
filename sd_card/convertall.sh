@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # clean out the dir
 rm jpg/mirrored/*

@@ -18,8 +18,8 @@ sdcard: cleansd images midi
 	du -kh sdcard
 
 cleansd:
-	@if [ -d "sdcard" ]; then rm -rf sdcard; mkdir sdcard; fi
-	@if [ -d "rgb" ]; then rm -rf rgb; mkdir rgb; fi
+	@if [ -d "sdcard" ]; then rm -rf sdcard; fi; mkdir sdcard
+	@if [ -d "rgb" ]; then rm -rf rgb; fi; mkdir rgb
 	touch rgb/"THIS FOLDER IS AUTOMATICALLY GENERATED"
 
 clean:
