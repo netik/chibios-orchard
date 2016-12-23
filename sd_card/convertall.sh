@@ -37,9 +37,3 @@ do
 	echo "*** Warning $lh is not 8.3 compatible!"
     fi
 done
-
-echo
-echo "done!"
-echo "Now do:"
-echo "   cp rgb/*.rgb \$SDCARD_PATH"
-
