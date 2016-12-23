@@ -155,7 +155,6 @@ static void credits_start(OrchardAppContext *context)
 		chThdSleepMilliseconds (15);
 	}
 
-	scroll (0);
 	chHeapFree (buf);
 	f_close (&f);
 
@@ -163,6 +162,8 @@ static void credits_start(OrchardAppContext *context)
 		chThdSleepMilliseconds (800);
 
 	pwmFileThreadPlay (NULL);
+	gdispClear (Black);
+	scroll (0);
 
 	orchardAppExit ();
 
