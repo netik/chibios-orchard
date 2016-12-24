@@ -449,7 +449,6 @@ static void screen_select_draw(int8_t initial) {
 
   // blank out the center
   gdispFillArea(31,22,260,POS_FLOOR_Y-22,Black);
-
   putImageFile(IMG_GUARD_IDLE_L, POS_PCENTER_X, POS_PCENTER_Y);
 
   fontSM = gdispOpenFont (FONT_SM);
@@ -530,7 +529,7 @@ static void screen_demand_draw(void) {
 		      18,
 		      gdispGetWidth(),
 		      gdispGetFontMetric(fontFF, fontHeight),
-		      "You are being attacked!",
+		      "A CHALLENGER AWAITS!",
 		      fontFF, Red, justifyCenter);
 
   ypos = (gdispGetHeight() / 2) - 60;
@@ -680,13 +679,14 @@ static void fight_start(OrchardAppContext *context) {
   last_ui_time = chVTGetSystemTime();
 
   // are we entering a fight?
-  if (current_fight_state ==  APPROVAL_DEMAND) { 
+  if (current_fight_state == APPROVAL_DEMAND) { 
     ticktock=DEFAULT_WAIT_TIME;
     playAttacked();
     screen_demand_draw();
   } 
 
-  if (current_fight_state == IDLE) { 
+  if (current_fight_state == IDLE) {
+    current_fight_state == ENEMY_SELECT;
     if (enemyCount() > 0) {
       screen_select_draw(TRUE);
       draw_select_buttons(p);
@@ -839,7 +839,7 @@ static void fight_event(OrchardAppContext *context,
 	  ledSetProgress(-1);
 	  end_fight();
 	  chThdSleepMilliseconds(3000);
-	  orchardAppExit();
+	  orchardAppRun(orchardAppByName("Badge"));
 	  return;
 	}
         if ( ((GEventGWinButton*)pe)->gwin == p->ghAccept) { 
@@ -943,7 +943,7 @@ static void radio_updatestate(KW01_PKT * pkt)
   case ENEMY_SELECT:
     if (u->opcode == OP_STARTBATTLE && config->in_combat == 0) {
       /* we can accept a new fight */
-       memcpy(&current_enemy, u, sizeof(user));
+      memcpy(&current_enemy, u, sizeof(user));
       // put up screen, accept fight from user foobar/badge foobar
       if (current_fight_state == IDLE) { 
 	// we are not actually in our app so run it to pick up context. 
@@ -961,11 +961,17 @@ static void radio_updatestate(KW01_PKT * pkt)
     if (u->opcode == OP_DECLINED) {
       screen_alert_draw("DENIED.");
       orchardAppTimer(instance.context, 0, false); // shut down the timer
+      ledSetProgress(-1);
       chThdSleepMilliseconds(ALERT_DELAY);
-      last_ui_time = chVTGetSystemTime();
-      current_fight_state = ENEMY_SELECT;
+
       screen_select_draw(TRUE);
       draw_select_buttons(instance.context->priv);
+
+      // start the clock again.
+      last_ui_time = chVTGetSystemTime();
+      current_fight_state = ENEMY_SELECT;
+      orchardAppTimer(instance.context, 1000, true);
+
     }
     if (u->opcode == OP_STARTBATTLE_ACK) {
       current_fight_state = VS_SCREEN;
