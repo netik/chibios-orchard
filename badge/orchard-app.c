@@ -52,7 +52,8 @@ static void run_ping(void *arg) {
   (void)arg;
   chSysLockFromISR();
   chEvtBroadcastI(&ping_timeout);
-  chVTSetI(&ping_timer, MS2ST(PING_MIN_INTERVAL), run_ping, NULL);
+  chVTSetI(&ping_timer,
+    MS2ST(PING_MIN_INTERVAL + rand() % PING_RAND_INTERVAL), run_ping, NULL);
   chSysUnlockFromISR(); 
 }
 
@@ -342,7 +343,8 @@ void orchardAppInit(void) {
   chVTReset(&ping_timer);
   //  evtTableHook(orchard_events, radio_page, handle_radio_page);
   evtTableHook(orchard_events, ping_timeout, execute_ping);
-  chVTSet(&ping_timer, MS2ST(PING_MIN_INTERVAL), run_ping, NULL);  // todo: randomize this
+  chVTSet(&ping_timer,
+    MS2ST(PING_MIN_INTERVAL + rand() % PING_RAND_INTERVAL), run_ping, NULL);
 
   // initalize the seen-enemies list
   for( int i = 0; i < MAX_ENEMIES; i++ ) {

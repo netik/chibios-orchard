@@ -15,6 +15,8 @@
 #define APP_FLAG_AUTOINIT	0x00000002
 
 #define PING_MIN_INTERVAL  3000 // base time between pings
+#define PING_RAND_INTERVAL 2000 // randomization zone for pings
+
 // defines how long a enemy record stays around before expiration
 // max level of credit a enemy can have; defines how long a record can stay around
 // once a enemy goes away. Roughly equal to

@@ -159,7 +159,7 @@ static void chat_event (OrchardAppContext *context,
 	if (event->type == radioEvent && event->radio.pPkt != NULL) {
 		pkt = event->radio.pPkt;
 
-		/* A char message arrived, update the text display. */
+		/* A chat message arrived, update the text display. */
 
 		if (pkt->kw01_hdr.kw01_prot == RADIO_PROTOCOL_CHAT &&
 		    pkt->kw01_hdr.kw01_dst == config->netid) {
