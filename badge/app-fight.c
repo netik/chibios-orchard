@@ -16,6 +16,8 @@
 
 // time to wait for a response from either side (mS)
 #define DEFAULT_WAIT_TIME 20000
+#define MOVE_WAIT_TIME 10000
+#define ALERT_DELAY 1500
 
 typedef struct _FightHandles {
   GListener glFight;
@@ -397,9 +399,9 @@ static uint8_t nextEnemy() {
     current_enemy_idx = ce;
     return TRUE;
   } else {
-    // we failed, so time to die.
+    // we failed, so time to die
     screen_alert_draw("NO ENEMIES NEARBY!");
-    chThdSleepMilliseconds(1000);
+    chThdSleepMilliseconds(ALERT_DELAY);
     orchardAppExit();
     return FALSE;
   }
@@ -425,7 +427,7 @@ static uint8_t prevEnemy() {
   } else {
     // we failed, so time to die.
     screen_alert_draw("NO ENEMIES NEARBY!");
-    chThdSleepMilliseconds(1000);
+    chThdSleepMilliseconds(ALERT_DELAY);
     orchardAppExit();
     return FALSE;
   }
@@ -524,6 +526,13 @@ static void screen_demand_draw(void) {
   gdispClear(Black);
   gwinSetDefaultFont(gdispOpenFont(FONT_FIXED));
 
+  gdispDrawStringBox (0,
+		      18,
+		      gdispGetWidth(),
+		      gdispGetFontMetric(fontFF, fontHeight),
+		      "You are being attacked!",
+		      fontFF, Red, justifyCenter);
+
   ypos = (gdispGetHeight() / 2) - 60;
   xpos = 10;
 
@@ -599,7 +608,7 @@ static void screen_vs_draw(void)  {
 		      current_enemy.name,
 		      fontSM, Red, justifyRight);
 
-  ypos = ypos +  gdispGetFontMetric(fontSM, fontHeight);
+  ypos = ypos + gdispGetFontMetric(fontSM, fontHeight);
 
   if (current_fight_state == VS_SCREEN) {
     gdispFillArea(0,
@@ -629,6 +638,7 @@ static void screen_vs_draw(void)  {
 
     draw_attack_buttons();
     current_fight_state = MOVE_SELECT;
+    ticktock=MOVE_WAIT_TIME;
   } else { 
     gdispDrawStringBox (0,
 		      ypos,
@@ -670,13 +680,13 @@ static void fight_start(OrchardAppContext *context) {
   last_ui_time = chVTGetSystemTime();
 
   // are we entering a fight?
-  switch (current_fight_state) {
-  case APPROVAL_DEMAND:
+  if (current_fight_state ==  APPROVAL_DEMAND) { 
     ticktock=DEFAULT_WAIT_TIME;
     playAttacked();
     screen_demand_draw();
-    break;
-  case IDLE:
+  } 
+
+  if (current_fight_state == IDLE) { 
     if (enemyCount() > 0) {
       screen_select_draw(TRUE);
       draw_select_buttons(p);
@@ -686,7 +696,7 @@ static void fight_start(OrchardAppContext *context) {
     } else {
       // punt if no enemies
       screen_alert_draw("NO ENEMIES NEARBY!");
-      chThdSleepMilliseconds(1000);
+      chThdSleepMilliseconds(ALERT_DELAY);
       orchardAppExit();
       return;
     }
@@ -755,6 +765,14 @@ static void fight_event(OrchardAppContext *context,
       return;
   }
 
+  if ( event->type == timerEvent &&
+       current_fight_state == MOVE_SELECT &&
+       ((chVTGetSystemTime() - last_tick_time) > 1000)) {
+    ticktock = ticktock - 1000;
+    last_tick_time = chVTGetSystemTime();
+    drawProgressBar(40,gdispGetHeight() - 20,240,20,MOVE_WAIT_TIME,ticktock, 1);
+  }
+    
   if ( (event->type == timerEvent) &&
        ( (current_fight_state == APPROVAL_WAIT) ||
 	 (current_fight_state == APPROVAL_DEMAND) ) &&
@@ -764,14 +782,14 @@ static void fight_event(OrchardAppContext *context,
 
     // progess bar
     drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,ticktock, 1);
-    
+
     if (ticktock <= 0) {
       orchardAppTimer(context, 0, false); // shut down the timer
       screen_alert_draw("TIMED OUT!");
       ledSetProgress(-1);
       end_fight();
       playHardFail();
-      chThdSleepMilliseconds(2000);
+      chThdSleepMilliseconds(ALERT_DELAY);
       orchardAppRun(orchardAppByName("Badge"));
     }
 
@@ -917,6 +935,8 @@ static void radio_updatestate(KW01_PKT * pkt)
   
   u = (user *)pkt->kw01_payload;
   last_ui_time = chVTGetSystemTime(); // radio is a state-change, so reset this.
+
+  chprintf(stream, "gamepacket with mystate %d, incoming opcode %d\n", current_fight_state, u->opcode);
   
   switch (current_fight_state) {
   case IDLE:
@@ -927,19 +947,23 @@ static void radio_updatestate(KW01_PKT * pkt)
       // put up screen, accept fight from user foobar/badge foobar
       current_fight_state = APPROVAL_DEMAND;
 
-      // actually enter our app. We will take care of the rest of this on init.
-      orchardAppRun(orchardAppByName("Fight"));
+      if (current_fight_state == IDLE) { 
+	// we are not actually in our app so run it to pick up context. 
+	orchardAppRun(orchardAppByName("Fight"));
+      } else {
+	// build the screen
+	ticktock=DEFAULT_WAIT_TIME;
+	playAttacked();
+	screen_demand_draw();
+      }
     }
     break;
   case APPROVAL_WAIT:
-    if (u->opcode == OP_STARTBATTLE_ACK) {
-      current_fight_state = VS_SCREEN;
-      screen_vs_draw();
-    }
-    break;
-  case APPROVAL_DEMAND:
     if (u->opcode == OP_DECLINED) {
-      chprintf(stream, "\r\nrecv deny\r\n");
+      screen_alert_draw("DENIED.");
+      orchardAppTimer(instance.context, 0, false); // shut down the timer
+      chThdSleepMilliseconds(ALERT_DELAY);
+      last_ui_time = chVTGetSystemTime();
       current_fight_state = ENEMY_SELECT;
       screen_select_draw(TRUE);
       draw_select_buttons(instance.context->priv);
