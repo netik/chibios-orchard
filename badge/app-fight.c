@@ -943,10 +943,8 @@ static void radio_updatestate(KW01_PKT * pkt)
   case ENEMY_SELECT:
     if (u->opcode == OP_STARTBATTLE && config->in_combat == 0) {
       /* we can accept a new fight */
-      memcpy(&current_enemy, u, sizeof(user));
+       memcpy(&current_enemy, u, sizeof(user));
       // put up screen, accept fight from user foobar/badge foobar
-      current_fight_state = APPROVAL_DEMAND;
-
       if (current_fight_state == IDLE) { 
 	// we are not actually in our app so run it to pick up context. 
 	orchardAppRun(orchardAppByName("Fight"));
@@ -956,6 +954,7 @@ static void radio_updatestate(KW01_PKT * pkt)
 	playAttacked();
 	screen_demand_draw();
       }
+      current_fight_state = APPROVAL_DEMAND;
     }
     break;
   case APPROVAL_WAIT:
@@ -967,6 +966,12 @@ static void radio_updatestate(KW01_PKT * pkt)
       current_fight_state = ENEMY_SELECT;
       screen_select_draw(TRUE);
       draw_select_buttons(instance.context->priv);
+    }
+    if (u->opcode == OP_STARTBATTLE_ACK) {
+      current_fight_state = VS_SCREEN;
+      sendGamePacket(OP_STARTBATTLE_ACK);
+      gdispClear(Black);
+      screen_vs_draw();
     }
     break;
   case MOVE_WAITACK:
