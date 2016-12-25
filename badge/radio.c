@@ -185,7 +185,8 @@ radioReceive (RADIODriver * radio)
 
 	spiReceive (radio->kw01_spi, 1, &len);
 
-	if (len > radio->kw01_maxlen) {
+	if (len > radio->kw01_maxlen ||
+	    len < sizeof (KW01_PKT_HDR)) {
 		palSetPad (GREEN_LED_PORT, GREEN_LED_PIN);   /* Green */
 		radioUnselect (radio);
 		return (-1);

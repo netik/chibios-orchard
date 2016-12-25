@@ -87,6 +87,18 @@ void playMsPacman(void) {
   pwmFileThreadPlay ("mspac");
 }
 
+void playCantina(void) {
+  pwmFileThreadPlay ("cantina");
+}
+
+void playKombat(void) {
+  pwmFileThreadPlay ("kombat");
+}
+
+void playMario(void) {
+  pwmFileThreadPlay ("mario");
+}
+
 void playHardFail(void) {
   /* sad panda tone */
   pwmThreadPlay (soundSadPanda);

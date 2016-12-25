@@ -12,6 +12,7 @@ sdcard: cleansd images midi
 	@find midi -name \*.bin -exec cp {} sdcard \;
 	@cp ../updater/updater.bin sdcard
 	@cp ../badge/build/badge.bin sdcard
+	@mv -f sdcard/credits_mario.rgb sdcard/credits.rgb
 	@echo
 	@echo 'sdcard built!'
 	@echo 

@@ -10,5 +10,8 @@ extern void playDefeat(void);
 extern void playDodge(void);
 extern void playHit(void);
 extern void playMsPacman(void);
+extern void playCantina(void);
+extern void playKombat(void);
+extern void playMario(void);
 
 #endif /* __SOUND_H__ */
