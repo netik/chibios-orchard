@@ -14,9 +14,15 @@
 
 #include "userconfig.h"
 
+// 66666 mS = 15 FPS. Eeeviil... 
+#define FRAME_INTERVAL_US 66666
+
 // time to wait for a response from either side (mS)
-#define DEFAULT_WAIT_TIME 20000
-#define MOVE_WAIT_TIME 10000
+// WAIT_TIMEs are always in system ticks.
+// caveat! the system timer is a uint32_t and can roll over! be aware!
+
+#define DEFAULT_WAIT_TIME MS2ST(5000) // was 20k, now 5k for testing
+#define MOVE_WAIT_TIME MS2ST(10000)
 #define ALERT_DELAY 1500
 
 typedef struct _FightHandles {
@@ -82,15 +88,16 @@ const GWidgetStyle RedButtonStyle = {
 
 extern orchard_app_instance instance;
 
+static int32_t countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value. 
 static fight_state current_fight_state = IDLE;
+
 static user current_enemy;
-static int current_enemy_idx = 0;
+static uint8_t current_enemy_idx = 0;
 
 static uint32_t last_ui_time = 0;
 static uint32_t last_tick_time = 0;
 
 static uint8_t attackbitmap = 0;
-int16_t ticktock = DEFAULT_WAIT_TIME; // used to hold a generic timer value. 
 
 /* prototypes */
 /* TODO: move these primitives to some central graphics library */
@@ -166,9 +173,9 @@ static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height,
   float remain_f = (float) currentval / (float)maxval;
   int16_t remain = width * remain_f;
 
- if (use_leds == 1) {
+  if (use_leds == 1) {
    ledSetProgress(100 * remain_f);
- }
+  }
   
   if (remain_f >= 0.8) {
     c = Lime;
@@ -178,7 +185,7 @@ static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height,
     c = Red;
   }
 
-  gdispFillArea(x + remain,y+1,(width - remain),height-1, Black);
+  gdispFillArea(x + remain,y+1,(width - remain)-1,height-2, Black);
 
   gdispFillArea(x,y,remain,height, c);
   gdispDrawBox(x,y,width,height, c);
@@ -576,7 +583,7 @@ static void screen_demand_draw(void) {
 
   gwinSetDefaultStyle(&BlackWidgetStyle, FALSE);
 
-  drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,ticktock, 1);
+  drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, 1);
 
 }
 
@@ -636,8 +643,10 @@ static void screen_vs_draw(void)  {
     
 
     draw_attack_buttons();
+
+    last_tick_time = chVTGetSystemTime();
     current_fight_state = MOVE_SELECT;
-    ticktock=MOVE_WAIT_TIME;
+    countdown=MOVE_WAIT_TIME;
   } else { 
     gdispDrawStringBox (0,
 		      ypos,
@@ -673,20 +682,20 @@ static void fight_start(OrchardAppContext *context) {
   p = chHeapAlloc (NULL, sizeof(FightHandles));
   memset(p, 0, sizeof(FightHandles));
   context->priv = p;
-  
-  // fires once a second for updates. 
-  orchardAppTimer(context, 1000, true);
+
+  orchardAppTimer(context, FRAME_INTERVAL_US, true);
   last_ui_time = chVTGetSystemTime();
 
   // are we entering a fight?
   if (current_fight_state == APPROVAL_DEMAND) { 
-    ticktock=DEFAULT_WAIT_TIME;
+    last_tick_time = chVTGetSystemTime();
+    countdown=DEFAULT_WAIT_TIME;
     playAttacked();
     screen_demand_draw();
   } 
 
   if (current_fight_state == IDLE) {
-    current_fight_state == ENEMY_SELECT;
+    current_fight_state = ENEMY_SELECT;
     if (enemyCount() > 0) {
       screen_select_draw(TRUE);
       draw_select_buttons(p);
@@ -713,9 +722,9 @@ static void screen_waitapproval_draw(void) {
   screen_vs_draw(); // draw the start of the vs screen
 
   // progress bar
-  ticktock = DEFAULT_WAIT_TIME; // used to hold a generic timer value.
   last_tick_time = chVTGetSystemTime();
-  drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,ticktock, 1);
+  countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value.
+  drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, 1);
 }
 
 static void sendGamePacket(uint8_t opcode) {
@@ -758,44 +767,54 @@ static void fight_event(OrchardAppContext *context,
   //
   // this returns us to the badge screen on idle.
   // we don't want this for all states, just select and end-of-fight
-  if ( (event->type == timerEvent) && (current_fight_state == ENEMY_SELECT) ) {
-    if( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) {
-	orchardAppRun(orchardAppByName("Badge"));
-      }
-      return;
-  }
+  if (event->type == timerEvent) {
+    // timer events always decrement countdown unless countdown <= 0
+    chprintf(stream, "[gamestate %d] tick last: %d now: %d remain: %d\r\n", current_fight_state, last_tick_time, chVTGetSystemTime(), countdown);
 
-  if ( event->type == timerEvent &&
-       current_fight_state == MOVE_SELECT &&
-       ((chVTGetSystemTime() - last_tick_time) > 1000)) {
-    ticktock = ticktock - 1000;
-    last_tick_time = chVTGetSystemTime();
-    drawProgressBar(40,gdispGetHeight() - 20,240,20,MOVE_WAIT_TIME,ticktock, 1);
-  }
-    
-  if ( (event->type == timerEvent) &&
-       ( (current_fight_state == APPROVAL_WAIT) ||
-	 (current_fight_state == APPROVAL_DEMAND) ) &&
-       ((chVTGetSystemTime() - last_tick_time) > 1000) ) {
-    ticktock = ticktock - 1000;
-    last_tick_time = chVTGetSystemTime();
-
-    // progess bar
-    drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,ticktock, 1);
-
-    if (ticktock <= 0) {
-      orchardAppTimer(context, 0, false); // shut down the timer
-      screen_alert_draw("TIMED OUT!");
-      ledSetProgress(-1);
-      end_fight();
-      playHardFail();
-      chThdSleepMilliseconds(ALERT_DELAY);
-      orchardAppRun(orchardAppByName("Badge"));
+    if (countdown > 0) {
+      // our time reference is based on elapsed time. 
+      countdown = countdown - ( chVTGetSystemTime() - last_tick_time );
+      last_tick_time = chVTGetSystemTime();
     }
-
-    return;
-  }
   
+    /* handle idle timeout in the ENEMY_SELECT state */
+    if (current_fight_state == ENEMY_SELECT) {
+      if( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) {
+    	  orchardAppRun(orchardAppByName("Badge"));
+      } 
+      return;
+    }
+    if (current_fight_state == MOVE_SELECT) {
+      drawProgressBar(40,gdispGetHeight() - 20,240,20,MOVE_WAIT_TIME,countdown, 1);
+
+      if (countdown <= 0) {
+       // transmit my move
+        sendGamePacket(OP_YOUGO);
+        // so things sort of break here.
+        // if we both transmit at the same time, we're boned.
+        // the attacker should send his move now, wait for an ack, followed by the
+        // challenger
+        current_fight_state = MOVE_WAITACK;
+      }
+    }
+    if ((current_fight_state == APPROVAL_WAIT) || (current_fight_state == APPROVAL_DEMAND)) {
+      // progess bar
+      drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, 1);
+
+      if (countdown <= 0) {
+       orchardAppTimer(context, 0, false); // shut down the timer
+       screen_alert_draw("TIMED OUT!");
+       ledSetProgress(-1);
+       end_fight();
+       playHardFail();
+       chThdSleepMilliseconds(ALERT_DELAY);
+       orchardAppRun(orchardAppByName("Badge"));
+      }
+
+      return;
+    }
+  }
+
   if (event->type == ugfxEvent) {
       pe = event->ugfx.pEvent;
       // we handle all of the buttons on all of the possible screens
@@ -813,7 +832,7 @@ static void fight_event(OrchardAppContext *context,
 	  }
 	  return;
 	}
-        if ( ((GEventGWinButton*)pe)->gwin == p->ghAttack) { 
+  if ( ((GEventGWinButton*)pe)->gwin == p->ghAttack) { 
 	  // we are attacking. 
 	  last_ui_time = chVTGetSystemTime();
 	  screen_select_close(context);
@@ -836,6 +855,7 @@ static void fight_event(OrchardAppContext *context,
 	  
 	  sendGamePacket(OP_DECLINED);
 	  screen_alert_draw("Dulce bellum inexpertis.");
+	  playHardFail();
 	  ledSetProgress(-1);
 	  end_fight();
 	  chThdSleepMilliseconds(3000);
@@ -950,7 +970,7 @@ static void radio_updatestate(KW01_PKT * pkt)
 	orchardAppRun(orchardAppByName("Fight"));
       } else {
 	// build the screen
-	ticktock=DEFAULT_WAIT_TIME;
+	countdown=DEFAULT_WAIT_TIME;
 	playAttacked();
 	screen_demand_draw();
       }
@@ -960,6 +980,7 @@ static void radio_updatestate(KW01_PKT * pkt)
   case APPROVAL_WAIT:
     if (u->opcode == OP_DECLINED) {
       screen_alert_draw("DENIED.");
+      playHardFail();
       orchardAppTimer(instance.context, 0, false); // shut down the timer
       ledSetProgress(-1);
       chThdSleepMilliseconds(ALERT_DELAY);
@@ -970,7 +991,7 @@ static void radio_updatestate(KW01_PKT * pkt)
       // start the clock again.
       last_ui_time = chVTGetSystemTime();
       current_fight_state = ENEMY_SELECT;
-      orchardAppTimer(instance.context, 1000, true);
+      orchardAppTimer(instance.context, FRAME_INTERVAL_US, true);
 
     }
     if (u->opcode == OP_STARTBATTLE_ACK) {

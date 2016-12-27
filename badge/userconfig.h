@@ -114,7 +114,7 @@ typedef struct _userpkt {
   /* Battle Payload */
   /* A bitwise map indicating the attack and block -- see ATTACK_ and
      BLOCK_ operators above. */
-  uint8_t attack_bitmap;  
+  uint8_t attack_bitmap;  /* 1 */
   uint8_t damage;         /* 1 */
 
 } user;
