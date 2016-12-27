@@ -264,8 +264,6 @@ static THD_FUNCTION(orchard_app_thread, arg) {
   instance->uicontext = NULL;
   instance->ui_result = 0;
 
-  chRegSetThreadName("Orchard App");
-
   evtTableInit(orchard_app_events, 6);
   evtTableHook(orchard_app_events, ui_completed, ui_complete_cleanup);
   evtTableHook(orchard_app_events, orchard_app_terminate, terminate);
@@ -276,7 +274,9 @@ static THD_FUNCTION(orchard_app_thread, arg) {
     app_context.priv_size = instance->app->init(&app_context);
   else
     app_context.priv_size = 0;
-  
+
+  chRegSetThreadName(instance->app->name);
+
   /* Allocate private data on the stack (word-aligned) */
   uint32_t priv_data[app_context.priv_size / 4];
 

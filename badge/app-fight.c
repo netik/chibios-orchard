@@ -14,15 +14,15 @@
 
 #include "userconfig.h"
 
-// 66666 mS = 15 FPS. Eeeviil... 
+// 66666 uS = 15 FPS. Eeeviil... 
 #define FRAME_INTERVAL_US 66666
 
 // time to wait for a response from either side (mS)
 // WAIT_TIMEs are always in system ticks.
 // caveat! the system timer is a uint32_t and can roll over! be aware!
 
-#define DEFAULT_WAIT_TIME MS2ST(5000) // was 20k, now 5k for testing
-#define MOVE_WAIT_TIME MS2ST(10000)
+#define DEFAULT_WAIT_TIME MS2ST(10000) // was 20k, now 5k for testing
+#define MOVE_WAIT_TIME MS2ST(10000)    // should be a bit faster to push people! 
 #define ALERT_DELAY 1500
 
 typedef struct _FightHandles {
@@ -678,14 +678,14 @@ static void screen_select_close(OrchardAppContext *context) {
 static void fight_start(OrchardAppContext *context) {
   FightHandles *p = context->priv;
   user **enemies = enemiesGet();
-  
+
   p = chHeapAlloc (NULL, sizeof(FightHandles));
   memset(p, 0, sizeof(FightHandles));
   context->priv = p;
 
   orchardAppTimer(context, FRAME_INTERVAL_US, true);
   last_ui_time = chVTGetSystemTime();
-
+ 
   // are we entering a fight?
   if (current_fight_state == APPROVAL_DEMAND) { 
     last_tick_time = chVTGetSystemTime();
@@ -762,14 +762,14 @@ static void fight_event(OrchardAppContext *context,
   user **enemies = enemiesGet();
   userconfig *config = getConfig();
   
-  // the timerEvent fires once a second and is overloaded a bit to handle
+  // the timerEvent fires on the frame interval and is overloaded a bit to handle
   // real-time functionality in the fight sequence
   //
   // this returns us to the badge screen on idle.
   // we don't want this for all states, just select and end-of-fight
   if (event->type == timerEvent) {
     // timer events always decrement countdown unless countdown <= 0
-    chprintf(stream, "[gamestate %d] tick last: %d now: %d remain: %d\r\n", current_fight_state, last_tick_time, chVTGetSystemTime(), countdown);
+    //    chprintf(stream, "[gamestate %d] tick last: %d now: %d remain: %d\r\n", current_fight_state, last_tick_time, chVTGetSystemTime(), countdown);
 
     if (countdown > 0) {
       // our time reference is based on elapsed time. 
@@ -798,7 +798,6 @@ static void fight_event(OrchardAppContext *context,
       }
     }
     if ((current_fight_state == APPROVAL_WAIT) || (current_fight_state == APPROVAL_DEMAND)) {
-      // progess bar
       drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, 1);
 
       if (countdown <= 0) {
@@ -862,7 +861,7 @@ static void fight_event(OrchardAppContext *context,
 	  orchardAppRun(orchardAppByName("Badge"));
 	  return;
 	}
-        if ( ((GEventGWinButton*)pe)->gwin == p->ghAccept) { 
+  if ( ((GEventGWinButton*)pe)->gwin == p->ghAccept) { 
 	  gwinDestroy (p->ghDeny);
 	  gwinDestroy (p->ghAccept);
 	  p->ghDeny = NULL;
@@ -966,13 +965,13 @@ static void radio_updatestate(KW01_PKT * pkt)
       memcpy(&current_enemy, u, sizeof(user));
       // put up screen, accept fight from user foobar/badge foobar
       if (current_fight_state == IDLE) { 
-	// we are not actually in our app so run it to pick up context. 
-	orchardAppRun(orchardAppByName("Fight"));
+	      // we are not actually in our app, so run it to pick up context. 
+	      orchardAppRun(orchardAppByName("Fight"));
       } else {
-	// build the screen
-	countdown=DEFAULT_WAIT_TIME;
-	playAttacked();
-	screen_demand_draw();
+	      // build the screen
+        countdown=DEFAULT_WAIT_TIME;
+	      playAttacked();
+	      screen_demand_draw();
       }
       current_fight_state = APPROVAL_DEMAND;
     }
@@ -1001,7 +1000,13 @@ static void radio_updatestate(KW01_PKT * pkt)
       screen_vs_draw();
     }
     break;
-  case MOVE_WAITACK:
+  case MOVE_WAITACK: // no-op
+  case APPROVAL_DEMAND:
+  case VS_SCREEN:
+  case MOVE_SELECT:
+  case RESULTS:
+  case PLAYER_DEAD:
+  case ENEMY_DEAD:
     break;
   }
 

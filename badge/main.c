@@ -108,10 +108,11 @@ static void shell_termination_handler(eventid_t id) {
 }
 
 static void orchard_app_restart(eventid_t id) {
-  static int i = 1;
+  //  static int i = 1;
   (void)id;
 
-  chprintf(stream, "\r\nRunning next app (pid #%d)\r\n", ++i);
+  // jna: removing this, it's not really necessary for debug anymore. 
+  //  chprintf(stream, "\r\nRunning next app (pid #%d)\r\n", ++i);
   orchardAppRestart();
 }
 

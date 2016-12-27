@@ -117,7 +117,7 @@ static uint32_t chat_init (OrchardAppContext *context)
 static void chat_start (OrchardAppContext *context)
 {
 	ChatHandles * p;
-
+	
 	p = chHeapAlloc(NULL, sizeof(ChatHandles));
 	memset (p, 0, sizeof(ChatHandles));
 	context->priv = p;
