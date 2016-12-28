@@ -116,23 +116,7 @@ static uint32_t chat_init (OrchardAppContext *context)
 
 static void chat_start (OrchardAppContext *context)
 {
-	ChatHandles * p;
-	
-	p = chHeapAlloc(NULL, sizeof(ChatHandles));
-	memset (p, 0, sizeof(ChatHandles));
-	context->priv = p;
-	p->peers = 2;
-
-	p->listitems[0] = "Scanning for users...";
-	p->listitems[1] = "Exit";
-
-	p->uiCtx.itemlist = (const char **)p->listitems;
-	p->uiCtx.total = 1;
-
-	context->instance->ui = getUiByName ("list");
-	context->instance->uicontext = &p->uiCtx;
-       	context->instance->ui->start (context);
-
+	(void)context;
 	return;
 }
 
@@ -148,7 +132,51 @@ static void chat_event (OrchardAppContext *context,
 	char * c;
 	int i;
 
+	/*
+	 * In order to avoid any chance of a race condition between
+	 * the start end exit routines and the event notifications,
+	 * we have to handle context creation and destruction here
+	 * in the event handler. This forces the entire app to be
+	 * serialized through the event handler thread.
+	 */
+
+	if (event->type == appEvent) {
+		if (event->app.event == appStart) {
+			p = chHeapAlloc(NULL, sizeof(ChatHandles));
+			memset (p, 0, sizeof(ChatHandles));
+			p->peers = 2;
+
+			p->listitems[0] = "Scanning for users...";
+			p->listitems[1] = "Exit";
+
+			p->uiCtx.itemlist = (const char **)p->listitems;
+			p->uiCtx.total = 1;
+
+			context->instance->ui = getUiByName ("list");
+			context->instance->uicontext = &p->uiCtx;
+       			context->instance->ui->start (context);
+
+			context->priv = p;
+		}
+		if (event->app.event == appTerminate) {
+			p = context->priv;
+			for (i = 2; i < p->peers; i++) {
+				if (p->listitems[i] != NULL)
+					chHeapFree (p->listitems[i]);
+			}
+			chHeapFree (p);
+			context->priv = NULL;
+		}
+		return;
+	}
+
 	p = context->priv;
+
+	/* Shouldn't happen, but check anyway. */
+
+	if (p == NULL)
+		return;
+
 	ui = context->instance->ui;
 	uiContext = context->instance->uicontext;
 	config = getConfig();
@@ -182,9 +210,6 @@ static void chat_event (OrchardAppContext *context,
 			ui->event (context, &e);
 		}
 	}
-
-	if (event->type == appEvent && event->app.event == appTerminate)
-		return;
 
 	if (event->type == uiEvent &&
 	    event->ui.code == uiComplete &&
@@ -278,16 +303,7 @@ static void chat_event (OrchardAppContext *context,
 
 static void chat_exit (OrchardAppContext *context)
 {
-	ChatHandles * p;
-	int i;
-
-	p = context->priv;
-	for (i = 2; i < p->peers; i++) {
-		if (p->listitems[i] != NULL)
-			chHeapFree (p->listitems[i]);
-	}
-	chHeapFree (p);
-
+	(void)context;
 	return;
 }
 

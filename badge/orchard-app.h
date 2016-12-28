@@ -108,7 +108,7 @@ typedef struct orchard_app_instance {
   __attribute__((used, aligned(4), section(".chibi_list_app_3_end"))) =     \
      { NULL, 0, NULL, NULL, NULL, NULL }
 
-#define ORCHARD_APP_PRIO (NORMALPRIO + 2)
+#define ORCHARD_APP_PRIO (LOWPRIO + 2)
 
 
 #endif /* __ORCHARD_APP_H__ */
