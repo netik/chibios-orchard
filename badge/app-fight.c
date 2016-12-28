@@ -106,7 +106,7 @@ static uint8_t isattacking = false;
 /* prototypes */
 /* TODO: move these primitives to some central graphics library */
 static int putImageFile(char *name, int16_t x, int16_t y);
-static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, uint16_t maxval, uint16_t currentval, uint8_t use_leds, uint8_t reverse);
+static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, int32_t maxval, int32_t currentval, uint8_t use_leds, uint8_t reverse);
 static void blinkText (coord_t x, coord_t y,coord_t cx, coord_t cy, char *text, font_t font, color_t color, justify_t justify, uint8_t times, int16_t delay);
 
 static void clearstatus(void);
@@ -132,6 +132,10 @@ static void clearstatus(void) {
 		gdispGetWidth(),
 		23,
 		Black);
+
+  // remove progress bar if any
+  gdispFillArea(0,gdispGetHeight() - 20,gdispGetWidth(),20,Black);
+
 }
 
 #ifdef notyet
@@ -183,11 +187,13 @@ static void blinkText (coord_t x, coord_t y,coord_t cx, coord_t cy, char *text, 
   }
 }
 
-static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, uint16_t maxval, uint16_t currentval, uint8_t use_leds, uint8_t reverse) {
+static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, int32_t maxval, int32_t currentval, uint8_t use_leds, uint8_t reverse) {
   // draw a bar
   // if reverse is true, we draw right to left vs left to right
   color_t c = Lime;
 
+  if (currentval < 0) { currentval = 0; } // never overflow
+  
   float remain_f = (float) currentval / (float)maxval;
   int16_t remain = width * remain_f;
   
@@ -473,7 +479,6 @@ static uint8_t prevEnemy() {
 static void show_results(void) {
   // remove the progress bar and status bar
   clearstatus();
-  gdispFillArea(0,gdispGetHeight() - 20,240,20,Black);
   
   // animate the characters
   for (uint8_t i=0; i< 5; i++) { 
