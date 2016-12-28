@@ -109,7 +109,7 @@ static const uint16_t notes[128] = {
 	8372,	8870,	9397,	9956,	10548,	11175,	11840,	12544
 };
 
-static THD_WORKING_AREA(waThread0, 144);
+static THD_WORKING_AREA(waThread0, 180);
 
 typedef struct thread_state {
 	PWM_NOTE *		pTune0;
