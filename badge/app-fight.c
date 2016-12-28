@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string.h>
 
 #include "ch.h"
@@ -22,9 +23,9 @@
 // caveat! the system timer is a uint32_t and can roll over! be aware!
 
 #define DEFAULT_WAIT_TIME MS2ST(20000) // was 20k, now 5k for testing
-#define MAX_ACKWAIT MS2ST(5000) // was 20k, now 5k for testing
-#define MOVE_WAIT_TIME MS2ST(20000)    // should be a bit faster to push people! 
-#define ALERT_DELAY 1500
+#define MAX_ACKWAIT MS2ST(2000)        // if we don't see an ACK in two seconds, something is terribly wrong. 
+#define MOVE_WAIT_TIME MS2ST(10000)     // You get five seconds to make a decision.
+#define ALERT_DELAY 1500               // how long alerts stay on the screen.
 
 typedef struct _FightHandles {
   GListener glFight;
@@ -113,6 +114,7 @@ static void clearstatus(void);
 
 static uint8_t prevEnemy(void);
 static uint8_t nextEnemy(void);
+static void updatehp(void);
 
 /* the fight sequence */
 static void screen_select_draw(int8_t);
@@ -132,10 +134,6 @@ static void clearstatus(void) {
 		gdispGetWidth(),
 		23,
 		Black);
-
-  // remove progress bar if any
-  gdispFillArea(0,gdispGetHeight() - 20,gdispGetWidth(),20,Black);
-
 }
 
 #ifdef notyet
@@ -240,6 +238,7 @@ static int putImageFile(char *name, int16_t x, int16_t y) {
 
 static void draw_attack_icons(void) {
   clearstatus();
+
   // clear middle
   gdispFillArea(140,70,40,110,Black);
 
@@ -478,31 +477,56 @@ static uint8_t prevEnemy() {
 
 static void show_results(void) {
   // remove the progress bar and status bar
-  clearstatus();
+  char c=' ';
+  char attackfn1[13];
+  char attackfn2[13];
   
+  clearstatus();
+  gdispFillArea(0,gdispGetHeight() - 20,gdispGetWidth(),20,Black);
+
+  // get the right filename for the attack
+  if (attackbitmap & ATTACK_HI) c='h';
+  if (attackbitmap & ATTACK_MID) c='m';
+  if (attackbitmap & ATTACK_LOW) c='l';
+
+  if (c == ' ') 
+    strcpy(attackfn1, IMG_GIDLA1);
+  else 
+    sprintf(attackfn1, "gatt%c1.rgb", c);
+
+  c = ' ';
+  if (current_enemy.attack_bitmap & ATTACK_HI) c='h';
+  if (current_enemy.attack_bitmap & ATTACK_MID) c='m';
+  if (current_enemy.attack_bitmap & ATTACK_LOW) c='l';
+
+  if (c == ' ') 
+    strcpy(attackfn2, IMG_GIDLA1R);
+  else 
+    sprintf(attackfn2, "gatt%c1r.rgb", c);
+
   // animate the characters
-  for (uint8_t i=0; i< 5; i++) { 
-    putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER1_Y);
-    putImageFile(IMG_GUARD_IDLE_R, POS_PLAYER2_X, POS_PLAYER2_Y);
+  for (uint8_t i=0; i< 2; i++) { 
+    putImageFile(attackfn1, POS_PLAYER1_X, POS_PLAYER1_Y);
+    putImageFile(attackfn2, POS_PLAYER2_X, POS_PLAYER2_Y);
     chThdSleepMilliseconds(200);
 
-    // todo - use the player-selected attack.
-    putImageFile(IMG_GATTH1, POS_PLAYER1_X, POS_PLAYER1_Y);
-    putImageFile(IMG_GATTH1R, POS_PLAYER2_X, POS_PLAYER2_Y);
+    putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER1_Y);
+    putImageFile(IMG_GUARD_IDLE_R, POS_PLAYER2_X, POS_PLAYER2_Y);
     chThdSleepMilliseconds(200);
   }
     
   // calculate damages and show damage
 
   // update the health bars
-
+  updatehp();
+  
   // if not dead transition state back to move_select
   current_fight_state = MOVE_SELECT;
   countdown=MOVE_WAIT_TIME;
   last_tick_time = chVTGetSystemTime();
 
   // if either side dies update states and exit app
-  
+  attackbitmap = 0;
 }
 
 static void screen_select_draw(int8_t initial) {
@@ -744,7 +768,7 @@ static void screen_vs_draw(void)  {
 		gdispGetWidth(),
 		gdispGetFontMetric(fontSM, fontHeight),
 		"Attack: TAP ON ENEMY TO SELECT",
-		fontSM, White, justifyCenter,8,250);
+		fontSM, White, justifyCenter,4,500);
       clearstatus();
       gdispDrawStringBox (0,
                           ypos,
@@ -759,7 +783,7 @@ static void screen_vs_draw(void)  {
 		gdispGetWidth(),
 		gdispGetFontMetric(fontSM, fontHeight),
 		"Defend: TAP ON SELF TO SELECT",
-		fontSM, White, justifyCenter,8,250);
+		fontSM, White, justifyCenter,4,500);
       clearstatus();
       gdispDrawStringBox (0,
                           ypos,
@@ -1103,7 +1127,7 @@ static void radio_updatestate(KW01_PKT * pkt)
   u = (user *)pkt->kw01_payload;
   last_ui_time = chVTGetSystemTime(); // radio is a state-change, so reset this.
 
-  chprintf(stream, "gamepacket with mystate %d, incoming opcode %d\n", current_fight_state, u->opcode);
+  chprintf(stream, "\r\ngamepacket with mystate %d, incoming opcode %d\r\n", current_fight_state, u->opcode);
   
   switch (current_fight_state) {
   case IDLE:
@@ -1169,11 +1193,11 @@ static void radio_updatestate(KW01_PKT * pkt)
       show_results();
     }
     break;
-  case APPROVAL_DEMAND:
-  case VS_SCREEN:
-  case RESULTS:
-  case PLAYER_DEAD:
-  case ENEMY_DEAD:
+  case APPROVAL_DEMAND: // no-op
+  case VS_SCREEN: // no-op
+  case RESULTS: // no-op
+  case PLAYER_DEAD: // no-op
+  case ENEMY_DEAD: // no-op
     break;
   }
 
