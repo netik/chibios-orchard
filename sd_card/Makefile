@@ -18,6 +18,11 @@ sdcard: cleansd images midi
 	@echo 
 	du -kh sdcard
 
+firmware:
+	@if [ ! -d "sdcard" ]; then mkdir sdcard; fi
+	@cp ../updater/updater.bin sdcard
+	@cp ../badge/build/badge.bin sdcard
+
 cleansd:
 	@if [ -d "sdcard" ]; then rm -rf sdcard; fi; mkdir sdcard
 	@if [ -d "rgb" ]; then rm -rf rgb; fi; mkdir rgb

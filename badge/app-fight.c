@@ -21,8 +21,9 @@
 // WAIT_TIMEs are always in system ticks.
 // caveat! the system timer is a uint32_t and can roll over! be aware!
 
-#define DEFAULT_WAIT_TIME MS2ST(10000) // was 20k, now 5k for testing
-#define MOVE_WAIT_TIME MS2ST(10000)    // should be a bit faster to push people! 
+#define DEFAULT_WAIT_TIME MS2ST(20000) // was 20k, now 5k for testing
+#define MAX_ACKWAIT MS2ST(5000) // was 20k, now 5k for testing
+#define MOVE_WAIT_TIME MS2ST(20000)    // should be a bit faster to push people! 
 #define ALERT_DELAY 1500
 
 typedef struct _FightHandles {
@@ -99,11 +100,16 @@ static uint32_t last_tick_time = 0;
 
 static uint8_t attackbitmap = 0;
 
+// true if attacking, false if blocking.
+static uint8_t isattacking = false;
+
 /* prototypes */
 /* TODO: move these primitives to some central graphics library */
 static int putImageFile(char *name, int16_t x, int16_t y);
-static void drawProgressBar(coord_t x, coord_t y, coord_t height, coord_t width, uint16_t maxval, uint16_t currentval, uint8_t use_leds);
+static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, uint16_t maxval, uint16_t currentval, uint8_t use_leds, uint8_t reverse);
 static void blinkText (coord_t x, coord_t y,coord_t cx, coord_t cy, char *text, font_t font, color_t color, justify_t justify, uint8_t times, int16_t delay);
+
+static void clearstatus(void);
 
 static uint8_t prevEnemy(void);
 static uint8_t nextEnemy(void);
@@ -114,9 +120,19 @@ static void screen_select_close(OrchardAppContext *);
 static void screen_waitapproval_draw(void);
 static void screen_demand_draw(void);
 static void screen_vs_draw(void);
+static void show_results(void);
 static void draw_attack_buttons(void);
 
 static void end_fight(void);
+
+static void clearstatus(void) {
+  // clear instruction area
+  gdispFillArea(0,
+		38,
+		gdispGetWidth(),
+		23,
+		Black);
+}
 
 #ifdef notyet
 static uint8_t calc_level(uint16_t xp) {
@@ -150,6 +166,7 @@ static uint8_t calc_level(uint16_t xp) {
   return 1;
 }
 #endif
+
 static void blinkText (coord_t x, coord_t y,coord_t cx, coord_t cy, char *text, font_t font, color_t color, justify_t justify, uint8_t times, int16_t delay) {
   int8_t blink=1; 
   for (int i=0; i < times; i++) {
@@ -166,13 +183,14 @@ static void blinkText (coord_t x, coord_t y,coord_t cx, coord_t cy, char *text, 
   }
 }
 
-static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, uint16_t maxval, uint16_t currentval, uint8_t use_leds) {
-  // draw a bargraph.
+static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, uint16_t maxval, uint16_t currentval, uint8_t use_leds, uint8_t reverse) {
+  // draw a bar
+  // if reverse is true, we draw right to left vs left to right
   color_t c = Lime;
 
   float remain_f = (float) currentval / (float)maxval;
   int16_t remain = width * remain_f;
-
+  
   if (use_leds == 1) {
    ledSetProgress(100 * remain_f);
   }
@@ -185,10 +203,15 @@ static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height,
     c = Red;
   }
 
-  gdispFillArea(x + remain,y+1,(width - remain)-1,height-2, Black);
-
-  gdispFillArea(x,y,remain,height, c);
-  gdispDrawBox(x,y,width,height, c);
+  if (reverse) { 
+    gdispFillArea(x,y+1,(width - remain)-1,height-2, Black);
+    gdispFillArea((x+width)-remain,y,remain,height, c);
+    gdispDrawBox(x,y,width,height, c);
+  } else {
+    gdispFillArea(x + remain,y+1,(width - remain)-1,height-2, Black);
+    gdispFillArea(x,y,remain,height, c);
+    gdispDrawBox(x,y,width,height, c);
+  }
 }
 
 static int putImageFile(char *name, int16_t x, int16_t y) {
@@ -210,17 +233,24 @@ static int putImageFile(char *name, int16_t x, int16_t y) {
 
 
 static void draw_attack_icons(void) {
-
+  clearstatus();
+  // clear middle
   gdispFillArea(140,70,40,110,Black);
-  
-  if (attackbitmap & ATTACK_HI)
-    putImageFile(IMG_ATTACK,160,70);  
 
-  if (attackbitmap & ATTACK_MID)
+  if (attackbitmap & ATTACK_HI) {
+    putImageFile(IMG_GATTH1, POS_PLAYER1_X, POS_PLAYER1_Y);
+    putImageFile(IMG_ATTACK,160,70);
+  }
+
+  if (attackbitmap & ATTACK_MID) {
+    putImageFile(IMG_GATTM1, POS_PLAYER1_X, POS_PLAYER1_Y);
     putImageFile(IMG_ATTACK,160,115);
+  }
   
-  if (attackbitmap & ATTACK_LOW)
-    putImageFile(IMG_ATTACK,160,160); 
+  if (attackbitmap & ATTACK_LOW) {
+    putImageFile(IMG_GATTL1, POS_PLAYER1_X, POS_PCENTER_Y);
+    putImageFile(IMG_ATTACK,160,160);
+  }
 
   if (attackbitmap & BLOCK_HI) 
     putImageFile(IMG_BLOCK,140,70);
@@ -312,11 +342,11 @@ static void draw_attack_buttons(void) {
   wi.customStyle = 0;
   p->ghAttackLow = gwinButtonCreate(0, &wi);
 
-  // line these dudes
-  for (int i = 0; i < 2; i++) {
-    gdispDrawThickLine(0, 98 + (i * 53), 130, 98 + (i * 53), Red, 2, FALSE);
-    gdispDrawThickLine(190, 98 + (i * 53), 320, 98 + (i * 53), Red, 2, FALSE);
-  }
+  //  // line these dudes
+  //  for (int i = 0; i < 2; i++) {
+  //    gdispDrawThickLine(0, 98 + (i * 53), 130, 98 + (i * 53), Red, 2, FALSE);
+  //    gdispDrawThickLine(190, 98 + (i * 53), 320, 98 + (i * 53), Red, 2, FALSE);
+  //  }
 
 }
   
@@ -440,6 +470,36 @@ static uint8_t prevEnemy() {
   }
 }
 
+static void show_results(void) {
+  // remove the progress bar and status bar
+  clearstatus();
+  gdispFillArea(0,gdispGetHeight() - 20,240,20,Black);
+  
+  // animate the characters
+  for (uint8_t i=0; i< 5; i++) { 
+    putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER1_Y);
+    putImageFile(IMG_GUARD_IDLE_R, POS_PLAYER2_X, POS_PLAYER2_Y);
+    chThdSleepMilliseconds(200);
+
+    // todo - use the player-selected attack.
+    putImageFile(IMG_GATTH1, POS_PLAYER1_X, POS_PLAYER1_Y);
+    putImageFile(IMG_GATTH1R, POS_PLAYER2_X, POS_PLAYER2_Y);
+    chThdSleepMilliseconds(200);
+  }
+    
+  // calculate damages and show damage
+
+  // update the health bars
+
+  // if not dead transition state back to move_select
+  current_fight_state = MOVE_SELECT;
+  countdown=MOVE_WAIT_TIME;
+  last_tick_time = chVTGetSystemTime();
+
+  // if either side dies update states and exit app
+  
+}
+
 static void screen_select_draw(int8_t initial) {
   // enemy selection screen
   // setting initial to TRUE will cause a repaint of the entire
@@ -515,7 +575,7 @@ static void screen_select_draw(int8_t initial) {
 
   ypos = ypos + gdispGetFontMetric(fontFF, fontHeight) + 5;
   
-  drawProgressBar(xpos,ypos,100,10,enemies[current_enemy_idx]->hp,maxhp(enemies[current_enemy_idx]->level), 0);
+  drawProgressBar(xpos,ypos,100,10,enemies[current_enemy_idx]->hp,maxhp(enemies[current_enemy_idx]->level), 0, false);
 }
 
 static void screen_demand_draw(void) {
@@ -532,6 +592,8 @@ static void screen_demand_draw(void) {
   gdispClear(Black);
   gwinSetDefaultFont(gdispOpenFont(FONT_FIXED));
 
+  putImageFile(IMG_GUARD_IDLE_R, POS_PLAYER2_X, POS_PLAYER2_Y - 20);
+
   gdispDrawStringBox (0,
 		      18,
 		      gdispGetWidth(),
@@ -541,8 +603,6 @@ static void screen_demand_draw(void) {
 
   ypos = (gdispGetHeight() / 2) - 60;
   xpos = 10;
-
-  putImageFile(IMG_GUARD_IDLE_R, POS_PLAYER2_X, POS_PLAYER2_Y);
 
   gdispDrawStringBox (xpos,
 		      ypos,
@@ -558,7 +618,22 @@ static void screen_demand_draw(void) {
 		      gdispGetWidth() - xpos,
 		      gdispGetFontMetric(fontFF, fontHeight),
 		      tmp,
-		      fontFF, Yellow, justifyLeft);  
+		      fontFF, Yellow, justifyLeft);
+
+
+  ypos = ypos + gdispGetFontMetric(fontFF, fontHeight);
+  chsnprintf(tmp, sizeof(tmp), "HP %d", current_enemy.hp);
+  gdispDrawStringBox (xpos,
+		      ypos,
+		      gdispGetWidth() - xpos,
+		      gdispGetFontMetric(fontFF, fontHeight),
+		      tmp,
+		      fontFF, Yellow, justifyLeft);
+
+  ypos = ypos + gdispGetFontMetric(fontFF, fontHeight) + 5;
+
+  drawProgressBar(xpos,ypos,100,10,current_enemy.hp,maxhp(current_enemy.level), 0, false);
+  
   // draw UI
   gwinSetDefaultStyle(&RedButtonStyle, FALSE);
   gwinWidgetClearInit(&wi);
@@ -583,8 +658,27 @@ static void screen_demand_draw(void) {
 
   gwinSetDefaultStyle(&BlackWidgetStyle, FALSE);
 
-  drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, 1);
+  drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, true, false);
 
+}
+static void updatehp(void)  {
+  // update the hit point counters at the top of the screen
+  userconfig *config = getConfig();
+  font_t font;
+  font = gdispOpenFont (FONT_FIXED);
+
+  gdispDrawStringBox (1, 16, gdispGetWidth()-1,
+		      gdispGetFontMetric(font, fontHeight),
+		      "KO",
+		      font, Yellow, justifyCenter);
+
+  gdispDrawStringBox (0, 15, gdispGetWidth(),
+		      gdispGetFontMetric(font, fontHeight),
+		      "KO",
+		      font, Red, justifyCenter);
+
+  drawProgressBar(0,22,135,12,maxhp(config->level),config->hp,false,true);
+  drawProgressBar(185,22,135,12,maxhp(current_enemy.level),current_enemy.hp,false,false);
 }
 
 static void screen_vs_draw(void)  {
@@ -634,12 +728,42 @@ static void screen_vs_draw(void)  {
 	      10,
 	      250);
 
-    gdispDrawStringBox (0,
-			ypos,
-			gdispGetWidth(),
-			gdispGetFontMetric(fontSM, fontHeight),
-			"pick one attack and one block",
-			fontSM, White, justifyCenter);
+    updatehp();
+    
+    ypos = ypos + 15;
+
+    if (isattacking) { 
+      clearstatus();
+      blinkText(0,
+		ypos,
+		gdispGetWidth(),
+		gdispGetFontMetric(fontSM, fontHeight),
+		"Attack: TAP ON ENEMY TO SELECT",
+		fontSM, White, justifyCenter,8,250);
+      clearstatus();
+      gdispDrawStringBox (0,
+                          ypos,
+                          gdispGetWidth(),
+                          gdispGetFontMetric(fontSM, fontHeight),
+                          "Attack! High, Mid, Low?",
+                          fontSM, White, justifyCenter);
+    } else {
+      clearstatus();
+      blinkText(0,
+		ypos,
+		gdispGetWidth(),
+		gdispGetFontMetric(fontSM, fontHeight),
+		"Defend: TAP ON SELF TO SELECT",
+		fontSM, White, justifyCenter,8,250);
+      clearstatus();
+      gdispDrawStringBox (0,
+                          ypos,
+                          gdispGetWidth(),
+                          gdispGetFontMetric(fontSM, fontHeight),
+                          "Defend! High, Mid, Low?",
+                          fontSM, White, justifyCenter);
+    }
+     
     
 
     draw_attack_buttons();
@@ -724,7 +848,7 @@ static void screen_waitapproval_draw(void) {
   // progress bar
   last_tick_time = chVTGetSystemTime();
   countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value.
-  drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, 1);
+  drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, true, false);
 }
 
 static void sendGamePacket(uint8_t opcode) {
@@ -743,6 +867,8 @@ static void sendGamePacket(uint8_t opcode) {
   upkt.hp = config->hp;
   upkt.level = config->level;
   upkt.p_type = config->p_type;
+
+  upkt.attack_bitmap = attackbitmap;
   
   radioSend (&KRADIO1, current_enemy.netid, RADIO_PROTOCOL_FIGHT, sizeof(upkt), &upkt);
 }
@@ -785,10 +911,10 @@ static void fight_event(OrchardAppContext *context,
       return;
     }
     if (current_fight_state == MOVE_SELECT) {
-      drawProgressBar(40,gdispGetHeight() - 20,240,20,MOVE_WAIT_TIME,countdown, 1);
+      drawProgressBar(40,gdispGetHeight() - 20,240,20,MOVE_WAIT_TIME,countdown, true, false);
 
       if (countdown <= 0) {
-       // transmit my move
+	// transmit my move
         sendGamePacket(OP_YOUGO);
         // so things sort of break here.
         // if we both transmit at the same time, we're boned.
@@ -798,7 +924,7 @@ static void fight_event(OrchardAppContext *context,
       }
     }
     if ((current_fight_state == APPROVAL_WAIT) || (current_fight_state == APPROVAL_DEMAND)) {
-      drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, 1);
+      drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, true,false);
 
       if (countdown <= 0) {
        orchardAppTimer(context, 0, false); // shut down the timer
@@ -811,6 +937,21 @@ static void fight_event(OrchardAppContext *context,
       }
 
       return;
+    }
+
+    if (current_fight_state == MOVE_WAITACK) {
+      // prevent us from becoming stuck waiting on an ACK. 
+      if ( (chVTGetSystemTime() - last_tick_time) > MAX_ACKWAIT ) {
+	orchardAppTimer(context, 0, false); // shut down the timer
+	screen_alert_draw("OTHER PLAYER WENT AWAY");
+	ledSetProgress(-1);
+	end_fight();
+	playHardFail();
+	chThdSleepMilliseconds(ALERT_DELAY);
+	orchardAppRun(orchardAppByName("Badge"));
+	return;
+      }
+	
     }
   }
 
@@ -840,6 +981,7 @@ static void fight_event(OrchardAppContext *context,
 	  sendGamePacket(OP_STARTBATTLE);
 	  current_fight_state = APPROVAL_WAIT;
 	  screen_waitapproval_draw();
+	  isattacking=true;
 	  return;
 	}
 	if ( ((GEventGWinButton*)pe)->gwin == p->ghDeny) { 
@@ -861,7 +1003,7 @@ static void fight_event(OrchardAppContext *context,
 	  orchardAppRun(orchardAppByName("Badge"));
 	  return;
 	}
-  if ( ((GEventGWinButton*)pe)->gwin == p->ghAccept) { 
+	if ( ((GEventGWinButton*)pe)->gwin == p->ghAccept) { 
 	  gwinDestroy (p->ghDeny);
 	  gwinDestroy (p->ghAccept);
 	  p->ghDeny = NULL;
@@ -870,6 +1012,7 @@ static void fight_event(OrchardAppContext *context,
 	  sendGamePacket(OP_STARTBATTLE_ACK);
 	  gdispClear(Black);
 	  screen_vs_draw();
+	  isattacking=false;
 	  return;
 	}
 	if ( ((GEventGWinButton*)pe)->gwin == p->ghPrevEnemy) { 
@@ -965,13 +1108,13 @@ static void radio_updatestate(KW01_PKT * pkt)
       memcpy(&current_enemy, u, sizeof(user));
       // put up screen, accept fight from user foobar/badge foobar
       if (current_fight_state == IDLE) { 
-	      // we are not actually in our app, so run it to pick up context. 
-	      orchardAppRun(orchardAppByName("Fight"));
+        // we are not actually in our app, so run it to pick up context. 
+        orchardAppRun(orchardAppByName("Fight"));
       } else {
-	      // build the screen
+	// build the screen
         countdown=DEFAULT_WAIT_TIME;
-	      playAttacked();
-	      screen_demand_draw();
+	playAttacked();
+	screen_demand_draw();
       }
       current_fight_state = APPROVAL_DEMAND;
     }
@@ -1000,10 +1143,29 @@ static void radio_updatestate(KW01_PKT * pkt)
       screen_vs_draw();
     }
     break;
-  case MOVE_WAITACK: // no-op
+  case MOVE_SELECT:
+    if (u->opcode == OP_YOUGO) {
+	// If I get a YOUGO in move select, that means the other end
+	// timed out, and it's time to move on.
+        memcpy(&current_enemy, u, sizeof(user));
+	// ack their yougo packet. 
+	sendGamePacket(OP_MOVEACK);
+	// immediately transition to results
+	current_fight_state = RESULTS;
+	show_results();
+      }
+    break;
+  case MOVE_WAITACK:
+    if (u->opcode == OP_MOVEACK || u->opcode == OP_YOUGO) {
+      // just incase, we ACK again,
+      memcpy(&current_enemy, u, sizeof(user));
+      sendGamePacket(OP_MOVEACK);
+      current_fight_state = RESULTS;
+      show_results();
+    }
+    break;
   case APPROVAL_DEMAND:
   case VS_SCREEN:
-  case MOVE_SELECT:
   case RESULTS:
   case PLAYER_DEAD:
   case ENEMY_DEAD:

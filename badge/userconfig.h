@@ -82,7 +82,8 @@ typedef struct userconfig {
 #define OP_STARTBATTLE      0x01   /* battle was requested */
 #define OP_STARTBATTLE_ACK  0x02   /* battle was accepted */
 #define OP_DECLINED         0x04   /* battle was declined or invalid */
-#define OP_YOUGO            0x08   /* my turn is done */
+#define OP_YOUGO            0x08   /* My turn is done */
+#define OP_MOVEACK          0x10   /* I understand that your move is done and am showing results */
 #define OP_IMDEAD           0x0f   /* i died */
 
 typedef struct _userpkt {
