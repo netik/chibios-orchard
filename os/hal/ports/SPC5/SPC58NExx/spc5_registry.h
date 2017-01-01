@@ -30,7 +30,7 @@
 /*===========================================================================*/
 
 /**
- * @name    SPC58NExx capabilities
+ * @name    SPC58NExx/SPC58NExx capabilities
  * @{
  */
 /* LINFlex attributes.*/

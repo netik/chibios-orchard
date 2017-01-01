@@ -525,7 +525,7 @@
 #if !defined(SPC5_CGM_SC_DC4_DIV_VALUE) || defined(__DOXYGEN__)
 #define SPC5_CGM_SC_DC4_DIV_VALUE           1
 #endif
-#endif
+#endif /* !defined(_SPC58NE84C3_CUT1_) */
 
 /**
  * @brief   CGM_AC0_SC clock source.
@@ -574,7 +574,7 @@
 #if !defined(SPC5_CGM_AC0_DC4_DIV_VALUE) || defined(__DOXYGEN__)
 #define SPC5_CGM_AC0_DC4_DIV_VALUE          8
 #endif
-#endif
+#endif /* defined(_SPC58NE84C3_CUT1_) */
 
 /**
  * @brief   CGM_AC3_SC clock source.
@@ -1236,7 +1236,7 @@
 #else
 #error "invalid SPC5_CGM_SC_DC4_DIV_VALUE value specified"
 #endif
-#endif
+#endif /* !defined(_SPC58NE84C3_CUT1_) */
 
 /* Check on the AUX0 divider 0 settings.*/
 #if SPC5_CGM_AC0_DC0_DIV_VALUE == 0

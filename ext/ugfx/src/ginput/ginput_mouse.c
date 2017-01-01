@@ -678,8 +678,8 @@ bool_t _gmouseInitDriver(GDriver *g, void *display, unsigned driverinstance, uns
         return FALSE;
 
 	// Ensure the Poll timer is started
-	if (!gtimerIsActive(&MouseTimer))
-		gtimerStart(&MouseTimer, MousePoll, 0, TRUE, GINPUT_MOUSE_POLL_PERIOD);
+    if (!gtimerIsActive(&MouseTimer))
+        gtimerStart(&MouseTimer, MousePoll, 0, TRUE, GINPUT_MOUSE_POLL_PERIOD);
 
     return TRUE;
 

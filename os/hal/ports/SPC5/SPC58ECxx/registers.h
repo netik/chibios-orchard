@@ -25,7 +25,7 @@
 #ifndef REGISTERS_H
 #define REGISTERS_H
 
-#include "xpc58xcxx.h"
+#include "spc58xcxx.h"
 
 #include "spc5_hsmhost_if.h"
 
