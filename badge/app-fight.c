@@ -544,7 +544,7 @@ static void show_results(void) {
   if (c == ' ') 
     strcpy(attackfn1, IMG_GIDLA1);
   else 
-    sprintf(attackfn1, "gatt%c1.rgb", c);
+    chsnprintf(attackfn1, sizeof(attackfn1), "gatt%c1.rgb", c);
 
   c = ' ';
   textx = 160;
@@ -566,7 +566,7 @@ static void show_results(void) {
   if (c == ' ') 
     strcpy(attackfn2, IMG_GIDLA1R);
   else 
-    sprintf(attackfn2, "gatt%c1r.rgb", c);
+    chsnprintf(attackfn2, sizeof(attackfn2), "gatt%c1r.rgb", c);
 
   // animate the characters
   chsnprintf (ourdmg_s, sizeof(ourdmg_s), "-%d", current_enemy.damage );

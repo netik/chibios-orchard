@@ -217,11 +217,13 @@ static void setup_event(OrchardAppContext *context,
       last_ui_time = chVTGetSystemTime();
       if (((GEventGWinButton*)pe)->gwin == p->ghButtonCancel) {
 	orchardAppExit();
+	return;
       }
       
       if (((GEventGWinButton*)pe)->gwin == p->ghButtonOK) {
-     	  orchardAppExit();
           configSave(config);
+          orchardAppExit();
+          return;
       }
       
       if (((GEventGWinButton*)pe)->gwin == p->ghButtonDimDn) {

@@ -28,9 +28,12 @@
 #include "platform.h"
 
 #if defined(_SPC58NE84C3_CUT1_)
-#include "spc58ecxx_cut1.h"
+#include "spc58nexx_cut1.h"
+#elif defined(_SPC58NE84C3_)
+#include "spc58nexx.h"
+#elif defined(_SPC58NN84C3_)
+#include "spc58nnxx.h"
 #else
-#include "spc58ecxx.h"
 #endif
 
 #include "spc5_hsmhost_if.h"

@@ -48,7 +48,7 @@ uint32_t SystemCoreClock = STM32_HCLK;
 
 /**
  * @brief   Initializes the backup domain.
- * @note    WARNING! Changing clock source impossible without resetting
+ * @note    WARNING! Changing RTC clock source impossible without resetting
  *          of the whole BKP domain.
  */
 static void hal_lld_backup_domain_init(void) {
@@ -59,6 +59,27 @@ static void hal_lld_backup_domain_init(void) {
     RCC->BDCR = RCC_BDCR_BDRST;
     RCC->BDCR = 0;
   }
+
+#if STM32_LSE_ENABLED
+  /* LSE activation.*/
+#if defined(STM32_LSE_BYPASS)
+  /* LSE Bypass.*/
+  RCC->BDCR |= STM32_LSEDRV | RCC_BDCR_LSEON | RCC_BDCR_LSEBYP;
+#else
+  /* No LSE Bypass.*/
+  RCC->BDCR |= STM32_LSEDRV | RCC_BDCR_LSEON;
+#endif
+  while ((RCC->BDCR & RCC_BDCR_LSERDY) == 0)
+    ;                                       /* Wait until LSE is stable.    */
+#endif
+
+#if STM32_MSIPLL_ENABLED
+  /* MSI PLL activation depends on LSE. Reactivating and checking for
+     MSI stability.*/
+  RCC->CR |= RCC_CR_MSIPLLEN;
+  while ((RCC->CR & RCC_CR_MSIRDY) == 0)
+    ;                                       /* Wait until MSI is stable.    */
+#endif
 
 #if HAL_USE_RTC
   /* If the backup domain hasn't been initialized yet then proceed with
@@ -197,12 +218,11 @@ void stm32_clock_init(void) {
     ;                                       /* Wait until LSE is stable.    */
 #endif
 
-#if STM32_MSIPLL_ENABLED
-  /* MSI PLL activation.*/
-  RCC->CR |= RCC_CR_MSIPLLEN;
-#endif
+  /* Flash setup for selected MSI speed setting.*/
+  FLASH->ACR = FLASH_ACR_DCEN | FLASH_ACR_ICEN | FLASH_ACR_PRFTEN |
+               STM32_MSI_FLASHBITS;
 
-  /* Changing MSIRANGE value. Meanwhile range is set by MSISRANGE which is 4MHz.*/
+  /* Changing MSIRANGE to configured value.*/
   RCC->CR |= STM32_MSIRANGE;
 
   /* Switching from MSISRANGE to MSIRANGE.*/
@@ -210,7 +230,16 @@ void stm32_clock_init(void) {
   while ((RCC->CR & RCC_CR_MSIRDY) == 0)
     ;
 
-  /* Updating MSISRANGE value. MSISRANGE can be set only when MSIRGSEL is high. 
+  /* MSI is configured SYSCLK source so wait for it to be stable as well.*/
+  while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_MSI)
+    ;
+
+#if STM32_MSIPLL_ENABLED
+  /* MSI PLL (to LSE) activation */
+  RCC->CR |= RCC_CR_MSIPLLEN;
+#endif
+
+  /* Updating MSISRANGE value. MSISRANGE can be set only when MSIRGSEL is high.
      This range is used exiting the Standby mode until MSIRGSEL is set.*/
   RCC->CSR |= STM32_MSISRANGE;
 
@@ -230,7 +259,7 @@ void stm32_clock_init(void) {
   /* Waiting for PLL lock.*/
   while ((RCC->CR & RCC_CR_PLLRDY) == 0)
     ;
-#endif /* STM32_OVERDRIVE_REQUIRED */
+#endif
 
 #if STM32_ACTIVATE_PLLSAI1
   /* PLLSAI1 activation.*/
@@ -278,16 +307,22 @@ void stm32_clock_init(void) {
     RCC->CCIPR = ccipr;
   }
 
-  /* Flash setup.*/
-  FLASH->ACR = FLASH_ACR_DCEN | FLASH_ACR_ICEN | FLASH_ACR_PRFTEN |
-               STM32_FLASHBITS;
+  /* Set flash WS's for SYSCLK source */
+  if (STM32_FLASHBITS > STM32_MSI_FLASHBITS)
+    FLASH->ACR = (FLASH->ACR & ~FLASH_ACR_LATENCY_Msk) | STM32_FLASHBITS;
 
-  /* Switching to the configured clock source if it is different from MSI.*/
+  /* Switching to the configured SYSCLK source if it is different from MSI.*/
 #if (STM32_SW != STM32_SW_MSI)
   RCC->CFGR |= STM32_SW;        /* Switches on the selected clock source.   */
+  /* Wait until SYSCLK is stable.*/
   while ((RCC->CFGR & RCC_CFGR_SWS) != (STM32_SW << 2))
     ;
 #endif
+
+  /* Reduce the flash WS's for SYSCLK source if they are less than MSI WSs */
+  if (STM32_FLASHBITS < STM32_MSI_FLASHBITS)
+    FLASH->ACR = (FLASH->ACR & ~FLASH_ACR_LATENCY_Msk) | STM32_FLASHBITS;
+
 #endif /* STM32_NO_INIT */
 
   /* SYSCFG clock enabled here because it is a multi-functional unit shared

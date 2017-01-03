@@ -165,6 +165,9 @@ radioReceive (RADIODriver * radio)
 	uint8_t reg;
 	uint8_t len;
 	uint8_t i;
+#ifndef KW01_RADIO_HWFILTER
+	userconfig * config;
+#endif
 
 	palClearPad (GREEN_LED_PORT, GREEN_LED_PIN);   /* Green */
 
@@ -204,6 +207,18 @@ radioReceive (RADIODriver * radio)
 
 	radioUnselect (radio);
 	radioRelease (radio);
+
+#ifndef KW01_RADIO_HWFILTER
+
+	/* Perform address filtering */
+
+	config = getConfig ();
+
+	if (pkt->kw01_hdr.kw01_dst != RADIO_BROADCAST_ADDRESS &&
+	    pkt->kw01_hdr.kw01_dst != config->netid)
+		return (0);
+
+#endif
 
 	/* Set the payload length (don't include the header length) */
 
