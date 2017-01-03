@@ -2,9 +2,8 @@
 1. Get Orientation switch and make orientation work.
 
 2. Game protocol and Game - IN PROGRESS
-   Restore event system first.
 
-2a. Screen: "VS" after enemy select
+2a. Screen: "VS" after enemy select - DONE
 
 2b. Game: Restrict players if xp or level too high
 
@@ -14,12 +13,17 @@
 
 2e. Game: More sounds
 
-2f. Screen: 'Select one block and one attack'
+2f. Auto-heal on badge screen. (HP/time = heals)
 
-2g. Screen: End of Fight You, End of Fight Them, Timeout
+2g. Screens:
+    End of Fight You
+    End of Fight Them 
+    Timeout - DONE
 
 2h. Game/Debug: Check radio protocol and make enemy simulator
-    (enemysim)
+    (enemysim) - DONE
+
+2i. Integrate new Casear / Senator animations, Draw the right one based on the user's class
 
 3. Casear Game Mechanics
 
@@ -27,10 +31,10 @@
 
 3. Game graphics ( can be done last ) -- IN PROGRESS
 
-4. Automatic jump to name page if not conf'd
+4. Automatic jump to name page if not conf'd - DONE?
 
 5. ENTROPY - maybe use time of every touch to roll more entropy into
-   the system, or an accel chip?
+   the system, or an accel chip? - DONE
 
   if ( config reg is not set ) {
     jump to name entry app
@@ -44,18 +48,14 @@
 
 HW NEEDS
 -------------
-1. Battery + Charging, amperage tests
+1. Battery + Charging, amperage tests - DONE
 
-2. Board layout
+2. Board layout - DONE
 
-3. Prototype #1
-
+3. Prototype #1 - DONE
 
 Screen
 ------
-
-How do we get decent captouch? If we cannot, can we just give up and
-do buttons?
 
 A 4-button joystick and button would be better than this, maybe?
 

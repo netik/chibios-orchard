@@ -14,6 +14,7 @@
 #include "sound.h"
 
 #include "userconfig.h"
+#include "rand.h"
 
 // 66666 uS = 15 FPS. Eeeviil... 
 #define FRAME_INTERVAL_US 66666
@@ -23,8 +24,9 @@
 // caveat! the system timer is a uint32_t and can roll over! be aware!
 
 #define DEFAULT_WAIT_TIME MS2ST(20000) // was 20k, now 5k for testing
-#define MAX_ACKWAIT MS2ST(2000)        // if we don't see an ACK in two seconds, something is terribly wrong. 
-#define MOVE_WAIT_TIME MS2ST(10000)     // You get five seconds to make a decision.
+#define MAX_ACKWAIT MS2ST(300)         // if no ACK in 500MS, resend
+#define MAX_RETRIES 3                  // if we try 3 times, abort. 
+#define MOVE_WAIT_TIME MS2ST(10000)    // You get five seconds to make a decision.
 #define ALERT_DELAY 1500               // how long alerts stay on the screen.
 
 typedef struct _FightHandles {
@@ -45,16 +47,17 @@ typedef struct _FightHandles {
 } FightHandles;
 
 typedef enum _fight_state {
-  IDLE,
-  ENEMY_SELECT,
-  APPROVAL_DEMAND,
-  APPROVAL_WAIT,
-  VS_SCREEN,
-  MOVE_SELECT, 
-  MOVE_WAITACK,
-  RESULTS,
-  PLAYER_DEAD,
-  ENEMY_DEAD
+  NONE,            // 0
+  WAITACK,         // 1
+  IDLE,            // 2
+  ENEMY_SELECT,    // 3
+  APPROVAL_DEMAND, // 4
+  APPROVAL_WAIT,   // 5
+  VS_SCREEN,       // 6
+  MOVE_SELECT,     // 7
+  RESULTS,         // 8
+  PLAYER_DEAD,     // 9
+  ENEMY_DEAD,      // 10
 } fight_state;
 
 
@@ -91,32 +94,40 @@ const GWidgetStyle RedButtonStyle = {
 extern orchard_app_instance instance;
 
 static int32_t countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value. 
-static fight_state current_fight_state = IDLE;
+static user current_enemy;                    // current enemy we are attacking/talking to 
+static user packet;                           // the last packet we sent, for retransmission
 
-static user current_enemy;
+static fight_state current_fight_state = IDLE;  // current state 
+static fight_state next_fight_state = NONE;     // upon ACK, we will transition to this state. 
+
 static uint8_t current_enemy_idx = 0;
-
 static uint32_t last_ui_time = 0;
 static uint32_t last_tick_time = 0;
-
 static uint8_t attackbitmap = 0;
+static uint32_t lastseq = 0;
+static uint16_t last_hit = 0;
 
 // true if attacking, false if blocking.
 static uint8_t isattacking = false;
 
-/* prototypes */
-/* TODO: move these primitives to some central graphics library */
+/* Function Prototypes */
+
+/* Network */
+static void resendPacket(void);
+static void sendGamePacket(uint8_t opcode, uint8_t damage);
+
+/* Graphics */
 static int putImageFile(char *name, int16_t x, int16_t y);
 static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, int32_t maxval, int32_t currentval, uint8_t use_leds, uint8_t reverse);
 static void blinkText (coord_t x, coord_t y,coord_t cx, coord_t cy, char *text, font_t font, color_t color, justify_t justify, uint8_t times, int16_t delay);
 
+/* Game state */
 static void clearstatus(void);
-
 static uint8_t prevEnemy(void);
 static uint8_t nextEnemy(void);
 static void updatehp(void);
 
-/* the fight sequence */
+/* Fight Sequence */
 static void screen_select_draw(int8_t);
 static void screen_select_close(OrchardAppContext *);
 static void screen_waitapproval_draw(void);
@@ -184,6 +195,40 @@ static void blinkText (coord_t x, coord_t y,coord_t cx, coord_t cy, char *text, 
     chThdSleepMilliseconds(delay);
   }
 }
+
+uint16_t calc_hit(void) {
+  // this is written from the pov of the attacker.
+  // it is transmitted within the YOUGO packet
+  uint8_t p = (((uint8_t)rand()) % 100) + 1;
+  uint8_t hithp;
+  
+  // remove some of the hit for defense
+  if ((100*p) < (50*current_enemy.dex)) {
+    hithp = 0;
+    return hithp;
+  }
+
+  // roll d20 * 10 for the hit
+  for(uint8_t j = 0; j < 10; j++) {
+    hithp += ((((uint8_t)rand()) % 20) + 1);
+  }
+  // remove some of the hit for defense
+  uint8_t defoff = ((uint8_t)rand()) % current_enemy.def + 1;
+
+  if(defoff > hithp) {
+    hithp = 0;
+  } else {
+    hithp -= defoff;
+  }
+  hithp += current_enemy.str;
+
+  // is it crit
+  if ((100*p) >= (100 * (100 - current_enemy.dex))) {
+    hithp = 201 + (((uint8_t)rand()) % current_enemy.str);
+  }
+  return hithp;
+}
+
 
 static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, int32_t maxval, int32_t currentval, uint8_t use_leds, uint8_t reverse) {
   // draw a bar
@@ -480,6 +525,13 @@ static void show_results(void) {
   char c=' ';
   char attackfn1[13];
   char attackfn2[13];
+  char ourdmg_s[10];
+  char theirdmg_s[10];
+  
+  uint16_t textx, texty;
+
+  font_t fontFF;
+  fontFF = gdispOpenFont(FONT_FIXED);
   
   clearstatus();
   gdispFillArea(0,gdispGetHeight() - 20,gdispGetWidth(),20,Black);
@@ -495,28 +547,50 @@ static void show_results(void) {
     sprintf(attackfn1, "gatt%c1.rgb", c);
 
   c = ' ';
-  if (current_enemy.attack_bitmap & ATTACK_HI) c='h';
-  if (current_enemy.attack_bitmap & ATTACK_MID) c='m';
-  if (current_enemy.attack_bitmap & ATTACK_LOW) c='l';
-
+  textx = 160;
+  if (current_enemy.attack_bitmap & ATTACK_HI) {
+    c='h';
+    texty = 40;
+  }
+  
+  if (current_enemy.attack_bitmap & ATTACK_MID) {
+    c='m';
+    texty = 120;
+  }
+  
+  if (current_enemy.attack_bitmap & ATTACK_LOW) {
+    c='l';
+    texty = 180;
+  }
+  
   if (c == ' ') 
     strcpy(attackfn2, IMG_GIDLA1R);
   else 
     sprintf(attackfn2, "gatt%c1r.rgb", c);
 
   // animate the characters
-  for (uint8_t i=0; i< 2; i++) { 
+  chsnprintf (ourdmg_s, sizeof(ourdmg_s), "-%d", current_enemy.damage );
+  chsnprintf (theirdmg_s, sizeof(theirdmg_s), "-%d", last_hit);
+  
+  for (uint8_t i=0; i < 4; i++) { 
     putImageFile(attackfn1, POS_PLAYER1_X, POS_PLAYER1_Y);
     putImageFile(attackfn2, POS_PLAYER2_X, POS_PLAYER2_Y);
+
+    // you attcking us
+    gdispDrawStringBox (textx,texty,50,50,ourdmg_s,fontFF,Red,justifyLeft);
+    // us attacking you
+    gdispDrawStringBox (textx+40,texty,50,50,theirdmg_s,fontFF,Red,justifyLeft);
+    
     chThdSleepMilliseconds(200);
+    gdispDrawStringBox (textx,texty,50,50,ourdmg_s,fontFF,Black,justifyLeft);
+    gdispDrawStringBox (textx+40,texty,50,50,theirdmg_s,fontFF,Black,justifyLeft);
 
     putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER1_Y);
     putImageFile(IMG_GUARD_IDLE_R, POS_PLAYER2_X, POS_PLAYER2_Y);
     chThdSleepMilliseconds(200);
   }
-    
-  // calculate damages and show damage
 
+  
   // update the health bars
   updatehp();
   
@@ -696,6 +770,7 @@ static void updatehp(void)  {
   font_t font;
   font = gdispOpenFont (FONT_FIXED);
 
+  // TODO - support target hp and animation
   gdispDrawStringBox (1, 16, gdispGetWidth()-1,
 		      gdispGetFontMetric(font, fontHeight),
 		      "KO",
@@ -880,33 +955,70 @@ static void screen_waitapproval_draw(void) {
   drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, true, false);
 }
 
-static void sendGamePacket(uint8_t opcode) {
+static void sendAck(user *inbound) {
+  // acknowlege an inbound packet.
+  userconfig *config;
+  config = getConfig();
+  
+  memset (&packet, 0, sizeof(packet)); 
+  packet.seq = lastseq++;
+  packet.netid = config->netid; // netid is id of sender, always.
+  packet.acknum = inbound->seq;
+  packet.ttl = 4;
+  packet.opcode = OP_ACK;
+  chprintf(stream, "\r\ntransmit ACK (to=%08x): ttl=%d, seq=%d, opcode=%d\r\n", inbound->netid, packet.ttl, packet.seq, packet.opcode);
+  radioSend (&KRADIO1, inbound->netid, RADIO_PROTOCOL_FIGHT, sizeof(packet), &packet);
+}
+
+static void resendPacket(void) {
+  // TODO: random holdoff?
+  packet.ttl--;
+  current_fight_state = WAITACK;
+  chprintf(stream, "\r\ntransmit (to=%08x): ttl=%d, seq=%d, opcode=%d\r\n", current_enemy.netid, packet.ttl, packet.seq, packet.opcode);
+  radioSend (&KRADIO1, current_enemy.netid, RADIO_PROTOCOL_FIGHT, sizeof(packet), &packet);
+}
+
+static void sendGamePacket(uint8_t opcode, uint8_t damage) {
   // sends a game packet to current_enemy
   userconfig *config;
-  user upkt;
  
   config = getConfig();
-  memset (&upkt, 0, sizeof(upkt));
+  memset (&packet, 0, sizeof(packet));
 
-  upkt.ttl = 4;
-  upkt.opcode = opcode;
-  strncpy(upkt.name, config->name, CONFIG_NAME_MAXLEN);
+  packet.netid = config->netid;
+  packet.seq = lastseq++;
+  packet.ttl = MAX_RETRIES+1;
+  packet.opcode = opcode;
+  strncpy(packet.name, config->name, CONFIG_NAME_MAXLEN);
 
-  upkt.in_combat = config->in_combat;
-  upkt.hp = config->hp;
-  upkt.level = config->level;
-  upkt.p_type = config->p_type;
+  packet.in_combat = config->in_combat;
+  packet.hp = config->hp;
+  packet.level = config->level;
+  packet.p_type = config->p_type;
 
-  upkt.attack_bitmap = attackbitmap;
+  packet.won = config->won;
+  packet.lost = config->lost;
+  packet.gold = config->gold;
+  packet.xp = config->xp;
+  packet.spr = config->spr;
+  packet.str = config->str;
+  packet.def = config->def;
+  packet.dex = config->dex;
+
+  packet.damage = damage;
+  packet.attack_bitmap = attackbitmap;
   
-  radioSend (&KRADIO1, current_enemy.netid, RADIO_PROTOCOL_FIGHT, sizeof(upkt), &upkt);
+  resendPacket();
 }
 
 static void end_fight(void) {
-  // set my incombat to true
+  // set my incombat to false, clear out the fight.
   userconfig *config = getConfig();
+
+  memset(&current_enemy, 0, sizeof(current_enemy));
   config->in_combat = 0;
   current_fight_state = IDLE;
+  ledSetProgress(-1);
 }
 
 static void fight_event(OrchardAppContext *context,
@@ -924,8 +1036,6 @@ static void fight_event(OrchardAppContext *context,
   // we don't want this for all states, just select and end-of-fight
   if (event->type == timerEvent) {
     // timer events always decrement countdown unless countdown <= 0
-    //    chprintf(stream, "[gamestate %d] tick last: %d now: %d remain: %d\r\n", current_fight_state, last_tick_time, chVTGetSystemTime(), countdown);
-
     if (countdown > 0) {
       // our time reference is based on elapsed time. 
       countdown = countdown - ( chVTGetSystemTime() - last_tick_time );
@@ -944,12 +1054,12 @@ static void fight_event(OrchardAppContext *context,
 
       if (countdown <= 0) {
 	// transmit my move
-        sendGamePacket(OP_YOUGO);
-        // so things sort of break here.
-        // if we both transmit at the same time, we're boned.
-        // the attacker should send his move now, wait for an ack, followed by the
-        // challenger
-        current_fight_state = MOVE_WAITACK;
+        last_hit = calc_hit();
+        sendGamePacket(OP_YOUGO, last_hit);
+        chprintf(stream, "\r\nhitting enemy for %d\r\n", last_hit);
+
+        // thwack!
+        current_enemy.hp = current_enemy.hp - last_hit; 
       }
     }
     if ((current_fight_state == APPROVAL_WAIT) || (current_fight_state == APPROVAL_DEMAND)) {
@@ -958,7 +1068,6 @@ static void fight_event(OrchardAppContext *context,
       if (countdown <= 0) {
        orchardAppTimer(context, 0, false); // shut down the timer
        screen_alert_draw("TIMED OUT!");
-       ledSetProgress(-1);
        end_fight();
        playHardFail();
        chThdSleepMilliseconds(ALERT_DELAY);
@@ -968,19 +1077,21 @@ static void fight_event(OrchardAppContext *context,
       return;
     }
 
-    if (current_fight_state == MOVE_WAITACK) {
-      // prevent us from becoming stuck waiting on an ACK. 
+    if (current_fight_state == WAITACK) {
+      // transmit/retry logic
       if ( (chVTGetSystemTime() - last_tick_time) > MAX_ACKWAIT ) {
-	orchardAppTimer(context, 0, false); // shut down the timer
-	screen_alert_draw("OTHER PLAYER WENT AWAY");
-	ledSetProgress(-1);
-	end_fight();
-	playHardFail();
-	chThdSleepMilliseconds(ALERT_DELAY);
-	orchardAppRun(orchardAppByName("Badge"));
-	return;
+        if (packet.ttl > 0)  { 
+          resendPacket();
+        } else { 
+          orchardAppTimer(context, 0, false); // shut down the timer
+          screen_alert_draw("OTHER PLAYER WENT AWAY");
+          end_fight();
+          playHardFail();
+          chThdSleepMilliseconds(ALERT_DELAY);
+          orchardAppRun(orchardAppByName("Badge"));
+          return;
+        }
       }
-	
     }
   }
 
@@ -1001,14 +1112,16 @@ static void fight_event(OrchardAppContext *context,
 	  }
 	  return;
 	}
-  if ( ((GEventGWinButton*)pe)->gwin == p->ghAttack) { 
+        if ( ((GEventGWinButton*)pe)->gwin == p->ghAttack) { 
 	  // we are attacking. 
 	  last_ui_time = chVTGetSystemTime();
 	  screen_select_close(context);
 	  memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(user));
 	  config->in_combat = true;
-	  sendGamePacket(OP_STARTBATTLE);
-	  current_fight_state = APPROVAL_WAIT;
+
+	  next_fight_state = APPROVAL_WAIT;
+	  sendGamePacket(OP_STARTBATTLE, 0);
+
 	  screen_waitapproval_draw();
 	  isattacking=true;
 	  return;
@@ -1023,10 +1136,9 @@ static void fight_event(OrchardAppContext *context,
 	  p->ghDeny = NULL;
 	  p->ghAccept = NULL;
 	  
-	  sendGamePacket(OP_DECLINED);
+	  sendGamePacket(OP_DECLINED, 0);
 	  screen_alert_draw("Dulce bellum inexpertis.");
 	  playHardFail();
-	  ledSetProgress(-1);
 	  end_fight();
 	  chThdSleepMilliseconds(3000);
 	  orchardAppRun(orchardAppByName("Badge"));
@@ -1037,8 +1149,10 @@ static void fight_event(OrchardAppContext *context,
 	  gwinDestroy (p->ghAccept);
 	  p->ghDeny = NULL;
 	  p->ghAccept = NULL;
-	  current_fight_state = VS_SCREEN;
-	  sendGamePacket(OP_STARTBATTLE_ACK);
+
+	  next_fight_state = VS_SCREEN;
+	  sendGamePacket(OP_STARTBATTLE_ACK, 0);
+          
 	  gdispClear(Black);
 	  screen_vs_draw();
 	  isattacking=false;
@@ -1116,7 +1230,7 @@ static void fight_exit(OrchardAppContext *context) {
   return;
 }
 
-static void radio_updatestate(KW01_PKT * pkt)
+static void fightRadioEventHandler(KW01_PKT * pkt)
 {
   /* this is the state machine that handles transitions for the game via the radio */
   user *u;
@@ -1127,9 +1241,28 @@ static void radio_updatestate(KW01_PKT * pkt)
   u = (user *)pkt->kw01_payload;
   last_ui_time = chVTGetSystemTime(); // radio is a state-change, so reset this.
 
-  chprintf(stream, "\r\ngamepacket with mystate %d, incoming opcode %d\r\n", current_fight_state, u->opcode);
-  
+  // DEBUG
+  if (u->opcode == OP_ACK) {
+    chprintf(stream, "\r\n%08x --> RECV ACK (seq=%d, acknum=%d, state=%d, opcode %d)\r\n", u->netid, u->seq, u->acknum, current_fight_state, u->opcode);
+  } else { 
+    chprintf(stream, "\r\n%08x --> (seq=%d, state=%d, opcode %d)\r\n", u->netid, u->seq, current_fight_state, u->opcode);
+  }
+  // Immediately ACK non-ACK packets. We do not support retry on
+  // ACK, because we support ARQ just like TCP-IP.  without the ACK,
+  // the sender will retransmit automatically.
+  if (u->opcode != OP_ACK)
+      sendAck(u);
+    
   switch (current_fight_state) {
+  case WAITACK:
+    if (u->opcode == OP_ACK) { 
+      // if we are waiting for an ack, advance our state.
+      // however, if we have no next-state to go to, then we will timeout
+      if (next_fight_state != NONE) {
+        current_fight_state = next_fight_state;
+      }
+    }
+    break;
   case IDLE:
   case ENEMY_SELECT:
     if (u->opcode == OP_STARTBATTLE && config->in_combat == 0) {
@@ -1165,34 +1298,28 @@ static void radio_updatestate(KW01_PKT * pkt)
       orchardAppTimer(instance.context, FRAME_INTERVAL_US, true);
 
     }
+
     if (u->opcode == OP_STARTBATTLE_ACK) {
       current_fight_state = VS_SCREEN;
-      sendGamePacket(OP_STARTBATTLE_ACK);
       gdispClear(Black);
       screen_vs_draw();
     }
     break;
+    
   case MOVE_SELECT:
     if (u->opcode == OP_YOUGO) {
-	// If I get a YOUGO in move select, that means the other end
-	// timed out, and it's time to move on.
-        memcpy(&current_enemy, u, sizeof(user));
-	// ack their yougo packet. 
-	sendGamePacket(OP_MOVEACK);
-	// immediately transition to results
-	current_fight_state = RESULTS;
-	show_results();
-      }
-    break;
-  case MOVE_WAITACK:
-    if (u->opcode == OP_MOVEACK || u->opcode == OP_YOUGO) {
-      // just incase, we ACK again,
+      // If I get a YOUGO in move select, that means the other end
+      // timed out, and it's time to move on.
       memcpy(&current_enemy, u, sizeof(user));
-      sendGamePacket(OP_MOVEACK);
+      // take damage
+      config->hp = config->hp - current_enemy.damage;
+      chprintf(stream, "\r\nMOVEACK/YOUGO: taking damage %d from enemy\r\n", current_enemy.damage);
+
       current_fight_state = RESULTS;
       show_results();
     }
     break;
+  case NONE: // no-op
   case APPROVAL_DEMAND: // no-op
   case VS_SCREEN: // no-op
   case RESULTS: // no-op
@@ -1209,7 +1336,7 @@ static uint32_t fight_init(OrchardAppContext *context) {
   if (context == NULL) {
     /* This should only happen for auto-init */
     radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_FIGHT,
-		     radio_updatestate);
+		     fightRadioEventHandler);
   } else {
     p = chHeapAlloc (NULL, sizeof(FightHandles));
     memset(p, 0, sizeof(FightHandles));

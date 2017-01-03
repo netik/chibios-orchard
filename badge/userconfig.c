@@ -67,7 +67,7 @@ static void init_config(userconfig *config) {
   config->led_shift = 4;
   config->sound_enabled = 1;
 
-  config->p_type = p_pleeb;  
+  config->p_type = p_guard;  
   memset(config->name, 0, CONFIG_NAME_MAXLEN);
 
   /* reset here */

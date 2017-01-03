@@ -17,7 +17,6 @@
 #define maxhp(level) ((level-1) * 100) + 337
 
 typedef enum _player_type {
-  p_pleeb,
   p_guard,
   p_senator,
   p_casear
@@ -86,17 +85,20 @@ typedef struct userconfig {
 #define OP_MOVEACK          0x10   /* I understand that your move is done and am showing results */
 #define OP_IMDEAD           0x0f   /* i died */
 
+#define OP_ACK              0xf0   /* I got your message. */
+
 typedef struct _userpkt {
   /* this is a shortened form of userdata for transmission */
   /* appx 52 bytes, max is 66 (AES limitiation) */
 
   /* stash this away for future attacks/lookups */
   /* unique network ID determined from use of lower 64 bits of SIM-UID */
-  uint32_t netid;
+  uint32_t netid;         /* 4 */
   uint8_t opcode;         /* 1 - BATTLE_OPCODE */
 
   /* Network Payload */
   uint16_t seq;           /* 2 */
+  uint16_t acknum;        /* 2 - only used during acknowledgements */
   uint8_t ttl;            /* 1 */
 
   /* Player Payload */
@@ -111,6 +113,10 @@ typedef struct _userpkt {
   uint16_t lost;          /* 2 */
   uint16_t gold;          /* 2 */
   uint16_t xp;            /* 2 */
+  uint8_t spr;            /* 1 */
+  uint8_t str;            /* 1 */
+  uint8_t def;            /* 1 */
+  uint8_t dex;            /* 1 */
 
   /* Battle Payload */
   /* A bitwise map indicating the attack and block -- see ATTACK_ and
