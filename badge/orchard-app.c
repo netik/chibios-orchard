@@ -38,6 +38,8 @@ static uint8_t cleanup_state = 0;    // cleans up every other ping
 void enemy_cleanup(void);            // reaps the list every other ping
 /* end ping handling */
 
+mutex_t event_mutex;
+
 // lock/unlock this mutex before touching the enemies list!
 mutex_t enemies_mutex;
 static user *enemies[MAX_ENEMIES]; // array of pointers to enemy structures
@@ -130,7 +132,10 @@ void orchardAppUgfxCallback (void * arg, GEvent * pe)
   evt.ugfx.pListener = gl;
   evt.ugfx.pEvent = pe;
 
+  osalMutexLock (&event_mutex);
   instance.app->event (instance.context, &evt);
+  osalMutexUnlock (&event_mutex);
+
   geventEventComplete (gl);
 
   return;
@@ -142,7 +147,9 @@ void orchardAppRadioCallback (KW01_PKT * pkt)
   evt.type = radioEvent;
   evt.radio.pPkt = pkt;
 
+  osalMutexLock (&event_mutex);
   instance.app->event (instance.context, &evt);
+  osalMutexUnlock (&event_mutex);
 
   return;
 }
@@ -155,7 +162,11 @@ static void ui_complete_cleanup(eventid_t id) {
   evt.ui.code = uiComplete;
   evt.ui.flags = uiOK;
 
+  osalMutexLock (&event_mutex);
   instance.app->event(instance.context, &evt);  
+  osalMutexUnlock (&event_mutex);
+
+  return;
 }
 
 static void terminate(eventid_t id) {
@@ -168,7 +179,9 @@ static void terminate(eventid_t id) {
 
   evt.type = appEvent;
   evt.app.event = appTerminate;
+  osalMutexLock (&event_mutex);
   instance.app->event(instance.context, &evt);
+  osalMutexUnlock (&event_mutex);
   chThdTerminate(instance.thr);
 }
 
@@ -183,7 +196,11 @@ static void timer_event(eventid_t id) {
   evt.type = timerEvent;
   evt.timer.usecs = instance.timer_usecs;
   if( !ui_override )
+    {
+    osalMutexLock (&event_mutex);
     instance.app->event(instance.context, &evt);
+    osalMutexUnlock (&event_mutex);
+    }
 
   if (instance.timer_repeating)
     orchardAppTimer(instance.context, instance.timer_usecs, true);
@@ -270,9 +287,11 @@ static THD_FUNCTION(orchard_app_thread, arg) {
   evtTableHook(orchard_app_events, timer_expired, timer_event);
 
   // if APP is null, the system will crash here. 
-  if (instance->app->init)
+  if (instance->app->init) {
+    osalMutexLock (&event_mutex);
     app_context.priv_size = instance->app->init(&app_context);
-  else
+    osalMutexUnlock (&event_mutex);
+  } else
     app_context.priv_size = 0;
 
   chRegSetThreadName(instance->app->name);
@@ -287,15 +306,20 @@ static THD_FUNCTION(orchard_app_thread, arg) {
     app_context.priv = NULL;
   }
 
-  if (instance->app->start)
+  if (instance->app->start) {
+    osalMutexLock (&event_mutex);
     instance->app->start(&app_context);
-  
+    osalMutexUnlock (&event_mutex);
+  }
+ 
   if (instance->app->event) {
     {
       OrchardAppEvent evt;
       evt.type = appEvent;
       evt.app.event = appStart;
+      osalMutexLock (&event_mutex);
       instance->app->event(instance->context, &evt);
+      osalMutexUnlock (&event_mutex);
     }
     while (!chThdShouldTerminateX())
       chEvtDispatch(evtHandlers(orchard_app_events), chEvtWaitOne(ALL_EVENTS));
@@ -303,8 +327,11 @@ static THD_FUNCTION(orchard_app_thread, arg) {
 
   chVTReset(&instance->timer);
 
-  if (instance->app->exit)
+  if (instance->app->exit) {
+    osalMutexLock (&event_mutex);
     instance->app->exit(&app_context);
+    osalMutexUnlock (&event_mutex);
+  }
 
   instance->context = NULL;
 
@@ -351,6 +378,7 @@ void orchardAppInit(void) {
     enemies[i] = NULL;
   }
   osalMutexObjectInit(&enemies_mutex);
+  osalMutexObjectInit(&event_mutex);
 
   current = orchard_app_list;
   while (current->name) {
