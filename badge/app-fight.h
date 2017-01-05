@@ -1,5 +1,18 @@
 #ifndef __APP_FIGHT_H__
 #define __APP_FIGHT_H__
+  
+// 66666 uS = 15 FPS. Eeeviil... 
+#define FRAME_INTERVAL_US 66666
+
+// time to wait for a response from either side (mS)
+// WAIT_TIMEs are always in system ticks.
+// caveat! the system timer is a uint32_t and can roll over! be aware!
+
+#define DEFAULT_WAIT_TIME MS2ST(20000)
+#define MAX_ACKWAIT MS2ST(1000)         // if no ACK in 500MS, resend
+#define MAX_RETRIES 3                  // if we try 3 times, abort. 
+#define MOVE_WAIT_TIME MS2ST(15000)    // Both of you have 15 seconds to decide. If you do nothing, the game ends. 
+#define ALERT_DELAY 1500               // how long alerts stay on the screen.
 
 /* attack profile (attack_bitmap) - high order bits */
 #define ATTACK_MASK     0x38
@@ -25,34 +38,6 @@
 #define OP_IMDEAD           0x0d   /* I died */
 #define OP_ACK              0xf0   /* network: I got your message with sequence acknum */
 #define OP_RESET            0xff   /* network: I don't understand this message. da fuq? Go away. */
-  
-// 66666 uS = 15 FPS. Eeeviil... 
-#define FRAME_INTERVAL_US 66666
-
-// time to wait for a response from either side (mS)
-// WAIT_TIMEs are always in system ticks.
-// caveat! the system timer is a uint32_t and can roll over! be aware!
-
-#define DEFAULT_WAIT_TIME MS2ST(20000)
-#define MAX_ACKWAIT MS2ST(1000)         // if no ACK in 500MS, resend
-#define MAX_RETRIES 3                  // if we try 3 times, abort. 
-#define MOVE_WAIT_TIME MS2ST(15000)    // Both of you have 15 seconds to decide. If you do nothing, the game ends. 
-#define ALERT_DELAY 1500               // how long alerts stay on the screen.
-
-typedef struct _FightHandles {
-  GListener glFight;
-  GHandle ghExitButton;
-  GHandle ghNextEnemy;
-  GHandle ghPrevEnemy;
-  GHandle ghAttack;
-  GHandle ghDeny;
-  GHandle ghAccept;
-
-  GHandle ghAttackHi;
-  GHandle ghAttackMid;
-  GHandle ghAttackLow;
-} FightHandles;
-
 // the game state machine
 typedef enum _fight_state {
   NONE,            // 0 - Not started yet. 
@@ -68,6 +53,20 @@ typedef enum _fight_state {
   PLAYER_DEAD,     // 10 - I die!
   ENEMY_DEAD,      // 11 - You're dead.
 } fight_state;
+
+typedef struct _FightHandles {
+  GListener glFight;
+  GHandle ghExitButton;
+  GHandle ghNextEnemy;
+  GHandle ghPrevEnemy;
+  GHandle ghAttack;
+  GHandle ghDeny;
+  GHandle ghAccept;
+
+  GHandle ghAttackHi;
+  GHandle ghAttackMid;
+  GHandle ghAttackLow;
+} FightHandles;
 
 // WidgetStyle: RedButton
 const GWidgetStyle RedButtonStyle = {

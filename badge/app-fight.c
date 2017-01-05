@@ -644,6 +644,8 @@ static void screen_vs_draw(void)  {
   ypos = ypos + gdispGetFontMetric(fontSM, fontHeight);
 
   if (current_fight_state == VS_SCREEN) {
+    // disable the timer, we are going to do some animations
+    orchardAppTimer(instance.context, 0, false); // shut down the timer
     gdispFillArea(0,
 		  ypos,
 		  gdispGetWidth(),
@@ -693,6 +695,8 @@ static void screen_vs_draw(void)  {
     last_tick_time = chVTGetSystemTime();
     current_fight_state = MOVE_SELECT;
     countdown=MOVE_WAIT_TIME;
+    // re-enable the timer, our animations are over.
+    orchardAppTimer(instance.context, FRAME_INTERVAL_US, true);
   } else { 
     gdispDrawStringBox (0,
 		      ypos,
@@ -896,6 +900,11 @@ static void fight_event(OrchardAppContext *context,
       return;
     }
 
+    if (current_fight_state == VS_SCREEN) {
+      gdispClear(Black);
+      screen_vs_draw();
+    }
+
     if (current_fight_state == MOVE_SELECT) {
       drawProgressBar(40,gdispGetHeight() - 20,240,20,MOVE_WAIT_TIME,countdown, true, false);
 
@@ -1020,9 +1029,6 @@ static void fight_event(OrchardAppContext *context,
 
 	  next_fight_state = VS_SCREEN;
 	  sendGamePacket(OP_STARTBATTLE_ACK, 0);
-          
-	  gdispClear(Black);
-	  screen_vs_draw();
 	  return;
 	}
 	if ( ((GEventGWinButton*)pe)->gwin == p->ghPrevEnemy) { 
@@ -1131,6 +1137,8 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       }
     }
     break;
+
+    // TODO: if OP_REJ ... 
   case IDLE:
   case ENEMY_SELECT:
     if (u->opcode == OP_STARTBATTLE && config->in_combat == 0) {
@@ -1168,9 +1176,8 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
     }
 
     if (u->opcode == OP_STARTBATTLE_ACK) {
+      // i am the attacker and you just ACK'd me. The timer will render this.
       current_fight_state = VS_SCREEN;
-      gdispClear(Black);
-      screen_vs_draw();
     }
     break;
     
