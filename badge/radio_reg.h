@@ -430,7 +430,7 @@
 #define KW01_SYNCCONF_SYNCON	0x80	/* Sync word generation on */
 #define KW01_SYNCCONF_FIFOFILL	0x40	/* SyncAddress / FifoFill */
 #define KW01_SYNCCONF_SYNCSIZE	0x38	/* Sync size */
-#define KW01_SYNCCONF_ERRTOL	0x07	/* Tollerated error bits */
+#define KW01_SYNCCONF_ERRTOL	0x07	/* Tolerated error bits */
 
 #define KW01_SYNCSIZE_1		0x00
 #define KW01_SYNCSIZE_2		0x08
@@ -441,7 +441,7 @@
 #define KW01_SYNCSIZE_7		0x30
 #define KW01_SYNCSIZE_8		0x38
 
-#define KW01_SYNCSIZE(x)	(((x) << 3) & KW01_SYNCCONF_SYNCSIZE)
+#define KW01_SYNCSIZE(x)	((((x) - 1) << 3) & KW01_SYNCCONF_SYNCSIZE)
 
 /* Packet configuration 1 register */
 
