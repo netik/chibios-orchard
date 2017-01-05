@@ -27,7 +27,8 @@ static fight_state next_fight_state = NONE;     // upon ACK, we will transition 
 static uint8_t current_enemy_idx = 0;
 static uint32_t last_ui_time = 0;
 static uint32_t last_tick_time = 0;
-static uint8_t attackbitmap = 0;
+static uint8_t ourattack = 0;
+static uint8_t theirattack = 0;
 static uint32_t lastseq = 0;
 static uint16_t last_hit = 0;
 
@@ -90,36 +91,8 @@ static void blinkText (coord_t x, coord_t y,coord_t cx, coord_t cy, char *text, 
 }
 
 uint16_t calc_hit(void) {
-  // this is written from the pov of the attacker.
-  // it is transmitted within the YOUGO packet
-  uint8_t p = (((uint8_t)rand()) % 100) + 1;
-  uint8_t hithp;
-  
-  // remove some of the hit for defense
-  if ((100*p) < (50*current_enemy.dex)) {
-    hithp = 0;
-    return hithp;
-  }
-
-  // roll d20 * 10 for the hit
-  for(uint8_t j = 0; j < 10; j++) {
-    hithp += ((((uint8_t)rand()) % 20) + 1);
-  }
-  // remove some of the hit for defense
-  uint8_t defoff = ((uint8_t)rand()) % current_enemy.def + 1;
-
-  if(defoff > hithp) {
-    hithp = 0;
-  } else {
-    hithp -= defoff;
-  }
-  hithp += current_enemy.str;
-
-  // is it crit
-  if ((100*p) >= (100 * (100 - current_enemy.dex))) {
-    hithp = 201 + (((uint8_t)rand()) % current_enemy.str);
-  }
-  return hithp;
+  // return random shit for now
+  return ((((uint8_t)rand()) % 200) +1);
 }
 
 
@@ -185,15 +158,15 @@ static void sendAttack(void) {
   // clear middle
   gdispFillArea(140,70,40,110,Black);
 
-  if (attackbitmap & ATTACK_HI) {
+  if (ourattack & ATTACK_HI) {
     putImageFile(IMG_GATTH1, POS_PLAYER1_X, POS_PLAYER1_Y);
   }
 
-  if (attackbitmap & ATTACK_MID) {
+  if (ourattack & ATTACK_MID) {
     putImageFile(IMG_GATTM1, POS_PLAYER1_X, POS_PLAYER1_Y);
   }
   
-  if (attackbitmap & ATTACK_LOW) {
+  if (ourattack & ATTACK_LOW) {
     putImageFile(IMG_GATTL1, POS_PLAYER1_X, POS_PCENTER_Y);
   }
 
@@ -389,9 +362,9 @@ static void show_results(void) {
   gdispFillArea(0,gdispGetHeight() - 20,gdispGetWidth(),20,Black);
 
   // get the right filename for the attack
-  if (attackbitmap & ATTACK_HI) c='h';
-  if (attackbitmap & ATTACK_MID) c='m';
-  if (attackbitmap & ATTACK_LOW) c='l';
+  if (ourattack & ATTACK_HI) c='h';
+  if (ourattack & ATTACK_MID) c='m';
+  if (ourattack & ATTACK_LOW) c='l';
 
   if (c == ' ') 
     strcpy(attackfn1, IMG_GIDLA1);
@@ -421,8 +394,8 @@ static void show_results(void) {
     chsnprintf(attackfn2, sizeof(attackfn2), "gatt%c1r.rgb", c);
 
   // animate the characters
-  chsnprintf (ourdmg_s, sizeof(ourdmg_s), "-%d", current_enemy.damage );
-  chsnprintf (theirdmg_s, sizeof(theirdmg_s), "-%d", last_hit);
+  chsnprintf (ourdmg_s, sizeof(ourdmg_s), "-%d", 999 );
+  chsnprintf (theirdmg_s, sizeof(theirdmg_s), "-%d", 999 );
   
   for (uint8_t i=0; i < 4; i++) { 
     putImageFile(attackfn1, POS_PLAYER1_X, POS_PLAYER1_Y);
@@ -452,7 +425,8 @@ static void show_results(void) {
   last_tick_time = chVTGetSystemTime();
 
   // if either side dies update states and exit app
-  attackbitmap = 0;
+  ourattack = 0;
+  theirattack = 0;
 }
 
 static void screen_select_draw(int8_t initial) {
@@ -878,7 +852,7 @@ static void sendGamePacket(uint8_t opcode, uint8_t damage) {
   packet.dex = config->dex;
 
   packet.damage = damage;
-  packet.attack_bitmap = attackbitmap;
+  packet.attack_bitmap = ourattack;
   
   resendPacket();
 }
@@ -935,7 +909,7 @@ static void fight_event(OrchardAppContext *context,
         sendGamePacket(OP_TURNOVER, 0);
       }
     }
-
+    
     if ((current_fight_state == APPROVAL_WAIT) || (current_fight_state == APPROVAL_DEMAND)) {
       drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, true,false);
 
@@ -950,7 +924,27 @@ static void fight_event(OrchardAppContext *context,
 
       return;
     }
-
+    if (current_fight_state == POST_MOVE) { 
+      drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, true,false);
+      
+      // if we have a move and they have a move, then we go straight to show results
+      // and we send them a op_turnover packet to push them along
+      
+      if ( ( ((theirattack & ATTACK_MASK) > 0) &&
+             ((ourattack & ATTACK_MASK) > 0)) ||
+           (countdown <=0 )) {
+        next_fight_state = SHOW_RESULTS;
+        sendGamePacket(OP_TURNOVER, 0);
+      }
+      // this prevents hang.
+    }
+    
+    if (current_fight_state == SHOW_RESULTS) {
+      // the next timer tick will clear us out!
+      show_results();
+      return;
+    }
+    
     if (current_fight_state == WAITACK) {
       // transmit/retry logic
       if ( (chVTGetSystemTime() - last_tick_time) > MAX_ACKWAIT ) {
@@ -1039,22 +1033,22 @@ static void fight_event(OrchardAppContext *context,
 	  return;
 	}
 
-        if ((attackbitmap & ATTACK_MASK) == 0) {
+        if ((ourattack & ATTACK_MASK) == 0) {
           // TODO -- modify for three attacks per Egan's spec. You
           // can't change.
           if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackLow) {
-            attackbitmap &= ~ATTACK_MASK;
-            attackbitmap |= ATTACK_LOW;
+            ourattack &= ~ATTACK_MASK;
+            ourattack |= ATTACK_LOW;
             sendAttack();
           }
           if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackMid) {
-            attackbitmap &= ~ATTACK_MASK;
-            attackbitmap |= ATTACK_MID;
+            ourattack &= ~ATTACK_MASK;
+            ourattack |= ATTACK_MID;
             sendAttack();
           }
           if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackHi) {
-            attackbitmap &= ~ATTACK_MASK;
-            attackbitmap |= ATTACK_HI;
+            ourattack &= ~ATTACK_MASK;
+            ourattack |= ATTACK_HI;
             sendAttack();
           }
         } else {
@@ -1185,7 +1179,7 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       // If I see OP_IMOVED from the other side while we are in
       // MOVE_SELECT, store that move for later. 
       memcpy(&current_enemy, u, sizeof(user));
-      chprintf(stream, "\r\nMOVEACK/YOUGO: stored move dmg=%d, my bitmap=%x.\r\n", current_enemy.damage, attackbitmap);
+      chprintf(stream, "\r\nMOVEACK/YOUGO: stored move dmg=%d, my bitmap=%x.\r\n", current_enemy.damage, ourattack);
     }
     if (u->opcode == OP_TURNOVER) {
       // uh-oh, the turn is over and we haven't moved!
@@ -1194,9 +1188,11 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
     }
     break;
   case POST_MOVE: // no-op
-    // if we get a turnover packet, excellent, we can calc damage and show results.
-    if (u->opcode == OP_TURNOVER) {
-      // handle damages and whatnot
+    // if we get a turnover packet, or we're out of time, we can calc damage and show results.
+    if ((u->opcode == OP_TURNOVER) || (countdown <= 0)) {
+      // force to the next state
+      next_fight_state = SHOW_RESULTS;
+      sendGamePacket(OP_TURNOVER, 0);      // handle damages and whatnot
     }
     break;
   case NONE: // no-op
@@ -1217,7 +1213,8 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
 
 static uint32_t fight_init(OrchardAppContext *context) {
   FightHandles *p;
-
+  userconfig *config = getConfig();
+  
   if (context == NULL) {
     /* This should only happen for auto-init */
     radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_FIGHT,
@@ -1226,6 +1223,13 @@ static uint32_t fight_init(OrchardAppContext *context) {
     p = chHeapAlloc (NULL, sizeof(FightHandles));
     memset(p, 0, sizeof(FightHandles));
     context->priv = p;
+
+    if (config->in_combat != 0) { 
+      chprintf(stream, "You were stuck in combat. Fixed.\r\n");
+      config->in_combat = 0;
+      configSave(config);
+    }
+
   }
 
   return 0;
