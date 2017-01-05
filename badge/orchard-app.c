@@ -287,11 +287,9 @@ static THD_FUNCTION(orchard_app_thread, arg) {
   evtTableHook(orchard_app_events, timer_expired, timer_event);
 
   // if APP is null, the system will crash here. 
-  if (instance->app->init) {
-    osalMutexLock (&event_mutex);
+  if (instance->app->init)
     app_context.priv_size = instance->app->init(&app_context);
-    osalMutexUnlock (&event_mutex);
-  } else
+  else
     app_context.priv_size = 0;
 
   chRegSetThreadName(instance->app->name);
@@ -306,11 +304,8 @@ static THD_FUNCTION(orchard_app_thread, arg) {
     app_context.priv = NULL;
   }
 
-  if (instance->app->start) {
-    osalMutexLock (&event_mutex);
+  if (instance->app->start)
     instance->app->start(&app_context);
-    osalMutexUnlock (&event_mutex);
-  }
  
   if (instance->app->event) {
     {
@@ -327,11 +322,8 @@ static THD_FUNCTION(orchard_app_thread, arg) {
 
   chVTReset(&instance->timer);
 
-  if (instance->app->exit) {
-    osalMutexLock (&event_mutex);
+  if (instance->app->exit)
     instance->app->exit(&app_context);
-    osalMutexUnlock (&event_mutex);
-  }
 
   instance->context = NULL;
 
