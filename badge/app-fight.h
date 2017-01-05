@@ -51,12 +51,6 @@ typedef struct _FightHandles {
   GHandle ghAttackHi;
   GHandle ghAttackMid;
   GHandle ghAttackLow;
-
-  // current enemy we are attacking/talking to
-  user current_enemy;
-  // the last packet we sent, for retransmission
-  user packet;
-
 } FightHandles;
 
 // the game state machine
