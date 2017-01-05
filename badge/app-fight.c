@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <string.h>
-
 #include "ch.h"
 #include "hal.h"
 #include "chprintf.h"
+#include "rand.h"
 
 #include "orchard-app.h"
 #include "led.h"
@@ -14,85 +14,9 @@
 #include "sound.h"
 
 #include "userconfig.h"
-#include "rand.h"
+#include "app-fight.h"
 
-// 66666 uS = 15 FPS. Eeeviil... 
-#define FRAME_INTERVAL_US 66666
-
-// time to wait for a response from either side (mS)
-// WAIT_TIMEs are always in system ticks.
-// caveat! the system timer is a uint32_t and can roll over! be aware!
-
-#define DEFAULT_WAIT_TIME MS2ST(20000) // was 20k, now 5k for testing
-#define MAX_ACKWAIT MS2ST(300)         // if no ACK in 500MS, resend
-#define MAX_RETRIES 3                  // if we try 3 times, abort. 
-#define MOVE_WAIT_TIME MS2ST(10000)    // You get five seconds to make a decision.
-#define ALERT_DELAY 1500               // how long alerts stay on the screen.
-
-typedef struct _FightHandles {
-  GListener glFight;
-  GHandle ghExitButton;
-  GHandle ghNextEnemy;
-  GHandle ghPrevEnemy;
-  GHandle ghAttack;
-  GHandle ghDeny;
-  GHandle ghAccept;
-
-  GHandle ghBlockHi;
-  GHandle ghBlockMid;
-  GHandle ghBlockLow;
-  GHandle ghAttackHi;
-  GHandle ghAttackMid;
-  GHandle ghAttackLow;
-} FightHandles;
-
-typedef enum _fight_state {
-  NONE,            // 0
-  WAITACK,         // 1
-  IDLE,            // 2
-  ENEMY_SELECT,    // 3
-  APPROVAL_DEMAND, // 4
-  APPROVAL_WAIT,   // 5
-  VS_SCREEN,       // 6
-  MOVE_SELECT,     // 7
-  RESULTS,         // 8
-  PLAYER_DEAD,     // 9
-  ENEMY_DEAD,      // 10
-} fight_state;
-
-
-// WidgetStyle: RedButton
-const GWidgetStyle RedButtonStyle = {
-  HTML2COLOR(0xff0000),              // background
-  HTML2COLOR(0xff6666),              // focus
-
-  // Enabled color set
-  {
-    HTML2COLOR(0xffffff),         // text
-    HTML2COLOR(0x800000),         // edge
-    HTML2COLOR(0xff0000),         // fill
-    HTML2COLOR(0x008000),         // progress (inactive area)
-  },
-
-  // Disabled color set
-  {
-    HTML2COLOR(0x808080),         // text
-    HTML2COLOR(0x404040),         // edge
-    HTML2COLOR(0x404040),         // fill
-    HTML2COLOR(0x004000),         // progress (active area)
-  },
-
-  // Pressed color set
-  {
-    HTML2COLOR(0xFFFFFF),         // text
-    HTML2COLOR(0x800000),         // edge
-    HTML2COLOR(0xff6a71),         // fill
-    HTML2COLOR(0x008000),         // progress (active area)
-  }
-};
-
-extern orchard_app_instance instance;
-
+/* Globals */
 static int32_t countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value. 
 static user current_enemy;                    // current enemy we are attacking/talking to 
 static user packet;                           // the last packet we sent, for retransmission
@@ -106,37 +30,6 @@ static uint32_t last_tick_time = 0;
 static uint8_t attackbitmap = 0;
 static uint32_t lastseq = 0;
 static uint16_t last_hit = 0;
-
-// true if attacking, false if blocking.
-static uint8_t isattacking = false;
-
-/* Function Prototypes */
-
-/* Network */
-static void resendPacket(void);
-static void sendGamePacket(uint8_t opcode, uint8_t damage);
-
-/* Graphics */
-static int putImageFile(char *name, int16_t x, int16_t y);
-static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, int32_t maxval, int32_t currentval, uint8_t use_leds, uint8_t reverse);
-static void blinkText (coord_t x, coord_t y,coord_t cx, coord_t cy, char *text, font_t font, color_t color, justify_t justify, uint8_t times, int16_t delay);
-
-/* Game state */
-static void clearstatus(void);
-static uint8_t prevEnemy(void);
-static uint8_t nextEnemy(void);
-static void updatehp(void);
-
-/* Fight Sequence */
-static void screen_select_draw(int8_t);
-static void screen_select_close(OrchardAppContext *);
-static void screen_waitapproval_draw(void);
-static void screen_demand_draw(void);
-static void screen_vs_draw(void);
-static void show_results(void);
-static void draw_attack_buttons(void);
-
-static void end_fight(void);
 
 static void clearstatus(void) {
   // clear instruction area
@@ -281,80 +174,47 @@ static int putImageFile(char *name, int16_t x, int16_t y) {
 }
 
 
-static void draw_attack_icons(void) {
+static void sendAttack(void) {
+  // animate the attack on our screen and send it to the the
+  // challenger
+  
   clearstatus();
-
+  font_t fontSM;
+  fontSM = gdispOpenFont (FONT_SM);
+  
   // clear middle
   gdispFillArea(140,70,40,110,Black);
 
   if (attackbitmap & ATTACK_HI) {
     putImageFile(IMG_GATTH1, POS_PLAYER1_X, POS_PLAYER1_Y);
-    putImageFile(IMG_ATTACK,160,70);
   }
 
   if (attackbitmap & ATTACK_MID) {
     putImageFile(IMG_GATTM1, POS_PLAYER1_X, POS_PLAYER1_Y);
-    putImageFile(IMG_ATTACK,160,115);
   }
   
   if (attackbitmap & ATTACK_LOW) {
     putImageFile(IMG_GATTL1, POS_PLAYER1_X, POS_PCENTER_Y);
-    putImageFile(IMG_ATTACK,160,160);
   }
 
-  if (attackbitmap & BLOCK_HI) 
-    putImageFile(IMG_BLOCK,140,70);
+  // we always say we're waiting. 
+  gdispDrawStringBox (0,
+                      38,
+                      gdispGetWidth(),
+                      gdispGetFontMetric(fontSM, fontHeight),
+                      "WAITING FOR CHALLENGER'S MOVE",
+                      fontSM, White, justifyCenter);
 
-  if (attackbitmap & BLOCK_MID) 
-    putImageFile(IMG_BLOCK,140,115);
-
-  if (attackbitmap & BLOCK_LOW)
-    putImageFile(IMG_BLOCK,140,160);
-
+  next_fight_state = POST_MOVE;
+  sendGamePacket(OP_IMOVED, 0);
 }
 
 static void draw_attack_buttons(void) {
-  // create button widget: ghBlockhi
   GWidgetInit wi;
   FightHandles *p;
   
   gwinWidgetClearInit(&wi);
   p = instance.context->priv;
-  
-  wi.g.show = TRUE;
-  wi.g.x = 0;
-  wi.g.y = 50;
-  wi.g.width = 140;
-  wi.g.height = 59;
-  wi.text = "1";
-  wi.customDraw = noRender;
-  wi.customParam = 0;
-  wi.customStyle = 0;
-  p->ghBlockHi = gwinButtonCreate(0, &wi);
-  
-  // create button widget: ghBlockMid
-  wi.g.show = TRUE;
-  wi.g.x = 0;
-  wi.g.y = 110;
-  wi.g.width = 140;
-  wi.g.height = 56;
-  wi.text = "2";
-  wi.customDraw = noRender;
-  wi.customParam = 0;
-  wi.customStyle = 0;
-  p->ghBlockMid = gwinButtonCreate(0, &wi);
-  
-  // create button widget: ghBlockLow
-  wi.g.show = TRUE;
-  wi.g.x = 0;
-  wi.g.y = 160;
-  wi.g.width = 140;
-  wi.g.height = 56;
-  wi.text = "3";
-  wi.customDraw = noRender;
-  wi.customParam = 0;
-  wi.customStyle = 0;
-  p->ghBlockLow = gwinButtonCreate(0, &wi);
   
   // create button widget: ghAttackHi
   wi.g.show = TRUE;
@@ -391,13 +251,6 @@ static void draw_attack_buttons(void) {
   wi.customParam = 0;
   wi.customStyle = 0;
   p->ghAttackLow = gwinButtonCreate(0, &wi);
-
-  //  // line these dudes
-  //  for (int i = 0; i < 2; i++) {
-  //    gdispDrawThickLine(0, 98 + (i * 53), 130, 98 + (i * 53), Red, 2, FALSE);
-  //    gdispDrawThickLine(190, 98 + (i * 53), 320, 98 + (i * 53), Red, 2, FALSE);
-  //  }
-
 }
   
 static void draw_select_buttons(FightHandles *p) { 
@@ -451,7 +304,6 @@ static void draw_select_buttons(FightHandles *p) {
   wi.g.x = gdispGetWidth() - 40;
   wi.text = "";
   wi.customDraw = noRender;
-  
   p->ghExitButton = gwinButtonCreate(NULL, &wi);
 
 }
@@ -576,7 +428,7 @@ static void show_results(void) {
     putImageFile(attackfn1, POS_PLAYER1_X, POS_PLAYER1_Y);
     putImageFile(attackfn2, POS_PLAYER2_X, POS_PLAYER2_Y);
 
-    // you attcking us
+    // you attacking us
     gdispDrawStringBox (textx,texty,50,50,ourdmg_s,fontFF,Red,justifyLeft);
     // us attacking you
     gdispDrawStringBox (textx+40,texty,50,50,theirdmg_s,fontFF,Red,justifyLeft);
@@ -787,11 +639,14 @@ static void updatehp(void)  {
 
 static void screen_vs_draw(void)  {
   // versus screen!
+  char attackfn1[13];
+  char attackfn2[13];
+  
   font_t fontSM;
   font_t fontLG;
   userconfig *config = getConfig();
   uint16_t ypos = 0; // cursor, so if we move or add things we don't have to rethink this
-  
+
   putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER2_Y);
   putImageFile(IMG_GUARD_IDLE_R, POS_PLAYER2_X, POS_PLAYER2_Y);
   
@@ -830,46 +685,35 @@ static void screen_vs_draw(void)  {
 	      White,
 	      justifyCenter,
 	      10,
-	      250);
+	      200);
 
     updatehp();
     
     ypos = ypos + 15;
 
-    if (isattacking) { 
-      clearstatus();
-      blinkText(0,
-		ypos,
-		gdispGetWidth(),
-		gdispGetFontMetric(fontSM, fontHeight),
-		"Attack: TAP ON ENEMY TO SELECT",
-		fontSM, White, justifyCenter,4,500);
-      clearstatus();
-      gdispDrawStringBox (0,
-                          ypos,
-                          gdispGetWidth(),
-                          gdispGetFontMetric(fontSM, fontHeight),
-                          "Attack! High, Mid, Low?",
-                          fontSM, White, justifyCenter);
-    } else {
-      clearstatus();
-      blinkText(0,
-		ypos,
-		gdispGetWidth(),
-		gdispGetFontMetric(fontSM, fontHeight),
-		"Defend: TAP ON SELF TO SELECT",
-		fontSM, White, justifyCenter,4,500);
-      clearstatus();
-      gdispDrawStringBox (0,
-                          ypos,
-                          gdispGetWidth(),
-                          gdispGetFontMetric(fontSM, fontHeight),
-                          "Defend! High, Mid, Low?",
-                          fontSM, White, justifyCenter);
-    }
-     
-    
+    clearstatus();
 
+    // animate them 
+    char pos[4] = "hml";
+    
+    for (uint8_t i=0; i < 3; i++) {
+      chsnprintf(attackfn1, sizeof(attackfn1), "gatt%c1.rgb", pos[i]);
+      chsnprintf(attackfn2, sizeof(attackfn2), "gatt%c1r.rgb", pos[i]);
+
+      putImageFile(attackfn1, POS_PLAYER1_X, POS_PLAYER1_Y);
+      putImageFile(attackfn2, POS_PLAYER2_X, POS_PLAYER2_Y);
+      chThdSleepMilliseconds(200);
+    }
+
+    putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER2_Y);
+    putImageFile(IMG_GUARD_IDLE_R, POS_PLAYER2_X, POS_PLAYER2_Y);
+    gdispDrawStringBox (0,
+                        ypos,
+                        gdispGetWidth(),
+                        gdispGetFontMetric(fontSM, fontHeight),
+                        "Attack! High, Mid, Low?",
+                        fontSM, White, justifyCenter);
+    
     draw_attack_buttons();
 
     last_tick_time = chVTGetSystemTime();
@@ -955,7 +799,7 @@ static void screen_waitapproval_draw(void) {
   drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, true, false);
 }
 
-static void sendAck(user *inbound) {
+static void sendACK(user *inbound) {
   // acknowlege an inbound packet.
   userconfig *config;
   config = getConfig();
@@ -966,7 +810,35 @@ static void sendAck(user *inbound) {
   packet.acknum = inbound->seq;
   packet.ttl = 4;
   packet.opcode = OP_ACK;
-  chprintf(stream, "\r\ntransmit ACK (to=%08x): ttl=%d, seq=%d, opcode=%d\r\n", inbound->netid, packet.ttl, packet.seq, packet.opcode);
+  chprintf(stream, "\r\ntransmit ACK (to=%08x for seq %d): ttl=%d, myseq=%d, opcode=%d\r\n",
+           inbound->netid,
+           inbound->seq,
+           packet.ttl,
+           packet.seq,
+           packet.opcode);
+  
+  radioSend (&KRADIO1, inbound->netid, RADIO_PROTOCOL_FIGHT, sizeof(packet), &packet);
+}
+
+static void sendRST(user *inbound) {
+  // do the minimal amount of work to send a reset packet based on an
+  // inbound packet.
+  userconfig *config;
+  config = getConfig();
+  
+  memset (&packet, 0, sizeof(packet)); 
+  packet.seq = ++lastseq;
+  packet.netid = config->netid; // netid is id of sender, always.
+  packet.acknum = inbound->seq; 
+  packet.ttl = 4;
+  packet.opcode = OP_RESET;
+  chprintf(stream, "\r\nTransmit RST (to=%08x for seq %d): ttl=%d, myseq=%d, opcode=%d\r\n",
+           inbound->netid,
+           inbound->seq,
+           packet.ttl,
+           packet.seq,
+           packet.opcode);
+  
   radioSend (&KRADIO1, inbound->netid, RADIO_PROTOCOL_FIGHT, sizeof(packet), &packet);
 }
 
@@ -974,7 +846,7 @@ static void resendPacket(void) {
   // TODO: random holdoff?
   packet.ttl--;
   current_fight_state = WAITACK;
-  chprintf(stream, "\r\ntransmit (to=%08x): ttl=%d, seq=%d, opcode=%d\r\n", current_enemy.netid, packet.ttl, packet.seq, packet.opcode);
+  chprintf(stream, "\r\nTransmit (to=%08x): ttl=%d, seq=%d, opcode=%d\r\n", current_enemy.netid, packet.ttl, packet.seq, packet.opcode);
   radioSend (&KRADIO1, current_enemy.netid, RADIO_PROTOCOL_FIGHT, sizeof(packet), &packet);
 }
 
@@ -1049,19 +921,21 @@ static void fight_event(OrchardAppContext *context,
       } 
       return;
     }
+
     if (current_fight_state == MOVE_SELECT) {
       drawProgressBar(40,gdispGetHeight() - 20,240,20,MOVE_WAIT_TIME,countdown, true, false);
 
       if (countdown <= 0) {
 	// transmit my move
-        last_hit = calc_hit();
-        sendGamePacket(OP_YOUGO, last_hit);
-        chprintf(stream, "\r\nhitting enemy for %d\r\n", last_hit);
+        chprintf(stream, "\r\nTIMEOUT - transmitting hit %d\r\n", last_hit);
 
-        // thwack!
-        current_enemy.hp = current_enemy.hp - last_hit; 
+        // we're in MOVE_SELECT, so this tells us that we haven't moved at all. sad.
+        // we'll now tell our opponent, that our turn is over. 
+        next_fight_state = POST_MOVE;
+        sendGamePacket(OP_TURNOVER, 0);
       }
     }
+
     if ((current_fight_state == APPROVAL_WAIT) || (current_fight_state == APPROVAL_DEMAND)) {
       drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, true,false);
 
@@ -1123,7 +997,6 @@ static void fight_event(OrchardAppContext *context,
 	  sendGamePacket(OP_STARTBATTLE, 0);
 
 	  screen_waitapproval_draw();
-	  isattacking=true;
 	  return;
 	}
 	if ( ((GEventGWinButton*)pe)->gwin == p->ghDeny) { 
@@ -1135,7 +1008,8 @@ static void fight_event(OrchardAppContext *context,
 	  gwinDestroy (p->ghAccept);
 	  p->ghDeny = NULL;
 	  p->ghAccept = NULL;
-	  
+
+          next_fight_state = IDLE;
 	  sendGamePacket(OP_DECLINED, 0);
 	  screen_alert_draw("Dulce bellum inexpertis.");
 	  playHardFail();
@@ -1155,7 +1029,6 @@ static void fight_event(OrchardAppContext *context,
           
 	  gdispClear(Black);
 	  screen_vs_draw();
-	  isattacking=false;
 	  return;
 	}
 	if ( ((GEventGWinButton*)pe)->gwin == p->ghPrevEnemy) { 
@@ -1166,37 +1039,28 @@ static void fight_event(OrchardAppContext *context,
 	  return;
 	}
 
-	if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackLow) {
-	  attackbitmap &= ~ATTACK_MASK;
-	  attackbitmap |= ATTACK_LOW;
-	  draw_attack_icons();
-	}
-	if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackMid) {
-	  attackbitmap &= ~ATTACK_MASK;
-	  attackbitmap |= ATTACK_MID;
-	  draw_attack_icons();
-	}
-	if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackHi) {
-	  attackbitmap &= ~ATTACK_MASK;
-	  attackbitmap |= ATTACK_HI;
-	  draw_attack_icons();
-	}
-	if ( ((GEventGWinButton*)pe)->gwin == p->ghBlockLow) {
-	  attackbitmap &= ~BLOCK_MASK;
-	  attackbitmap |= BLOCK_LOW;
-	  draw_attack_icons();
-	}
-	if ( ((GEventGWinButton*)pe)->gwin == p->ghBlockMid) {
-	  attackbitmap &= ~BLOCK_MASK;
-	  attackbitmap |= BLOCK_MID;
-	  draw_attack_icons();
-	}
-	if ( ((GEventGWinButton*)pe)->gwin == p->ghBlockHi) {
-	  attackbitmap &= ~BLOCK_MASK;
-	  attackbitmap |= BLOCK_HI;
-	  draw_attack_icons();
-	}
-
+        if ((attackbitmap & ATTACK_MASK) == 0) {
+          // TODO -- modify for three attacks per Egan's spec. You
+          // can't change.
+          if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackLow) {
+            attackbitmap &= ~ATTACK_MASK;
+            attackbitmap |= ATTACK_LOW;
+            sendAttack();
+          }
+          if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackMid) {
+            attackbitmap &= ~ATTACK_MASK;
+            attackbitmap |= ATTACK_MID;
+            sendAttack();
+          }
+          if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackHi) {
+            attackbitmap &= ~ATTACK_MASK;
+            attackbitmap |= ATTACK_HI;
+            sendAttack();
+          }
+        } else {
+          // can't move. 
+          playNope();
+        }
       }
   }
 }
@@ -1243,15 +1107,22 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
 
   // DEBUG
   if (u->opcode == OP_ACK) {
-    chprintf(stream, "\r\n%08x --> RECV ACK (seq=%d, acknum=%d, state=%d, opcode %d)\r\n", u->netid, u->seq, u->acknum, current_fight_state, u->opcode);
+    chprintf(stream, "\r\n%08x --> RECV ACK (seq=%d, acknum=%d, state=%d, opcode %d)\r\n", u->netid, u->seq, u->acknum, current_fight_state, next_fight_state, u->opcode);
   } else { 
     chprintf(stream, "\r\n%08x --> (seq=%d, state=%d, opcode %d)\r\n", u->netid, u->seq, current_fight_state, u->opcode);
   }
   // Immediately ACK non-ACK packets. We do not support retry on
   // ACK, because we support ARQ just like TCP-IP.  without the ACK,
   // the sender will retransmit automatically.
+
+  if ((current_fight_state == IDLE) && (u->opcode >= OP_IMOVED)) {
+    // this is an invalid state, which we should not ACK for.
+    // Let the remote client die. 
+    return;
+  }
+  
   if (u->opcode != OP_ACK)
-      sendAck(u);
+      sendACK(u);
     
   switch (current_fight_state) {
   case WAITACK:
@@ -1259,6 +1130,9 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       // if we are waiting for an ack, advance our state.
       // however, if we have no next-state to go to, then we will timeout
       if (next_fight_state != NONE) {
+        chprintf(stream, "\r\n%08x --> moving to state %d from state %d due to ACK\n",
+                 u->netid, next_fight_state, current_fight_state, next_fight_state);
+
         current_fight_state = next_fight_state;
       }
     }
@@ -1283,9 +1157,9 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
     break;
   case APPROVAL_WAIT:
     if (u->opcode == OP_DECLINED) {
+      orchardAppTimer(instance.context, 0, false); // shut down the timer
       screen_alert_draw("DENIED.");
       playHardFail();
-      orchardAppTimer(instance.context, 0, false); // shut down the timer
       ledSetProgress(-1);
       chThdSleepMilliseconds(ALERT_DELAY);
 
@@ -1307,24 +1181,35 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
     break;
     
   case MOVE_SELECT:
-    if (u->opcode == OP_YOUGO) {
-      // If I get a YOUGO in move select, that means the other end
-      // timed out, and it's time to move on.
+    if (u->opcode == OP_IMOVED) {
+      // If I see OP_IMOVED from the other side while we are in
+      // MOVE_SELECT, store that move for later. 
       memcpy(&current_enemy, u, sizeof(user));
-      // take damage
-      config->hp = config->hp - current_enemy.damage;
-      chprintf(stream, "\r\nMOVEACK/YOUGO: taking damage %d from enemy\r\n", current_enemy.damage);
-
-      current_fight_state = RESULTS;
-      show_results();
+      chprintf(stream, "\r\nMOVEACK/YOUGO: stored move dmg=%d, my bitmap=%x.\r\n", current_enemy.damage, attackbitmap);
+    }
+    if (u->opcode == OP_TURNOVER) {
+      // uh-oh, the turn is over and we haven't moved!
+      next_fight_state = POST_MOVE;
+      sendGamePacket(OP_TURNOVER, 0);
+    }
+    break;
+  case POST_MOVE: // no-op
+    // if we get a turnover packet, excellent, we can calc damage and show results.
+    if (u->opcode == OP_TURNOVER) {
+      // handle damages and whatnot
     }
     break;
   case NONE: // no-op
+    break;
   case APPROVAL_DEMAND: // no-op
+    break;
   case VS_SCREEN: // no-op
-  case RESULTS: // no-op
+    break;
   case PLAYER_DEAD: // no-op
+    break;
   case ENEMY_DEAD: // no-op
+    break;
+  case SHOW_RESULTS: // no-op
     break;
   }
 

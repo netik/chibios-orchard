@@ -21,6 +21,16 @@ static const PWM_NOTE soundStart[] = {
 };
 #endif
 
+static const PWM_NOTE soundNope[] = {
+  /* Not allowed sound */
+  { NOTE_GS3, note32 },
+  { PWM_NOTE_PAUSE, note32 },
+  { NOTE_GS3, note32 },
+  { PWM_NOTE_PAUSE, note32 },  
+  { NOTE_GS3, note32 },
+  { 0, PWM_DURATION_END }
+};
+
 static const PWM_NOTE soundSadPanda[] = {
   /* dissonant failure sound */
   { NOTE_GS3, note16 },
@@ -102,6 +112,11 @@ void playMario(void) {
 void playHardFail(void) {
   /* sad panda tone */
   pwmThreadPlay (soundSadPanda);
+}
+
+void playNope(void) {
+  /* sad panda tone */
+  pwmThreadPlay (soundNope);
 }
 
 void playAttacked(void) {

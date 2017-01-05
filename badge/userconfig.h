@@ -61,32 +61,6 @@ typedef struct userconfig {
 
 } userconfig;
 
-/* attack profile (attack_bitmap) */
-#define ATTACK_ONESHOT  ( 1 << 7 ) 
-#define ATTACK_ISCRIT   ( 1 << 6 )
-
-#define ATTACK_HI       ( 1 << 5 )
-#define ATTACK_MID      ( 1 << 4 )
-#define ATTACK_LOW      ( 1 << 3 )
-
-#define BLOCK_HI   ( 1 << 2 )
-#define BLOCK_MID  ( 1 << 1 )
-#define BLOCK_LOW  ( 1 << 0 )
-
-/* use these for clearing out the bitfield */
-#define ATTACK_MASK 0x38
-#define BLOCK_MASK 0x07
-
-/* user->opcode */
-#define OP_STARTBATTLE      0x01   /* battle was requested */
-#define OP_STARTBATTLE_ACK  0x02   /* battle was accepted */
-#define OP_DECLINED         0x04   /* battle was declined or invalid */
-#define OP_YOUGO            0x08   /* My turn is done */
-#define OP_MOVEACK          0x10   /* I understand that your move is done and am showing results */
-#define OP_IMDEAD           0x0f   /* i died */
-
-#define OP_ACK              0xf0   /* I got your message. */
-
 typedef struct _userpkt {
   /* this is a shortened form of userdata for transmission */
   /* appx 52 bytes, max is 66 (AES limitiation) */
@@ -119,8 +93,7 @@ typedef struct _userpkt {
   uint8_t dex;            /* 1 */
 
   /* Battle Payload */
-  /* A bitwise map indicating the attack and block -- see ATTACK_ and
-     BLOCK_ operators above. */
+  /* A bitwise map indicating the attack type */
   uint8_t attack_bitmap;  /* 1 */
   uint8_t damage;         /* 1 */
 
