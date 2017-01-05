@@ -110,6 +110,11 @@ void configStart(void) {
     configSave(&config_cache);
   } else {
     chprintf(stream, "Config OK!\r\n");
+    if (config_cache.in_combat != 0) { 
+      chprintf(stream, "You were stuck in combat. Fixed.\r\n");
+      config_cache.in_combat = 0;
+      configSave(&config_cache);
+    }
   }
 
   memcpy(&config_cache, config, sizeof(userconfig));
