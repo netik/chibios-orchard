@@ -389,8 +389,9 @@ int main(void)
 
   gfileMount ('F', "0:");
 
-  if (config->sound_enabled) { 
-    playStartupSong();
+  if (config->sound_enabled) {
+    // jna - disable this until I can deal with it. 
+    //    playStartupSong();
   }
   orchardShellRestart();
 

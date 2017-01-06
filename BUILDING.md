@@ -64,6 +64,8 @@ The run commnad for on Mac OS with the GNU ARM Toolchain is (run this in it's ow
     -f target/klx.cfg -c "gdb_flash_program enable" -c "gdb_breakpoint_override hard"
 ```
 
+This can be put into into a script or alias called 'runopenocd', if you like. 
+
 Note: to talk directly to the device via JTAG/SWD header with the Olimex
 debugger, use this command:
 ```
@@ -110,7 +112,12 @@ If you have the Olimex debugger plugged in, and a USB cable plugged
 into the development board, you should see a shell at
 
 ```sudo cu -s 115200 -l /dev/cu.usbmodem41412```
-  
+
+This device name is not static -- the last few digits of this are randomized, so you may have to
+do an ls /dev/cu.* to find the serial port. 
+
+Type 'help'. There's lots of commands and things to play with there.
+
 ## Appendix A: Programming tools.
 
 If you are using the freescale KW01 demo board, you'll need the

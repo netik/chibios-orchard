@@ -18,6 +18,12 @@ sdcard: cleansd images midi
 	@echo 
 	du -kh sdcard
 
+# copy the card to the right folder on osx
+osxsd:	sdcard
+	@echo "Copying to /Volumes/NO\ NAME/"
+	@cp sdcard/* /Volumes/NO\ NAME/
+	@sync
+
 firmware:
 	@if [ ! -d "sdcard" ]; then mkdir sdcard; fi
 	@cp ../updater/updater.bin sdcard
