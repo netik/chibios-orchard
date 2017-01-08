@@ -763,11 +763,6 @@ static void fight_start(OrchardAppContext *context) {
  
   // are we entering a fight?
   if (current_fight_state == APPROVAL_DEMAND) {
-    if (p->ghAttack != NULL) {
-      gwinDestroy (p->ghAttack);
-      p->ghAttack = NULL;
-    }
-    
     last_tick_time = chVTGetSystemTime();
     countdown=DEFAULT_WAIT_TIME;
     playAttacked();
@@ -916,7 +911,34 @@ static void fight_event(OrchardAppContext *context,
   // this returns us to the badge screen on idle.
   // we don't want this for all states, just select and end-of-fight
   if (event->type == timerEvent) {
+    chprintf(stream, "tick @ %d mystate is %d, countdown is %d, last tick %d, ourattack %d, theirattack %d, delta %d\r\n", chVTGetSystemTime(),
+             current_fight_state,
+             countdown,
+             last_tick_time,
+             ourattack,
+             theirattack,
+             (chVTGetSystemTime() - last_tick_time));
     // timer events always decrement countdown unless countdown <= 0
+
+    // handle ACKs first before anything else 
+    if (current_fight_state == WAITACK) {
+      // transmit/retry logic
+      if ( (chVTGetSystemTime() - last_tick_time) > MAX_ACKWAIT ) {
+        if (packet.ttl > 0)  {
+          resendPacket();
+        } else { 
+          orchardAppTimer(context, 0, false); // shut down the timer
+          screen_alert_draw("OTHER PLAYER WENT AWAY");
+          end_fight();
+          playHardFail();
+          chThdSleepMilliseconds(ALERT_DELAY);
+          orchardAppRun(orchardAppByName("Badge"));
+          return;
+        }
+      }
+    }
+
+    // now update the clock.
     if (countdown > 0) {
       // our time reference is based on elapsed time. 
       countdown = countdown - ( chVTGetSystemTime() - last_tick_time );
@@ -953,6 +975,7 @@ static void fight_event(OrchardAppContext *context,
       draw_move_select();
       current_fight_state = MOVE_SELECT;
     }
+    
     if (current_fight_state == MOVE_SELECT) {
       drawProgressBar(40,gdispGetHeight() - 20,240,20,MOVE_WAIT_TIME,countdown, true, false);
 
@@ -1000,23 +1023,6 @@ static void fight_event(OrchardAppContext *context,
       return;
     }
     
-    if (current_fight_state == WAITACK) {
-      // transmit/retry logic
-      if ( (chVTGetSystemTime() - last_tick_time) > MAX_ACKWAIT ) {
-        if (packet.ttl > 0)  {
-          last_tick_time = chVTGetSystemTime();
-          resendPacket();
-        } else { 
-          orchardAppTimer(context, 0, false); // shut down the timer
-          screen_alert_draw("OTHER PLAYER WENT AWAY");
-          end_fight();
-          playHardFail();
-          chThdSleepMilliseconds(ALERT_DELAY);
-          orchardAppRun(orchardAppByName("Badge"));
-          return;
-        }
-      }
-    }
   }
 
   if (event->type == ugfxEvent) {
@@ -1206,8 +1212,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       }
     }
     break;
-
-    // TODO: if OP_REJ ... 
   case IDLE:
   case ENEMY_SELECT:
     if (u->opcode == OP_STARTBATTLE && config->in_combat == 0) {
@@ -1259,7 +1263,7 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       memcpy(&current_enemy, u, sizeof(user));
 
       theirattack = current_enemy.attack_bitmap;
-      chprintf(stream, "\r\nMOVEACK/YOUGO: stored move %d. our move %d.\r\n", theirattack, ourattack);
+      chprintf(stream, "\r\nRECV MOVE: (select) %d. our move %d.\r\n", theirattack, ourattack);
     }
     if (u->opcode == OP_TURNOVER) {
       // uh-oh, the turn is over and we haven't moved!
@@ -1273,13 +1277,21 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       memcpy(&current_enemy, u, sizeof(user));
 
       theirattack = current_enemy.attack_bitmap;
-      chprintf(stream, "\r\nMOVEACK/YOUGO: stored move %d. our move %d.\r\n", theirattack, ourattack);      
+      chprintf(stream, "\r\nRECV MOVE: (postmove) %d. our move %d.\r\n", theirattack, ourattack);      
     }
     
-    if ((u->opcode == OP_IMOVED) || (u->opcode == OP_TURNOVER) || (countdown <= 0)) {
+    if ((u->opcode == OP_IMOVED) || (countdown <= 0)) {
       // force to the next state, because now we have both moves.
       next_fight_state = SHOW_RESULTS;
       sendGamePacket(OP_TURNOVER);
+      return;
+    }
+
+    if (u->opcode == OP_TURNOVER) { 
+      // if we are post move, and we get a turnover packet, then just go straight to
+      // results, we don't need an ACK at this point.
+      current_fight_state = SHOW_RESULTS;
+      return;
     }
     break;
   case NONE: // no-op

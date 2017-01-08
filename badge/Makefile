@@ -271,17 +271,17 @@ ULIBS = -lc_nano -lnosys -lm -lgcc
 # End of user defines
 ##############################################################################
 
+.PHONY: updatebuildtime
+
 RULESPATH = $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC
 include $(RULESPATH)/rules.mk
 
 PRE_MAKE_ALL_RULE_HOOK: gitversion.h buildtime.h
 
-.PHONY: forceit
-
-buildtime.h: forceit
+buildtime.h: updatebuildtime
 	echo "#define BUILDTIME \"Built: `/bin/date` (`/bin/hostname -s`)\"" > $@
 
-gitversion.h: forceit
+gitversion.h: updatebuildtime
 	echo "static const char *gitversion = \"$(shell git rev-parse HEAD)\";" > $@
 
 #POST_MAKE_ALL_RULE_HOOK: build/factory-test

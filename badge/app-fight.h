@@ -1,17 +1,18 @@
 #ifndef __APP_FIGHT_H__
 #define __APP_FIGHT_H__
   
-// 66666 uS = 15 FPS. Eeeviil... 
-#define FRAME_INTERVAL_US 66666
+// production use 66666 uS = 15 FPS. Eeeviil...
+// testing use 1000000 (1 sec)
+#define FRAME_INTERVAL_US 1000000
 
 // time to wait for a response from either side (mS)
 // WAIT_TIMEs are always in system ticks.
 // caveat! the system timer is a uint32_t and can roll over! be aware!
 
 #define DEFAULT_WAIT_TIME MS2ST(20000)
-#define MAX_ACKWAIT MS2ST(500)         // if no ACK in 500MS, resend
-#define MAX_RETRIES 3                  // if we try 3 times, abort. 
-#define MOVE_WAIT_TIME MS2ST(60000)    // Both of you have 60 seconds to decide. If you do nothing, the game ends. 
+#define MAX_ACKWAIT MS2ST(1000)         // if no ACK in 500MS, resend
+#define MAX_RETRIES 3                   // if we try 3 times, abort. 
+#define MOVE_WAIT_TIME MS2ST(60000)     // Both of you have 60 seconds to decide. If you do nothing, the game ends. 
 #define ALERT_DELAY 1500               // how long alerts stay on the screen.
 
 /* attack profile (attack_bitmap) - high order bits */

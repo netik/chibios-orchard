@@ -15,7 +15,9 @@ sdcard: cleansd images midi
 	@mv -f sdcard/credits_mario.rgb sdcard/credits.rgb
 	@echo
 	@echo 'sdcard built!'
-	@echo 
+	@echo
+	@echo 'build #'
+	@strings sdcard/badge.bin  | grep -H1 build | head -1
 	du -kh sdcard
 
 # copy the card to the right folder on osx

@@ -1,0 +1,26 @@
+
+Attacker (a):
+
+NONE ---> IDLE ---> enemy_select ---> APPROVAL_WAIT
+                                             |
+________________                             | OP_STARTBATTLE (a->b) 
+Victim (b):     |                            v
+----------------+                      APPROVAL_DEMAND
+                                        |         | (accepts)
+IDLE <-- OP_DECLINED (b->a) ----------<-+         |
+                                                  |  OP_STARTBATTLE_ACK (b->a)
+                                                  v
+                                               VS_SCREEN (both)
+                                                  |  (no network traffic, ~2-3 sec after)
+                                                  v
+                                       +---> MOVE_SELECT (timed)
+                                       |           |  OP_IMOVED (a->b or b->a)
+                                       |           |
+                                       |           v
+                                       |      POST_MOVE -- (holding pattern for packets, timed)
+                                       |           | either OP_TURNOVER or OP_IMOVED 
+                                       |           v
+                                       +--- SHOW_RESULTS (when both packets arrive)
+                              --or--              |
+                                                  v
+                                                 DIE
