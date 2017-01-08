@@ -276,10 +276,12 @@ include $(RULESPATH)/rules.mk
 
 PRE_MAKE_ALL_RULE_HOOK: gitversion.h buildtime.h
 
-buildtime.h: $(CHIBIOS)/.git/HEAD $(CHIBIOS)/.git/index
+.PHONY: forceit
+
+buildtime.h: forceit
 	echo "#define BUILDTIME \"Built: `/bin/date` (`/bin/hostname -s`)\"" > $@
 
-gitversion.h: $(CHIBIOS)/.git/HEAD $(CHIBIOS)/.git/index
+gitversion.h: forceit
 	echo "static const char *gitversion = \"$(shell git rev-parse HEAD)\";" > $@
 
 #POST_MAKE_ALL_RULE_HOOK: build/factory-test
