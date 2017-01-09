@@ -1423,7 +1423,12 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
     break;
   case ENEMY_DEAD: // no-op
     break;
-  case SHOW_RESULTS: // no-op
+  case SHOW_RESULTS:
+    // we may have already switched into the show results state when
+    // the turnover packet comes in. record the damage. 
+    if (u->opcode == OP_TURNOVER) { 
+      last_damage = u->damage;
+    }
     break;
   }
 

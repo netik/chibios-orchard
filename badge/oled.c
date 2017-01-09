@@ -20,7 +20,7 @@ void splash_footer(void) {
   
   gdispDrawStringBox (0, 210, gdispGetWidth(),
 		      gdispGetFontMetric(font, fontHeight),
-		      "IDES OF MARCH | Defcon 25 (2017)",
+		      "IDES OF MARCH | DEFCON 25 (2017)",
 		      font, White, justifyCenter);
   
   gdispDrawStringBox (0, 225, gdispGetWidth(),

@@ -10,7 +10,7 @@ oo     .d8P          888                 `88b    d88b             888  `88b.\r\n
 
 
 #define SHELL_CREDITS "\r\n \
-Defcon 25 Unofficial Badge Team\r\n \
+DEFCON 25 Unofficial Badge Team\r\n \
 \r\n\
 John Adams (hw,sw)\r\n \
 Bill Paul (hw,sw)\r\n \
