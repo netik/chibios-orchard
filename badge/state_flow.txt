@@ -24,3 +24,13 @@ IDLE <-- OP_DECLINED (b->a) ----------<-+         |
                               --or--              |
                                                   v
                                                  DIE
+
+In post move:
+
+If I move I go to POST MOVE
+If you move and I receieve it, we store the packet.
+
+If the timer ticks and we are in POST_MOVE, ---and--- we have both results, we transmit op_turnover
+and we block until we get an ACK.
+
+

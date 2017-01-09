@@ -19,7 +19,7 @@
 /* Globals */
 static int32_t countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value. 
 static user current_enemy;                    // current enemy we are attacking/talking to 
-static user packet;                           // the last packet we sent, for retransmission
+static user packet;                           // the last packet we sent, for retransmissino
 
 static fight_state current_fight_state = IDLE;  // current state 
 static fight_state next_fight_state = NONE;     // upon ACK, we will transition to this state. 
@@ -31,6 +31,7 @@ static uint8_t ourattack = 0;
 static uint8_t theirattack = 0;
 static uint32_t lastseq = 0;
 static uint16_t last_hit = 0;
+static uint8_t turnover_sent = false;
 
 static void clearstatus(void) {
   // clear instruction area
@@ -97,8 +98,13 @@ uint16_t calc_hit(void) {
 
 
 static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, int32_t maxval, int32_t currentval, uint8_t use_leds, uint8_t reverse) {
-  // draw a bar
-  // if reverse is true, we draw right to left vs left to right
+  // draw a bar if reverse is true, we draw right to left vs left to
+  // right
+
+  // WARNING: if x+w > screen_width or y+height > screen_height,
+  // unpredicable things will happen in memory. There is no protection
+  // for overflow here.
+  
   color_t c = Lime;
 
   if (currentval < 0) { currentval = 0; } // never overflow
@@ -260,7 +266,7 @@ static void draw_select_buttons(FightHandles *p) {
   gwinSetDefaultFont(gdispOpenFont(FONT_FIXED));
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
-  wi.g.x = 70;
+  wi.g.x = 85;
   wi.g.y = POS_FLOOR_Y+10;
   wi.g.width = 150;
   wi.g.height = gdispGetFontMetric(fontFF, fontHeight) + 2;
@@ -814,21 +820,25 @@ static void sendACK(user *inbound) {
   // acknowlege an inbound packet.
   userconfig *config;
   config = getConfig();
+
+  user ackpacket;
+  memset (&ackpacket, 0, sizeof(ackpacket));
   
-  memset (&packet, 0, sizeof(packet)); 
-  packet.seq = lastseq++;
-  packet.netid = config->netid; // netid is id of sender, always.
-  packet.acknum = inbound->seq;
-  packet.ttl = 4;
-  packet.opcode = OP_ACK;
-  chprintf(stream, "\r\ntransmit ACK (to=%08x for seq %d): ttl=%d, myseq=%d, opcode=0x%x\r\n",
+  ackpacket.seq = lastseq++;
+  ackpacket.netid = config->netid; // netid is id of sender, always.
+  ackpacket.acknum = inbound->seq;
+  ackpacket.ttl = 4;
+  ackpacket.opcode = OP_ACK;
+
+  chprintf(stream, "\r\ntransmit ACK (to=%08x for seq %d): ourstate=%d, ttl=%d, myseq=%d, theiropcode=0x%x\r\n",
            inbound->netid,
            inbound->seq,
-           packet.ttl,
-           packet.seq,
-           packet.opcode);
+           current_fight_state,
+           inbound->ttl,
+           ackpacket.seq,
+           inbound->opcode);
   
-  radioSend (&KRADIO1, inbound->netid, RADIO_PROTOCOL_FIGHT, sizeof(packet), &packet);
+  radioSend (&KRADIO1, inbound->netid, RADIO_PROTOCOL_FIGHT, sizeof(ackpacket), &ackpacket);
 }
 
 static void sendRST(user *inbound) {
@@ -836,28 +846,31 @@ static void sendRST(user *inbound) {
   // inbound packet.
   userconfig *config;
   config = getConfig();
+  user rstpacket;
   
-  memset (&packet, 0, sizeof(packet)); 
-  packet.seq = ++lastseq;
-  packet.netid = config->netid; // netid is id of sender, always.
-  packet.acknum = inbound->seq; 
-  packet.ttl = 4;
-  packet.opcode = OP_RST;
-  chprintf(stream, "\r\nTransmit RST (to=%08x for seq %d): ttl=%d, myseq=%d, opcode=0x%x\r\n",
+  memset (&rstpacket, 0, sizeof(rstpacket)); 
+  rstpacket.seq = ++lastseq;
+  rstpacket.netid = config->netid; // netid is id of sender, always.
+  rstpacket.acknum = inbound->seq; 
+  rstpacket.ttl = 4;
+  rstpacket.opcode = OP_RST;
+  chprintf(stream, "\r\nTransmit RST (to=%08x for seq %d): currentstate=%d, ttl=%d, myseq=%d, opcode=0x%x\r\n",
            inbound->netid,
+           current_fight_state,
            inbound->seq,
-           packet.ttl,
-           packet.seq,
-           packet.opcode);
+           rstpacket.ttl,
+           rstpacket.seq,
+           rstpacket.opcode);
   
-  radioSend (&KRADIO1, inbound->netid, RADIO_PROTOCOL_FIGHT, sizeof(packet), &packet);
+  radioSend (&KRADIO1, inbound->netid, RADIO_PROTOCOL_FIGHT, sizeof(rstpacket), &rstpacket);
 }
 
 static void resendPacket(void) {
   // TODO: random holdoff?
   packet.ttl--;
   current_fight_state = WAITACK;
-  chprintf(stream, "\r\n%ld Transmit (to=%08x): ttl=%d, seq=%d, opcode=0x%x\r\n", chVTGetSystemTime()  , current_enemy.netid, packet.ttl, packet.seq, packet.opcode);
+  chprintf(stream, "\r\n%ld Transmit (to=%08x): currentstate=%d, ttl=%d, seq=%d, opcode=0x%x\r\n", chVTGetSystemTime()  , current_enemy.netid, current_fight_state, packet.ttl, packet.seq, packet.opcode);
+
   radioSend (&KRADIO1, current_enemy.netid, RADIO_PROTOCOL_FIGHT, sizeof(packet), &packet);
 }
 
@@ -919,13 +932,13 @@ static void fight_event(OrchardAppContext *context,
   // this returns us to the badge screen on idle.
   // we don't want this for all states, just select and end-of-fight
   if (event->type == timerEvent) {
-    chprintf(stream, "tick @ %d mystate is %d, countdown is %d, last tick %d, ourattack %d, theirattack %d, delta %d\r\n", chVTGetSystemTime(),
+         chprintf(stream, "tick @ %d mystate is %d, countdown is %d, last tick %d, ourattack %d, theirattack %d, delta %d\r\n", chVTGetSystemTime(),
              current_fight_state,
              countdown,
              last_tick_time,
              ourattack,
              theirattack,
-             (chVTGetSystemTime() - last_tick_time));
+             (chVTGetSystemTime() - last_tick_time)); 
     // timer events always decrement countdown unless countdown <= 0
 
     // handle ACKs first before anything else 
@@ -962,7 +975,9 @@ static void fight_event(OrchardAppContext *context,
       // if either side dies update states and exit app
       ourattack = 0;
       theirattack = 0;
+      turnover_sent = false;
       current_fight_state=MOVE_SELECT;
+      draw_attack_buttons();
       return;
     }
     
@@ -989,7 +1004,7 @@ static void fight_event(OrchardAppContext *context,
 
       if (countdown <= 0) {
 	// transmit my move
-        chprintf(stream, "\r\nTIMEOUT - transmitting hit %d\r\n", last_hit);
+        chprintf(stream, "\r\nTIMEOUT in select, sending turnover\r\n");
 
         // we're in MOVE_SELECT, so this tells us that we haven't moved at all. sad.
         // we'll now tell our opponent, that our turn is over. 
@@ -1013,7 +1028,7 @@ static void fight_event(OrchardAppContext *context,
       return;
     }
     if (current_fight_state == POST_MOVE) { 
-      drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, true,false);
+      drawProgressBar(40,gdispGetHeight() - 20,240,20,MOVE_WAIT_TIME,countdown, true,false);
       
       // if we have a move and they have a move, then we go straight to show results
       // and we send them a op_turnover packet to push them along
@@ -1021,8 +1036,13 @@ static void fight_event(OrchardAppContext *context,
       if ( ( ((theirattack & ATTACK_MASK) > 0) &&
              ((ourattack & ATTACK_MASK) > 0)) ||
            (countdown <=0 )) {
-        next_fight_state = SHOW_RESULTS;
-        sendGamePacket(OP_TURNOVER);
+
+        if (turnover_sent == false) {  // only send it once.
+          next_fight_state = SHOW_RESULTS;
+          chprintf(stream, "\r\nwe are post-move, sending turnover\r\n");
+          sendGamePacket(OP_TURNOVER);
+          turnover_sent = true;
+        }
       }
     }
     
@@ -1034,7 +1054,7 @@ static void fight_event(OrchardAppContext *context,
   }
 
   if (event->type == ugfxEvent) {
-    chprintf(stream, "ugfxevent \r\n");
+    chprintf(stream, "ugfxevent during state %d\r\n", current_fight_state);
       pe = event->ugfx.pEvent;
       // we handle all of the buttons on all of the possible screens
       // in this event handler, along with our countdowns
@@ -1179,9 +1199,9 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
 
   // DEBUG
   if (u->opcode == OP_ACK) {
-    chprintf(stream, "\r\n%08x --> RECV ACK (seq=%d, acknum=%d, state=%d, opcode 0x%x)\r\n", u->netid, u->seq, u->acknum, current_fight_state, next_fight_state, u->opcode);
+    chprintf(stream, "\r\n%08x --> RECV ACK (seq=%d, acknum=%d, mystate=%d, opcode 0x%x)\r\n", u->netid, u->seq, u->acknum, current_fight_state, next_fight_state, u->opcode);
   } else { 
-    chprintf(stream, "\r\n%08x --> (seq=%d, state=%d, opcode 0x%x)\r\n", u->netid, u->seq, current_fight_state, u->opcode);
+    chprintf(stream, "\r\n%08x --> RECV OP  (seq=%d, mystate=%d, opcode 0x%x)\r\n", u->netid, u->seq, current_fight_state, u->opcode);
   }
   // Immediately ACK non-ACK packets. We do not support retry on
   // ACK, because we support ARQ just like TCP-IP.  without the ACK,
@@ -1190,7 +1210,7 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
   if ( ((current_fight_state == IDLE) && (u->opcode >= OP_IMOVED)) && (u->opcode != OP_ACK)) {
     // this is an invalid state, which we should not ACK for.
     // Let the remote client die.
-    chprintf(stream, "\r\nRST: rejecting opcode 0x%x beacuse i am idle\r\n", u->opcode);
+    chprintf(stream, "\r\n%08x --> SEND RST: rejecting opcode 0x%x beacuse i am idle\r\n", u->netid, u->opcode);
     sendRST(u);
     // we are idle, do nothing. 
     return;
@@ -1209,15 +1229,48 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       orchardAppRun(orchardAppByName("Badge"));
       return;
     }
+
     if (u->opcode == OP_ACK) { 
       // if we are waiting for an ack, advance our state.
       // however, if we have no next-state to go to, then we will timeout
       if (next_fight_state != NONE) {
+        // flush the packet 
+        memset(&packet, 0, sizeof(packet));
         chprintf(stream, "\r\n%08x --> moving to state %d from state %d due to ACK\n",
                  u->netid, next_fight_state, current_fight_state, next_fight_state);
 
         current_fight_state = next_fight_state;
       }
+    }
+
+    if (u->opcode == OP_TURNOVER) { 
+      // there's an edge case where we have sent turnover, and they have
+      // sent turn over, but, we are waiting on an ACK.
+      // so, act as if we got the ACK and move on.
+      // we will have already ACK'd their packet anyway. 
+      //      current_fight_state = next_fight_state;
+      //    }
+      chprintf(stream, "\r\n%08x --> got turnover in wait_ack? nextstate=0x%x, currentstate=0x%x\r\n    We're waiting on seq %d opcode %d",
+               u->netid,
+               current_fight_state,
+               next_fight_state,
+               packet.seq,
+               packet.opcode);
+    }
+
+    if (u->opcode == OP_NEXTROUND) {
+      chprintf(stream, "\r\n%08x --> got nextround in wait_ack? nextstate=0x%x, currentstate=0x%x\r\n    We're waiting on seq %d opcode %d",
+               u->netid,
+               current_fight_state,
+               next_fight_state,
+               packet.seq,
+               packet.opcode);
+
+      if (next_fight_state == NEXTROUND) {
+        // edge-case/packet pile up. Just advance the round and forget about the ACK. 
+        current_fight_state = NEXTROUND; 
+      }
+      
     }
     break;
   case IDLE:
@@ -1276,6 +1329,7 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
     if (u->opcode == OP_TURNOVER) {
       // uh-oh, the turn is over and we haven't moved!
       next_fight_state = POST_MOVE;
+      chprintf(stream, "\r\nmove_select/imoved, sending turnover\r\n");
       sendGamePacket(OP_TURNOVER);
     }
     break;
@@ -1288,13 +1342,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       chprintf(stream, "\r\nRECV MOVE: (postmove) %d. our move %d.\r\n", theirattack, ourattack);      
     }
     
-    if ((u->opcode == OP_IMOVED) || (countdown <= 0)) {
-      // force to the next state, because now we have both moves.
-      next_fight_state = SHOW_RESULTS;
-      sendGamePacket(OP_TURNOVER);
-      return;
-    }
-
     if (u->opcode == OP_TURNOVER) { 
       // if we are post move, and we get a turnover packet, then just go straight to
       // results, we don't need an ACK at this point.
