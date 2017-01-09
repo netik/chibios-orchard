@@ -27,11 +27,12 @@ static fight_state next_fight_state = NONE;     // upon ACK, we will transition 
 static uint8_t current_enemy_idx = 0;
 static uint32_t last_ui_time = 0;
 static uint32_t last_tick_time = 0;
+static uint32_t last_send_time = 0;
 static uint8_t ourattack = 0;
 static uint8_t theirattack = 0;
 static uint32_t lastseq = 0;
 static uint16_t last_hit = 0;
-static uint8_t turnover_sent = false;
+static uint8_t turnover_sent = false;       // make sure we only transmit turnover once. 
 
 static void clearstatus(void) {
   // clear instruction area
@@ -854,6 +855,7 @@ static void sendRST(user *inbound) {
   rstpacket.acknum = inbound->seq; 
   rstpacket.ttl = 4;
   rstpacket.opcode = OP_RST;
+
   chprintf(stream, "\r\nTransmit RST (to=%08x for seq %d): currentstate=%d, ttl=%d, myseq=%d, opcode=0x%x\r\n",
            inbound->netid,
            current_fight_state,
@@ -868,9 +870,10 @@ static void sendRST(user *inbound) {
 static void resendPacket(void) {
   // TODO: random holdoff?
   packet.ttl--;
-  current_fight_state = WAITACK;
   chprintf(stream, "\r\n%ld Transmit (to=%08x): currentstate=%d, ttl=%d, seq=%d, opcode=0x%x\r\n", chVTGetSystemTime()  , current_enemy.netid, current_fight_state, packet.ttl, packet.seq, packet.opcode);
-
+  current_fight_state = WAITACK;
+  last_send_time = chVTGetSystemTime();
+    
   radioSend (&KRADIO1, current_enemy.netid, RADIO_PROTOCOL_FIGHT, sizeof(packet), &packet);
 }
 
@@ -932,19 +935,22 @@ static void fight_event(OrchardAppContext *context,
   // this returns us to the badge screen on idle.
   // we don't want this for all states, just select and end-of-fight
   if (event->type == timerEvent) {
-         chprintf(stream, "tick @ %d mystate is %d, countdown is %d, last tick %d, ourattack %d, theirattack %d, delta %d\r\n", chVTGetSystemTime(),
+#define DEBUG_FIGHT_TICK
+#ifdef DEBUG_FIGHT_TICK
+             chprintf(stream, "tick @ %d mystate is %d, countdown is %d, last tick %d, ourattack %d, theirattack %d, delta %d\r\n", chVTGetSystemTime(),
              current_fight_state,
              countdown,
              last_tick_time,
              ourattack,
              theirattack,
-             (chVTGetSystemTime() - last_tick_time)); 
+             (chVTGetSystemTime() - last_tick_time));
+#endif
     // timer events always decrement countdown unless countdown <= 0
 
     // handle ACKs first before anything else 
     if (current_fight_state == WAITACK) {
       // transmit/retry logic
-      if ( (chVTGetSystemTime() - last_tick_time) > MAX_ACKWAIT ) {
+      if ( (chVTGetSystemTime() - last_send_time) > MAX_ACKWAIT ) {
         if (packet.ttl > 0)  {
           resendPacket();
         } else { 
@@ -971,10 +977,11 @@ static void fight_event(OrchardAppContext *context,
       countdown=MOVE_WAIT_TIME;
       last_tick_time = chVTGetSystemTime();
 
-      chprintf(stream, "\r\nStarting new round!\r\n", last_hit);
+      chprintf(stream, "\r\nStarting new round!\r\n");
       // if either side dies update states and exit app
       ourattack = 0;
       theirattack = 0;
+      last_hit = 0;
       turnover_sent = false;
       current_fight_state=MOVE_SELECT;
       draw_attack_buttons();
@@ -1250,19 +1257,24 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       // we will have already ACK'd their packet anyway. 
       //      current_fight_state = next_fight_state;
       //    }
-      chprintf(stream, "\r\n%08x --> got turnover in wait_ack? nextstate=0x%x, currentstate=0x%x\r\n    We're waiting on seq %d opcode %d",
+      chprintf(stream, "\r\n%08x --> got turnover in wait_ack? nextstate=0x%x, currentstate=0x%x\r\n    We're waiting on seq %d opcode %d\r\n",
                u->netid,
-               current_fight_state,
                next_fight_state,
+               current_fight_state,
                packet.seq,
                packet.opcode);
+
+      if (next_fight_state == SHOW_RESULTS) {
+        // force state change
+        current_fight_state = SHOW_RESULTS;
+      }
     }
 
     if (u->opcode == OP_NEXTROUND) {
       chprintf(stream, "\r\n%08x --> got nextround in wait_ack? nextstate=0x%x, currentstate=0x%x\r\n    We're waiting on seq %d opcode %d",
                u->netid,
-               current_fight_state,
                next_fight_state,
+               current_fight_state,
                packet.seq,
                packet.opcode);
 

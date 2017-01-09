@@ -3,7 +3,7 @@
   
 // production use 66666 uS = 15 FPS. Eeeviil...
 // testing use 1000000 (1 sec)
-#define FRAME_INTERVAL_US 666666
+#define FRAME_INTERVAL_US 66666
 
 // time to wait for a response from either side (mS)
 // WAIT_TIMEs are always in system ticks.
