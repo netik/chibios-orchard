@@ -99,9 +99,9 @@ void cmd_enemysim(BaseSequentialStream *chp, int argc, char *argv[]) {
       // enemies[i]->ttl will be filled in by the recipient.
       enemies[i]->p_type = p_guard;
       enemies[i]->netid = i; // fake 
-      enemies[i]->ttl = 100;
+      enemies[i]->ttl = 10;
       enemies[i]->in_combat = 0;
-      enemies[i]->hp = 1137;
+      enemies[i]->hp = 1337;
       enemies[i]->level = 9;
 
       chsnprintf(tmp, sizeof(tmp), "test%05d",i);
