@@ -16,6 +16,10 @@
 #include "userconfig.h"
 #include "app-fight.h"
 
+/* debugging - this protocol can be a real pain in the ass */
+#undef  DEBUG_FIGHT_TICK       // show the clock tick events, ugfx events, and other misc events
+#define DEBUG_FIGHT_NETWORK    // show all network traffic
+
 /* Globals */
 static int32_t countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value. 
 static user current_enemy;                    // current enemy we are attacking/talking to 
@@ -42,6 +46,7 @@ static void clearstatus(void) {
 		23,
 		Black);
 }
+
 
 #ifdef notyet
 static uint8_t calc_level(uint16_t xp) {
@@ -830,7 +835,7 @@ static void sendACK(user *inbound) {
   ackpacket.acknum = inbound->seq;
   ackpacket.ttl = 4;
   ackpacket.opcode = OP_ACK;
-
+#ifdef DEBUG_FIGHT_NETWORK
   chprintf(stream, "\r\ntransmit ACK (to=%08x for seq %d): ourstate=%d, ttl=%d, myseq=%d, theiropcode=0x%x\r\n",
            inbound->netid,
            inbound->seq,
@@ -838,7 +843,7 @@ static void sendACK(user *inbound) {
            inbound->ttl,
            ackpacket.seq,
            inbound->opcode);
-  
+#endif /* DEBUG_FIGHT_NETWORK */
   radioSend (&KRADIO1, inbound->netid, RADIO_PROTOCOL_FIGHT, sizeof(ackpacket), &ackpacket);
 }
 
@@ -856,6 +861,7 @@ static void sendRST(user *inbound) {
   rstpacket.ttl = 4;
   rstpacket.opcode = OP_RST;
 
+#ifdef DEBUG_FIGHT_NETWORK
   chprintf(stream, "\r\nTransmit RST (to=%08x for seq %d): currentstate=%d, ttl=%d, myseq=%d, opcode=0x%x\r\n",
            inbound->netid,
            current_fight_state,
@@ -863,14 +869,16 @@ static void sendRST(user *inbound) {
            rstpacket.ttl,
            rstpacket.seq,
            rstpacket.opcode);
-  
+#endif /* DEBUG_FIGHT_NETWORK */
   radioSend (&KRADIO1, inbound->netid, RADIO_PROTOCOL_FIGHT, sizeof(rstpacket), &rstpacket);
 }
 
 static void resendPacket(void) {
   // TODO: random holdoff?
   packet.ttl--;
+#ifdef DEBUG_FIGHT_NETWORK
   chprintf(stream, "\r\n%ld Transmit (to=%08x): currentstate=%d, ttl=%d, seq=%d, opcode=0x%x\r\n", chVTGetSystemTime()  , current_enemy.netid, current_fight_state, packet.ttl, packet.seq, packet.opcode);
+#endif /* DEBUG_FIGHT_NETWORK */
   current_fight_state = WAITACK;
   last_send_time = chVTGetSystemTime();
     
@@ -935,7 +943,6 @@ static void fight_event(OrchardAppContext *context,
   // this returns us to the badge screen on idle.
   // we don't want this for all states, just select and end-of-fight
   if (event->type == timerEvent) {
-#define DEBUG_FIGHT_TICK
 #ifdef DEBUG_FIGHT_TICK
              chprintf(stream, "tick @ %d mystate is %d, countdown is %d, last tick %d, ourattack %d, theirattack %d, delta %d\r\n", chVTGetSystemTime(),
              current_fight_state,
@@ -944,7 +951,7 @@ static void fight_event(OrchardAppContext *context,
              ourattack,
              theirattack,
              (chVTGetSystemTime() - last_tick_time));
-#endif
+#endif /* DEBUG_FIGHT_TICK */
     // timer events always decrement countdown unless countdown <= 0
 
     // handle ACKs first before anything else 
@@ -976,8 +983,9 @@ static void fight_event(OrchardAppContext *context,
       /* we are starting a new round. */
       countdown=MOVE_WAIT_TIME;
       last_tick_time = chVTGetSystemTime();
-
-      chprintf(stream, "\r\nStarting new round!\r\n");
+#ifdef DEBUG_FIGHT_TICK
+      chprintf(stream, "\r\nFight: Starting new round!\r\n");
+#endif
       // if either side dies update states and exit app
       ourattack = 0;
       theirattack = 0;
@@ -1011,7 +1019,9 @@ static void fight_event(OrchardAppContext *context,
 
       if (countdown <= 0) {
 	// transmit my move
+#ifdef DEBUG_FIGHT_NETWORK
         chprintf(stream, "\r\nTIMEOUT in select, sending turnover\r\n");
+#endif /* DEBUG_FIGHT_NETWORK */
 
         // we're in MOVE_SELECT, so this tells us that we haven't moved at all. sad.
         // we'll now tell our opponent, that our turn is over. 
@@ -1046,7 +1056,9 @@ static void fight_event(OrchardAppContext *context,
 
         if (turnover_sent == false) {  // only send it once.
           next_fight_state = SHOW_RESULTS;
+#ifdef DEBUG_FIGHT_NETWORK
           chprintf(stream, "\r\nwe are post-move, sending turnover\r\n");
+#endif
           sendGamePacket(OP_TURNOVER);
           turnover_sent = true;
         }
@@ -1061,97 +1073,100 @@ static void fight_event(OrchardAppContext *context,
   }
 
   if (event->type == ugfxEvent) {
+#ifdef DEBUG_FIGHT_TICK
     chprintf(stream, "ugfxevent during state %d\r\n", current_fight_state);
-      pe = event->ugfx.pEvent;
-      // we handle all of the buttons on all of the possible screens
-      // in this event handler, along with our countdowns
-      switch(pe->type) {
-      case GEVENT_GWIN_BUTTON:
-	if ( ((GEventGWinButton*)pe)->gwin == p->ghExitButton) { 
-          orchardAppRun(orchardAppByName("Badge"));
-	  return;
-	}
-        if ( ((GEventGWinButton*)pe)->gwin == p->ghNextEnemy) { 
-	  if (nextEnemy()) {
-	       last_ui_time = chVTGetSystemTime();
-	       screen_select_draw(FALSE);
-	  }
-	  return;
-	}
-        if ( ((GEventGWinButton*)pe)->gwin == p->ghAttack) { 
-	  // we are attacking. 
+#endif
+    pe = event->ugfx.pEvent;
+    // we handle all of the buttons on all of the possible screens
+    // in this event handler, along with our countdowns
+    switch(pe->type) {
+    case GEVENT_GWIN_BUTTON:
+      if ( ((GEventGWinButton*)pe)->gwin == p->ghExitButton) { 
+        orchardAppRun(orchardAppByName("Badge"));
+        return;
+      }
+      if ( ((GEventGWinButton*)pe)->gwin == p->ghNextEnemy) { 
+        if (nextEnemy()) {
+          last_ui_time = chVTGetSystemTime();
+          screen_select_draw(FALSE);
+        }
+        return;
+      }
+      if ( ((GEventGWinButton*)pe)->gwin == p->ghAttack) { 
+        // we are attacking. 
 	  last_ui_time = chVTGetSystemTime();
 	  screen_select_close(context);
 	  memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(user));
 	  config->in_combat = true;
-
+          
 	  next_fight_state = APPROVAL_WAIT;
 	  sendGamePacket(OP_STARTBATTLE);
-
+          
 	  screen_waitapproval_draw();
 	  return;
-	}
-	if ( ((GEventGWinButton*)pe)->gwin == p->ghDeny) { 
-	  // "war is sweet to those who have not experienced it."
-	  // Pindar, 522-443 BC.
-	  // do our cleanups now so that the screen doesn't redraw while exiting
-	  orchardAppTimer(context, 0, false); // shut down the timer
-	  gwinDestroy (p->ghDeny);
-	  gwinDestroy (p->ghAccept);
-	  p->ghDeny = NULL;
-	  p->ghAccept = NULL;
-
-          next_fight_state = IDLE;
-	  sendGamePacket(OP_DECLINED);
-	  screen_alert_draw("Dulce bellum inexpertis.");
-	  playHardFail();
-	  end_fight();
-	  chThdSleepMilliseconds(3000);
-	  orchardAppRun(orchardAppByName("Badge"));
-	  return;
-	}
-	if ( ((GEventGWinButton*)pe)->gwin == p->ghAccept) { 
-	  gwinDestroy (p->ghDeny);
-	  gwinDestroy (p->ghAccept);
-	  p->ghDeny = NULL;
-	  p->ghAccept = NULL;
-
-	  next_fight_state = VS_SCREEN;
-	  sendGamePacket(OP_STARTBATTLE_ACK);
-	  return;
-	}
-	if ( ((GEventGWinButton*)pe)->gwin == p->ghPrevEnemy) { 
-	  if (prevEnemy()) {
-	    last_ui_time = chVTGetSystemTime();
-	    screen_select_draw(FALSE);
-	  }
-	  return;
-	}
-
-        if ((ourattack & ATTACK_MASK) == 0) {
-          // TODO -- modify for three attacks per Egan's spec. You
-          // can't change.
-          if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackLow) {
-            ourattack &= ~ATTACK_MASK;
-            ourattack |= ATTACK_LOW;
-            sendAttack();
-          }
-          if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackMid) {
-            ourattack &= ~ATTACK_MASK;
-            ourattack |= ATTACK_MID;
-            sendAttack();
-          }
-          if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackHi) {
-            ourattack &= ~ATTACK_MASK;
-            ourattack |= ATTACK_HI;
-            sendAttack();
-          }
-        } else {
-          // can't move.
-          chprintf(stream, "rejecting event -- already went\r\n");
-          playNope();
-        }
       }
+      if ( ((GEventGWinButton*)pe)->gwin == p->ghDeny) { 
+        // "war is sweet to those who have not experienced it."
+        // Pindar, 522-443 BC.
+        // do our cleanups now so that the screen doesn't redraw while exiting
+        orchardAppTimer(context, 0, false); // shut down the timer
+        gwinDestroy (p->ghDeny);
+        gwinDestroy (p->ghAccept);
+        p->ghDeny = NULL;
+        p->ghAccept = NULL;
+        
+        next_fight_state = IDLE;
+        sendGamePacket(OP_DECLINED);
+        screen_alert_draw("Dulce bellum inexpertis.");
+        playHardFail();
+        end_fight();
+        chThdSleepMilliseconds(3000);
+        orchardAppRun(orchardAppByName("Badge"));
+        return;
+      }
+      if ( ((GEventGWinButton*)pe)->gwin == p->ghAccept) { 
+        gwinDestroy (p->ghDeny);
+        gwinDestroy (p->ghAccept);
+        p->ghDeny = NULL;
+        p->ghAccept = NULL;
+        
+        next_fight_state = VS_SCREEN;
+        sendGamePacket(OP_STARTBATTLE_ACK);
+        return;
+      }
+      
+      if ( ((GEventGWinButton*)pe)->gwin == p->ghPrevEnemy) { 
+        if (prevEnemy()) {
+          last_ui_time = chVTGetSystemTime();
+          screen_select_draw(FALSE);
+        }
+        return;
+      }
+      
+      if ((ourattack & ATTACK_MASK) == 0) {
+        // TODO -- modify for three attacks per Egan's spec. You
+        // can't change.
+        if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackLow) {
+          ourattack &= ~ATTACK_MASK;
+          ourattack |= ATTACK_LOW;
+          sendAttack();
+        }
+        if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackMid) {
+          ourattack &= ~ATTACK_MASK;
+          ourattack |= ATTACK_MID;
+          sendAttack();
+        }
+        if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackHi) {
+          ourattack &= ~ATTACK_MASK;
+          ourattack |= ATTACK_HI;
+          sendAttack();
+        }
+      } else {
+        // can't move.
+        chprintf(stream, "rejecting event -- already went\r\n");
+        playNope();
+      }
+    }
   }
 }
 
@@ -1205,11 +1220,14 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
   last_ui_time = chVTGetSystemTime(); // radio is a state-change, so reset this.
 
   // DEBUG
+#ifdef DEBUG_FIGHT_NETWORK
   if (u->opcode == OP_ACK) {
     chprintf(stream, "\r\n%08x --> RECV ACK (seq=%d, acknum=%d, mystate=%d, opcode 0x%x)\r\n", u->netid, u->seq, u->acknum, current_fight_state, next_fight_state, u->opcode);
   } else { 
     chprintf(stream, "\r\n%08x --> RECV OP  (seq=%d, mystate=%d, opcode 0x%x)\r\n", u->netid, u->seq, current_fight_state, u->opcode);
   }
+#endif /* DEBUG_FIGHT_NETWORK */
+  
   // Immediately ACK non-ACK packets. We do not support retry on
   // ACK, because we support ARQ just like TCP-IP.  without the ACK,
   // the sender will retransmit automatically.
@@ -1217,7 +1235,9 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
   if ( ((current_fight_state == IDLE) && (u->opcode >= OP_IMOVED)) && (u->opcode != OP_ACK)) {
     // this is an invalid state, which we should not ACK for.
     // Let the remote client die.
+#ifdef DEBUG_FIGHT_NETWORK
     chprintf(stream, "\r\n%08x --> SEND RST: rejecting opcode 0x%x beacuse i am idle\r\n", u->netid, u->opcode);
+#endif /* DEBUG_FIGHT_NETWORK */
     sendRST(u);
     // we are idle, do nothing. 
     return;
@@ -1243,9 +1263,10 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       if (next_fight_state != NONE) {
         // flush the packet 
         memset(&packet, 0, sizeof(packet));
+#ifdef DEBUG_FIGHT_NETWORK
         chprintf(stream, "\r\n%08x --> moving to state %d from state %d due to ACK\n",
                  u->netid, next_fight_state, current_fight_state, next_fight_state);
-
+#endif /* DEBUG_FIGHT_NETWORK */
         current_fight_state = next_fight_state;
       }
     }
@@ -1257,13 +1278,14 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       // we will have already ACK'd their packet anyway. 
       //      current_fight_state = next_fight_state;
       //    }
+#ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "\r\n%08x --> got turnover in wait_ack? nextstate=0x%x, currentstate=0x%x\r\n    We're waiting on seq %d opcode %d\r\n",
                u->netid,
                next_fight_state,
                current_fight_state,
                packet.seq,
                packet.opcode);
-
+#endif /* DEBUG_FIGHT_NETWORK */
       if (next_fight_state == SHOW_RESULTS) {
         // force state change
         current_fight_state = SHOW_RESULTS;
@@ -1271,13 +1293,15 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
     }
 
     if (u->opcode == OP_NEXTROUND) {
+#ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "\r\n%08x --> got nextround in wait_ack? nextstate=0x%x, currentstate=0x%x\r\n    We're waiting on seq %d opcode %d",
                u->netid,
                next_fight_state,
                current_fight_state,
                packet.seq,
                packet.opcode);
-
+#endif /* DEBUG_FIGHT_NETWORK */
+      
       if (next_fight_state == NEXTROUND) {
         // edge-case/packet pile up. Just advance the round and forget about the ACK. 
         current_fight_state = NEXTROUND; 
@@ -1336,12 +1360,16 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       memcpy(&current_enemy, u, sizeof(user));
 
       theirattack = current_enemy.attack_bitmap;
+#ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "\r\nRECV MOVE: (select) %d. our move %d.\r\n", theirattack, ourattack);
+#endif /* DEBUG_FIGHT_NETWORK */
     }
     if (u->opcode == OP_TURNOVER) {
       // uh-oh, the turn is over and we haven't moved!
       next_fight_state = POST_MOVE;
+#ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "\r\nmove_select/imoved, sending turnover\r\n");
+#endif /* DEBUG_FIGHT_NETWORK */
       sendGamePacket(OP_TURNOVER);
     }
     break;
@@ -1351,7 +1379,9 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       memcpy(&current_enemy, u, sizeof(user));
 
       theirattack = current_enemy.attack_bitmap;
-      chprintf(stream, "\r\nRECV MOVE: (postmove) %d. our move %d.\r\n", theirattack, ourattack);      
+#ifdef DEBUG_FIGHT_NETWORK
+      chprintf(stream, "\r\nRECV MOVE: (postmove) %d. our move %d.\r\n", theirattack, ourattack);
+#endif /* DEBUG_FIGHT_NETWORK */
     }
     
     if (u->opcode == OP_TURNOVER) { 
