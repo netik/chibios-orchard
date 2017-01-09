@@ -26,7 +26,10 @@ Matthew (graphics,art)\r\n\r\n"
 //                         12345678.123
 #define IMG_SPLASH        "SPQR.RGB"
 
-#define IMG_GROUND        "ground.rgb"
+#define IMG_GROUND        "ground.rgb" // ground 
+#define IMG_GROUND_BTNS   "grbutt.rgb" // ground with no buttons
+#define IMG_GROUND_BCK    "grback.rgb" // ground with back button
+
 #define IMG_BLOCK         "block.rgb"
 #define IMG_ATTACK        "attack.rgb"
 

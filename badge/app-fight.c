@@ -262,7 +262,7 @@ static void draw_select_buttons(FightHandles *p) {
   wi.g.show = TRUE;
   wi.g.x = 70;
   wi.g.y = POS_FLOOR_Y+10;
-  wi.g.width = 180;
+  wi.g.width = 150;
   wi.g.height = gdispGetFontMetric(fontFF, fontHeight) + 2;
   wi.text = "ATTACK";
   p->ghAttack = gwinButtonCreate(0, &wi);
@@ -274,7 +274,7 @@ static void draw_select_buttons(FightHandles *p) {
   wi.g.width = 40;
   wi.g.height = 20;
   wi.g.y = totalheight - 40;
-  wi.g.x = gdispGetWidth() - 40;
+  wi.g.x = 0;
   wi.text = "";
   wi.customDraw = noRender;
   p->ghExitButton = gwinButtonCreate(NULL, &wi);
@@ -463,10 +463,11 @@ static void screen_select_draw(int8_t initial) {
   font_t fontFF, fontSM;
   font_t fontXS;
   user **enemies = enemiesGet();
+
   if (initial == TRUE) { 
     gdispClear(Black);
     current_fight_state = ENEMY_SELECT;
-    putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
+    putImageFile(IMG_GROUND_BCK, 0, POS_FLOOR_Y);
   }
 
   // blank out the center
@@ -763,6 +764,13 @@ static void fight_start(OrchardAppContext *context) {
  
   // are we entering a fight?
   if (current_fight_state == APPROVAL_DEMAND) {
+    if (p->ghAttack != NULL) {
+      // if we just got pushed to approval demand, and, we were
+      // previously on the "attack" screen, remove that button
+      gwinDestroy (p->ghAttack);
+      p->ghAttack = NULL;
+    }
+          
     last_tick_time = chVTGetSystemTime();
     countdown=DEFAULT_WAIT_TIME;
     playAttacked();

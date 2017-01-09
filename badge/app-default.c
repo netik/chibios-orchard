@@ -14,8 +14,9 @@
 #include "userconfig.h"
 
 typedef struct _DefaultHandles {
-	GHandle ghExitButton;
-	GListener glBadge;
+  GHandle ghFightButton;
+  GHandle ghExitButton;
+  GListener glBadge;
 } DefaultHandles;
 
 extern uint8_t shout_ok;
@@ -51,6 +52,17 @@ static void draw_badge_buttons(DefaultHandles * p) {
   wi.g.width = 40;
   wi.g.height = 40;
   wi.g.y = totalheight - 40;
+  wi.g.x = 0;
+  wi.text = "";
+  wi.customDraw = noRender;
+
+  p->ghFightButton = gwinButtonCreate(NULL, &wi);
+
+  gwinWidgetClearInit(&wi);
+  wi.g.show = TRUE;
+  wi.g.width = 40;
+  wi.g.height = 40;
+  wi.g.y = totalheight - 40;
   wi.g.x = gdispGetWidth() - 40;
   wi.text = "";
   wi.customDraw = noRender;
@@ -66,7 +78,7 @@ static void redraw_badge(void) {
   gdispClear(Black);
 
   putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER1_Y);
-  putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
+  putImageFile(IMG_GROUND_BTNS, 0, POS_FLOOR_Y);
 
   fontLG = gdispOpenFont (FONT_LG);
   fontSM = gdispOpenFont (FONT_FIXED);
@@ -200,10 +212,16 @@ static void default_event(OrchardAppContext *context,
 
     switch(pe->type) {
     case GEVENT_GWIN_BUTTON:
+      if (((GEventGWinButton*)pe)->gwin == p->ghFightButton) {
+        orchardAppRun(orchardAppByName("Fight"));
+	return;
+      }
+
       if (((GEventGWinButton*)pe)->gwin == p->ghExitButton) {
 	orchardAppExit();
 	return;
       }
+
       break;
     }
   }
@@ -213,6 +231,7 @@ static void default_exit(OrchardAppContext *context) {
   DefaultHandles * p;
 
   p = context->priv;
+  gwinDestroy (p->ghFightButton);
   gwinDestroy (p->ghExitButton);
   geventDetachSource (&p->glBadge, NULL);
   geventRegisterCallback (&p->glBadge, NULL, NULL);
