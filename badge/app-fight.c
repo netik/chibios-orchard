@@ -337,7 +337,7 @@ static uint8_t nextEnemy() {
     // we failed, so time to die
     screen_alert_draw("NO ENEMIES NEARBY!");
     chThdSleepMilliseconds(ALERT_DELAY);
-    orchardAppExit();
+    orchardAppRun(orchardAppByName("Badge"));
     return FALSE;
   }
 }
@@ -363,7 +363,7 @@ static uint8_t prevEnemy() {
     // we failed, so time to die.
     screen_alert_draw("NO ENEMIES NEARBY!");
     chThdSleepMilliseconds(ALERT_DELAY);
-    orchardAppExit();
+    orchardAppRun(orchardAppByName("Badge"));
     return FALSE;
   }
 }
@@ -789,7 +789,7 @@ static void fight_start(OrchardAppContext *context) {
       // punt if no enemies
       screen_alert_draw("NO ENEMIES NEARBY!");
       chThdSleepMilliseconds(ALERT_DELAY);
-      orchardAppExit();
+      orchardAppRun(orchardAppByName("Badge"));
       return;
     }
   }
@@ -1041,7 +1041,7 @@ static void fight_event(OrchardAppContext *context,
       switch(pe->type) {
       case GEVENT_GWIN_BUTTON:
 	if ( ((GEventGWinButton*)pe)->gwin == p->ghExitButton) { 
-	  orchardAppExit();
+          orchardAppRun(orchardAppByName("Badge"));
 	  return;
 	}
         if ( ((GEventGWinButton*)pe)->gwin == p->ghNextEnemy) { 
