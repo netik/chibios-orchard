@@ -36,6 +36,7 @@ static uint8_t ourattack = 0;
 static uint8_t theirattack = 0;
 static uint32_t lastseq = 0;
 static uint16_t last_hit = 0;
+static uint16_t last_damage = 0;
 static uint8_t turnover_sent = false;       // make sure we only transmit turnover once. 
 
 static void clearstatus(void) {
@@ -99,7 +100,7 @@ static void blinkText (coord_t x, coord_t y,coord_t cx, coord_t cy, char *text, 
 
 uint16_t calc_hit(void) {
   // return random shit for now
-  return ((((uint8_t)rand()) % 200) +1);
+  return ((((uint8_t)rand()) % 200) + 50);
 }
 
 
@@ -390,6 +391,7 @@ static void show_results(void) {
   uint16_t textx, texty;
   font_t fontFF;
   FightHandles *p;
+  userconfig *config = getConfig();
   
   fontFF = gdispOpenFont(FONT_FIXED);
 
@@ -437,10 +439,22 @@ static void show_results(void) {
   else 
     chsnprintf(attackfn2, sizeof(attackfn2), "gatt%c1r.rgb", c);
 
-  // animate the characters
-  chsnprintf (ourdmg_s, sizeof(ourdmg_s), "-%d", 999 );
-  chsnprintf (theirdmg_s, sizeof(theirdmg_s), "-%d", 999 );
+  // compute damages
+  // Both sides have sent damage based on stats.
+  // If the hits were the same, deduct some damage
+
+  config->hp = config->hp - last_damage;
+  if (config->hp < 0) { config->hp = 0; }
+
+  current_enemy.hp = current_enemy.hp - last_hit;
+  if (current_enemy.hp < 0) { current_enemy.hp = 0; }
+
+  // todo: something if you die.
   
+  // animate the characters
+  chsnprintf (ourdmg_s, sizeof(ourdmg_s), "-%d", last_damage );
+  chsnprintf (theirdmg_s, sizeof(theirdmg_s), "-%d", last_hit );
+    
   for (uint8_t i=0; i < 4; i++) { 
     putImageFile(attackfn1, POS_PLAYER1_X, POS_PLAYER1_Y);
     putImageFile(attackfn2, POS_PLAYER2_X, POS_PLAYER2_Y);
@@ -776,13 +790,6 @@ static void fight_start(OrchardAppContext *context) {
  
   // are we entering a fight?
   if (current_fight_state == APPROVAL_DEMAND) {
-    if (p->ghAttack != NULL) {
-      // if we just got pushed to approval demand, and, we were
-      // previously on the "attack" screen, remove that button
-      gwinDestroy (p->ghAttack);
-      p->ghAttack = NULL;
-    }
-          
     last_tick_time = chVTGetSystemTime();
     countdown=DEFAULT_WAIT_TIME;
     playAttacked();
@@ -913,6 +920,13 @@ static void sendGamePacket(uint8_t opcode) {
   packet.dex = config->dex;
 
   packet.attack_bitmap = ourattack;
+
+  if (opcode == OP_TURNOVER) {
+    // if this is a turn-over packet, then we also transmit
+    // damage (to them)
+    last_hit = calc_hit();
+    packet.damage = last_hit;
+  }
   
   resendPacket();
 }
@@ -989,7 +1003,7 @@ static void fight_event(OrchardAppContext *context,
       // if either side dies update states and exit app
       ourattack = 0;
       theirattack = 0;
-      last_hit = 0;
+      last_damage = 0;
       turnover_sent = false;
       current_fight_state=MOVE_SELECT;
       draw_attack_buttons();
@@ -1279,13 +1293,17 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       //      current_fight_state = next_fight_state;
       //    }
 #ifdef DEBUG_FIGHT_NETWORK
-      chprintf(stream, "\r\n%08x --> got turnover in wait_ack? nextstate=0x%x, currentstate=0x%x\r\n    We're waiting on seq %d opcode %d\r\n",
+      chprintf(stream, "\r\n%08x --> got turnover in wait_ack? nextstate=0x%x, currentstate=0x%x, damage=%d\r\n    We're waiting on seq %d opcode %d\r\n",
                u->netid,
                next_fight_state,
                current_fight_state,
+               u->damage,
                packet.seq,
                packet.opcode);
 #endif /* DEBUG_FIGHT_NETWORK */
+
+      last_damage = u->damage;
+      
       if (next_fight_state == SHOW_RESULTS) {
         // force state change
         current_fight_state = SHOW_RESULTS;
@@ -1322,6 +1340,7 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
         orchardAppRun(orchardAppByName("Fight"));
       } else {
 	// build the screen
+        screen_select_close(instance.context);
         countdown=DEFAULT_WAIT_TIME;
 	playAttacked();
 	screen_demand_draw();
@@ -1357,9 +1376,9 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
     if (u->opcode == OP_IMOVED) {
       // If I see OP_IMOVED from the other side while we are in
       // MOVE_SELECT, store that move for later. 
-      memcpy(&current_enemy, u, sizeof(user));
+      //      memcpy(&current_enemy, u, sizeof(user));
 
-      theirattack = current_enemy.attack_bitmap;
+      theirattack = u->attack_bitmap;
 #ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "\r\nRECV MOVE: (select) %d. our move %d.\r\n", theirattack, ourattack);
 #endif /* DEBUG_FIGHT_NETWORK */
@@ -1370,15 +1389,17 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
 #ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "\r\nmove_select/imoved, sending turnover\r\n");
 #endif /* DEBUG_FIGHT_NETWORK */
+      last_damage = u->damage;
+      
       sendGamePacket(OP_TURNOVER);
     }
     break;
   case POST_MOVE: // no-op
     // if we get a turnover packet, or we're out of time, we can calc damage and show results.
     if (u->opcode == OP_IMOVED) {
-      memcpy(&current_enemy, u, sizeof(user));
+      //      memcpy(&current_enemy, u, sizeof(user));
 
-      theirattack = current_enemy.attack_bitmap;
+      theirattack = u->attack_bitmap;
 #ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "\r\nRECV MOVE: (postmove) %d. our move %d.\r\n", theirattack, ourattack);
 #endif /* DEBUG_FIGHT_NETWORK */
@@ -1387,6 +1408,7 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
     if (u->opcode == OP_TURNOVER) { 
       // if we are post move, and we get a turnover packet, then just go straight to
       // results, we don't need an ACK at this point.
+      last_damage = u->damage;
       current_fight_state = SHOW_RESULTS;
       return;
     }

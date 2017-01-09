@@ -11,7 +11,7 @@
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0
-#define CONFIG_VERSION    10
+#define CONFIG_VERSION    1
 #define CONFIG_NAME_MAXLEN 10
 
 #define maxhp(level) ((level-1) * 100) + 337
@@ -45,7 +45,7 @@ typedef struct userconfig {
   uint8_t in_combat; 
 
   /* todo: determine which stats are relevant to the game (egan) */
-  uint16_t hp;
+  int16_t hp;
   uint16_t xp;
   uint16_t gold;
   uint8_t level;
@@ -79,7 +79,7 @@ typedef struct _userpkt {
   char name[CONFIG_NAME_MAXLEN];  /* 16 */
   player_type p_type;     /* 1 */
   uint8_t in_combat;      /* 1 */        
-  uint16_t hp;            /* 2 */
+  int16_t hp;            /* 2 */
   uint8_t level;          /* 1 */
 
   /* Player stats, used in ping packet */
@@ -95,7 +95,7 @@ typedef struct _userpkt {
   /* Battle Payload */
   /* A bitwise map indicating the attack type */
   uint8_t attack_bitmap;  /* 1 */
-  uint8_t damage;         /* 1 */ // DEPRECATED
+  uint8_t damage;         /* 1 */
 
 } user;
 
