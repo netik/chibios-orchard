@@ -622,11 +622,13 @@ radioStart (SPIDriver * sp)
 	radio->kw01_flags = 0;
 	radio->kw01_maxlen = KW01_PKT_MAXLEN;
 
-	radioWrite (radio, KW01_PKTCONF2, KW01_PKTCONF2_AUTORRX);
-	radioWrite (radio, KW01_PAYLEN, 0xFF);
+	radioWrite (radio, KW01_PKTCONF2, KW01_PKTCONF2_IPKTDELAY |
+	    KW01_PKTCONF2_AUTORRX);
+	radioWrite (radio, KW01_PAYLEN, KW01_PKT_MAXLEN);
+	radioWrite (radio, KW01_DIOMAP1, 0x40);
 
 	radioWrite (radio, KW01_PREAMBLEMSB, 0);
-	radioWrite (radio, KW01_PREAMBLELSB, 3);
+	radioWrite (radio, KW01_PREAMBLELSB, 0xF);
 
 	/* Select frequency, deviation and bitrate */
 

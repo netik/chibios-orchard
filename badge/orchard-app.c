@@ -24,11 +24,15 @@ const OrchardApp *orchard_app_list;
 /* the one and in fact only instance of any orchard app */
 orchard_app_instance instance;  
 
+/* graphics event handle */
+static OrchardAppEvent ugfx_evt;
+
 /* orchard event sources */
 event_source_t orchard_app_terminated;
 event_source_t orchard_app_terminate;
 event_source_t timer_expired;
 event_source_t ui_completed;
+event_source_t orchard_app_gfx;
 
 /* Enemy ping/pong handling ------------------------------------------------*/
 
@@ -122,21 +126,27 @@ static void execute_ping(eventid_t id) {
 void orchardAppUgfxCallback (void * arg, GEvent * pe)
 {
   GListener * gl;
-  OrchardAppEvent evt;
-
-  (void)pe;
 
   gl = (GListener *)arg;
 
-  evt.type = ugfxEvent;
-  evt.ugfx.pListener = gl;
-  evt.ugfx.pEvent = pe;
+  ugfx_evt.type = ugfxEvent;
+  ugfx_evt.ugfx.pListener = gl;
+  ugfx_evt.ugfx.pEvent = pe;
+
+  chEvtBroadcast (&orchard_app_gfx);
+
+  return;
+}
+
+static void ugfx_event(eventid_t id) {
+
+  (void) id;
 
   osalMutexLock (&event_mutex);
-  instance.app->event (instance.context, &evt);
+  instance.app->event (instance.context, &ugfx_evt);
   osalMutexUnlock (&event_mutex);
 
-  geventEventComplete (gl);
+  geventEventComplete (ugfx_evt.ugfx.pListener);
 
   return;
 }
@@ -263,7 +273,7 @@ void orchardAppTimer(const OrchardAppContext *context,
   chVTSet(&context->instance->timer, US2ST(usecs), timer_do_send_message, NULL);
 }
 
-static THD_WORKING_AREA(waOrchardAppThread, 0x400);
+static THD_WORKING_AREA(waOrchardAppThread, 0x300);
 static THD_FUNCTION(orchard_app_thread, arg) {
 
   (void)arg;
@@ -285,6 +295,7 @@ static THD_FUNCTION(orchard_app_thread, arg) {
   evtTableHook(orchard_app_events, ui_completed, ui_complete_cleanup);
   evtTableHook(orchard_app_events, orchard_app_terminate, terminate);
   evtTableHook(orchard_app_events, timer_expired, timer_event);
+  evtTableHook(orchard_app_events, orchard_app_gfx, ugfx_event);
 
   // if APP is null, the system will crash here. 
   if (instance->app->init)
@@ -338,6 +349,7 @@ static THD_FUNCTION(orchard_app_thread, arg) {
   evtTableUnhook(orchard_app_events, timer_expired, timer_event);
   evtTableUnhook(orchard_app_events, orchard_app_terminate, terminate);
   evtTableUnhook(orchard_app_events, ui_completed, ui_complete_cleanup);
+  evtTableUnhook(orchard_app_events, orchard_app_gfx, ugfx_event);
  
   /* Atomically broadcasting the event source and terminating the thread,
      there is not a chSysUnlock() because the thread terminates upon return.*/
@@ -356,6 +368,7 @@ void orchardAppInit(void) {
   chEvtObjectInit(&timer_expired);
   chEvtObjectInit(&ping_timeout);
   chEvtObjectInit(&ui_completed);
+  chEvtObjectInit(&orchard_app_gfx);
   chVTReset(&instance.timer);
 
   // set up our ping timer

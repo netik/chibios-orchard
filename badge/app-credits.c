@@ -55,7 +55,6 @@ typedef struct gdisp_image {
 typedef struct _CreditsHandles {
 	GHandle		ghExitButton;
 	GListener	gl;
-	uint8_t		stop;
 } CreditsHandles;
 
 static void scrollAreaSet (uint16_t TFA, uint16_t BFA)
@@ -103,7 +102,7 @@ static void credits_start(OrchardAppContext *context)
 	CreditsHandles * p;
 	GWidgetInit wi;
 	orientation_t o;
-
+	GEvent * pe;
 
 	if (f_open (&f, "credits.rgb", FA_READ) != FR_OK) {
 		orchardAppExit ();
@@ -127,9 +126,6 @@ static void credits_start(OrchardAppContext *context)
 	p->ghExitButton = gwinButtonCreate (NULL, &wi);
 	geventListenerInit (&p->gl);
 	gwinAttachListener (&p->gl);
-	geventRegisterCallback (&p->gl, orchardAppUgfxCallback, &p->gl);
-
-	p->stop = 0;
 
 	f_read (&f, &hdr, sizeof(hdr), &br);
 	h = hdr.gdi_height_hi << 8 | hdr.gdi_height_lo;
@@ -141,8 +137,6 @@ static void credits_start(OrchardAppContext *context)
 	scrollAreaSet (0, 0);
 	pos = gdispGetWidth() - 1;
 	for (i = 0; i < h; i++) {
-		if (p->stop)
-			break;
 		f_read (&f, buf, sizeof(pixel_t) * gdispGetHeight (), &br);
 		gdispBlitAreaEx (pos, 0, 1, gdispGetHeight (), 0, 0, 1, buf);
 		pos++;
@@ -150,14 +144,16 @@ static void credits_start(OrchardAppContext *context)
 			pos = 0;
 		scroll (o == GDISP_ROTATE_90 ?
 			(gdispGetWidth() - 1) - pos : pos);
+		pe = geventEventWait(&p->gl, 0);
+		if (pe != NULL && pe->type == GEVENT_GWIN_BUTTON)
+			break;
 		chThdSleepMilliseconds (15);
 	}
 
 	chHeapFree (buf);
 	f_close (&f);
 
-	if (p->stop == 0)
-		chThdSleepMilliseconds (800);
+	chThdSleepMilliseconds (800);
 
 	pwmFileThreadPlay (NULL);
 	gdispClear (Black);
@@ -170,12 +166,8 @@ static void credits_start(OrchardAppContext *context)
 
 void credits_event(OrchardAppContext *context, const OrchardAppEvent *event)
 {
-	CreditsHandles * p;
-
-        if (event->type == ugfxEvent) {
-		p = context->priv;
-		p->stop = 1;
-	}
+	(void)context;
+	(void)event;
 
 	return;
 }
@@ -187,7 +179,6 @@ static void credits_exit(OrchardAppContext *context)
 	p = context->priv;
 
 	if (p != NULL) {
-		geventRegisterCallback (&p->gl, NULL, NULL);
 		geventDetachSource (&p->gl, NULL);
 		gwinDestroy (p->ghExitButton);
 
