@@ -24,11 +24,16 @@ const OrchardApp *orchard_app_list;
 /* the one and in fact only instance of any orchard app */
 orchard_app_instance instance;  
 
+/* graphics event handle */
+static OrchardAppEvent ugfx_evt;
+
 /* orchard event sources */
 event_source_t orchard_app_terminated;
 event_source_t orchard_app_terminate;
 event_source_t timer_expired;
 event_source_t ui_completed;
+event_source_t orchard_app_gfx;
+event_source_t orchard_app_radio;
 
 /* Enemy ping/pong handling ------------------------------------------------*/
 
@@ -37,8 +42,6 @@ static event_source_t ping_timeout;  // fires when ping_timer is ping'd
 static uint8_t cleanup_state = 0;    // cleans up every other ping
 void enemy_cleanup(void);            // reaps the list every other ping
 /* end ping handling */
-
-mutex_t event_mutex;
 
 // lock/unlock this mutex before touching the enemies list!
 mutex_t enemies_mutex;
@@ -122,34 +125,72 @@ static void execute_ping(eventid_t id) {
 void orchardAppUgfxCallback (void * arg, GEvent * pe)
 {
   GListener * gl;
-  OrchardAppEvent evt;
-
-  (void)pe;
 
   gl = (GListener *)arg;
 
-  evt.type = ugfxEvent;
-  evt.ugfx.pListener = gl;
-  evt.ugfx.pEvent = pe;
+  ugfx_evt.type = ugfxEvent;
+  ugfx_evt.ugfx.pListener = gl;
+  ugfx_evt.ugfx.pEvent = pe;
 
-  osalMutexLock (&event_mutex);
-  instance.app->event (instance.context, &evt);
-  osalMutexUnlock (&event_mutex);
-
-  geventEventComplete (gl);
+  chEvtBroadcast (&orchard_app_gfx);
 
   return;
 }
 
-void orchardAppRadioCallback (KW01_PKT * pkt)
-{
-  OrchardAppEvent evt;
-  evt.type = radioEvent;
-  evt.radio.pPkt = pkt;
+static void ugfx_event(eventid_t id) {
 
-  osalMutexLock (&event_mutex);
-  instance.app->event (instance.context, &evt);
-  osalMutexUnlock (&event_mutex);
+  (void) id;
+
+  instance.app->event (instance.context, &ugfx_evt);
+  geventEventComplete (ugfx_evt.ugfx.pListener);
+
+  return;
+}
+
+void orchardAppRadioCallback (KW01_PKT * pkt) {
+
+  (void)pkt;
+
+  if (instance.context == NULL)
+    return;
+
+  chEvtBroadcast (&orchard_app_radio);
+
+  /*
+   * Pause until the event can be handled by the app thread. In
+   * reality we won't pause for an entire five seconds here: the chThdResume()
+   * call below should fire will before that. We could just sleep
+   * indefinitely, but we use a timed sleep just to make sure we don't
+   * become completely stuck forever if for some reason the app thread
+   * never calls the event handler.
+   */
+
+  chThdSleepMilliseconds (5000);
+
+  return;
+}
+
+static void radio_event(eventid_t id) {
+  OrchardAppEvent evt;
+  thread_t * t;
+
+  (void) id;
+
+  if (instance.context != NULL) {
+    evt.type = radioEvent;
+    evt.radio.pPkt = &KRADIO1.kw01_pkt;
+
+    instance.app->event (instance.context, &evt);
+  }
+
+  /*
+   * We're taking advantage of the fact that the radio event handler
+   * runs out of the main thread, and that the main thread is always
+   * the first one in the thread registry list (it never exits).
+   */
+
+  t = chRegFirstThread ();
+  chThdResume (&t, MSG_OK);
 
   return;
 }
@@ -162,26 +203,27 @@ static void ui_complete_cleanup(eventid_t id) {
   evt.ui.code = uiComplete;
   evt.ui.flags = uiOK;
 
-  osalMutexLock (&event_mutex);
   instance.app->event(instance.context, &evt);  
-  osalMutexUnlock (&event_mutex);
 
   return;
 }
 
 static void terminate(eventid_t id) {
+  OrchardAppEvent evt;
+  thread_t * t;
 
   (void)id;
-  OrchardAppEvent evt;
 
   if (!instance.app->event)
     return;
 
   evt.type = appEvent;
   evt.app.event = appTerminate;
-  osalMutexLock (&event_mutex);
   instance.app->event(instance.context, &evt);
-  osalMutexUnlock (&event_mutex);
+
+  t = chRegFirstThread ();
+  chThdResume (&t, MSG_OK);
+
   chThdTerminate(instance.thr);
 }
 
@@ -197,9 +239,7 @@ static void timer_event(eventid_t id) {
   evt.timer.usecs = instance.timer_usecs;
   if( !ui_override )
     {
-    osalMutexLock (&event_mutex);
     instance.app->event(instance.context, &evt);
-    osalMutexUnlock (&event_mutex);
     }
 
   if (instance.timer_repeating)
@@ -263,7 +303,7 @@ void orchardAppTimer(const OrchardAppContext *context,
   chVTSet(&context->instance->timer, US2ST(usecs), timer_do_send_message, NULL);
 }
 
-static THD_WORKING_AREA(waOrchardAppThread, 0x400);
+static THD_WORKING_AREA(waOrchardAppThread, 0x300);
 static THD_FUNCTION(orchard_app_thread, arg) {
 
   (void)arg;
@@ -281,10 +321,12 @@ static THD_FUNCTION(orchard_app_thread, arg) {
   instance->uicontext = NULL;
   instance->ui_result = 0;
 
-  evtTableInit(orchard_app_events, 6);
+  evtTableInit(orchard_app_events, 5);
   evtTableHook(orchard_app_events, ui_completed, ui_complete_cleanup);
   evtTableHook(orchard_app_events, orchard_app_terminate, terminate);
   evtTableHook(orchard_app_events, timer_expired, timer_event);
+  evtTableHook(orchard_app_events, orchard_app_gfx, ugfx_event);
+  evtTableHook(orchard_app_events, orchard_app_radio, radio_event);
 
   // if APP is null, the system will crash here. 
   if (instance->app->init)
@@ -312,9 +354,7 @@ static THD_FUNCTION(orchard_app_thread, arg) {
       OrchardAppEvent evt;
       evt.type = appEvent;
       evt.app.event = appStart;
-      osalMutexLock (&event_mutex);
       instance->app->event(instance->context, &evt);
-      osalMutexUnlock (&event_mutex);
     }
     while (!chThdShouldTerminateX())
       chEvtDispatch(evtHandlers(orchard_app_events), chEvtWaitOne(ALL_EVENTS));
@@ -338,6 +378,8 @@ static THD_FUNCTION(orchard_app_thread, arg) {
   evtTableUnhook(orchard_app_events, timer_expired, timer_event);
   evtTableUnhook(orchard_app_events, orchard_app_terminate, terminate);
   evtTableUnhook(orchard_app_events, ui_completed, ui_complete_cleanup);
+  evtTableUnhook(orchard_app_events, orchard_app_gfx, ugfx_event);
+  evtTableUnhook(orchard_app_events, orchard_app_radio, radio_event);
  
   /* Atomically broadcasting the event source and terminating the thread,
      there is not a chSysUnlock() because the thread terminates upon return.*/
@@ -356,6 +398,8 @@ void orchardAppInit(void) {
   chEvtObjectInit(&timer_expired);
   chEvtObjectInit(&ping_timeout);
   chEvtObjectInit(&ui_completed);
+  chEvtObjectInit(&orchard_app_gfx);
+  chEvtObjectInit(&orchard_app_radio);
   chVTReset(&instance.timer);
 
   // set up our ping timer
@@ -370,7 +414,6 @@ void orchardAppInit(void) {
     enemies[i] = NULL;
   }
   osalMutexObjectInit(&enemies_mutex);
-  osalMutexObjectInit(&event_mutex);
 
   current = orchard_app_list;
   while (current->name) {
