@@ -86,3 +86,7 @@ Matthew (graphics,art)\r\n\r\n"
 #define POS_PCENTER_Y  45
 
 #define POS_FLOOR_Y    200
+
+/* screen locations */
+#define STATUS_Y            38     /* where the status row is on screen */
+

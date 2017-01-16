@@ -393,7 +393,7 @@ int main(void)
 
   if (config->sound_enabled) {
     // jna - disable this until I can deal with it. 
-    //    playStartupSong();
+    playStartupSong();
   }
   orchardShellRestart();
 

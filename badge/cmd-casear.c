@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static char *casearShift(uint8_t shift_size, char *str) {
+static char *casearShift(int8_t shift_size, char *str) {
   uint8_t i;
   static char output[255];
   memset(&output, 0, 255);
@@ -41,6 +41,9 @@ static char *casearShift(uint8_t shift_size, char *str) {
       output[i] = (((str[i] - 97 + shift_size) % 26) + 97);
     else
       output[i] = str[i];
+
+    // stop buffer overflows
+    if (i == 254) { return(output); }
   }
   return(output);
 }
@@ -52,7 +55,7 @@ int main(int argc, char *argv[])
 static void cmd_casear(BaseSequentialStream *chp, int argc, char *argv[])
 #endif
 {
-  uint8_t shift_size;
+  int8_t shift_size;
   
   (void)argv;
   (void)argc;
@@ -60,7 +63,7 @@ static void cmd_casear(BaseSequentialStream *chp, int argc, char *argv[])
 
   if (argc < 2) {
     chprintf(chp, "Casear:\r\n");
-    chprintf(chp, "  Usage: casear <shift> <message>\r\n");
+    chprintf(chp, "  Usage: casear +/-shift message\r\n");
     chprintf(chp, "  An implementation of the casear shift cipher,\r\n");
     chprintf(chp, "  a terrible, no good, weak form of cryptography. shift=13=rot13 :) )\r\n");
     return 0;
@@ -80,7 +83,7 @@ static void cmd_casear(BaseSequentialStream *chp, int argc, char *argv[])
   // FOO BAR BAZ
   // SBB ONE ONM rot 13
 
-  printf("%s", casearShift(shift_size, argv[2]));
+  printf("%s\r\n", casearShift(shift_size, argv[2]));
   return 0;
 }
 

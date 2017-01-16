@@ -43,7 +43,7 @@ sdcard: images midi
 	@echo 'sdcard built!'
 	@echo
 	@echo 'build #'
-	@strings sdcard/badge.bin  | grep -H1 build | head -1
+	@strings sdcard/badge.bin  | grep -1 gitrev | head -1
 	du -kh sdcard
 
 # copy the card to the right folder on my osx box
