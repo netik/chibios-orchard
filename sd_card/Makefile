@@ -1,12 +1,38 @@
+#
+# SPQR / Ides of March asset build system
+#
+# John Adams 
+# jna@retina.net
+# 1/2017
+#
+
+# This makefile will build the tools and media that will be placed on
+# the SD cards
+#
+# rgbhdr, ImageMagick, and FFMPeg are required to convert images. 
+#
+
 all: rgbhdr 
 
 rgbhdr: rgbhdr.c
-	cc -g -o rgbhdr rgbhdr.c
+	cc -o rgbhdr rgbhdr.c
 
-images: rgbhdr
-	./convertall.sh
+# This rule will build the mirrored and standard images only if the
+# jpgs have changed. Rebuilding them all the time was time consuming.
+rgb/%.rgb : jpg/%.jpg
+	convert -flop $< $(subst .jpg,r.jpg,$(subst jpg/,jpg/mirrored/,$<))
+	./convert_to_rgb.sh $<
+	mv $(subst rgb/,jpg/,$(@)) rgb/
+	./convert_to_rgb.sh $(subst .jpg,r.jpg,$(subst jpg/,jpg/mirrored/,$<))
+	mv $(subst .jpg,r.rgb,$(subst jpg/,jpg/mirrored/,$<)) rgb/
 
-sdcard: cleansd images midi
+clean_images:
+	$(shell rm jpg/mirrored/*)
+	$(shell	rm rgb/*)
+
+images: rgbhdr $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard jpg/*.jpg)))))
+
+sdcard: images midi
 	@cp rgb/*.rgb sdcard
 	@if [ ! -d "sdcard" ]; then mkdir sdcard; fi
 	@find midi -name \*.bin -exec cp {} sdcard \;
@@ -20,7 +46,7 @@ sdcard: cleansd images midi
 	@strings sdcard/badge.bin  | grep -H1 build | head -1
 	du -kh sdcard
 
-# copy the card to the right folder on osx
+# copy the card to the right folder on my osx box
 osxsd:	sdcard
 	@echo "Copying to /Volumes/NO\ NAME/"
 	@cp sdcard/* /Volumes/NO\ NAME/
