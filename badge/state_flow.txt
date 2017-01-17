@@ -34,3 +34,30 @@ If the timer ticks and we are in POST_MOVE, ---and--- we have both results, we t
 and we block until we get an ACK.
 
 
+
+Bugs:
+
+1. Get rid of sleeps in the thread, we can't ack if we are sleeping!
+--- I don't think this is true. Because chThdMiliseconds() should wake on interrupt, and we are servicing the interrupt via handler. ---
+
+so in vs_screen:
+blink 10 x with 200mS (3 frames) delay....
+
+frames:
+30 frames @ 15fps
+on frames 0-30, do blinky-text (use a new var?)
+
+then we do animation.
+Animation is frame,200ms,frame,frame.... then we switch states.
+
+so, something like:
+show frame
+count three frames (66*3)
+show frame
+...
+
+
+
+
+
+

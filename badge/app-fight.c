@@ -16,11 +16,6 @@
 #include "userconfig.h"
 #include "app-fight.h"
 
-/* debugging - this protocol can be a real pain in the ass */
-#undef DEBUG_FIGHT_TICK        // show the clock tick events, ugfx events, and other misc events
-#define DEBUG_FIGHT_NETWORK    // show all network (radio) traffic
-#define DEBUG_FIGHT_STATE      // debug state changes
-
 /* Globals */
 static int32_t countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value. 
 static user current_enemy;                    // current enemy we are attacking/talking to 
@@ -35,19 +30,26 @@ static uint32_t last_send_time = 0;
 static uint8_t ourattack = 0;
 static uint8_t theirattack = 0;
 static uint32_t lastseq = 0;
-static uint16_t last_hit = 0;
-static uint16_t last_damage = 0;
+static int16_t last_hit = -1;
+static int16_t last_damage = -1;
 static uint8_t turnover_sent = false;       // make sure we only transmit turnover once. 
-
 
 static void changeState(fight_state nextstate) {
   // call previous state exit
-#ifdef DEBUG_FIGHT_STATE
-  chprintf(stream, "\r\nFIGHT: moving to state %d...\r\n", nextstate);
-#endif
   // a state change always resets the UI clock
   last_ui_time = chVTGetSystemTime();
 
+  if (nextstate == current_fight_state) {
+    // do nothing.
+#ifdef DEBUG_FIGHT_STATE
+    chprintf(stream, "\r\nFIGHT: ignoring state change request, as we are already in state %d: %s...\r\n", nextstate, fight_state_name[nextstate]);
+#endif
+    return;
+  }
+#ifdef DEBUG_FIGHT_STATE
+  chprintf(stream, "\r\nFIGHT: moving to state %d: %s...\r\n", nextstate, fight_state_name[nextstate]);
+#endif
+  
   if (fight_funcs[current_fight_state].exit != NULL) {
     fight_funcs[current_fight_state].exit();
   }
@@ -76,12 +78,32 @@ static void screen_alert_draw(char *msg) {
 static void state_idle_enter(void) {
   userconfig *config = getConfig();
 
+  FightHandles *p;
+
+  // clean up the fight. This will fire a repaint that erases the area
+  // under the button.  So, do not enter this state unless you are
+  // ready to clear the screen and the fight is over.
+
+  p = instance.context->priv;
+
+  if (p->ghAttackHi != NULL) 
+    gwinDestroy (p->ghAttackHi);
+
+  if (p->ghAttackMid != NULL) 
+    gwinDestroy (p->ghAttackMid);
+
+  if (p->ghAttackLow != NULL) 
+    gwinDestroy (p->ghAttackLow);
+
+  // reset params
   config->in_combat = 0;
+  last_hit = -1;
+  last_damage = -1;
   ourattack = 0;
   theirattack = 0;
-
   memset(&current_enemy, 0, sizeof(current_enemy));
-    
+  memset(&packet, 0, sizeof(packet));
+  
   ledSetProgress(-1);
 }
 
@@ -91,8 +113,7 @@ static void state_waitack_enter(void) {
 }
 
 static void state_waitack_exit(void) {
-  // clear the packet 
-  memset (&packet, 0, sizeof(packet));   
+  // no-op for now
 }
 
 static void state_waitack_tick(void) { 
@@ -103,7 +124,6 @@ static void state_waitack_tick(void) {
     } else { 
       orchardAppTimer(instance.context, 0, false); // shut down the timer
       screen_alert_draw("OTHER PLAYER WENT AWAY");
-      changeState(IDLE);
       playHardFail();
       chThdSleepMilliseconds(ALERT_DELAY);
       orchardAppRun(orchardAppByName("Badge"));
@@ -214,10 +234,13 @@ static void state_nextround_enter() {
 static void state_move_select_enter() {
   uint16_t ypos = STATUS_Y;
   font_t fontSM;
-
+  FightHandles *p;
+  p = instance.context->priv;
+  
   ourattack = 0;
   theirattack = 0;
-  last_damage = 0;
+  last_damage = -1;
+  last_hit = -1;
   turnover_sent = false;
 
   fontSM = gdispOpenFont (FONT_SM);
@@ -233,7 +256,10 @@ static void state_move_select_enter() {
                       "Attack! High, Mid, Low?",
                       fontSM, White, justifyCenter);
   
-  draw_attack_buttons();
+  // don't redraw if we don't have to.
+  if (p->ghAttackLow == NULL) 
+    draw_attack_buttons();
+  
   last_tick_time = chVTGetSystemTime();
   countdown=MOVE_WAIT_TIME;
 
@@ -256,16 +282,7 @@ static void state_move_select_tick() {
 }
 
 static void state_move_select_exit() {
-  FightHandles *p;
 
-  // clean up the select page 
-  p = instance.context->priv;
-  gwinDestroy (p->ghAttackHi);
-  gwinDestroy (p->ghAttackMid);
-  gwinDestroy (p->ghAttackLow);
-  p->ghAttackHi = NULL;
-  p->ghAttackMid = NULL;
-  p->ghAttackLow = NULL;
 }
 
 static void screen_select_draw(int8_t initial) {
@@ -484,7 +501,6 @@ static void countdown_tick() {
   if (countdown <= 0) {
     orchardAppTimer(instance.context, 0, false); // shut down the timer
     screen_alert_draw("TIMED OUT!");
-    changeState(IDLE);
     playHardFail();
     chThdSleepMilliseconds(ALERT_DELAY);
     orchardAppRun(orchardAppByName("Badge"));
@@ -653,7 +669,7 @@ static void sendAttack(void) {
   fontSM = gdispOpenFont (FONT_SM);
   
   // clear middle
-  gdispFillArea(140,70,40,110,Black);
+  //  gdispFillArea(140,70,40,110,Black);
 
   if (ourattack & ATTACK_HI) {
     putImageFile(IMG_GATTH1, POS_PLAYER1_X, POS_PLAYER1_Y);
@@ -879,6 +895,9 @@ static void show_results(void) {
   // Both sides have sent damage based on stats.
   // If the hits were the same, deduct some damage
 
+  // if we didn't get a hit at all, they failed to do any damage. 
+  if (last_damage == -1) last_damage = 0;
+  
   config->hp = config->hp - last_damage;
   if (config->hp < 0) { config->hp = 0; }
 
@@ -954,7 +973,7 @@ static void fight_start(OrchardAppContext *context) {
   geventRegisterCallback (&p->glFight, orchardAppUgfxCallback, &p->glFight);
 
   // are we entering a fight?
-  chprintf(stream, "\r\nFIGHT: entering with enemy %d state %d\r\n", current_enemy.netid, current_fight_state);
+  chprintf(stream, "\r\nFIGHT: entering with enemy %08x state %d\r\n", current_enemy.netid, current_fight_state);
   
   if (current_enemy.netid != 0 && current_fight_state != APPROVAL_DEMAND) {
     changeState(APPROVAL_DEMAND);
@@ -971,7 +990,6 @@ static void fight_start(OrchardAppContext *context) {
       // punt if no enemies
       screen_alert_draw("NO ENEMIES NEARBY!");
       chThdSleepMilliseconds(ALERT_DELAY);
-      changeState(IDLE);
       orchardAppRun(orchardAppByName("Badge"));
       return;
     }
@@ -979,7 +997,6 @@ static void fight_start(OrchardAppContext *context) {
 }
 
 static void state_approval_wait_enter(void) {
-
   state_vs_screen_enter(); // cheat - call this enter routine to draw. 
 
   // progress bar
@@ -1040,14 +1057,16 @@ static void sendRST(user *inbound) {
 }
 
 static void resendPacket(void) {
-  // TODO: random holdoff?
-  packet.ttl--;
+  // resend the last sent packet, pausing a random amount of time to prevent collisions
+  packet.ttl--; // deduct TTL
+  chThdSleepMilliseconds(rand() % MAX_HOLDOFF);
+
 #ifdef DEBUG_FIGHT_NETWORK
   chprintf(stream, "\r\n%ld Transmit (to=%08x): currentstate=%d, ttl=%d, seq=%d, opcode=0x%x\r\n", chVTGetSystemTime()  , current_enemy.netid, current_fight_state, packet.ttl, packet.seq, packet.opcode);
 #endif /* DEBUG_FIGHT_NETWORK */
-  changeState(WAITACK);
-    
+
   radioSend (&KRADIO1, current_enemy.netid, RADIO_PROTOCOL_FIGHT, sizeof(packet), &packet);
+  changeState(WAITACK);
 }
 
 static void sendGamePacket(uint8_t opcode) {
@@ -1079,7 +1098,7 @@ static void sendGamePacket(uint8_t opcode) {
 
   packet.attack_bitmap = ourattack;
 
-  if (opcode == OP_TURNOVER) {
+  if ((opcode == OP_IMOVED) && (last_hit == -1)) {
     // if this is a turn-over packet, then we also transmit
     // damage (to them)
     last_hit = calc_hit();
@@ -1148,15 +1167,16 @@ static void fight_event(OrchardAppContext *context,
       }
       if ( ((GEventGWinButton*)pe)->gwin == p->ghAttack) { 
         // we are attacking. 
-	  last_ui_time = chVTGetSystemTime();
+        last_ui_time = chVTGetSystemTime();
+        
+        memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(user));
+        config->in_combat = true;
 
-	  memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(user));
-	  config->in_combat = true;
-          
-	  next_fight_state = APPROVAL_WAIT;
-	  sendGamePacket(OP_STARTBATTLE);
-
-	  return;
+        // We're going to preemptively call this before changing state
+        // so the screen doesn't go black while we wait for an ACK.
+        next_fight_state = APPROVAL_WAIT;
+        sendGamePacket(OP_STARTBATTLE);
+        return;
       }
 
       if ( ((GEventGWinButton*)pe)->gwin == p->ghDeny) { 
@@ -1169,8 +1189,7 @@ static void fight_event(OrchardAppContext *context,
         sendGamePacket(OP_DECLINED);
         screen_alert_draw("Dulce bellum inexpertis.");
         playHardFail();
-        changeState(IDLE);
-        chThdSleepMilliseconds(3000);
+        chThdSleepMilliseconds(ALERT_DELAY);
         orchardAppRun(orchardAppByName("Badge"));
         return;
       }
@@ -1225,6 +1244,7 @@ static void fight_exit(OrchardAppContext *context) {
   userconfig *config = getConfig();
   p = context->priv;
 
+  // don't change back to idle state from any other function. Let fight_exit take care of it.
   changeState(IDLE);
   
   geventDetachSource (&p->glFight, NULL);
@@ -1250,7 +1270,7 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
 
   if (u->opcode == 0) {
 #ifdef DEBUG_FIGHT_NETWORK
-    chprintf(stream, "\r\n%08x --> RECV Invalid opcode. Ignored\r\n", u->netid);
+    chprintf(stream, "\r\n%08x --> RECV Invalid opcode. (seq=%d) Ignored (%08x to %08x?)\r\n", u->netid, u->seq, pkt->kw01_hdr.kw01_src, pkt->kw01_hdr.kw01_dst);
 #endif /* DEBUG_FIGHT_NETWORK */
     return;
   }
@@ -1284,7 +1304,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
   case WAITACK:
     if (u->opcode == OP_RST) {
       screen_alert_draw("CONNECTION LOST");
-      changeState(IDLE);
       playHardFail();
       chThdSleepMilliseconds(ALERT_DELAY);
       orchardAppRun(orchardAppByName("Badge"));
@@ -1320,8 +1339,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
                packet.opcode);
 #endif /* DEBUG_FIGHT_NETWORK */
 
-      last_damage = u->damage;
-      
       if (next_fight_state == SHOW_RESULTS) {
         // force state change
         changeState(SHOW_RESULTS);
@@ -1340,7 +1357,7 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       
       if (next_fight_state == NEXTROUND) {
         // edge-case/packet pile up. Just advance the round and forget about the ACK. 
-        current_fight_state = NEXTROUND; 
+        changeState(MOVE_SELECT);
       }
       
     }
@@ -1358,9 +1375,8 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
         orchardAppRun(orchardAppByName("Fight"));
         return;
       }
+      changeState(APPROVAL_DEMAND);
     }
-
-    changeState(APPROVAL_DEMAND);
     break;
   case APPROVAL_WAIT:
     if (u->opcode == OP_DECLINED) {
@@ -1387,6 +1403,8 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       //      memcpy(&current_enemy, u, sizeof(user));
 
       theirattack = u->attack_bitmap;
+      last_damage = u->damage;
+      
 #ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "\r\nRECV MOVE: (select) %d. our move %d.\r\n", theirattack, ourattack);
 #endif /* DEBUG_FIGHT_NETWORK */
@@ -1397,7 +1415,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
 #ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "\r\nmove_select/imoved, sending turnover\r\n");
 #endif /* DEBUG_FIGHT_NETWORK */
-      last_damage = u->damage;
       
       sendGamePacket(OP_TURNOVER);
     }
@@ -1405,9 +1422,8 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
   case POST_MOVE: // no-op
     // if we get a turnover packet, or we're out of time, we can calc damage and show results.
     if (u->opcode == OP_IMOVED) {
-      //      memcpy(&current_enemy, u, sizeof(user));
-
       theirattack = u->attack_bitmap;
+      last_damage = u->damage;
 #ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "\r\nRECV MOVE: (postmove) %d. our move %d.\r\n", theirattack, ourattack);
 #endif /* DEBUG_FIGHT_NETWORK */
@@ -1416,7 +1432,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
     if (u->opcode == OP_TURNOVER) { 
       // if we are post move, and we get a turnover packet, then just go straight to
       // results, we don't need an ACK at this point.
-      last_damage = u->damage;
       changeState(SHOW_RESULTS);
       return;
     }
@@ -1434,10 +1449,16 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
   case SHOW_RESULTS:
     // we may have already switched into the show results state when
     // the turnover packet comes in. record the damage. 
-    if (u->opcode == OP_TURNOVER) { 
-      last_damage = u->damage;
+    if (u->opcode == OP_TURNOVER) {
+      if (last_damage == -1) 
+        last_damage = u->damage;
     }
     break;
+
+    if (u->opcode == OP_NEXTROUND) {
+      changeState(NEXTROUND);
+    }
+  
   }
 
 }
@@ -1446,8 +1467,6 @@ static uint32_t fight_init(OrchardAppContext *context) {
   FightHandles *p;
   userconfig *config = getConfig();
 
-  chprintf(stream,"fight init called.\r\n");
-  
   if (context == NULL) {
     /* This should only happen for auto-init */
     radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_FIGHT,

@@ -1,5 +1,10 @@
 #ifndef __APP_FIGHT_H__
 #define __APP_FIGHT_H__
+
+/* debugging - this protocol can be a real pain in the ass */
+#undef DEBUG_FIGHT_TICK        // show the clock tick events, ugfx events, and other misc events
+#define DEBUG_FIGHT_NETWORK    // show all network (radio) traffic
+#define DEBUG_FIGHT_STATE      // debug state changes
   
 // production use 66666 uS = 15 FPS. Eeeviil...
 // testing use 1000000 (1 sec)
@@ -9,8 +14,9 @@
 // caveat! the system timer is a uint32_t and can roll over! be aware!
 
 #define DEFAULT_WAIT_TIME MS2ST(20000) // how long we wait for the user to respond
-#define MAX_ACKWAIT MS2ST(1000)        // if no ACK in 500MS, resend the last packet
-#define MAX_RETRIES 3                  // if we do that 3 times, abort. 
+#define MAX_ACKWAIT 750                // if no ACK in 500MS, resend the last packet
+#define MAX_HOLDOFF 100                // we introduce a small delay if we are resending (contention protocol)
+#define MAX_RETRIES 4                  // if we do that 3 times, abort. 
 #define MOVE_WAIT_TIME MS2ST(60000)    // Both of you have 60 seconds to decide. If you do nothing, the game ends.
 #define ALERT_DELAY 1500               // how long alerts (screen_alert) stay on the screen.
 
@@ -85,8 +91,27 @@ const GWidgetStyle RedButtonStyle = {
 };
 
 // the game state machine
+
+#ifdef DEBUG_FIGHT_STATE
+const char* fight_state_name[]  = {
+  "NONE"  ,             // 0 - Not started yet. 
+  "WAITACK"  ,          // 1 - We are waiting for an ACK to transition to next_fight_state
+  "IDLE"  ,             // 2 - Our app isn't running or idle
+  "ENEMY_SELECT"  ,     // 3 - Choose enemy screen
+  "APPROVAL_DEMAND"  ,  // 4 - I want to fight you!
+  "APPROVAL_WAIT"  ,    // 5 - I am waiting to see if you want to fight me
+  "VS_SCREEN"  ,        // 6 - I am showing the versus screen.
+  "MOVE_SELECT"  ,      // 7 - We are picking a move.
+  "POST_MOVE"  ,        // 8 - We have picked one and are waiting on you or the clock
+  "SHOW_RESULTS"  ,     // 9 - We are showing results
+  "NEXTROUND"  ,        // 10 - reset the round
+  "PLAYER_DEAD"  ,      // 11 - I die!
+  "ENEMY_DEAD"          // 12 - You're dead.
+  };
+#endif /* DEBUG_FIGHT_STATE */
+
 typedef enum _fight_state {
-  NONE,             // 0 - Not started yet. 
+  NONE  ,             // 0 - Not started yet. 
   WAITACK,          // 1 - We are waiting for an ACK to transition to next_fight_state
   IDLE,             // 2 - Our app isn't running or idle
   ENEMY_SELECT,     // 3 - Choose enemy screen
