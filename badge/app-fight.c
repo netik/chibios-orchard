@@ -22,7 +22,7 @@
 /* Globals */
 static int32_t countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value. 
 static user current_enemy;                    // current enemy we are attacking/talking to 
-static user packet;                           // the last packet we sent, for retransmissino
+static user packet;                           // the last packet we sent, for retransmission
 
 static fight_state current_fight_state = IDLE;  // current state 
 static fight_state next_fight_state = NONE;     // upon ACK, we will transition to this state. 
@@ -121,11 +121,13 @@ static void state_waitack_exit(void) {
 
 static void state_waitack_tick(void) { 
   // transmit/retry logic
+#ifdef DEBUG_FIGHT_TICK
   chprintf(stream, "\r\nwaitack tick: %d %d %d\r\n",
            chVTGetSystemTime(),
            last_send_time,
            MAX_ACKWAIT);
-           
+#endif /* DEBUG_FIGHT_TICK */
+  
   if ( (chVTGetSystemTime() - last_send_time) > MAX_ACKWAIT ) {
     if (packet.ttl > 0)  {
       resendPacket();
@@ -1253,7 +1255,7 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
   }
 
   // Immediately ACK non-ACK / RST packets. We do not support retry on
-  // ACK, because we support ARQ just like TCP-IP.  without the ACK,
+  // ACK, because we support ARQ just like TCP/IP.  without the ACK,
   // the sender will retransmit automatically.
   if (u->opcode != OP_ACK && u->opcode != OP_RST)
       sendACK(u);
@@ -1366,6 +1368,7 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
 #ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "\r\nRECV MOVE: (select) %d. our move %d.\r\n", theirattack, ourattack);
 #endif /* DEBUG_FIGHT_NETWORK */
+
     }
     if (u->opcode == OP_TURNOVER) {
       // uh-oh, the turn is over and we haven't moved!
