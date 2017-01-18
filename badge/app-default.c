@@ -64,8 +64,8 @@ static void redraw_badge(int8_t drawchar) {
     // draw the character during the HP update, it will blink and we
     // don't want that.
     putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER1_Y);
+    putImageFile(IMG_GROUND_BTNS, 0, POS_FLOOR_Y);
   }
-  putImageFile(IMG_GROUND_BTNS, 0, POS_FLOOR_Y);
 
   fontXS = gdispOpenFont (FONT_XS);
   fontLG = gdispOpenFont (FONT_LG);

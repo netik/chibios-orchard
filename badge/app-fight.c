@@ -1422,7 +1422,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
 }
 
 static uint32_t fight_init(OrchardAppContext *context) {
-  FightHandles *p;
   userconfig *config = getConfig();
 
   if (context == NULL) {
@@ -1430,10 +1429,6 @@ static uint32_t fight_init(OrchardAppContext *context) {
     radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_FIGHT,
 		     fightRadioEventHandler);
   } else {
-    p = chHeapAlloc (NULL, sizeof(FightHandles));
-    context->priv = p;
-    memset(p, 0, sizeof(FightHandles));
-    
     if (config->in_combat != 0) { 
       chprintf(stream, "You were stuck in combat. Fixed.\r\n");
       config->in_combat = 0;
