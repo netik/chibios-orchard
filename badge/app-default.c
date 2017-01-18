@@ -261,7 +261,6 @@ static void default_event(OrchardAppContext *context,
   if (event->type == timerEvent) {
     if (config->hp < maxhp(config->level)) { 
         config->hp = config->hp + HEAL_AMT;
-        redraw_badge(false);
 
         // if we are now fully healed, save that, and prevent
         // overflow.
@@ -269,6 +268,7 @@ static void default_event(OrchardAppContext *context,
           config->hp = maxhp(config->level);
           configSave(config);
         }
+        redraw_badge(false);
     }
   }
 }
