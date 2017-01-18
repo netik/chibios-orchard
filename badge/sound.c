@@ -9,6 +9,12 @@
 #define note16 12 /*100*/ /* 16th note */
 #define note32 5 /*50*/  /* 32nd note */
 
+/* slow! */
+#define snote4  60 /*400*/ /* mS per quarter note @ 140bpm */
+#define snote8  30 /*400*/ /* 8th note */
+#define snote16 15 /*100*/ /* 16th note */
+#define snote32 10 /*50*/  /* 32nd note */
+
 #ifdef notdef
 static const PWM_NOTE soundStart[] = {
   { NOTE_FS3, note32 * 3 },
@@ -78,7 +84,26 @@ static const PWM_NOTE soundDodge[] = {
   { 0, PWM_DURATION_END }
 };
 
+
 static const PWM_NOTE soundDefeat[] = {
+  { NOTE_GS4, snote16 },
+  { PWM_NOTE_PAUSE, snote16 },
+  { NOTE_GS4, snote16 },
+  { PWM_NOTE_PAUSE, snote16 },
+  { NOTE_GS4, snote16 },
+  { NOTE_GS4, snote16 },
+  { PWM_NOTE_PAUSE, snote16 },
+  { NOTE_B4, snote16 },
+  { PWM_NOTE_PAUSE, snote16 },
+  { NOTE_AS4, snote16 },
+  { NOTE_AS4, snote16 },
+  { PWM_NOTE_PAUSE, snote16 },
+  { NOTE_GS4, snote16 },
+  { NOTE_GS4, snote16 },
+  { PWM_NOTE_PAUSE, snote16 },
+  { NOTE_G4, snote8 },
+  { PWM_NOTE_PAUSE, snote16 },
+  { NOTE_GS4, snote4 },
   { 0, PWM_DURATION_END }
 };
 

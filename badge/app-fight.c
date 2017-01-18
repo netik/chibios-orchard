@@ -121,6 +121,11 @@ static void state_waitack_exit(void) {
 
 static void state_waitack_tick(void) { 
   // transmit/retry logic
+  chprintf(stream, "\r\nwaitack tick: %d %d %d\r\n",
+           chVTGetSystemTime(),
+           last_send_time,
+           MAX_ACKWAIT);
+           
   if ( (chVTGetSystemTime() - last_send_time) > MAX_ACKWAIT ) {
     if (packet.ttl > 0)  {
       resendPacket();
@@ -186,7 +191,7 @@ static void state_approval_demand_enter(void) {
 
   ypos = ypos + gdispGetFontMetric(fontFF, fontHeight) + 5;
 
-  drawProgressBar(xpos,ypos,100,10,current_enemy.hp,maxhp(current_enemy.level), 0, false);
+  drawProgressBar(xpos,ypos,100,10,maxhp(current_enemy.level), current_enemy.hp, 0, false);
   
   // draw UI
   gwinSetDefaultStyle(&RedButtonStyle, FALSE);
@@ -364,7 +369,7 @@ static void screen_select_draw(int8_t initial) {
 
   ypos = ypos + gdispGetFontMetric(fontFF, fontHeight) + 5;
   
-  drawProgressBar(xpos,ypos,100,10,enemies[current_enemy_idx]->hp,maxhp(enemies[current_enemy_idx]->level), 0, false);
+  drawProgressBar(xpos,ypos,100,10,maxhp(enemies[current_enemy_idx]->level), enemies[current_enemy_idx]->hp, 0, false);
 
   gdispCloseFont(fontSM);
   gdispCloseFont(fontFF);
@@ -835,8 +840,6 @@ static void show_results(void) {
   current_enemy.hp = current_enemy.hp - last_hit;
   if (current_enemy.hp < 0) { current_enemy.hp = 0; }
 
-  // todo: something if you die.
-  
   // animate the characters
   chsnprintf (ourdmg_s, sizeof(ourdmg_s), "-%d", last_damage );
   chsnprintf (theirdmg_s, sizeof(theirdmg_s), "-%d", last_hit );
@@ -862,7 +865,31 @@ static void show_results(void) {
   // update the health bars
   updatehp();
   
-  // if not dead transition state back to move_select
+  /* if I kill you, then I will show victory and head back to the badge screen */
+  if (current_enemy.hp == 0) {
+    screen_alert_draw("VICTORY!");
+    // TODO: update this!
+    config->xp +=  100;
+    config->won++;
+    configSave(config);
+    playVictory();
+    chThdSleepMilliseconds(ALERT_DELAY);
+    orchardAppRun(orchardAppByName("Badge"));
+    return;
+  }
+
+  /* if you are dead, then you will do the same */
+  if (config->hp == 0) {
+    screen_alert_draw("YOU ARE DEFEATED.");
+    config->xp += 50;
+    config->lost++;
+    configSave(config);
+    playDefeat();
+    chThdSleepMilliseconds(ALERT_DELAY);
+    orchardAppRun(orchardAppByName("Badge"));
+    return;
+  }  
+  
   next_fight_state = NEXTROUND;
   sendGamePacket(OP_NEXTROUND);
 }

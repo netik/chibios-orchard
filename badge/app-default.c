@@ -16,6 +16,7 @@
 #include "userconfig.h"
 // we will heal the player at N hp per this interval
 #define HEAL_INTERVAL_US 1000000
+#define HEAL_AMT 10 // 10HP per heal interval
 
 typedef struct _DefaultHandles {
   GHandle ghFightButton;
@@ -53,12 +54,17 @@ static void draw_badge_buttons(DefaultHandles * p) {
   p->ghExitButton = gwinButtonCreate(NULL, &wi);
 }
 
-static void redraw_badge(void) {
+static void redraw_badge(int8_t drawchar) {
   // draw the entire background badge image. Shown when the screen is idle. 
   font_t fontLG, fontSM, fontXS;
   const userconfig *config = getConfig();
 
-  putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER1_Y);
+  if (drawchar) {
+    // our image draws just a bit underneath the stats data. If we
+    // draw the character during the HP update, it will blink and we
+    // don't want that.
+    putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER1_Y);
+  }
   putImageFile(IMG_GROUND_BTNS, 0, POS_FLOOR_Y);
 
   fontXS = gdispOpenFont (FONT_XS);
@@ -103,8 +109,12 @@ static void redraw_badge(void) {
 		      tmp,
 		      fontXS, White, justifyLeft);
 
-  drawProgressBar(163,ypos+6,120,11,config->hp,maxhp(config->level), 0, false);
-    
+  drawProgressBar(163,ypos+6,120,11,maxhp(config->level), config->hp, 0, false);
+
+  gdispFillArea( 289, ypos+6, 
+                 30,gdispGetFontMetric(fontXS, fontHeight),
+                 Black );;
+                       
   gdispDrawStringBox (289,
 		      ypos+6,
                       30,
@@ -212,7 +222,7 @@ static void default_start(OrchardAppContext *context) {
   
   gdispClear(Black);
 
-  redraw_badge();
+  redraw_badge(true);
   draw_badge_buttons(p);
   
   geventListenerInit(&p->glBadge);
@@ -250,8 +260,15 @@ static void default_event(OrchardAppContext *context,
   /* player healz */
   if (event->type == timerEvent) {
     if (config->hp < maxhp(config->level)) { 
-        config->hp = config->hp + 1;
-        redraw_badge();
+        config->hp = config->hp + HEAL_AMT;
+        redraw_badge(false);
+
+        // if we are now fully healed, save that, and prevent
+        // overflow.
+        if (config->hp >= maxhp(config->level)) {
+          config->hp = maxhp(config->level);
+          configSave(config);
+        }
     }
   }
 }

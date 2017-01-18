@@ -14,7 +14,7 @@
 // caveat! the system timer is a uint32_t and can roll over! be aware!
 
 #define DEFAULT_WAIT_TIME MS2ST(20000) // how long we wait for the user to respond. MUST BE IN SYSTEM TICKS. 
-#define MAX_ACKWAIT MS2ST(750)         // if no ACK in 500MS, resend the last packet. MUST BE IN SYSTEM TICKS. 
+#define MAX_ACKWAIT MS2ST(1000)         // if no ACK in 500MS, resend the last packet. MUST BE IN SYSTEM TICKS. 
 #define MAX_HOLDOFF 100                // we introduce a small delay if we are resending (contention protocol). MUST BE IN mS
 #define MAX_RETRIES 4                  // if we do that 3 times, abort. 
 #define MOVE_WAIT_TIME MS2ST(60000)    // Max game time. MUST BE IN SYSTEM TICKS. If you do nothing, the game ends.
@@ -43,6 +43,7 @@
 #define OP_TURNOVER         0x10   /* The round is over, let's show results */
 #define OP_NEXTROUND        0x11   /* Please start the next round */
 #define OP_IMDEAD           0x0d   /* I died */
+#define OP_YOUDIE           0x0e   /* I kill you */
 #define OP_ACK              0xf0   /* Network: I got your message with sequence # acknum */
 #define OP_RST              0xff   /* Network: I don't understand this message. Client should reset */
 
