@@ -82,12 +82,11 @@ static void init_config(userconfig *config) {
   config->xp = 0;
   config->gold = 500;
   config->level = 1;
-  
-  config->spr = four_d_six();
-  config->str = four_d_six();
-  config->def = four_d_six();
-  config->dex = four_d_six();
 
+  config->agl = 1;
+  config->luck = 20;
+  config->might = 1;
+  
   config->won = 0;
   config->lost = 0;
 }

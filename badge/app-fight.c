@@ -1022,10 +1022,10 @@ static void sendGamePacket(uint8_t opcode) {
   packet.lost = config->lost;
   packet.gold = config->gold;
   packet.xp = config->xp;
-  packet.spr = config->spr;
-  packet.str = config->str;
-  packet.def = config->def;
-  packet.dex = config->dex;
+
+  packet.agl = config->agl;
+  packet.luck = config->luck;
+  packet.might = config->might;
 
   packet.attack_bitmap = ourattack;
 

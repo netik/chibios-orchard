@@ -14,6 +14,8 @@
 #include "ides_gfx.h"
 
 #include "userconfig.h"
+// we will heal the player at N hp per this interval
+#define HEAL_INTERVAL_US 1000000
 
 typedef struct _DefaultHandles {
   GHandle ghFightButton;
@@ -53,14 +55,13 @@ static void draw_badge_buttons(DefaultHandles * p) {
 
 static void redraw_badge(void) {
   // draw the entire background badge image. Shown when the screen is idle. 
-  font_t fontLG, fontSM;
+  font_t fontLG, fontSM, fontXS;
   const userconfig *config = getConfig();
-  
-  gdispClear(Black);
 
   putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER1_Y);
   putImageFile(IMG_GROUND_BTNS, 0, POS_FLOOR_Y);
 
+  fontXS = gdispOpenFont (FONT_XS);
   fontLG = gdispOpenFont (FONT_LG);
   fontSM = gdispOpenFont (FONT_FIXED);
 
@@ -89,80 +90,116 @@ static void redraw_badge(void) {
   /* XP */
   ypos = ypos + gdispGetFontMetric(fontSM, fontHeight) + 4;
   gdispDrawThickLine(135, ypos, 320, ypos, Red, 2, FALSE);
-  ypos = ypos + 10;
+  gdispDrawThickLine(135, ypos+21, 320, ypos+21, Red, 2, FALSE);
   
-  chsnprintf(tmp2, sizeof(tmp2), "XP: %3d", config->xp);
+  chsnprintf(tmp, sizeof(tmp), "HP");
+  chsnprintf(tmp2, sizeof(tmp2), "%d", config->hp);
+
+  /* hit point bar */
+  gdispDrawStringBox (140,
+		      ypos+6,
+		      30,
+		      gdispGetFontMetric(fontXS, fontHeight),
+		      tmp,
+		      fontXS, White, justifyLeft);
+
+  drawProgressBar(163,ypos+6,120,11,config->hp,maxhp(config->level), 0, false);
+    
+  gdispDrawStringBox (289,
+		      ypos+6,
+                      30,
+		      gdispGetFontMetric(fontXS, fontHeight),
+		      tmp2,
+		      fontXS, White, justifyLeft);
+
+  /* end hp bar */
+  ypos = ypos + 30;
+
+  /* XP/GLD */
+  chsnprintf(tmp2, sizeof(tmp2), "%3d", config->xp);
   gdispDrawStringBox (lmargin,
 		      ypos,
-		      gdispGetWidth(),
+		      45,
 		      gdispGetFontMetric(fontSM, fontHeight),
-		      tmp2,
+		      "XP",
 		      fontSM, Yellow, justifyLeft);
-
-  chsnprintf(tmp2, sizeof(tmp2), "GOLD: %3d", config->gold);
-  gdispDrawStringBox (lmargin + 90,
+  gdispDrawStringBox (lmargin + 35,
 		      ypos,
-		      gdispGetWidth(),
+                      50,
 		      gdispGetFontMetric(fontSM, fontHeight),
 		      tmp2,
-		      fontSM, Yellow, justifyLeft);
+		      fontSM, White, justifyRight);
 
-  /* won/los */
+  chsnprintf(tmp2, sizeof(tmp2), "%3d", config->gold);
+  gdispDrawStringBox (lmargin + 94,
+		      ypos,
+		      45,
+		      gdispGetFontMetric(fontSM, fontHeight),
+		      "GLD",
+		      fontSM, Yellow, justifyLeft);
+  gdispDrawStringBox (lmargin + 94 + 40,
+		      ypos,
+                      50,
+		      gdispGetFontMetric(fontSM, fontHeight),
+		      tmp2,
+		      fontSM, White, justifyRight);
+
+  /* AGL / LUCK */
   ypos = ypos + gdispGetFontMetric(fontSM, fontHeight) + 2;
-  chsnprintf(tmp2, sizeof(tmp2), "WON: %3d", config->won);
+  chsnprintf(tmp2, sizeof(tmp2), "%3d", config->agl);
   gdispDrawStringBox (lmargin,
 		      ypos,
-		      gdispGetWidth(),
+		      45,
 		      gdispGetFontMetric(fontSM, fontHeight),
-		      tmp2,
+		      "AGL",
 		      fontSM, Yellow, justifyLeft);
-   chsnprintf(tmp2, sizeof(tmp2), "LOST: %3d", config->lost);
-  gdispDrawStringBox (lmargin + 90,
+  gdispDrawStringBox (lmargin + 40,
 		      ypos,
-		      gdispGetWidth(),
+                      45,
 		      gdispGetFontMetric(fontSM, fontHeight),
 		      tmp2,
-		      fontSM, Yellow, justifyLeft);
+		      fontSM, White, justifyRight);
 
-  /* stats */
-  ypos = ypos + gdispGetFontMetric(fontSM, fontHeight) + 20;
-  chsnprintf(tmp2, sizeof(tmp2), "SPR: %2d", config->spr);
-  gdispDrawStringBox (lmargin,
+  chsnprintf(tmp2, sizeof(tmp2), "%3d", config->luck);
+  gdispDrawStringBox (lmargin + 94,
 		      ypos,
-		      gdispGetWidth(),
+		      60,
+		      gdispGetFontMetric(fontSM, fontHeight),
+		      "LUCK",
+		      fontSM, Yellow, justifyLeft);
+  gdispDrawStringBox (lmargin + 94 + 45,
+		      ypos,
+                      45,
 		      gdispGetFontMetric(fontSM, fontHeight),
 		      tmp2,
-		      fontSM, Yellow, justifyLeft);
-  chsnprintf(tmp2, sizeof(tmp2), "STR: %2d", config->str);
-  gdispDrawStringBox (lmargin + 90,
-		      ypos,
-		      gdispGetWidth(),
-		      gdispGetFontMetric(fontSM, fontHeight),
-		      tmp2,
-		      fontSM, Yellow, justifyLeft);
-
+		      fontSM, White, justifyRight);
+  
+  /* MIGHT */
   ypos = ypos + gdispGetFontMetric(fontSM, fontHeight) + 2;
-  chsnprintf(tmp2, sizeof(tmp2), "DEF: %2d", config->def);
+  chsnprintf(tmp2, sizeof(tmp2), "%3d", config->might);
   gdispDrawStringBox (lmargin,
 		      ypos,
-		      gdispGetWidth(),
+		      60,
 		      gdispGetFontMetric(fontSM, fontHeight),
-		      tmp2,
+		      "MIGHT",
 		      fontSM, Yellow, justifyLeft);
-  chsnprintf(tmp2, sizeof(tmp2), "DEX: %2d", config->dex);
-  gdispDrawStringBox (lmargin + 90,
+  gdispDrawStringBox (lmargin + 40,
 		      ypos,
-		      gdispGetWidth(),
+                      45,
 		      gdispGetFontMetric(fontSM, fontHeight),
 		      tmp2,
-		      fontSM, Yellow, justifyLeft);
+		      fontSM, White, justifyRight);
+
+  
+
 }
 
 static uint32_t default_init(OrchardAppContext *context) {
   (void)context;
 
   shout_ok = 1;
-
+  orchardAppTimer(context, HEAL_INTERVAL_US, true);
+  
   return 0;
 }
 
@@ -172,6 +209,8 @@ static void default_start(OrchardAppContext *context) {
   p = chHeapAlloc (NULL, sizeof(DefaultHandles));
 
   context->priv = p;
+  
+  gdispClear(Black);
 
   redraw_badge();
   draw_badge_buttons(p);
@@ -185,7 +224,8 @@ static void default_event(OrchardAppContext *context,
 	const OrchardAppEvent *event) {
   DefaultHandles * p;
   GEvent * pe;
-
+  userconfig *config = getConfig();
+  
   p = context->priv;
 
   if (event->type == ugfxEvent) {
@@ -206,11 +246,20 @@ static void default_event(OrchardAppContext *context,
       break;
     }
   }
+
+  /* player healz */
+  if (event->type == timerEvent) {
+    if (config->hp < maxhp(config->level)) { 
+        config->hp = config->hp + 1;
+        redraw_badge();
+    }
+  }
 }
 
 static void default_exit(OrchardAppContext *context) {
   DefaultHandles * p;
-
+  orchardAppTimer(context, 0, false); // shut down the timer
+  
   p = context->priv;
   gwinDestroy (p->ghFightButton);
   gwinDestroy (p->ghExitButton);
