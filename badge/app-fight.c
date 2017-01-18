@@ -392,7 +392,7 @@ static void state_enemy_select_tick(void) {
 static void state_enemy_select_exit() { 
   // shut down the select screen 
 
-  FightHandles *p = instance. context->priv;
+  FightHandles *p = instance.context->priv;
 
   gdispClear(Black);  
 
@@ -1173,8 +1173,7 @@ static void fight_event(OrchardAppContext *context,
       }
       
       if ((ourattack & ATTACK_MASK) == 0) {
-        // TODO -- modify for three attacks per Egan's spec. You
-        // can't change.
+        // TODO -- modify for three attacks per Egan's spec.
         if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackLow) {
           ourattack &= ~ATTACK_MASK;
           ourattack |= ATTACK_LOW;
@@ -1227,7 +1226,7 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
   
   u = (user *)pkt->kw01_payload;
   last_ui_time = chVTGetSystemTime(); // radio is a state-change, so reset this.
-
+    
   if (u->opcode == 0) {
 #ifdef DEBUG_FIGHT_NETWORK
     chprintf(stream, "\r\n%08x --> RECV Invalid opcode. (seq=%d) Ignored (%08x to %08x?)\r\n", u->netid, u->seq, pkt->kw01_hdr.kw01_src, pkt->kw01_hdr.kw01_dst);
@@ -1263,6 +1262,7 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
   switch (current_fight_state) {
   case WAITACK:
     if (u->opcode == OP_RST) {
+      orchardAppTimer(instance.context, 0, false); // shut down the timer
       screen_alert_draw("CONNECTION LOST");
       playHardFail();
       chThdSleepMilliseconds(ALERT_DELAY);
@@ -1274,7 +1274,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       // if we are waiting for an ack, advance our state.
       // however, if we have no next-state to go to, then we will timeout
       if (next_fight_state != NONE) {
-
 #ifdef DEBUG_FIGHT_NETWORK
         chprintf(stream, "\r\n%08x --> moving to state %d from state %d due to ACK\n",
                  u->netid, next_fight_state, current_fight_state, next_fight_state);
@@ -1360,8 +1359,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
     if (u->opcode == OP_IMOVED) {
       // If I see OP_IMOVED from the other side while we are in
       // MOVE_SELECT, store that move for later. 
-      //      memcpy(&current_enemy, u, sizeof(user));
-
       theirattack = u->attack_bitmap;
       last_damage = u->damage;
       
@@ -1397,18 +1394,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       return;
     }
     break;
-  case NONE: // no-op
-    break;
-  case NEXTROUND: // no-op
-    break;
-  case APPROVAL_DEMAND: // no-op
-    break;
-  case VS_SCREEN: // no-op
-    break;
-  case PLAYER_DEAD: // no-op
-    break;
-  case ENEMY_DEAD: // no-op
-    break;
   case SHOW_RESULTS:
     // we may have already switched into the show results state when
     // the turnover packet comes in. record the damage. 
@@ -1421,9 +1406,18 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
     if (u->opcode == OP_NEXTROUND) {
       changeState(NEXTROUND);
     }
-  
+  default:
+    // this shouldn't fire, but log it if it does.
+#ifdef DEBUG_FIGHT_STATE
+    chprintf(stream, "\r\n%08x --> RECV %x - no handler - (seq=%d, mystate=%d %s)\r\n",
+             pkt->kw01_hdr.kw01_src, u->opcode, u->seq,
+             current_fight_state, fight_state_name[current_fight_state]);
+#else
+    chprintf(stream, "\r\n%08x --> RECV %x - no handler - (seq=%d, mystate=%d %s)\r\n",
+             pkt->kw01_hdr.kw01_src, u->opcode, u->seq,
+             current_fight_state);
+#endif
   }
-
 }
 
 static uint32_t fight_init(OrchardAppContext *context) {

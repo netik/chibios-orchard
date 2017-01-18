@@ -59,5 +59,21 @@ show frame
 
 
 
+lost-ack problem:
+
+You transmit to me
+I send you an ACK
+The ACK doesn't make it, you are still in waitack state.
+-- you transmit again. 
+We ACK again. 
+
+If our queue depth was > 1 we'd have an issue. but it is not
+
+We need to investigate failure modes and find out where we are hanging
+new debug code will help with this. 
+
+
+
+
 
 

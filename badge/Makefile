@@ -123,6 +123,7 @@ CSRC = main.c \
        cmd-flash.c \
        cmd-threads.c \
        cmd-buzzer.c \
+       cmd-caesar.c \
        cmd-led.c \
        cmd-reset.c \
        cmd-enemy.c \
