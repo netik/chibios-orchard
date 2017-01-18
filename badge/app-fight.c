@@ -1396,6 +1396,8 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
     break;
   case NONE: // no-op
     break;
+  case NEXTROUND: // no-op
+    break;
   case APPROVAL_DEMAND: // no-op
     break;
   case VS_SCREEN: // no-op
