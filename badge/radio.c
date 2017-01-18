@@ -317,9 +317,9 @@ radioReset (RADIODriver * radio)
 
         /* Assert the reset pin for 1 millisecond */
 
-        palSetPad (RADIO_RESET_PORTE, RADIO_RESET_PIN);
+        palSetPad (RADIO_RESET_PORT, RADIO_RESET_PIN);
         chThdSleepMilliseconds (1);
-        palClearPad (RADIO_RESET_PORTE, RADIO_RESET_PIN);
+        palClearPad (RADIO_RESET_PORT, RADIO_RESET_PIN);
 
  	/* Now wait for the chip to get its brains in order. */
 
