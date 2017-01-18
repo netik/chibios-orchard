@@ -32,7 +32,7 @@ endif
 
 # Enable this if you want link time optimizations (LTO)
 ifeq ($(USE_LTO),)
-  USE_LTO = no
+  USE_LTO = yes
 endif
 
 # If enabled, this option allows to compile the application in THUMB mode.
@@ -136,6 +136,7 @@ CSRC = main.c \
        app-chat.c \
        app-default.c \
        app-setup.c \
+       ides_gfx.c \
        ui-keyboard.c \
        ui-list.c \
        rand.c \

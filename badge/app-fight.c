@@ -10,11 +10,14 @@
 #include "radio.h"
 #include "orchard-ui.h"
 #include "images.h"
+
+#include "ides_gfx.h"
 #include "fontlist.h"
 #include "sound.h"
 
 #include "userconfig.h"
 #include "app-fight.h"
+
 
 /* Globals */
 static int32_t countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value. 
@@ -583,82 +586,10 @@ static uint8_t calc_level(uint16_t xp) {
 }
 #endif
 
-static void blinkText (coord_t x, coord_t y,coord_t cx, coord_t cy, char *text, font_t font, color_t color, justify_t justify, uint8_t times, int16_t delay) {
-  int8_t blink=1; 
-  for (int i=0; i < times; i++) {
-    if (blink == 1) {
-      gdispDrawStringBox (x,y,cx,cy,text,font,color,justify);
-      gdispFlush();
-    } else {
-      gdispDrawStringBox (x,y,cx,cy,text,font,Black,justify);
-      gdispFlush();
-    }
-    if (blink == 1) { blink = 0; } else { blink = 1; };
-    
-    chThdSleepMilliseconds(delay);
-  }
-}
-
 uint16_t calc_hit(void) {
   // return random shit for now
   return ((((uint8_t)rand()) % 200) + 50);
 }
-
-static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, int32_t maxval, int32_t currentval, uint8_t use_leds, uint8_t reverse) {
-  // draw a bar if reverse is true, we draw right to left vs left to
-  // right
-
-  // WARNING: if x+w > screen_width or y+height > screen_height,
-  // unpredicable things will happen in memory. There is no protection
-  // for overflow here.
-  
-  color_t c = Lime;
-
-  if (currentval < 0) { currentval = 0; } // never overflow
-  
-  float remain_f = (float) currentval / (float)maxval;
-  int16_t remain = width * remain_f;
-  
-  if (use_leds == 1) {
-   ledSetProgress(100 * remain_f);
-  }
-  
-  if (remain_f >= 0.8) {
-    c = Lime;
-  } else if (remain_f >= 0.5) {
-    c = Yellow;
-  } else {
-    c = Red;
-  }
-
-  if (reverse) { 
-    gdispFillArea(x,y+1,(width - remain)-1,height-2, Black);
-    gdispFillArea((x+width)-remain,y,remain,height, c);
-    gdispDrawBox(x,y,width,height, c);
-  } else {
-    gdispFillArea(x + remain,y+1,(width - remain)-1,height-2, Black);
-    gdispFillArea(x,y,remain,height, c);
-    gdispDrawBox(x,y,width,height, c);
-  }
-}
-
-static int putImageFile(char *name, int16_t x, int16_t y) {
-  gdispImage img;
-
-  if (gdispImageOpenFile (&img, name) == GDISP_IMAGE_ERR_OK) {
-    gdispImageDraw (&img,
-		    x, y,
-		    img.width,
-		    img.height, 0, 0);
-    
-    gdispImageClose (&img);
-    return(1);
-  } else {
-    chprintf(stream, "\r\ncan't load image %s!!\r\n", name);
-    return(0);
-  }    
-}
-
 
 static void sendAttack(void) {
   // animate the attack on our screen and send it to the the

@@ -11,6 +11,8 @@
 #include "images.h"
 #include "fontlist.h"
 
+#include "ides_gfx.h"
+
 #include "userconfig.h"
 
 typedef struct _DefaultHandles {
@@ -20,27 +22,6 @@ typedef struct _DefaultHandles {
 } DefaultHandles;
 
 extern uint8_t shout_ok;
-
-static int putImageFile(char *name, int16_t x, int16_t y);
-
-static int putImageFile(char *name, int16_t x, int16_t y) {
-
-  gdispImage img;
-    
-  if (gdispImageOpenFile (&img, name) == GDISP_IMAGE_ERR_OK) {
-    gdispImageDraw (&img,
-		    x, y,
-		    img.width,
-		    img.height, 0, 0);
-    
-    gdispImageClose (&img);
-    return(1);
-  } else {
-    chprintf(stream, "\r\ncan't load image %s!!\r\n", name);
-    return(0);
-  }    
-
-}
 
 static void draw_badge_buttons(DefaultHandles * p) {
   GWidgetInit wi;

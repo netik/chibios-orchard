@@ -13,11 +13,11 @@
 // WAIT_TIMEs are always in system ticks.
 // caveat! the system timer is a uint32_t and can roll over! be aware!
 
-#define DEFAULT_WAIT_TIME MS2ST(20000) // how long we wait for the user to respond
-#define MAX_ACKWAIT 750                // if no ACK in 500MS, resend the last packet
-#define MAX_HOLDOFF 100                // we introduce a small delay if we are resending (contention protocol)
+#define DEFAULT_WAIT_TIME MS2ST(20000) // how long we wait for the user to respond. MUST BE IN SYSTEM TICKS. 
+#define MAX_ACKWAIT MS2ST(750)         // if no ACK in 500MS, resend the last packet. MUST BE IN SYSTEM TICKS. 
+#define MAX_HOLDOFF 100                // we introduce a small delay if we are resending (contention protocol). MUST BE IN mS
 #define MAX_RETRIES 4                  // if we do that 3 times, abort. 
-#define MOVE_WAIT_TIME MS2ST(60000)    // Both of you have 60 seconds to decide. If you do nothing, the game ends.
+#define MOVE_WAIT_TIME MS2ST(60000)    // Max game time. MUST BE IN SYSTEM TICKS. If you do nothing, the game ends.
 #define ALERT_DELAY 1500               // how long alerts (screen_alert) stay on the screen.
 
 /* MSB of attackbitmap represents the attack */
@@ -140,11 +140,6 @@ static void resendPacket(void);
 static void sendGamePacket(uint8_t opcode);
 static void sendACK(user *inbound);
 static void sendRST(user *inbound);
-
-/* Graphics */
-static int putImageFile(char *name, int16_t x, int16_t y);
-static void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, int32_t maxval, int32_t currentval, uint8_t use_leds, uint8_t reverse);
-static void blinkText (coord_t x, coord_t y,coord_t cx, coord_t cy, char *text, font_t font, color_t color, justify_t justify, uint8_t times, int16_t delay);
 
 /* Game state */
 static void changeState(fight_state);
