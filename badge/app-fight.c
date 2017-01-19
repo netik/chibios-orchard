@@ -542,10 +542,10 @@ static void state_post_move_tick() {
 static void state_show_results_enter() {
   clearstatus();
   gdispFillArea(0,gdispGetHeight() - 20,gdispGetWidth(),20,Black);
+  show_results();
 }
 
 static void state_show_results_tick() { 
-  show_results();
 }    
 
 //--------------------- END state funcs

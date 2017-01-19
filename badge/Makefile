@@ -127,6 +127,7 @@ CSRC = main.c \
        cmd-led.c \
        cmd-reset.c \
        cmd-peer.c \
+       cmd-unix.c \
        app-launcher.c \
        app-name.c \
        app-fight.c \
