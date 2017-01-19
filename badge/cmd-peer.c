@@ -11,7 +11,7 @@
 
 extern mutex_t enemies_mutex;
 
-void cmd_enemylist(BaseSequentialStream *chp, int argc, char *argv[])
+void cmd_peerlist(BaseSequentialStream *chp, int argc, char *argv[])
 {
   (void)argv;
   (void)argc;
@@ -32,14 +32,14 @@ void cmd_enemylist(BaseSequentialStream *chp, int argc, char *argv[])
   }
 }
 
-orchard_command("enemylist", cmd_enemylist);
+orchard_command("peers", cmd_peerlist);
 
-void cmd_enemyadd(BaseSequentialStream *chp, int argc, char *argv[]) {
+void cmd_peeradd(BaseSequentialStream *chp, int argc, char *argv[]) {
   user **enemies;
   uint16_t i,ic,hp,level;
 
   if (argc != 5) {
-    chprintf(chp, "Usage: enemyadd <index> <name> <incombat> <hp> <level>\r\n");
+    chprintf(chp, "Usage: peeradd <index> <name> <incombat> <hp> <level>\r\n");
     return;
   }
   enemies = enemiesGet();
@@ -71,20 +71,20 @@ void cmd_enemyadd(BaseSequentialStream *chp, int argc, char *argv[]) {
     osalMutexUnlock(&enemies_mutex);
   }
 }
-orchard_command("enemyadd", cmd_enemyadd);
+orchard_command("peeradd", cmd_peeradd);
 
-void cmd_enemyping(BaseSequentialStream *chp, int argc, char *argv[]) {
+void cmd_peerping(BaseSequentialStream *chp, int argc, char *argv[]) {
   (void) chp;
   (void) argc;
   (void) argv;
 
   //  chEvtBroadcast(&radio_app);
 }
-orchard_command("enemyping", cmd_enemyping);
+orchard_command("peerping", cmd_peerping);
 
 // jna: remove this once we go live
 // generate a list of random names and broadcast them until told to stop
-void cmd_enemysim(BaseSequentialStream *chp, int argc, char *argv[]) {
+void cmd_peersim(BaseSequentialStream *chp, int argc, char *argv[]) {
   (void) chp;
   (void) argc;
   (void) argv;
@@ -112,5 +112,5 @@ void cmd_enemysim(BaseSequentialStream *chp, int argc, char *argv[]) {
 
   chprintf(stream, "Test enemies generated.\r\n");
 }
-orchard_command("enemysim", cmd_enemysim);
+orchard_command("peersim", cmd_peersim);
 

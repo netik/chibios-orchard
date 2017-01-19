@@ -1024,7 +1024,7 @@ static void resendPacket(void) {
 #ifdef DEBUG_FIGHT_NETWORK
   chprintf(stream, "\r\n%ld Transmit (to=%08x): currentstate=%d, ttl=%d, seq=%d, opcode=0x%x\r\n", chVTGetSystemTime()  , current_enemy.netid, current_fight_state, packet.ttl, packet.seq, packet.opcode);
 #endif /* DEBUG_FIGHT_NETWORK */
-
+  last_send_time = chVTGetSystemTime();
   radioSend (&KRADIO1, current_enemy.netid, RADIO_PROTOCOL_FIGHT, sizeof(packet), &packet);
   changeState(WAITACK);
 }

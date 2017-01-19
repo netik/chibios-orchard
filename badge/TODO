@@ -13,17 +13,19 @@
 
 2e. Game: More sounds
 
-2f. Auto-heal on badge screen. (HP/time = heals)
+2f. Auto-heal on badge screen. (HP/time = heals) - DONE
 
-2g. Screens:
-    End of Fight You
-    End of Fight Them 
+2g. Screens: - DONE
+    End of Fight You - DONE
+    End of Fight Them - DONE
     Timeout - DONE
-
+    Tie ?
+    
 2h. Game/Debug: Check radio protocol and make enemy simulator
     (enemysim) - DONE
 
-2i. Integrate new Casear / Senator animations, Draw the right one based on the user's class
+2i. Integrate new Casear / Senator animations,
+    Draw the right one based on the user's class
 
 3. Casear Game Mechanics
 
@@ -31,7 +33,7 @@
 
 3. Game graphics ( can be done last ) -- IN PROGRESS
 
-4. Automatic jump to name page if not conf'd - DONE?
+4. Automatic jump to name page if not conf'd 
 
 5. ENTROPY - maybe use time of every touch to roll more entropy into
    the system, or an accel chip? - DONE
@@ -44,7 +46,7 @@
 
 6. (bonus) Cryptix: Need puzzle / konami code, whatev
 
-7. (bonus) Video/Movie/Frames:
+7. (bonus) Video/Movie/Frames
 
 HW NEEDS
 -------------
@@ -58,6 +60,41 @@ Screen
 ------
 
 A 4-button joystick and button would be better than this, maybe?
+
+
+COMMAND BACKLOG
+----------------------------
+led <red> <green> <blue>
+   Set all LEDs to a specific color. RGB values are 0-255.
+   
+led <index> <red> <green> <blue>
+   Set specific LED to specific color
+
+chat on
+chat off
+chat msg ....
+   Terminal shout
+
+setup/config from termianl
+   disable chat, sounds, etc.
+   disable fight entirely
+   
+unlocks:
+   ability to unlock extra animations and led sequences
+
+peers (enemylist)
+   ability to show peers
+   
+ping
+   ability to ping another badge id
+   
+uname
+
+sudo
+
+set
+
+whoami
 
 
 
