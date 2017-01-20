@@ -64,10 +64,10 @@ A 4-button joystick and button would be better than this, maybe?
 
 COMMAND BACKLOG
 ----------------------------
-led <red> <green> <blue>
+led <red> <green> <blue> - DONE 
    Set all LEDs to a specific color. RGB values are 0-255.
    
-led <index> <red> <green> <blue>
+led <index> <red> <green> <blue>  - DON'T CARE. 
    Set specific LED to specific color
 
 chat on
@@ -88,14 +88,13 @@ peers (enemylist)
 ping
    ability to ping another badge id
    
-uname
+uname - DONE
 
 sudo
 
 set
 
-whoami
-
+whoami - DONE
 
 
 

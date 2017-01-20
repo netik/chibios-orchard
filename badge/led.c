@@ -39,6 +39,7 @@ static void anim_rainbow_loop(void);
 static void anim_solid_color(void);
 static void anim_triangle(void);
 static void anim_one_hue_pulse(void);
+static void anim_all_same(void);
 
 // stock colors
 const RgbColor roygbiv[7] = { {255, 0, 0},
@@ -66,7 +67,8 @@ const struct FXENTRY fxlist[] = {
   {"Rainbow Loop", anim_rainbow_loop},
   {"Green Spiral", anim_solid_color},
   {"Yellow Triangle", anim_triangle},
-  {"Random Hue Pulse", anim_one_hue_pulse}
+  {"Random Hue Pulse", anim_one_hue_pulse},
+  {"All Solid", anim_all_same}
 };
 
 void ledClear(void);
@@ -422,6 +424,14 @@ static void anim_color_bounce_fade(void) {
       else if (i == iR2) {ledSetRGB(led_config.fb, i, 50, 0, 0);}
       else if (i == iR3) {ledSetRGB(led_config.fb, i, 10, 0, 0);}
       else { ledSetRGB(led_config.fb, i, 0, 0, 0); }
+  }
+}
+
+static void anim_all_same(void) {
+  userconfig *config = getConfig();
+
+  for(int i = 0 ; i < led_config.max_pixels; i++ ) {
+    ledSetRGB(led_config.fb, i, config->led_r, config->led_g, config->led_b);
   }
 }
 

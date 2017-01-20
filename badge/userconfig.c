@@ -89,6 +89,11 @@ static void init_config(userconfig *config) {
   
   config->won = 0;
   config->lost = 0;
+
+  /* randomly pick a new color */
+  config->led_r = rand() % 255;
+  config->led_g = rand() % 255;
+  config->led_b = rand() % 255;
 }
 
 void configStart(void) {

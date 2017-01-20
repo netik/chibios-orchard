@@ -55,6 +55,6 @@ struct FXENTRY {
   void (*function)(void);
 };
 
-#define LED_PATTERN_COUNT 10 // starting from 1, not 0! 
+#define LED_PATTERN_COUNT 11 // starting from 1, not 0! 
 
 #endif /* __LED_H__ */

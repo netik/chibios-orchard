@@ -46,8 +46,43 @@ static void led_run(BaseSequentialStream *chp, int argc, char *argv[]) {
   config->led_pattern = pattern-1;
   ledResetPattern();
   
-  chprintf(chp, "pattern changed to %s...\r\n", fxlist[pattern-1].name);
+  chprintf(chp, "Pattern changed to %s.\r\n", fxlist[pattern-1].name);
   configSave(config);
+}
+
+static void led_all(BaseSequentialStream *chp, int argc, char *argv[]) {
+
+  int16_t r,g,b;
+  userconfig *config = getConfig();
+
+  if (argc != 4) {
+    chprintf(chp, "Not enough arguments.\r\n");
+    return;
+  }
+
+  r = strtoul(argv[1], NULL, 0);
+  g = strtoul(argv[2], NULL, 0);
+  b = strtoul(argv[3], NULL, 0);
+
+  if ((r < 0) || (r > 255) ||
+      (g < 0) || (g > 255) ||
+      (b < 0) || (b > 255) ) {
+    chprintf(chp, "Invaild value. Must be 0 to 255.\r\n");
+    return;
+  }
+
+  chprintf(chp, "LEDs set.\r\n");
+
+  config->led_r = r;
+  config->led_g = g;
+  config->led_b = b;
+  config->led_pattern = LED_PATTERN_COUNT - 1;
+
+  // the last pattern is always the 'ALL' state. 
+  ledResetPattern();
+  
+  configSave(config);
+
 }
 
 static void led_dim(BaseSequentialStream *chp, int argc, char *argv[]) {
@@ -68,13 +103,11 @@ static void led_dim(BaseSequentialStream *chp, int argc, char *argv[]) {
   }
 
   ledSetBrightness(level);
-  chprintf(chp, "level now %d.\r\n", level);
+  chprintf(chp, "Level now %d.\r\n", level);
 
   config->led_shift = level;
   configSave(config);
-
 }
-
 
 static void led_list(BaseSequentialStream *chp) {
   chprintf(chp, "\r\nAvailable LED Patterns\r\n");
@@ -91,6 +124,7 @@ static void cmd_led(BaseSequentialStream *chp, int argc, char *argv[]) {
     chprintf(chp, "   list             list animations available\r\n");
     chprintf(chp, "   dim n            dimmer level (0-7) 0=brightest\r\n");
     chprintf(chp, "   run n            run pattern #n\r\n");
+    chprintf(chp, "   all r g b        set all leds to one color (0-255)\r\n");
     chprintf(chp, "   stop             stop and blank LEDs\r\n");
     return;
   }
@@ -102,6 +136,11 @@ static void cmd_led(BaseSequentialStream *chp, int argc, char *argv[]) {
 
   if (!strcasecmp(argv[0], "dim")) {
     led_dim(chp, argc, argv);
+    return;
+  }
+
+  if (!strcasecmp(argv[0], "all")) {
+    led_all(chp, argc, argv);
     return;
   }
 
