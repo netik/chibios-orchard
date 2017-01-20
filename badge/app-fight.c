@@ -808,7 +808,7 @@ static void show_results(void) {
     chsnprintf(attackfn1, sizeof(attackfn1), "gatt%c1.rgb", c);
 
   c = ' ';
-  textx = 160;
+  textx = 100;
   if (theirattack & ATTACK_HI) {
     c='h';
     texty = 40;
@@ -845,23 +845,25 @@ static void show_results(void) {
   // animate the characters
   chsnprintf (ourdmg_s, sizeof(ourdmg_s), "-%d", last_damage );
   chsnprintf (theirdmg_s, sizeof(theirdmg_s), "-%d", last_hit );
-    
-  for (uint8_t i=0; i < 4; i++) { 
+
+  for (uint8_t i=0; i < 2; i++) { 
     putImageFile(attackfn1, POS_PLAYER1_X, POS_PLAYER1_Y);
     putImageFile(attackfn2, POS_PLAYER2_X, POS_PLAYER2_Y);
-
+  
     // you attacking us
     gdispDrawStringBox (textx,texty,50,50,ourdmg_s,fontFF,Red,justifyLeft);
     // us attacking you
-    gdispDrawStringBox (textx+40,texty,50,50,theirdmg_s,fontFF,Red,justifyLeft);
-    
-    chThdSleepMilliseconds(200);
+    gdispDrawStringBox (textx+60,texty,50,50,theirdmg_s,fontFF,Red,justifyRight);
+
+    playHit();
+
+    chThdSleepMilliseconds(300);
     gdispDrawStringBox (textx,texty,50,50,ourdmg_s,fontFF,Black,justifyLeft);
-    gdispDrawStringBox (textx+40,texty,50,50,theirdmg_s,fontFF,Black,justifyLeft);
+    gdispDrawStringBox (textx+60,texty,50,50,theirdmg_s,fontFF,Black,justifyRight);
 
     putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER1_Y);
     putImageFile(IMG_GUARD_IDLE_R, POS_PLAYER2_X, POS_PLAYER2_Y);
-    chThdSleepMilliseconds(200);
+    chThdSleepMilliseconds(100);
   }
 
   // update the health bars

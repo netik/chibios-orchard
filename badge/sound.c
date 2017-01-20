@@ -84,6 +84,12 @@ static const PWM_NOTE soundDodge[] = {
   { 0, PWM_DURATION_END }
 };
 
+static const PWM_NOTE soundHit[] = {
+  { NOTE_FS4, note16 },
+  { NOTE_FS3, note16 },
+  { 0, PWM_DURATION_END }
+};
+
 
 static const PWM_NOTE soundDefeat[] = {
   { NOTE_GS4, snote16 },
@@ -101,7 +107,7 @@ static const PWM_NOTE soundDefeat[] = {
   { NOTE_GS4, snote16 },
   { NOTE_GS4, snote16 },
   { PWM_NOTE_PAUSE, snote16 },
-  { NOTE_G4, snote8 },
+  { NOTE_G4, snote16 },
   { PWM_NOTE_PAUSE, snote16 },
   { NOTE_GS4, snote4 },
   { 0, PWM_DURATION_END }
@@ -166,5 +172,5 @@ void playDodge(void) {
 
 void playHit(void) {
   /* played when you're hit */
-  
+  pwmThreadPlay (soundHit);
 }
