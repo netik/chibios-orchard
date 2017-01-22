@@ -16,7 +16,7 @@
 #include "userconfig.h"
 // we will heal the player at N hp per this interval
 #define HEAL_INTERVAL_US 1000000
-#define HEAL_AMT 10 // 10HP per heal interval
+#define HEAL_AMT 5
 
 typedef struct _DefaultHandles {
   GHandle ghFightButton;
@@ -113,7 +113,7 @@ static void redraw_badge(int8_t drawchar) {
 
   gdispFillArea( 289, ypos+6, 
                  30,gdispGetFontMetric(fontXS, fontHeight),
-                 Black );;
+                 Black );
                        
   gdispDrawStringBox (289,
 		      ypos+6,

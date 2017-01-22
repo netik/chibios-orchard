@@ -11,10 +11,10 @@
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0
-#define CONFIG_VERSION    42
+#define CONFIG_VERSION    1
 #define CONFIG_NAME_MAXLEN 10
 
-#define maxhp(level) ((level-1) * 100) + 337
+#define maxhp(level)       (50+(20*(level-1)))
 
 typedef enum _player_type {
   p_guard,

@@ -2,7 +2,7 @@
 #define __APP_FIGHT_H__
 
 /* debugging - this protocol can be a real pain in the ass */
-#undef DEBUG_FIGHT_TICK        // show the clock tick events, ugfx events, and other misc events
+#define DEBUG_FIGHT_TICK        // show the clock tick events, ugfx events, and other misc events
 #define DEBUG_FIGHT_NETWORK    // show all network (radio) traffic
 #define DEBUG_FIGHT_STATE      // debug state changes
   
@@ -107,7 +107,8 @@ const char* fight_state_name[]  = {
   "SHOW_RESULTS"  ,     // 9 - We are showing results
   "NEXTROUND"  ,        // 10 - reset the round
   "PLAYER_DEAD"  ,      // 11 - I die!
-  "ENEMY_DEAD"          // 12 - You're dead.
+  "ENEMY_DEAD",         // 12 - You're dead.
+  "LEVELUP"             // 13 - Show the bonus screen
   };
 #endif /* DEBUG_FIGHT_STATE */
 
@@ -125,6 +126,7 @@ typedef enum _fight_state {
   NEXTROUND,        // 10 - reset the round
   PLAYER_DEAD,      // 11 - I die!
   ENEMY_DEAD,       // 12 - You're dead.
+  LEVELUP,          // 12 - You're dead.
 } fight_state;
 
 typedef struct _state {
@@ -188,6 +190,10 @@ static void state_show_results_enter(void);
 static void state_show_results_tick(void);
 
 static void state_nextround_enter(void);
+
+static void state_levelup_enter(void);
+static void state_levelup_tick(void);
+static void state_levelup_exit(void);
 
 /* the function state table, a list of pointers to functions to run the game */
 state_funcs fight_funcs[] = { { // none
@@ -253,6 +259,11 @@ state_funcs fight_funcs[] = { { // none
                                 NULL,
                                 NULL,
                                 NULL
+                              },
+                              { // levelup
+                                state_levelup_enter,
+                                state_levelup_tick,
+                                state_levelup_exit,
                               }
 };
 

@@ -18,13 +18,13 @@
 #include "userconfig.h"
 #include "app-fight.h"
 
-
 /* Globals */
 static int32_t countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value. 
 static user current_enemy;                    // current enemy we are attacking/talking to 
 static user packet;                           // the last packet we sent, for retransmission
 
-static fight_state current_fight_state = IDLE;  // current state 
+static uint8_t started_it = 0;                  // if 1, we started the fight. 
+volatile fight_state current_fight_state = IDLE;  // current state 
 static fight_state next_fight_state = NONE;     // upon ACK, we will transition to this state. 
 static uint8_t current_enemy_idx = 0;
 static uint32_t last_ui_time = 0;
@@ -221,6 +221,8 @@ static void state_approval_demand_enter(void) {
 
   last_tick_time = chVTGetSystemTime();
   countdown=DEFAULT_WAIT_TIME;
+
+  started_it = 0;
   playAttacked();
   
 }
@@ -445,6 +447,8 @@ static void state_vs_screen_enter() {
   if (current_fight_state == VS_SCREEN) {
     // disable the timer, we are going to do some animations
     orchardAppTimer(instance.context, 0, false); // shut down the timer
+    gdispFillArea(0,gdispGetHeight() - 20,gdispGetWidth(),20,Black); // wipe the bottom
+    
     gdispFillArea(0,
 		  ypos,
 		  gdispGetWidth(),
@@ -463,9 +467,7 @@ static void state_vs_screen_enter() {
 	      200);
 
     updatehp();
-    
     ypos = ypos + 15;
-
     clearstatus();
 
     // animate them 
@@ -478,7 +480,9 @@ static void state_vs_screen_enter() {
       putImageFile(attackfn1, POS_PLAYER1_X, POS_PLAYER1_Y);
       putImageFile(attackfn2, POS_PLAYER2_X, POS_PLAYER2_Y);
 
-      // we always say we're waiting. 
+      // we always say we're waiting.
+      gdispFillArea(0,gdispGetHeight() - 20,gdispGetWidth(),20,Black);
+      
       gdispDrawStringBox (0,
                           gdispGetHeight() - 20,
                           gdispGetWidth(),
@@ -560,42 +564,55 @@ static void clearstatus(void) {
 }
 
 
-#ifdef notyet
 static uint8_t calc_level(uint16_t xp) {
-  if(xp >= 7800) {
+  if(xp >= 7600) {
     return 10;
   }
-  if(xp >= 6200) {
+  if(xp >= 6480) {
     return 9;
   }
-  if(xp >= 4800) {
+  if(xp >= 5440) {
     return 8;
   }
-  if(xp >= 3600) {
+  if(xp >= 4480) {
     return 7;
   }
-  if(xp >= 2600) {
+  if(xp >= 3600) {
     return 6;
   }
-  if(xp >= 1800) {
+  if(xp >= 2800) {
     return 5;
   }
-  if(xp >= 1200) {
+  if(xp >= 2080) {
     return 4;
   }
-  if(xp >= 800) {
+  if(xp >= 1440) {
     return 3;
   }
-  if(xp >= 400) {
+  if(xp >= 880) {
     return 2;
   }
   return 1;
 }
-#endif
 
-uint16_t calc_hit(void) {
-  // return random shit for now
-  return ((((uint8_t)rand()) % 200) + 50);
+uint16_t calc_hit(userconfig *config, user *current_enemy) {
+  uint8_t basedmg;
+  uint8_t basemult;
+
+  // 15-20
+  basemult = (rand() % 5) + 15;
+  
+  // base multiplier is between 15 and 20 
+  basedmg = (basemult * config->level) + config->might - current_enemy->agl;
+
+  // did we crit?
+  if ( (int)rand() % 100 > config->luck ) { 
+    ourattack |= ATTACK_ISCRIT;
+    basedmg = basedmg * 2;
+  }
+  
+  return basedmg;
+  
 }
 
 static void sendAttack(void) {
@@ -783,6 +800,15 @@ static uint8_t prevEnemy() {
     return FALSE;
   }
 }
+static void state_levelup_enter(void) {
+  gdispClear(Black);
+}
+
+static void state_levelup_tick(void) {
+}
+
+static void state_levelup_exit(void) {
+}
 
 static void show_results(void) {
   // remove the progress bar and status bar
@@ -791,16 +817,28 @@ static void show_results(void) {
   char attackfn2[13];
   char ourdmg_s[10];
   char theirdmg_s[10];
-  uint16_t textx, texty;
+  uint16_t textx, text_p1_y, text_p2_y;
+  color_t p1color, p2color;
   font_t fontFF;
   userconfig *config = getConfig();
   
   fontFF = gdispOpenFont(FONT_FIXED);
 
   // get the right filename for the attack
-  if (ourattack & ATTACK_HI) c='h';
-  if (ourattack & ATTACK_MID) c='m';
-  if (ourattack & ATTACK_LOW) c='l';
+  if (ourattack & ATTACK_HI) {
+    c='h';
+    text_p2_y = 40;
+  }
+
+  if (ourattack & ATTACK_MID) {
+    c='m';
+    text_p2_y = 120;
+  }
+  
+  if (ourattack & ATTACK_LOW) {
+    c='l';
+    text_p2_y = 180;
+  }
 
   if (c == ' ') 
     strcpy(attackfn1, IMG_GIDLA1);
@@ -811,17 +849,17 @@ static void show_results(void) {
   textx = 100;
   if (theirattack & ATTACK_HI) {
     c='h';
-    texty = 40;
+    text_p1_y = 40;
   }
   
   if (theirattack & ATTACK_MID) {
     c='m';
-    texty = 120;
+    text_p1_y = 120;
   }
   
   if (theirattack & ATTACK_LOW) {
     c='l';
-    texty = 180;
+    text_p1_y = 180;
   }
   
   if (c == ' ') 
@@ -846,20 +884,33 @@ static void show_results(void) {
   chsnprintf (ourdmg_s, sizeof(ourdmg_s), "-%d", last_damage );
   chsnprintf (theirdmg_s, sizeof(theirdmg_s), "-%d", last_hit );
 
+  // 45 down. 
+  // 140 | -40- | 140
   for (uint8_t i=0; i < 2; i++) { 
     putImageFile(attackfn1, POS_PLAYER1_X, POS_PLAYER1_Y);
     putImageFile(attackfn2, POS_PLAYER2_X, POS_PLAYER2_Y);
-  
+
+    p1color = Red;
+    p2color = Red;
+
+    if (theirattack & ATTACK_ISCRIT) { p1color = Green; }
+    if (ourattack & ATTACK_ISCRIT) { p2color = Green; }
+    
     // you attacking us
-    gdispDrawStringBox (textx,texty,50,50,ourdmg_s,fontFF,Red,justifyLeft);
+    gdispDrawStringBox (textx,text_p1_y,50,50,ourdmg_s,fontFF,p1color,justifyLeft);
+    
     // us attacking you
-    gdispDrawStringBox (textx+60,texty,50,50,theirdmg_s,fontFF,Red,justifyRight);
+    gdispDrawStringBox (textx+60,text_p2_y,50,50,theirdmg_s,fontFF,p2color,justifyRight);
+
+    if (theirattack & ATTACK_ISCRIT || ourattack & ATTACK_ISCRIT) {
+      playHit();      
+    }
 
     playHit();
 
     chThdSleepMilliseconds(300);
-    gdispDrawStringBox (textx,texty,50,50,ourdmg_s,fontFF,Black,justifyLeft);
-    gdispDrawStringBox (textx+60,texty,50,50,theirdmg_s,fontFF,Black,justifyRight);
+    gdispDrawStringBox (textx,text_p1_y,50,50,ourdmg_s,fontFF,Black,justifyLeft);
+    gdispDrawStringBox (textx+60,text_p2_y,50,50,theirdmg_s,fontFF,Black,justifyRight);
 
     putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER1_Y);
     putImageFile(IMG_GUARD_IDLE_R, POS_PLAYER2_X, POS_PLAYER2_Y);
@@ -870,30 +921,50 @@ static void show_results(void) {
   updatehp();
   
   /* if I kill you, then I will show victory and head back to the badge screen */
+
+  if (current_enemy.hp == 0 && config->hp == 0) {
+    /* both are dead, so whomever started the fight, wins */
+    if (started_it == 1) {
+      config->hp = 1;
+    } else {
+      current_enemy.hp = 1;
+    }
+  }
+  
   if (current_enemy.hp == 0) {
+    changeState(ENEMY_DEAD);
+    playVictory();
     screen_alert_draw("VICTORY!");
-    // TODO: update this!
-    config->xp +=  100;
+    config->xp += (80 + (config->level-1 * 16));
     config->won++;
     configSave(config);
-    playVictory();
     chThdSleepMilliseconds(ALERT_DELAY);
     orchardAppRun(orchardAppByName("Badge"));
+  } else {
+    if (config->hp == 0) {
+      changeState(PLAYER_DEAD);
+      /* if you are dead, then you will do the same */
+      playDefeat();
+      screen_alert_draw("YOU ARE DEFEATED.");
+      config->xp += (10 + (config->level-1 * 16));
+      config->lost++;
+      configSave(config);
+      chThdSleepMilliseconds(ALERT_DELAY);
+      orchardAppRun(orchardAppByName("Badge"));
+    }
+  }  
+
+  if (config->hp == 0 || current_enemy.hp == 0) {
+    // check for level UP
+    if ((config->level != calc_level(config->xp)) && (config->level != 10)) {
+      config->level++;
+      configSave(config);
+      changeState(LEVELUP);
+    }
+
     return;
   }
 
-  /* if you are dead, then you will do the same */
-  if (config->hp == 0) {
-    screen_alert_draw("YOU ARE DEFEATED.");
-    config->xp += 50;
-    config->lost++;
-    configSave(config);
-    playDefeat();
-    chThdSleepMilliseconds(ALERT_DELAY);
-    orchardAppRun(orchardAppByName("Badge"));
-    return;
-  }  
-  
   next_fight_state = NEXTROUND;
   sendGamePacket(OP_NEXTROUND);
 }
@@ -901,22 +972,52 @@ static void show_results(void) {
 static void updatehp(void)  {
   // update the hit point counters at the top of the screen
   userconfig *config = getConfig();
-  font_t font;
-  font = gdispOpenFont (FONT_FIXED);
+  font_t fontXS, fontSM;
+  char tmp[20];
+  
+  fontSM = gdispOpenFont (FONT_FIXED);
+  fontXS = gdispOpenFont (FONT_XS);
 
-  // TODO - support target hp and animation
+  // center KO 
   gdispDrawStringBox (1, 16, gdispGetWidth()-1,
-		      gdispGetFontMetric(font, fontHeight),
+		      gdispGetFontMetric(fontSM, fontHeight),
 		      "KO",
-		      font, Yellow, justifyCenter);
+		      fontSM, Yellow, justifyCenter);
 
   gdispDrawStringBox (0, 15, gdispGetWidth(),
-		      gdispGetFontMetric(font, fontHeight),
+		      gdispGetFontMetric(fontSM, fontHeight),
 		      "KO",
-		      font, Red, justifyCenter);
+		      fontSM, Red, justifyCenter);
+  // hp bars
+  drawProgressBar(35,22,100,12,maxhp(config->level),config->hp,false,true);
+  drawProgressBar(185,22,100,12,maxhp(current_enemy.level),current_enemy.hp,false,false);
 
-  drawProgressBar(0,22,135,12,maxhp(config->level),config->hp,false,true);
-  drawProgressBar(185,22,135,12,maxhp(current_enemy.level),current_enemy.hp,false,false);
+  // numeric hp indicators
+  gdispFillArea( 0, 23,
+                 35, gdispGetFontMetric(fontXS, fontHeight),
+                 Black );
+
+  gdispFillArea( 289, 23,
+                 30, gdispGetFontMetric(fontXS, fontHeight),
+                 Black );
+
+  chsnprintf(tmp, sizeof(tmp), "%d", config->hp);
+  gdispDrawStringBox (0,
+		      23,
+		      35,
+		      gdispGetFontMetric(fontXS, fontHeight),
+		      tmp,
+		      fontXS, White, justifyRight);
+
+  chsnprintf(tmp, sizeof(tmp), "%d", current_enemy.hp);
+
+  gdispDrawStringBox (289,
+		      23,
+		      29,
+		      gdispGetFontMetric(fontXS, fontHeight),
+		      tmp,
+		      fontXS, White, justifyLeft);
+  
 }
 
 static void fight_start(OrchardAppContext *context) {
@@ -1058,14 +1159,15 @@ static void sendGamePacket(uint8_t opcode) {
   packet.luck = config->luck;
   packet.might = config->might;
 
-  packet.attack_bitmap = ourattack;
-
   if ((opcode == OP_IMOVED) && (last_hit == -1)) {
-    // if this is a turn-over packet, then we also transmit
-    // damage (to them)
-    last_hit = calc_hit();
+    // if this is a turn-over packet, then we also transmit damage (to
+    // them). calc_hit will also set ATTACK_ISCRIT in ourattack if
+    // need be.
+    last_hit = calc_hit(config, &current_enemy);
     packet.damage = last_hit;
   }
+
+  packet.attack_bitmap = ourattack;
   
   resendPacket();
 }
@@ -1128,7 +1230,8 @@ static void fight_event(OrchardAppContext *context,
         return;
       }
       if ( ((GEventGWinButton*)pe)->gwin == p->ghAttack) { 
-        // we are attacking. 
+        // we are attacking.
+        started_it = 1;
         last_ui_time = chVTGetSystemTime();
         
         memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(user));
@@ -1137,6 +1240,8 @@ static void fight_event(OrchardAppContext *context,
         // We're going to preemptively call this before changing state
         // so the screen doesn't go black while we wait for an ACK.
         next_fight_state = APPROVAL_WAIT;
+
+        screen_alert_draw("Connecting...");
         sendGamePacket(OP_STARTBATTLE);
         return;
       }
