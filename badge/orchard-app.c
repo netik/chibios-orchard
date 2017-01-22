@@ -367,6 +367,18 @@ static THD_FUNCTION(orchard_app_thread, arg) {
 
   instance->context = NULL;
 
+  /*
+   * The credits app never calls its event handler, so there's a
+   * chance the radio event handler could get stuck waiting to
+   * be woken up. It will time out after 5 seconds anyway, but
+   * we call the radio_event() handler once here to make sure
+   * it wakes up before the thread exits, otherwise the main
+   * thread will be blocked for a few seconds before it can
+   * launch the next app.
+   */
+
+  radio_event (0);
+
   /* Set up the next app to run when the orchard_app_terminated message is
      acted upon.*/
   if (instance->next_app)
