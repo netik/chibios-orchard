@@ -14,5 +14,6 @@ extern void playMsPacman(void);
 extern void playCantina(void);
 extern void playKombat(void);
 extern void playMario(void);
+extern void playDoh(void);
 
 #endif /* __SOUND_H__ */

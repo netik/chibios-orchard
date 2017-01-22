@@ -36,7 +36,7 @@
 #include "ffconf.h"
 #include "board_ILI9341.h"
 
-#include "tpm.h"
+#include "dac_lld.h"
 
 #define ILI9341_VSDEF	0x33
 #define ILI9341_VSADD	0x37
@@ -112,7 +112,7 @@ static void credits_start(OrchardAppContext *context)
 	p = chHeapAlloc (NULL, sizeof(CreditsHandles));
 	context->priv = p;
 
-	pwmFileThreadPlay ("mario");
+	dacPlay ("mario.raw");
 
 	gwinWidgetClearInit (&wi);
 	wi.g.show = TRUE;
@@ -155,7 +155,7 @@ static void credits_start(OrchardAppContext *context)
 
 	chThdSleepMilliseconds (800);
 
-	pwmFileThreadPlay (NULL);
+	dacPlay (NULL);
 	gdispClear (Black);
 	scroll (0);
 

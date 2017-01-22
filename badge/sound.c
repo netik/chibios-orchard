@@ -121,7 +121,7 @@ void playTone(uint16_t freq, uint16_t duration) {
 
 void playStartupSong(void) {
   /* the galaga game start sound */
-  pwmFileThreadPlay ("galaga");
+  dacPlay ("galaga.raw");
 }
 
 void playMsPacman(void) {
@@ -133,11 +133,15 @@ void playCantina(void) {
 }
 
 void playKombat(void) {
-  pwmFileThreadPlay ("kombat");
+  dacPlay ("kombat.raw");
 }
 
 void playMario(void) {
-  pwmFileThreadPlay ("mario");
+  dacPlay ("mario.raw");
+}
+
+void playDoh(void) {
+  dacPlay ("doh.raw");
 }
 
 void playHardFail(void) {

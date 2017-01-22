@@ -149,6 +149,7 @@ CSRC = main.c \
        radio.c \
        pit.c \
        tpm.c \
+       dac_lld.c \
        xpt2046.c \
        hex.c \
        flash.c \

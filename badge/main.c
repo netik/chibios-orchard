@@ -20,6 +20,7 @@
 #include "spi.h"
 #include "pit.h"
 #include "tpm.h"
+#include "dac_lld.h"
 #include "sound.h"
 #include "rand.h"
 
@@ -251,6 +252,13 @@ int main(void)
   print_mcu_info();
 
   /* start the engines */
+
+#if HAL_USE_MMC_SPI
+  pit0Start (&PIT1, NULL);
+#else
+  pit0Start (&PIT1, disk_timerproc);
+#endif
+  dacStart (&DAC1);
   pwmInit();
   spiStart(&SPID1, &spi1_config);
   orchardEventsStart();
@@ -345,8 +353,6 @@ int main(void)
    * put it into an unknown state in which it won't respond to us anymore.
    */
 
-  pitStart (&PIT1, disk_timerproc);
-
   if (mmc_disk_initialize () == 0) {
     chprintf (stream, "SD card detected.\r\n");
   } else {
@@ -391,10 +397,6 @@ int main(void)
 
   gfileMount ('F', "0:");
 
-  if (config->sound_enabled) {
-    // jna - disable this until I can deal with it. 
-    playStartupSong();
-  }
   orchardShellRestart();
 
   /* Initialize uGfx */
@@ -405,6 +407,7 @@ int main(void)
   oledOrchardBanner();
 
   if (config->sound_enabled == 1) {
+    playStartupSong();
     chThdSleepMilliseconds(IMG_SPLASH_DISPLAY_TIME);
   } else {
     chThdSleepMilliseconds(IMG_SPLASH_NO_SOUND_DISPLAY_TIME);

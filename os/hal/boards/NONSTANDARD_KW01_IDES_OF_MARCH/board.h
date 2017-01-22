@@ -78,8 +78,8 @@
 
 /* Note: actually PTB1 on Freedom board */
 
-#define GREEN_LED_PORT		GPIOD
-#define GREEN_LED_PIN		7
+#define GREEN_LED_PORT		GPIOB
+#define GREEN_LED_PIN		1
 
 #define BLUE_LED_PORT		GPIOB
 #define BLUE_LED_PIN		0
@@ -89,20 +89,19 @@
 #define BLUE_SOLO_LED_PORT	GPIOE
 #define BLUE_SOLO_LED_PIN	17
 
-#define TPM0_PORT		GPIOC
-#define TPM0_PIN		2
-
-#define TPM1_PORT		GPIOB
-#define TPM1_PIN		1
-
 #define TPM2_PORT		GPIOB
 #define TPM2_PIN		2
 
 #define RADIO_CHIP_SELECT_PORT	GPIOD
 #define RADIO_CHIP_SELECT_PIN	0
 
-#define RADIO_RESET_PORT	GPIOE
-#define RADIO_RESET_PIN		30
+#define RADIO_RESET_PORT	GPIOC
+#define RADIO_RESET_PIN		2
+
+/* DAC audio */
+
+#define DAC_PORT		GPIOE
+#define DAC_PIN			30
 
 #if !defined(_FROM_ASM_)
 #ifdef __cplusplus

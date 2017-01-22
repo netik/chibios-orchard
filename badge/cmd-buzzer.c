@@ -10,6 +10,7 @@
 #include "shell.h"
 #include "chprintf.h"
 #include "tpm.h"
+#include "dac_lld.h"
 
 #include <strings.h>
 #include <string.h>
@@ -68,6 +69,7 @@ static void buzzer_play(BaseSequentialStream *chp, int argc, char *argv[]) {
   switch(selection) {
   case 0:
     pwmChanThreadPlay (NULL, NULL, NULL);
+    dacPlay (NULL);
     break;
   case 1:
     playStartupSong();
@@ -101,6 +103,9 @@ static void buzzer_play(BaseSequentialStream *chp, int argc, char *argv[]) {
     break;
   case 11:
     playMario();
+    break;
+  case 12:
+    playDoh();
     break;
   default:
     chprintf(chp, "No song specified\r\n");
