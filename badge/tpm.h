@@ -35,13 +35,9 @@
 
 /*
  * We use:
- * TPM0 channel 1, which is wired to pin PTC2
- * TPM1 channel 1, which is wired to pin PTB1
  * TPM2 channel 0, which is wired to pin PTB2
  */
 
-#define TPM0_CHANNEL	1
-#define TPM1_CHANNEL	1
 #define TPM2_CHANNEL	0
 
 /*
@@ -84,28 +80,17 @@ typedef struct pwm_note {
 
 #define PWM_BUFSIZ		8
 
+#define pwmFileThreadPlay(x)
+#define pwmChanThreadPlay(x,y,z) pwmThreadPlay(x)
 /* TPM note player thread priority */
 
 #define TPM_THREAD_PRIO	70
 
-#define pwmToneStart(x)		pwmChan0ToneStart(x)
-#define pwmToneStop(x)		pwmChan0ToneStop(x)
-#define pwmThreadPlay(x)	pwmChanThreadPlay(x, NULL, NULL)
-
 extern void pwmInit (void);
 
-extern void pwmChan0ToneStart (uint8_t);
-extern void pwmChan0ToneStop (void);
+extern void pwmToneStart (uint8_t);
+extern void pwmToneStop (void);
 
-extern void pwmChan1ToneStart (uint8_t);
-extern void pwmChan1ToneStop (void);
-
-extern void pwmChan2ToneStart (uint8_t);
-extern void pwmChan2ToneStop (void);
-
-extern void pwmChanThreadPlay (const PWM_NOTE *,
-	const PWM_NOTE *, const PWM_NOTE *);
-
-extern void pwmFileThreadPlay (char *);
+extern void pwmThreadPlay (const PWM_NOTE *);
 
 #endif /* _TPM_H_ */

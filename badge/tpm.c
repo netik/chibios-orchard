@@ -34,30 +34,22 @@
  * This module implements support for using the KW01 TPM module as a
  * tone generator. This simplifies the generation of music notes as
  * the hardware can be set to generate a square wave without having
- * jiggle GPIO pins in software. There are several pins available for TPM.
- * This module uses three: PTC2 form TPM0 channel 1 and PTB1 for TPM1
- * channel 1 and PTB2 for TPM2 channel 0. On the Freescale/NXP KW019032
- * board, PTB1 is wired to the green segment of the tri-color LED, but
- * this doesn't affect the pin usage for audio. Also PTB2 is documented
- * as being used for UART0 flow control, however it turns out that it's
- * not being for that purpose by ChibiOS. (It doesn't look like the
- * Kinetis UART driver in ChibiOS supports hardware flow control.)
+ * jiggle GPIO pins in software. There are two pins available for TPM:
+ * output: PTC1 for TPM2 channel 0 and PTC2 for TPM2 channel 1. On the
+ * Freescale/NXP KW019032 board, PTC1 is already used for the RTC crystal,
+ * we use use TPM2 channel 1 and PTC2 here.
  *
  * There is a ChibiOS PWM driver for the KW01, however its API is a little
  * clumsy to use for this application, so we use this code instead.
  *
  * We create a thread to play music in the background so that the game
  * code doesn't have to block. Music is formatted as a table of PWM_NOTE
- * structures which contain a 8-bit MIDI note value and a 8-bit duration
- * value. The duration is specified in milliseconds, but divided by 8
- * so that the value will more easily fit into a single byte.
- *
- * Three voices are supported using the three TPM channels. To play a
- * tune, the pwmChanThreadPlay() function is called with pointers to up
- * three tune tables, and the thread will play each note in the tables until
+ * structures which contain a 16-bit frequency value and a 16-bit duration
+ * value. To play a tune, the pwmThreadPlay() function is with a pointer
+ * to a tune table, and the thread will play each note in the table until
  * it reaches a note with a duration of PWM_DURATION_END. If the last
  * note has a duration of PWM_DURATION_LOOP, the same tune will play
- * over and over until pwmChanThreadPlay(NULL, NULL, NULL) is called.
+ * over and over until pwmThreadPlay(NULL) is called.
  *
  * The TPM includes a pre-scaler feature which we make use of here. We
  * want to use the TPM to generate a pulse train at audio frequencies.
@@ -66,22 +58,16 @@
  * large. This is a problem because the value field for a TPM channel,
  * which is used to set the mid-point of the pulse sycle, is only 16 bits
  * wide. To ensure the desired values will fit, we divide the master
- * clock using the pre-scaler. The default pre-scale factor is 32, which
- * allows for tones as low as 22Hz.
+ * clock using the pre-scaler. The default pre-scale factor is 16, which
+ * allows for tones as low as 45Hz.
  */
 
 #include "ch.h"
 #include "hal.h"
-#include "chprintf.h"
 
 #include "tpm.h"
 #include "kinetis_tpm.h"
 #include "userconfig.h"
-
-#include "ff.h"
-#include "ffconf.h"
-
-#include <string.h>
 
 /*
  * This table represents the 127 available MIDI note frequencies.
@@ -109,47 +95,11 @@ static const uint16_t notes[128] = {
 	8372,	8870,	9397,	9956,	10548,	11175,	11840,	12544
 };
 
-static THD_WORKING_AREA(waThread0, 180);
+static THD_WORKING_AREA(waPwmThread, 0);
 
-typedef struct thread_state {
-	PWM_NOTE *		pTune0;
-	PWM_NOTE *		pTune1;
-	PWM_NOTE *		pTune2;
-	thread_t *		pThread;
-	char *			pName;
-	uint8_t			play;
-} THREAD_STATE;
-
-static char fname[13];
-static 	FIL f[3];
-
-static THREAD_STATE pwmState0 = {
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	0
-};
-
-static PWM_NOTE buf0[PWM_BUFSIZ];
-static PWM_NOTE buf1[PWM_BUFSIZ];
-static PWM_NOTE buf2[PWM_BUFSIZ];
-
-static const PWM_NOTE dummy = { PWM_NOTE_OFF, PWM_DURATION_END };
-
-static uint8_t pwmSmallest (uint8_t * d)
-{
-	uint8_t i;
-	uint8_t smallest = PWM_DURATION_END;
-
-	for (i = 0; i < 3; i++) {
-		if (d[i] < smallest)
-			smallest = d[i];
-	}
-
-	return (smallest);
-}
+static PWM_NOTE * pTune;
+static uint8_t play;
+static thread_t * pThread;
 
 /******************************************************************************
 *
@@ -157,200 +107,61 @@ static uint8_t pwmSmallest (uint8_t * d)
 *
 * This function implements a background thread for playing notes through
 * the pulse width modulator. When music is not playing, the thread sleeps.
-* It can be woken up by pwmChanThreadPlay(). When awakened, pTune0 should point
+* It can be woken up by pwmThreadPlay(). When awakened, pTune should point
 * to a table of PWM_NOTE structures which indicate the frequency and duration
 * for each note in the tune. The last note in the table should have a
 * duration of PWM_DURATION_END. If the duration is PWM_DURATION_LOOP, then
-* the same tune will play over and over until pwmChanThreadPlay(NULL) is
-* called.
+* the same tune will play over and over until pwmThreadPlay(NULL) is called.
 *
 * RETURNS: N/A
 */
 
-static THD_FUNCTION(pwmThread, arg) {
-	PWM_NOTE * p[3];
-	uint8_t d[3];
-	uint8_t smallest;
-	THREAD_STATE * pState;
-	userconfig * config;
+static
+THD_FUNCTION(pwmThread, arg)
+{
+	PWM_NOTE * p;
+	userconfig *config;
 
-	pState = (THREAD_STATE *)arg;
+	(void)arg;
+
 	chRegSetThreadName ("pwm");
 	config = getConfig();
-	UINT br;
-
-	buf0[PWM_BUFSIZ - 1].pwm_note = PWM_NOTE_BUFEND;
-	buf1[PWM_BUFSIZ - 1].pwm_note = PWM_NOTE_BUFEND;
-	buf2[PWM_BUFSIZ - 1].pwm_note = PWM_NOTE_BUFEND;
 
 	while (1) {
 		chThdSleep (TIME_INFINITE);
 		
 		if (config->sound_enabled == 0) {
-			pState->play = 0;
-			pState->pTune0 = NULL;
-			pState->pTune1 = NULL;
-			pState->pTune2 = NULL;
-			pState->pName = NULL;
+			play = 0;
+			pTune = NULL;
 		}
 		
-		while (pState->play) {
-
-			/*
-			 * If we've been asked to play a file, try to
-			 * open all the tracks.
-			 */
-
-			if (pState->pName != NULL) {
-				chsnprintf (fname, sizeof(fname), "%s0.bin",
-				    pState->pName);
-				if (f_open (&f[0], fname, FA_READ) == FR_OK)
-					pState->pTune0 = &buf0[PWM_BUFSIZ - 1];
-				else
-					pState->pTune0 = (PWM_NOTE *)&dummy;
-				fname[strlen(pState->pName)] = '1';
-				if (f_open (&f[1], fname, FA_READ) == FR_OK)
-					pState->pTune1 = &buf1[PWM_BUFSIZ - 1];
-				else
-					pState->pTune1 = (PWM_NOTE *)&dummy;
-				fname[strlen(pState->pName)] = '2';
-				if (f_open (&f[2], fname, FA_READ) == FR_OK)
-					pState->pTune2 = &buf2[PWM_BUFSIZ - 1];
-				else
-					pState->pTune2 = (PWM_NOTE *)&dummy;
-			}
-
-			p[0] = pState->pTune0;
-			p[1] = pState->pTune1;
-			p[2] = pState->pTune2;
-
-			d[0] = p[0]->pwm_duration;
-			d[1] = p[1]->pwm_duration;
-			d[2] = p[2]->pwm_duration;
-
+		while (play) {
+			p = pTune;
 			while (1) {
-				if (pState->play == 0) {
-					pwmChan0ToneStop ();
-					pwmChan1ToneStop ();
-					pwmChan2ToneStop ();
+				if (play == 0) {
+					pwmToneStop ();
+					pTune = NULL;
 					break;
 				}
-
-				if (p[0]->pwm_note == PWM_NOTE_BUFEND) {
-					f_read (&f[0], buf0,
-					    sizeof(PWM_NOTE) *
-					    (PWM_BUFSIZ - 1), &br);
-					p[0] = buf0;
-					d[0] = p[0]->pwm_duration;
-				}
-
-				if (p[1]->pwm_note == PWM_NOTE_BUFEND) {
-					f_read (&f[1], buf1,
-					    sizeof(PWM_NOTE) *
-					    (PWM_BUFSIZ - 1), &br);
-					p[1] = buf1;
-					d[1] = p[1]->pwm_duration;
-				}
-
-				if (p[2]->pwm_note == PWM_NOTE_BUFEND) {
-					f_read (&f[2], buf2,
-					    sizeof(PWM_NOTE) *
-					    (PWM_BUFSIZ - 1), &br);
-					p[2] = buf2;
-					d[2] = p[2]->pwm_duration;
-				}
-
-				if (p[0]->pwm_duration == PWM_DURATION_END)
-					pwmChan0ToneStop ();
-
-				if (p[1]->pwm_duration == PWM_DURATION_END)
-					pwmChan1ToneStop ();
-
-				if (p[2]->pwm_duration == PWM_DURATION_END)
-					pwmChan2ToneStop ();
-
-				if (d[0] == PWM_DURATION_END &&
-				    d[1] == PWM_DURATION_END &&
-				    d[2] == PWM_DURATION_END) {
-					if (pState->play)
-						pState->play--;
+				if (p->pwm_duration == PWM_DURATION_END) {
+					pwmToneStop ();
+					if (play)
+						play--;
+					if (play == 0)
+						pTune = NULL;
 					break;
 				}
-
-				if (p[0]->pwm_duration == PWM_DURATION_LOOP) {
-					pwmChan0ToneStop ();
+				if (p->pwm_duration == PWM_DURATION_LOOP) {
+					pwmToneStop ();
 					break;
 				}
-
-				if (p[1]->pwm_duration == PWM_DURATION_LOOP) {
-					pwmChan0ToneStop ();
-					break;
+				if (p->pwm_note == PWM_NOTE_OFF) {
+					pwmToneStop();
+				} else if (p->pwm_note != PWM_NOTE_PAUSE) {
+					pwmToneStart (p->pwm_note);
 				}
-
-				if (p[2]->pwm_duration == PWM_DURATION_LOOP) {
-					pwmChan0ToneStop ();
-					break;
-				}
-
-				if (p[0]->pwm_note == PWM_NOTE_OFF ||
-				    p[0]->pwm_duration == PWM_DURATION_END) {
-					pwmChan0ToneStop ();
-				} else if (p[0]->pwm_note != PWM_NOTE_PAUSE) {
-					pwmChan0ToneStart (p[0]->pwm_note);
-				}
-
-				if (p[1]->pwm_note == PWM_NOTE_OFF ||
-				    p[1]->pwm_duration == PWM_DURATION_END) {
-					pwmChan1ToneStop ();
-				} else if (p[1]->pwm_note != PWM_NOTE_PAUSE) {
-					pwmChan1ToneStart (p[1]->pwm_note);
-				}
-
-				if (p[2]->pwm_note == PWM_NOTE_OFF ||
-				    p[2]->pwm_duration == PWM_DURATION_END) {
-					pwmChan2ToneStop ();
-				} else if (p[2]->pwm_note != PWM_NOTE_PAUSE) {
-					pwmChan2ToneStart (p[2]->pwm_note);
-				}
-
-				smallest = pwmSmallest (d);
-				if (d[0] != PWM_DURATION_END)
-					d[0] -= smallest;
-				if (d[1] != PWM_DURATION_END)
-					d[1] -= smallest;
-				if (d[2] != PWM_DURATION_END)
-					d[2] -= smallest;
-
-				chThdSleepMilliseconds (smallest * 8);
-
-				if (d[0] == 0) {
-					p[0]++;
-					d[0] = p[0]->pwm_duration;
-				}
-				if (d[1] == 0) {
-					p[1]++;
-					d[1] = p[1]->pwm_duration;
-				}
-				if (d[2] == 0) {
-					p[2]++;
-					d[2] = p[2]->pwm_duration;
-				}
-			}
-
-			/* Done playing song from a file, close the tracks. */
-
-			if (pState->pTune0 != (PWM_NOTE *)&dummy)
-				f_close (&f[0]);
-			if (pState->pTune1 != (PWM_NOTE *)&dummy)
-				f_close (&f[1]);
-			if (pState->pTune2 != (PWM_NOTE *)&dummy)
-				f_close (&f[2]);
-
-			if (pState->play == 0) {
-				pState->pTune0 = NULL;
-				pState->pTune1 = NULL;
-				pState->pTune2 = NULL;
-				pState->pName = NULL;
+				chThdSleepMilliseconds (p->pwm_duration * 8);
+				p++;
 			}
 		}
 	}
@@ -364,7 +175,7 @@ static THD_FUNCTION(pwmThread, arg) {
 * pwmInit - initialize the PWM module and thrad
 *
 * This function intializes the TPM hardware and starts the music player
-* thread. We enable clock gating for TPM0 and set its clock source to
+* thread. We enable clock gating for TPM2 and set its clock source to
 * the system clock. We also program the TPM prescaler to divide the
 * system clock by a pre-defined factor (currently 8). This is done because
 * the TPM channel value field is only 16 bits wide. With a system clock of
@@ -376,7 +187,8 @@ static THD_FUNCTION(pwmThread, arg) {
 * RETURNS: N/A
 */
  
-void pwmInit (void)
+void
+pwmInit (void)
 {
 	int i;
 	uint32_t psc;
@@ -390,9 +202,9 @@ void pwmInit (void)
 	SIM->SOPT2 &= ~(SIM_SOPT2_TPMSRC_MASK);
 	SIM->SOPT2 |= SIM_SOPT2_TPMSRC(KINETIS_TPM_CLOCK_SRC);
 
-	/* Enable clock gating for TPM0 */
+	/* Enable clock gating for TPM2 */
 
-	SIM->SCGC6 |= SIM_SCGC6_TPM0 | SIM_SCGC6_TPM1 | SIM_SCGC6_TPM2;
+	SIM->SCGC6 |= SIM_SCGC6_TPM2;
 
 	/* Set prescaler factor. */
 
@@ -410,8 +222,6 @@ void pwmInit (void)
 
 	/* Set prescaler field. */
 
-	TPM0->SC = i;
-	TPM1->SC = i;
 	TPM2->SC = i;
 
 	/*
@@ -419,101 +229,32 @@ void pwmInit (void)
          * active low.
 	 */
 
-	TPM0->C[TPM0_CHANNEL].SC = TPM_CnSC_MSB | TPM_CnSC_ELSB;
-	TPM1->C[TPM1_CHANNEL].SC = TPM_CnSC_MSB | TPM_CnSC_ELSB;
 	TPM2->C[TPM2_CHANNEL].SC = TPM_CnSC_MSB | TPM_CnSC_ELSB;
 
 	/* Create PWM thread */
 
-	pwmState0.pThread = chThdCreateStatic(waThread0, sizeof(waThread0),
-		TPM_THREAD_PRIO, pwmThread, &pwmState0);
+	pThread = chThdCreateStatic (waPwmThread, sizeof(waPwmThread),
+		TPM_THREAD_PRIO, pwmThread, NULL);
 
 	return;
 }
 
 /******************************************************************************
 *
-* pwmChan0ToneStart - start playing a tone on voice 0
+* pwmToneStart - start playing a tone
 *
 * This function programs the TPM channel for a desired tone frequency and
 * enables the timer. This produces a square wave at the desired tone on
 * the output pin, The <tone> argument is the tone frequency in Hz. The
-* tone may be changed by calling pwmChan0ToneStart() again with a different
-* frequency. The tone will continue to play until pwmChan0ToneStop() is called
+* tone may be changed by calling pwmToneStart() again with a different
+* frequency. The tone will continue to play until pwmToneStop() is called
 * to turn off the timer.
 *
 * RETURNS: N/A
 */
 
-void pwmChan0ToneStart (uint8_t tone)
-{
-	uint16_t		f;
-
-	f = notes[tone];
-
-	/* Disable timer */
-
-	TPM0->SC &= ~(TPM_SC_CMOD_LPTPM_CLK|TPM_SC_CMOD_LPTPM_EXTCLK);
-
-	/* Set modulus and pulse width */
-
-	TPM0->MOD = TPM_FREQ / f;
-	TPM0->C[TPM0_CHANNEL].V = (TPM_FREQ / f) / 2;
-	TPM0->CNT = 0;
-
-	/* Turn on timer */
-
-	TPM0->SC |= TPM_SC_CMOD_LPTPM_CLK;
-
-	return;
-}
-
-/******************************************************************************
-*
-* pwmChan1ToneStart - start playing a tone on voice 1
-*
-* This function is the same as pwmChan0ToneStart(), except it works on
-* the second voice channel. This voice 1 channel be set to play a different
-* tone, completely independent of the others.
-*
-* RETURNS: N/A
-*/
-
-void pwmChan1ToneStart (uint8_t tone)
-{
-	uint16_t		f;
-
-	f = notes[tone];
-
-	/* Disable timer */
-
-	TPM1->SC &= ~(TPM_SC_CMOD_LPTPM_CLK|TPM_SC_CMOD_LPTPM_EXTCLK);
-
-	/* Set modulus and pulse width */
-
-	TPM1->MOD = TPM_FREQ / f;
-	TPM1->C[TPM1_CHANNEL].V = (TPM_FREQ / f) / 2;
-	TPM1->CNT = 0;
-
-	/* Turn on timer */
-
-	TPM1->SC |= TPM_SC_CMOD_LPTPM_CLK;
-
-	return;
-}
-
-/******************************************************************************
-*
-* pwmChan2ToneStart - start playing a tone on voice 2
-*
-* This function is the same as pwmChan0ToneStart(), except it works on
-* the third voice channel. The voice 2 channel be set to play a different
-* tone, completely independent the others.
-*
-* RETURNS: N/A
-*/
-
-void pwmChan2ToneStart (uint8_t tone)
+void
+pwmToneStart (uint8_t tone)
 {
 	uint16_t		f;
 
@@ -538,58 +279,19 @@ void pwmChan2ToneStart (uint8_t tone)
 
 /******************************************************************************
 *
-* pwmChan0ToneStop - Turn off TPM voice 0
+* pwmToneStop - Turn off the TPM channel
 *
 * This function disables the TPM channel. If a tone is currently playing,
-* calling pwmChan0ToneStop() will cause it to stop. This function may be called
+* calling pwmToneStop() will cause it to stop. This function may be called
 * even if the TPM is already stopped, thought his has no effect.
 *
 * RETURNS: N/A
 */
 
-void pwmChan0ToneStop (void)
+void
+pwmToneStop (void)
 {
-	/* Turn off timer and clear count */
- 
-	TPM0->SC &= ~(TPM_SC_CMOD_LPTPM_CLK|TPM_SC_CMOD_LPTPM_EXTCLK);
-	TPM0->CNT = 0;
-
-	return;
-}
-
-/******************************************************************************
-*
-* pwmChan1ToneStop - Turn off TPM voice 1
-*
-* This function is the same as pwmChan0ToneStop(), except it works on
-* the second voice channel.
-*
-* RETURNS: N/A
-*/
-
-void pwmChan1ToneStop (void)
-{
-	/* Turn off timer and clear count */
-
-	TPM1->SC &= ~(TPM_SC_CMOD_LPTPM_CLK|TPM_SC_CMOD_LPTPM_EXTCLK);
-	TPM1->CNT = 0;
-
-	return;
-}
-
-/******************************************************************************
-*
-* pwmChan2ToneStop - Turn off TPM voice 2
-*
-* This function is the same as pwmChan0ToneStop(), except it works on
-* the third voice channel.
-*
-* RETURNS: N/A
-*/
-
-void pwmChan2ToneStop (void)
-{
-	/* Turn off timer and clear count */
+	/* Turn off timer and clear modulus and pulse width */
  
 	TPM2->SC &= ~(TPM_SC_CMOD_LPTPM_CLK|TPM_SC_CMOD_LPTPM_EXTCLK);
 	TPM2->CNT = 0;
@@ -599,31 +301,24 @@ void pwmChan2ToneStop (void)
 
 /******************************************************************************
 *
-* pwmChanThreadPlay - Play a tune using the background music thread.
+* pwmThreadPlay - Play a tune using the background music thread.
 *
 * This function wakes up the background music thread to play an array of
 * notes that form a tune. The tune is formatted as an array of PWM_NOTE
-* structures. Each PWM_NOTE contains a MIDI note (pwm_note) and duration
-* (pwm_duration).
-*
-* There are three available sound channels. Each channel can be set to
-* play a different tune simultaneously. The tracks are specified using
-* the <p0>, <p1> and <p2> arguments, which are pointers to tune arrays.
-* If any of the three pointers are NULL, then that channel will remain
-* silent during playback. This allows tunes with 1, 2 or 3 voices to
-* be played.
-*
-* A currently playing tune may be halted by calling pwmChanThreadPlay()
-* with all three tune pointers set to NULL.
+* structures. The <p> argument is a pointer to the array. Each PWM_NOTE
+* contains a frequency (pwm_note) and duration (pwm_duration). The music
+* thread will program the PWM to play the note and then pause for the
+* duration period before moving on to the next note. The following special
+* cases are handled:
 *
 * - If pwm_duration is PWM_DURATION_END, this indicates the end of the
 *   tune. The thread will go to sleep when it reaches the end of the tune
-*   and wait for pwmChanThreadPlay() to be called again. The value of pwm_note
+*   and wait for pwmThreadPlay() to be called again. The value of pwm_note
 *   is ignored.
 *
 * - If pwm_duration is PWM_DURATION_LOOP, then the thread will re-play
 *   the tune over and over again. To stop the loop from playing,
-*   pwmChanThreadPlay() must be called with a NULL pointer.
+*   pwmThreadPlay() must be called with a NULL pointer.
 *
 * - If pwm_note is PWM_NOTE_PAUSE, then the TPM will be left in its
 *   current state and simply pause for the duration period.
@@ -632,25 +327,25 @@ void pwmChan2ToneStop (void)
 *   the thread will pause for the duration period. This can be used to
 *   create a silent pause period.
 *
-* Calling pwmChanThreadPlay() with a new tune pointer while a tune is already
-* playing, the new tune will be played after the current tune completes
-* (unless the current tune is set to loop, in which case
-* pwmChanThreadPlay (NULL, NULL, NULL) must be called to cancel it first.
+* Calling pwmThreadPlay() with a <p> pointer of NULL has no effect,
+* except to cease the playing of a tune that is looping.
 *
-* If pwmChanThreadPlay() is called more than once with a non-NULL tune pointer
+* Calling pwmThreadPlay() with a new tune pointer while a tune is already
+* playing, the new tune will be played after the current tune completes
+* (unless the current tune is set to loop, in which case playThreadPlay(NULL)
+* must be called to cancel it first).
+*
+* If pwmThreadPlay() is called more than once with a non-NULL tune pointer
 * while a tune is playing, only the tune specified in the last call will
 * be played (tunes are not queued).
 *
 * RETURNS: N/A
 */
 
-void pwmChanThreadPlay (const PWM_NOTE * p0, const PWM_NOTE * p1,
-	const PWM_NOTE * p2)
+void
+pwmThreadPlay (const PWM_NOTE * p)
 {
-	THREAD_STATE * pState;
 	thread_t * t;
-
-	pState = &pwmState0;
 
 	/*
 	 * Cancel any currently playing tune and wait for the
@@ -658,84 +353,20 @@ void pwmChanThreadPlay (const PWM_NOTE * p0, const PWM_NOTE * p1,
 	 * our next command to play a tune might be ignored.
 	 */
 
-	if (p0 == NULL && p1 == NULL && p2 == NULL) {
-		pState->play = 0;
-		while (pState->pTune0 != NULL &&
-		    pState->pTune1 != NULL &&
-		    pState->pTune2 != NULL)
+	if (p == NULL) {
+		play = 0;
+		while (pTune != NULL)
 			chThdSleepMicroseconds (10);
 		return;
 	}
 
-	if (p0 == NULL)
-		pState->pTune0 = (PWM_NOTE *)&dummy;
-	else
-		pState->pTune0 = (PWM_NOTE *)p0;
-	if (p1 == NULL)
-		pState->pTune1 = (PWM_NOTE *)&dummy;
-	else
-		pState->pTune1 = (PWM_NOTE *)p1;
-	if (p2 == NULL)
-		pState->pTune2 = (PWM_NOTE *)&dummy;
-	else
-		pState->pTune2 = (PWM_NOTE *)p2;
-	if (pState->play == 0) {
-		pState->play = 1;
-		t = pState->pThread;
+	pTune = (PWM_NOTE *)p;
+	if (play == 0) {
+		play = 1;
+		t = pThread;
 		chThdResume (&t, MSG_OK);
 	} else
-		pState->play = 2;
-
-	return;
-}
-
-/******************************************************************************
-*
-* pwmFileThreadPlay - Play a tune from the filesystem
-*
-* This function is similar to pwmChanThreadPlay(), except it plays music from
-* fimes stored in the SD card. The <pName> argument is the base name of a
-* set of MIDI track files stored on the SD card. For example, if there are
-* three tracks for a song called song0.bin, song1.bin and song2.bin, then
-* <pName> should just be "song" and the player thread will fill in the
-* rest of the file names automatically.
-*
-* The advantate to using this function is that allows for tunes of any length
-* without needing any additional space in flash.
-*
-* As with pwmChanThreadPlay(), songs played with pwmFileThreadPlay() can be
-* cancelled by calling pwmFileThreadPlay() with <pName> set to NULL.
-*
-* RETURNS: N/A
-*/
-
-void pwmFileThreadPlay (char * pName)
-{
-	THREAD_STATE * pState;
-	thread_t * t;
-
-	pState = &pwmState0;
-
-	/*
-	 * Cancel any currently playing tune and wait for the
-	 * player thread to go idle. We have to do this otherwise
-	 * our next command to play a tune might be ignored.
-	 */
-
-	if (pName == NULL) {
-		pState->play = 0;
-		while (pState->pName != NULL)
-			chThdSleepMicroseconds (10);
-		return;
-	}
-
-	pState->pName = pName;
-	if (pState->play == 0) {
-		pState->play = 1;
-		t = pState->pThread;
-		chThdResume (&t, MSG_OK);
-	} else
-		pState->play = 2;
+		play = 2;
 
 	return;
 }
