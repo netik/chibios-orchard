@@ -2,6 +2,7 @@
 #include "ch.h"
 #include "hal.h"
 #include "tpm.h"
+#include "dac_lld.h"
 #include "notes.h"
 #include "sound.h"
 
