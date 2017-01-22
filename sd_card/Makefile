@@ -12,10 +12,13 @@
 # rgbhdr, ImageMagick, and FFMPeg are required to convert images. 
 #
 
-all: rgbhdr 
+all: rgbhdr snd16to12
 
 rgbhdr: rgbhdr.c
 	cc -o rgbhdr rgbhdr.c
+
+snd16to12: snd16to12.c
+	cc -o snd16to12 snd16to12.c -lm
 
 # This rule will build the mirrored and standard images only if the
 # jpgs have changed. Rebuilding them all the time was time consuming.
@@ -38,6 +41,7 @@ sdcard: images midi
 	@find midi -name \*.bin -exec cp {} sdcard \;
 	@cp ../updater/updater.bin sdcard
 	@cp ../badge/build/badge.bin sdcard
+	@cp dac/*.raw sdcard
 	@mv -f sdcard/credits_mario.rgb sdcard/credits.rgb
 	@echo
 	@echo 'sdcard built!'
@@ -64,4 +68,4 @@ cleansd:
 
 clean:
 	rm rgbhdr
-
+	rm snd16to12
