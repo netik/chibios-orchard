@@ -33,8 +33,7 @@
 #include "orchard-app.h"
 #include "orchard-events.h"
 #include "orchard-ui.h"
-#include "tpm.h"
-#include "notes.h"
+#include "sound.h"
 
 #include <string.h>
 
@@ -121,9 +120,7 @@ static uint8_t handle_input (char * name, uint8_t max,
 		break;
 	default:
 		if (p->pos == max) {
-			pwmToneStart (NOTE_C4);
-			chThdSleepMilliseconds (100);
-			pwmToneStop ();
+			playDoh ();
 		} else {
 			name[p->pos] = pk->c[0];
 			p->pos++;
