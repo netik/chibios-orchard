@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2016
+ * Copyright (c) 2016-2017
  *      Bill Paul <wpaul@windriver.com>.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,8 @@ typedef void (*PIT_FUNC)(void);
 
 typedef struct pit_driver {
 	uint8_t *	pit_base;
-	PIT_FUNC	pit_func;
+	PIT_FUNC	pit0_func;
+	PIT_FUNC	pit1_func;
 } PITDriver;
 
 #ifdef UPDATER
@@ -45,6 +46,8 @@ typedef struct pit_driver {
 #else
 #define KINETIS_PIT_IRQ_VECTOR Vector98
 #endif
+
+#define pitStart(x,y) pit0Start(x,y)
 
 #define CSR_READ_4(drv, addr)					\
         *(volatile uint32_t *)((drv)->pit_base + addr)
@@ -58,6 +61,7 @@ typedef struct pit_driver {
 
 extern PITDriver PIT1;
 
-extern void pitStart (PITDriver *, PIT_FUNC);
+extern void pit0Start (PITDriver *, PIT_FUNC);
+extern void pit1Start (PITDriver *, PIT_FUNC);
 
 #endif /* _PIT_H_ */

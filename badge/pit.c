@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2016
+ * Copyright (c) 2016-2017
  *      Bill Paul <wpaul@windriver.com>.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,12 +30,32 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*
+ * This module implements support for the periodic interval timer in
+ * the KW01. The PIT block has two timers tied to the same IRQ in the
+ * NVIC. We both timers: one to provide delay timer support for the
+ * FatFs SPI module and the other for playing audio samples through
+ * the DAC.
+ *
+ * During early bootstrap, we also use the second PIT as an entropy
+ * source to prime the random number generator. The amount of time
+ * it takes the system to complete initialization varies slightly
+ * due to the non-constant amount of time it takes to issue SPI
+ * requests when resetting and initializing the radio, so we use
+ * PIT1 to count the number of timer ticks it takes before we
+ * reach the main() function. Later, PIT1 is re-initialized for
+ * use by the DAC.
+ */
+
 #include "ch.h"
 #include "hal.h"
 #include "osal.h"
 
 #include "pit_reg.h"
 #include "pit.h"
+
+#include "dac_reg.h"
+#include "dac_lld.h"
 
 PITDriver PIT1;
 
@@ -52,17 +72,27 @@ OSAL_IRQ_HANDLER(KINETIS_PIT_IRQ_VECTOR)
 #ifndef UPDATER
 	OSAL_IRQ_PROLOGUE();
 #endif
+	uint32_t status;
 
 	/* Acknowledge the interrupt */
 
-	CSR_WRITE_4(&PIT1, PIT_TFLG0, PIT_TFLG_TIF);
+	status = CSR_READ_4(&PIT1, PIT_TFLG0);
 
 	/* Call the callout function if one is present */
 
-	if (PIT1.pit_func != NULL)
-		(*PIT1.pit_func)();
+	if (status & PIT_TFLG_TIF && PIT1.pit0_func != NULL) {
+		(*PIT1.pit0_func)();
+		CSR_WRITE_4(&PIT1, PIT_TFLG0, PIT_TFLG_TIF);
+	}
 
 #ifndef UPDATER
+	status = CSR_READ_4(&PIT1, PIT_TFLG1);
+
+	if (status & PIT_TFLG_TIF && PIT1.pit1_func != NULL) {
+		(*PIT1.pit1_func)();
+		CSR_WRITE_4(&PIT1, PIT_TFLG1, PIT_TFLG_TIF);
+	}
+
 	OSAL_IRQ_EPILOGUE();
 #endif
 
@@ -73,13 +103,14 @@ void
 pitStart (PITDriver * pit, PIT_FUNC func)
 {
 	pit->pit_base = (uint8_t *)PIT_BASE;
-	pit->pit_func = func;
+	pit->pit0_func = func;
 
 #ifdef UPDATER
 	/* The PIT may already be started, so halt it. */
 
 	CSR_WRITE_4(pit, PIT_TCTRL0, 0);
-        vectors[KINETIS_PIT_IRQ_VECTOR] = pitIrq;
+	CSR_WRITE_4(pit, PIT_TCTRL1, 0);
+	vectors[KINETIS_PIT_IRQ_VECTOR] = pitIrq;
 
 #else
 	/* Enable the clock gating for the PIT. */
@@ -105,6 +136,20 @@ pitStart (PITDriver * pit, PIT_FUNC func)
 
 	CSR_WRITE_4(pit, PIT_TFLG0, PIT_TFLG_TIF);
 	CSR_WRITE_4(pit, PIT_TCTRL0, PIT_TCTRL_TIE|PIT_TCTRL_TEN);
+
+	return;
+}
+
+void
+pit1Start (PITDriver * pit, PIT_FUNC func)
+{
+	pit->pit1_func = func;
+
+	CSR_WRITE_4(pit, PIT_TCTRL1, 0);
+	CSR_WRITE_4(pit, PIT_LDVAL1,
+	    KINETIS_BUSCLK_FREQUENCY / DAC_SAMPLERATE);
+	CSR_WRITE_4(pit, PIT_TFLG1, PIT_TFLG_TIF);
+	CSR_WRITE_4(pit, PIT_TCTRL1, PIT_TCTRL_TIE|PIT_TCTRL_TEN);
 
 	return;
 }
