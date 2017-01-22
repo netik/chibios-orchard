@@ -100,6 +100,18 @@ static void update_start(OrchardAppContext *context)
 
 	chThdSleepMilliseconds (2000);
 
+	/*
+	 * We're about to potentially overwrite memory in use by
+	 * other threads. If we allow any other thread to preempt
+	 * us, it might crash due to data corruption. To avoid
+	 * this, we jack this threads priority up to the max
+	 * so nobody else can steal the CPU from us.
+	 */
+
+	chSysLock ();
+	chThdSetPriority (ABSPRIO);
+	chSysUnlock ();
+
 	f_open (&f, UPDATER_NAME, FA_READ);
 	f_read (&f, (char *)UPDATER_BASE, UPDATER_SIZE, &br);
 	f_close (&f);
