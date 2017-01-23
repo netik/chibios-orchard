@@ -120,11 +120,6 @@ THD_FUNCTION(dacThread, arg)
 			else
 				p = buf;
 
-			/*
-			 * f_read() should only return failure when
-			 * there are no more bytes to read.
-			 */
-
 			if (f_read (&f, p, DAC_BYTES, &br) != FR_OK)
 				break;
 
@@ -136,6 +131,11 @@ THD_FUNCTION(dacThread, arg)
 
 			while (dacpos != dacmax)
 				;
+
+			/* If we read 0 bytes, we reached end of file. */
+
+			if (br == 0)
+				break;
 
 			/* If told to stop, exit the loop. */
 
