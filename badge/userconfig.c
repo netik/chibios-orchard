@@ -10,12 +10,18 @@
 #include <string.h>
 
 static userconfig config_cache;
+
+#ifdef RANDOM_DICE
 static int randomint(int max);
-  
+#endif
+
+mutex_t config_mutex;
+
 void configSave(userconfig *newConfig) {
   int8_t ret;
   uint8_t *config;
   
+  osalMutexLock(&config_mutex);  
   config = (uint8_t *)CONFIG_FLASH_ADDR;
   //  memcpy(config, newConfig, sizeof(userconfig) );
 
@@ -27,8 +33,10 @@ void configSave(userconfig *newConfig) {
   } else {
     chprintf(stream, "Config saved.\r\n");
   }
+  osalMutexUnlock(&config_mutex);
 }
 
+#ifdef RANDOM_DICE
 static int four_d_six(void) {
   /* this seems stupid, for a computer. */
   int a[5];
@@ -51,6 +59,7 @@ static int four_d_six(void) {
 int randomint(int max) {
   return rand() % max;
 }
+#endif
 
 static void init_config(userconfig *config) {
   /* please keep these in the same order as userconfig.h
@@ -98,9 +107,11 @@ static void init_config(userconfig *config) {
 
 void configStart(void) {
   const userconfig *config;
-
+  osalMutexObjectInit(&config_mutex);
+  osalMutexLock(&config_mutex);
+  
   config = (const userconfig *) CONFIG_FLASH_ADDR;
-
+  
   if ( config->signature != CONFIG_SIGNATURE ) {
     chprintf(stream, "Config not found, Initializing!\r\n");
     init_config(&config_cache);
@@ -122,6 +133,8 @@ void configStart(void) {
   }
 
   memcpy(&config_cache, config, sizeof(userconfig));
+  
+  osalMutexUnlock(&config_mutex);
 }
 
 struct userconfig *getConfig(void) {
