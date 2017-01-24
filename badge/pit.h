@@ -64,4 +64,7 @@ extern PITDriver PIT1;
 extern void pit0Start (PITDriver *, PIT_FUNC);
 extern void pit1Start (PITDriver *, PIT_FUNC);
 
+extern void pitEnable (PITDriver *, uint8_t);
+extern void pitDisable (PITDriver *, uint8_t);
+
 #endif /* _PIT_H_ */

@@ -153,3 +153,27 @@ pit1Start (PITDriver * pit, PIT_FUNC func)
 
 	return;
 }
+
+void
+pitEnable (PITDriver * pit, uint8_t pitidx)
+{
+	if (pitidx == 0)
+		CSR_WRITE_4(pit, PIT_TCTRL0, PIT_TCTRL_TIE |
+                    PIT_TCTRL_TEN);
+	else if (pitidx == 1)
+		CSR_WRITE_4(pit, PIT_TCTRL1, PIT_TCTRL_TIE |
+                    PIT_TCTRL_TEN);
+
+	return;
+}
+
+void
+pitDisable (PITDriver * pit, uint8_t pitidx)
+{
+	if (pitidx == 0)
+		CSR_WRITE_4(pit, PIT_TCTRL0, 0);
+	else if (pitidx == 1)
+		CSR_WRITE_4(pit, PIT_TCTRL1, 0);
+
+	return;
+}

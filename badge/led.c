@@ -220,9 +220,7 @@ void ledStart(uint32_t leds, uint8_t *o_fb)
 
   ledClear();
 
-  chSysLock();
   ledUpdate(led_config.fb, led_config.max_pixels);
-  chSysUnlock();
 }
 
 static void ledSetRGB(void *ptr, int x, uint8_t r, uint8_t g, uint8_t b) {
@@ -444,9 +442,7 @@ static THD_FUNCTION(effects_thread, arg) {
     userconfig *config = getConfig();
 
     // transmit the actual framebuffer to the LED chain
-    chSysLock();
     ledUpdate(led_config.fb, led_config.pixel_count);
-    chSysUnlock();
     
     // wait until the next update cycle
     chThdYield();
@@ -461,11 +457,9 @@ static THD_FUNCTION(effects_thread, arg) {
     
     if( ledExitRequest ) {
       // force one full cycle through an update on request to force LEDs off
-      chSysLock();
       ledUpdate(led_config.fb, led_config.pixel_count);
       ledsOff = 1;
       chThdExitS(MSG_OK);
-      chSysUnlock();
     }
   }
   return;

@@ -60,6 +60,7 @@ ledUpdate:
 
 	///////////////////////
 looptop:
+	cpsid i /* Mask interrupts */
 	str bitmask, [eset]   // start with bit set
 	mov bit, #8
 	ldrb curpix, [fbptr]      // load the word at the pointer location to r4
@@ -69,6 +70,7 @@ looptop:
 	b pixloop_fromtop // 7 total
 	
 pixloop:
+	cpsid i /* Mask interrupts */
 	str bitmask, [eset]   // start with bit set
 	nop // equalize looptop path
 	nop
@@ -130,6 +132,7 @@ pixloop_fromtop:
 	nop
 	
 	nop
+	cpsie i /* Zero bit sent, unmask interrupts */
 	b  pixEpilogue
 
 oneBranch:	
@@ -187,6 +190,7 @@ oneBranch:
 	nop
 	
 	nop
+	cpsie i /* One bit sent, unmask interrupts */
 	
 pixEpilogue:
 	sub bit, bit, #1

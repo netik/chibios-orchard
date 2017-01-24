@@ -107,6 +107,8 @@ THD_FUNCTION(dacThread, arg)
 			continue;
 		}
 
+		pitEnable (&PIT1, 1);
+
 		while (1) {
 			/* Start the samples playing */
 			dacpos = 0;
@@ -147,6 +149,7 @@ THD_FUNCTION(dacThread, arg)
 
 		play = 0;
 		f_close (&f);
+		pitDisable (&PIT1, 1);
 	}
 
 	/* NOTREACHED */
