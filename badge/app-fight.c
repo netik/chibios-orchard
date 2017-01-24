@@ -37,15 +37,13 @@ static int16_t last_hit = -1;
 static int16_t last_damage = -1;
 static uint8_t turnover_sent = false;       // make sure we only transmit turnover once. 
 
-mutex_t fight_event_mutex;
+static void radio_event_do(KW01_PKT * pkt);
 
 static void changeState(fight_state nextstate) {
   // call previous state exit
   // so long as we are updating state, no one else gets in.
 
-  osalMutexLock(&fight_event_mutex);
   // a state change always resets the UI clock
-  
   last_ui_time = chVTGetSystemTime();
 
   if (nextstate == current_fight_state) {
@@ -70,7 +68,6 @@ static void changeState(fight_state nextstate) {
     fight_funcs[current_fight_state].enter();
   }
 
-  osalMutexUnlock(&fight_event_mutex);
 }
 
 static void screen_alert_draw(char *msg) {
@@ -1187,11 +1184,15 @@ static void fight_event(OrchardAppContext *context,
   GEvent * pe;
   user **enemies = enemiesGet();
   userconfig *config = getConfig();
+
+  if (event->type == radioEvent && event->radio.pPkt != NULL) {
+    radio_event_do(event->radio.pPkt);
+    return;
+  }
   
   // the timerEvent fires on the frame interval. It will always call
   // the current state's tick() method. tick() is expected to handle
   // animations or otherwise.
-  osalMutexLock(&fight_event_mutex);
   
   if (event->type == timerEvent) {
 #ifdef DEBUG_FIGHT_TICK
@@ -1209,8 +1210,11 @@ static void fight_event(OrchardAppContext *context,
     
     // update the clock regardless of state.
     if (countdown > 0) {
-      // our time reference is based on elapsed time.
-      countdown = countdown - ( chVTGetSystemTime() - last_tick_time );
+      // our time reference is based on elapsed time. We will init if need be.
+      if (last_tick_time != 0) { 
+        countdown = countdown - ( chVTGetSystemTime() - last_tick_time );
+      }
+
       last_tick_time = chVTGetSystemTime();
     }
 
@@ -1227,7 +1231,6 @@ static void fight_event(OrchardAppContext *context,
     switch(pe->type) {
     case GEVENT_GWIN_BUTTON:
       if ( ((GEventGWinButton*)pe)->gwin == p->ghExitButton) { 
-        osalMutexUnlock(&fight_event_mutex);
         orchardAppRun(orchardAppByName("Badge"));
         return;
       }
@@ -1236,7 +1239,6 @@ static void fight_event(OrchardAppContext *context,
           last_ui_time = chVTGetSystemTime();
           screen_select_draw(FALSE);
         }
-        osalMutexUnlock(&fight_event_mutex);
         return;
       }
       if ( ((GEventGWinButton*)pe)->gwin == p->ghAttack) { 
@@ -1252,7 +1254,6 @@ static void fight_event(OrchardAppContext *context,
         next_fight_state = APPROVAL_WAIT;
         screen_alert_draw("Connecting...");
         sendGamePacket(OP_STARTBATTLE);
-        osalMutexUnlock(&fight_event_mutex);
         return;
       }
 
@@ -1278,7 +1279,6 @@ static void fight_event(OrchardAppContext *context,
         
         next_fight_state = VS_SCREEN;
         sendGamePacket(OP_STARTBATTLE_ACK);
-        osalMutexUnlock(&fight_event_mutex);
         return;
       }
       
@@ -1287,7 +1287,6 @@ static void fight_event(OrchardAppContext *context,
           last_ui_time = chVTGetSystemTime();
           screen_select_draw(FALSE);
         }
-        osalMutexUnlock(&fight_event_mutex);
         return;
       }
       
@@ -1315,7 +1314,6 @@ static void fight_event(OrchardAppContext *context,
       }
     }
   }
-  osalMutexUnlock(&fight_event_mutex);
 }
 
 static void fight_exit(OrchardAppContext *context) {
@@ -1335,16 +1333,39 @@ static void fight_exit(OrchardAppContext *context) {
   config->in_combat = 0;
   return;
 }
+static void fightRadioEventHandler(KW01_PKT * pkt) {
+  user *u;
+  userconfig *config = getConfig();
+  
+  u = (user *)pkt->kw01_payload; 
 
-static void fightRadioEventHandler(KW01_PKT * pkt)
+  if (u->opcode == OP_STARTBATTLE && config->in_combat == 0) {
+    /* we can accept a new fight */
+    memcpy(&current_enemy, u, sizeof(user));
+    ourattack = 0;
+    theirattack = 0;
+  }
+
+  if (instance.app != orchardAppByName("Fight")) {
+    // not in app
+    orchardAppRun(orchardAppByName("Fight"));
+    changeState(APPROVAL_DEMAND);
+  } else {
+    // if we are in our app on the select screen, 
+    changeState(APPROVAL_DEMAND);
+  }
+  
+  orchardAppRadioCallback (pkt);
+  return;
+}
+
+static void radio_event_do(KW01_PKT * pkt)
 {
   /* this is the state machine that handles transitions for the game via the radio */
   /* this code runs in the MAIN thread, it runs along side our thread */
   /* everything else runs in the app's thread */
   user *u;
   userconfig *config;
-
-  osalMutexLock(&fight_event_mutex);  // this must occur as a single atomic event. 
 
   config = getConfig();
   u = (user *)pkt->kw01_payload; 
@@ -1354,7 +1375,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
 #ifdef DEBUG_FIGHT_NETWORK
     chprintf(stream, "\r\n%08x --> RECV Invalid opcode. (seq=%d) Ignored (%08x to %08x?)\r\n", u->netid, u->seq, pkt->kw01_hdr.kw01_src, pkt->kw01_hdr.kw01_dst);
 #endif /* DEBUG_FIGHT_NETWORK */
-    osalMutexUnlock(&fight_event_mutex);
     return;
   }
 
@@ -1375,7 +1395,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
 #endif /* DEBUG_FIGHT_NETWORK */
     sendRST(u);
     // we are idle, do nothing. 
-    osalMutexUnlock(&fight_event_mutex);
     return;
   }
 
@@ -1392,7 +1411,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       screen_alert_draw("CONNECTION LOST");
       playHardFail();
       chThdSleepMilliseconds(ALERT_DELAY);
-      osalMutexUnlock(&fight_event_mutex);
       orchardAppRun(orchardAppByName("Badge"));
       return;
     }
@@ -1405,7 +1423,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
         chprintf(stream, "\r\n%08x --> moving to state %d from state %d due to ACK\n",
                  u->netid, next_fight_state, current_fight_state, next_fight_state);
 #endif /* DEBUG_FIGHT_NETWORK */
-      osalMutexUnlock(&fight_event_mutex);
       changeState(next_fight_state);
       return;
       }
@@ -1429,7 +1446,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
 
       if (next_fight_state == SHOW_RESULTS) {
         // force state change
-        osalMutexUnlock(&fight_event_mutex);
         changeState(SHOW_RESULTS);
         return;
       }
@@ -1447,28 +1463,9 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       
       if (next_fight_state == NEXTROUND) {
         // edge-case/packet pile up. Just advance the round and forget about the ACK. 
-        osalMutexUnlock(&fight_event_mutex);
         changeState(MOVE_SELECT);
         return;
       }
-    }
-    break;
-  case IDLE:
-  case ENEMY_SELECT:
-    if (u->opcode == OP_STARTBATTLE && config->in_combat == 0) {
-      /* we can accept a new fight */
-      memcpy(&current_enemy, u, sizeof(user));
-      ourattack = 0;
-      theirattack = 0;
-      // put up screen, accept fight from user foobar/badge foobar
-      if (current_fight_state == IDLE) { 
-        // we are not actually in our app, so run it to pick up context.
-        osalMutexUnlock(&fight_event_mutex);
-        orchardAppRun(orchardAppByName("Fight"));
-        return;
-      }
-      osalMutexUnlock(&fight_event_mutex);
-      changeState(APPROVAL_DEMAND);
     }
     break;
   case APPROVAL_WAIT:
@@ -1478,14 +1475,12 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
       playHardFail();
       ledSetProgress(-1);
       chThdSleepMilliseconds(ALERT_DELAY);
-      osalMutexUnlock(&fight_event_mutex);
       changeState(ENEMY_SELECT);
       orchardAppTimer(instance.context, FRAME_INTERVAL_US, true);
     }
 
     if (u->opcode == OP_STARTBATTLE_ACK) {
       // i am the attacker and you just ACK'd me. The timer will render this.
-      osalMutexUnlock(&fight_event_mutex);
       changeState(VS_SCREEN);
       return;
     }
@@ -1527,7 +1522,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
     if (u->opcode == OP_TURNOVER) { 
       // if we are post move, and we get a turnover packet, then just go straight to
       // results, we don't need an ACK at this point.
-      osalMutexUnlock(&fight_event_mutex);
       changeState(SHOW_RESULTS);
       return;
     }
@@ -1542,7 +1536,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
     break;
 
     if (u->opcode == OP_NEXTROUND) {
-      osalMutexUnlock(&fight_event_mutex);
       changeState(NEXTROUND);
       return;
     }
@@ -1557,7 +1550,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
              pkt->kw01_hdr.kw01_src, u->opcode, u->seq,
              current_fight_state);
 #endif
-    osalMutexUnlock(&fight_event_mutex);        
 
   }
 }
@@ -1565,7 +1557,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt)
 static uint32_t fight_init(OrchardAppContext *context) {
   userconfig *config = getConfig();
 
-  osalMutexObjectInit(&fight_event_mutex);
 
   if (context == NULL) {
     /* This should only happen for auto-init */
@@ -1583,6 +1574,7 @@ static uint32_t fight_init(OrchardAppContext *context) {
   return 0;
 }
 
-orchard_app("Fight", APP_FLAG_AUTOINIT, fight_init, fight_start, fight_event, fight_exit);
+orchard_app("Fight", APP_FLAG_AUTOINIT,
+            fight_init, fight_start, fight_event, fight_exit);
 
 
