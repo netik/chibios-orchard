@@ -140,6 +140,7 @@ pitStart (PITDriver * pit, PIT_FUNC func)
 	return;
 }
 
+#ifndef UPDATER
 void
 pit1Start (PITDriver * pit, PIT_FUNC func)
 {
@@ -177,3 +178,4 @@ pitDisable (PITDriver * pit, uint8_t pitidx)
 
 	return;
 }
+#endif

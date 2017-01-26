@@ -38,6 +38,7 @@
 #include "hal.h"
 #include "spi.h"
 #include "pal.h"
+#include "pit.h"
 #include "diskio.h"
 #include "mmc.h"
 
@@ -369,10 +370,13 @@ DSTATUS mmc_disk_initialize (void)
 	BYTE n, cmd, ty, ocr[4];
 
 	power_off();						/* Turn off the socket power to reset the card */
+	pitEnable (&PIT1, 0);
 	for (Timer1 = 10; Timer1; ) ;		/* Wait for 100ms */
+	pitDisable (&PIT1, 0);
 	if (Stat & STA_NODISK) return Stat;	/* No card in the socket? */
 
 	spiAcquireBus (&SPID2);
+	pitEnable (&PIT1, 0);
 	power_on();							/* Turn on the socket power */
 	FCLK_SLOW();
 	for (n = 10; n; n--) xchg_spi(0xFF);	/* 80 dummy clocks */
@@ -410,6 +414,7 @@ DSTATUS mmc_disk_initialize (void)
 		power_off();
 	}
 
+	pitDisable (&PIT1, 0);
 	spiReleaseBus (&SPID2);
 
 	return Stat;
@@ -448,6 +453,7 @@ DRESULT mmc_disk_read (
 
 	cmd = count > 1 ? CMD18 : CMD17;			/*  READ_MULTIPLE_BLOCK : READ_SINGLE_BLOCK */
 	spiAcquireBus(&SPID2);
+	pitEnable (&PIT1, 0);
 	if (send_cmd(cmd, sector) == 0) {
 		do {
 			if (!rcvr_datablock(buff, 512)) break;
@@ -456,6 +462,7 @@ DRESULT mmc_disk_read (
 		if (cmd == CMD18) send_cmd(CMD12, 0);	/* STOP_TRANSMISSION */
 	}
 	deselect();
+	pitDisable (&PIT1, 0);
 	spiReleaseBus(&SPID2);
 
 	return count ? RES_ERROR : RES_OK;
@@ -481,6 +488,7 @@ DRESULT mmc_disk_write (
 	if (!(CardType & CT_BLOCK)) sector *= 512;	/* Convert to byte address if needed */
 
 	spiAcquireBus(&SPID2);
+	pitEnable (&PIT1, 0);
 	if (count == 1) {	/* Single block write */
 		if ((send_cmd(CMD24, sector) == 0)	/* WRITE_BLOCK */
 			&& xmit_datablock(buff, 0xFE))
@@ -498,6 +506,7 @@ DRESULT mmc_disk_write (
 		}
 	}
 	deselect();
+	pitDisable (&PIT1, 0);
 	spiReleaseBus(&SPID2);
 
 	return count ? RES_ERROR : RES_OK;
@@ -527,6 +536,7 @@ DRESULT mmc_disk_ioctl (
 	if (Stat & STA_NOINIT) return RES_NOTRDY;
 
 	spiAcquireBus(&SPID2);
+	pitEnable (&PIT1, 0);
 	res = RES_ERROR;
 	switch (cmd) {
 	case CTRL_SYNC :		/* Make sure that no pending write process. Do not remove this or written sector might not left updated. */
@@ -665,6 +675,7 @@ DRESULT mmc_disk_ioctl (
 		res = RES_PARERR;
 	}
 
+	pitDisable (&PIT1, 0);
 	spiReleaseBus(&SPID2);
 	return res;
 }
@@ -705,4 +716,3 @@ DWORD get_fattime(void)
 {
 	return (0);
 }
-

@@ -43,6 +43,8 @@ typedef struct pit_driver {
 
 #ifdef UPDATER
 #define KINETIS_PIT_IRQ_VECTOR	38
+#define pitEnable(x, y)
+#define pitDisable(x, y)
 #else
 #define KINETIS_PIT_IRQ_VECTOR Vector98
 #endif
@@ -62,9 +64,11 @@ typedef struct pit_driver {
 extern PITDriver PIT1;
 
 extern void pit0Start (PITDriver *, PIT_FUNC);
+#ifndef UPDATER
 extern void pit1Start (PITDriver *, PIT_FUNC);
 
 extern void pitEnable (PITDriver *, uint8_t);
 extern void pitDisable (PITDriver *, uint8_t);
+#endif
 
 #endif /* _PIT_H_ */
