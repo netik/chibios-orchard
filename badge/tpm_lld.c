@@ -65,7 +65,7 @@
 #include "ch.h"
 #include "hal.h"
 
-#include "tpm.h"
+#include "tpm_lld.h"
 #include "kinetis_tpm.h"
 #include "userconfig.h"
 

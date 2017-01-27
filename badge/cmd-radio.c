@@ -26,7 +26,7 @@
 #include "orchard.h"
 #include "orchard-shell.h"
 
-#include "radio.h"
+#include "radio_lld.h"
 #include "hex.h"
 
 static void radio_get(BaseSequentialStream *chp, int argc, char *argv[]) {

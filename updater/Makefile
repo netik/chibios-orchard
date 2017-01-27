@@ -32,7 +32,7 @@
 VPATH= ../os/hal/ports/KINETIS/KL1x ../os/hal/ports/common/ARMCMx	\
 	../os/hal/src ../ext/fatfs/src ../ext/C90TFS/source ../badge
 
-OBJS=	entry.o updater.o nvic.o pit.o ff.o diskio.o mmc_kinetis_spi.o	\
+OBJS=	entry.o updater.o nvic.o pit_lld.o ff.o diskio.o mmc_spi_lld.o	\
 	flash.o FlashInit.o FlashProgram.o FlashEraseSector.o		\
 	FlashCommandSequence.o FlashProgramCheck.o
 

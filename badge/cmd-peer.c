@@ -4,7 +4,6 @@
 
 #include "orchard-shell.h"
 #include "orchard-app.h"
-#include "radio.h"
 
 #include <stdlib.h>
 #include <string.h>

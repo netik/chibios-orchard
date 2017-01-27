@@ -10,7 +10,7 @@
 #include "orchard-app.h"
 #include "orchard-ui.h"
 #include "led.h"
-#include "radio.h"
+#include "radio_lld.h"
 
 #include "shell.h" // for enemy testing function
 #include "orchard-shell.h" // for enemy testing function

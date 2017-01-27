@@ -78,8 +78,8 @@
  *
  * Once it runs, the updater takes over full control of the CPU. All
  * previous RAM contents remain, but are ignored. The code is kept small
- * in order to fit in about 5KB of memory so that it will fit in RAM
- * with enough space left over for some data buffers and the stack.
+ * in order to fit in about 5KB of memory so that there will be space
+ * left over for some data buffers and the stack.
  *
  * The memory map when the updater runs is shown below:
  *
@@ -93,7 +93,7 @@
 #include "hal.h"
 #include "updater.h"
 #include "mmc.h"
-#include "pit.h"
+#include "pit_lld.h"
 #include "flash.h"
 
 #include "ff.h"
@@ -191,11 +191,11 @@ int updater (void)
 
 	while (1) {
 		f_read (&f, src, UPDATE_SIZE, &br);
+		if (br == 0)
+			break;
 		flashErase (dst);
 		flashProgram (src, dst);
 		dst += br;
-		if (br < UPDATE_SIZE)
-			break;
 	}
 
 	f_close (&f);

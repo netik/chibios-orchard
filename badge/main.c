@@ -18,8 +18,8 @@
 #include "ch.h"
 #include "hal.h"
 #include "spi.h"
-#include "pit.h"
-#include "tpm.h"
+#include "pit_lld.h"
+#include "tpm_lld.h"
 #include "dac_lld.h"
 #include "sound.h"
 #include "rand.h"
@@ -35,7 +35,7 @@
 
 #include "oled.h"
 #include "led.h"
-#include "radio.h"
+#include "radio_lld.h"
 #include "radio_reg.h"
 #include "flash.h"
 

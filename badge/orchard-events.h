@@ -2,7 +2,7 @@
 #define __ORCHARD_EVENTS__
 
 #include "gfx.h"
-#include "radio.h"
+#include "radio_lld.h"
 
 /* Orchard event wrappers.
    These simplify the ChibiOS eventing system.  To use, initialize the event

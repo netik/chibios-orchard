@@ -2,11 +2,11 @@
 
 #include "ch.h"
 #include "hal.h"
-#include "xpt2046.h"
+#include "xpt2046_lld.h"
 #include "xpt2046_reg.h"
-#include "radio.h"
+#include "radio_lld.h"
 #include "radio_reg.h"
-#include "pit.h"
+#include "pit_lld.h"
 #include "pit_reg.h"
 
 #include "chprintf.h"

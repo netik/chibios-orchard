@@ -9,7 +9,7 @@
 #include "hal.h"
 #include "shell.h"
 #include "chprintf.h"
-#include "tpm.h"
+#include "tpm_lld.h"
 #include "dac_lld.h"
 
 #include <strings.h>

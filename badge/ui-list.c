@@ -33,7 +33,6 @@
 #include "orchard-app.h"
 #include "orchard-events.h"
 #include "orchard-ui.h"
-#include "tpm.h"
 
 #include <string.h>
 

@@ -1,7 +1,7 @@
 /* sound.c - monotonic music for the badge */
 #include "ch.h"
 #include "hal.h"
-#include "tpm.h"
+#include "tpm_lld.h"
 #include "dac_lld.h"
 #include "notes.h"
 #include "sound.h"

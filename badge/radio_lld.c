@@ -86,7 +86,7 @@
 #include "chprintf.h"
 
 #include "radio_reg.h"
-#include "radio.h"
+#include "radio_lld.h"
 
 #include "orchard.h"
 #include "orchard-events.h"

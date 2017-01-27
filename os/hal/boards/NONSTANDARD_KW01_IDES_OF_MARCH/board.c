@@ -16,7 +16,7 @@
 
 #include "hal.h"
 #include "radio_reg.h"
-#include "pit.h"
+#include "pit_lld.h"
 #include "pit_reg.h"
 
 /*

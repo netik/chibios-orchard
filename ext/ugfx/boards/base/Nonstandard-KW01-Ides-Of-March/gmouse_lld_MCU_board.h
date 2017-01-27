@@ -8,7 +8,7 @@
 #ifndef _LLD_GMOUSE_MCU_BOARD_H
 #define _LLD_GMOUSE_MCU_BOARD_H
 
-#include "xpt2046.h"
+#include "xpt2046_lld.h"
 #include "xpt2046_reg.h"
 
 #include <string.h>

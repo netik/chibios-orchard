@@ -146,14 +146,14 @@ CSRC = main.c \
        led.c \
        oled.c \
        orchard-events.c \
-       radio.c \
-       pit.c \
-       tpm.c \
+       radio_lld.c \
+       pit_lld.c \
+       tpm_lld.c \
        dac_lld.c \
-       xpt2046.c \
+       xpt2046_lld.c \
        hex.c \
        flash.c \
-       mmc_kinetis_spi.c \
+       mmc_spi_lld.c \
        $(STARTUPSRC) \
        $(PORTSRC) \
        $(KERNSRC) \

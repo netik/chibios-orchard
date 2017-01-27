@@ -38,7 +38,7 @@
 #include "hal.h"
 #include "spi.h"
 #include "pal.h"
-#include "pit.h"
+#include "pit_lld.h"
 #include "diskio.h"
 #include "mmc.h"
 

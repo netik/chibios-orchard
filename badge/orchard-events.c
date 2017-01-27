@@ -1,7 +1,7 @@
 #include "ch.h"
 #include "hal.h"
 #include "ext.h"
-#include "radio.h"
+#include "radio_lld.h"
 #include "orchard-events.h"
 
 event_source_t rf_pkt_rdy;
