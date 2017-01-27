@@ -125,12 +125,16 @@ void playStartupSong(void) {
   dacPlay ("galaga.raw");
 }
 
+void playPacman(void) {
+  dacPlay ("pacman.raw");
+}
+
 void playMsPacman(void) {
-  pwmFileThreadPlay ("mspac");
+  dacPlay ("mspac.raw");
 }
 
 void playCantina(void) {
-  pwmFileThreadPlay ("cantina");
+  dacPlay ("cantina.raw");
 }
 
 void playKombat(void) {
@@ -143,6 +147,14 @@ void playMario(void) {
 
 void playDoh(void) {
   dacPlay ("doh.raw");
+}
+
+void playWoohoo(void) {
+  dacPlay ("woohoo.raw");
+}
+
+void playDrWho(void) {
+  dacPlay ("drwho.raw");
 }
 
 void playHardFail(void) {

@@ -105,7 +105,16 @@ static void buzzer_play(BaseSequentialStream *chp, int argc, char *argv[]) {
     playMario();
     break;
   case 12:
+    playPacman();
+    break;
+  case 13:
     playDoh();
+    break;
+  case 14:
+    playWoohoo();
+    break;
+  case 15:
+    playDrWho();
     break;
   default:
     chprintf(chp, "No song specified\r\n");
