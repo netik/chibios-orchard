@@ -110,7 +110,9 @@ THD_FUNCTION(dacThread, arg)
 		pitEnable (&PIT1, 1);
 
 		while (1) {
+
 			/* Start the samples playing */
+
 			dacpos = 0;
 			dacmax = br / 2;
 			dacbuf = p;
@@ -118,7 +120,7 @@ THD_FUNCTION(dacThread, arg)
 			/* Swap buffers and load the next block of samples */
 
 			if (p == buf)
-				p = buf + DAC_SAMPLES;
+				p += DAC_SAMPLES;
 			else
 				p = buf;
 
@@ -126,9 +128,9 @@ THD_FUNCTION(dacThread, arg)
 				break;
 
 			/*
-			 * Wait until playing the current block of
-			 * samples finishes playing before playing
-			 * the next.
+			 * Wait until the current block of samples
+			 * finishes playing before playing the next
+			 * block.
 			 */
 
 			while (dacpos != dacmax)
