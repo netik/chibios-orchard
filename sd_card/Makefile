@@ -22,18 +22,26 @@ snd16to12: snd16to12.c
 
 # This rule will build the mirrored and standard images only if the
 # jpgs have changed. Rebuilding them all the time was time consuming.
-rgb/%.rgb : jpg/%.jpg
+rgb/%.rgb : jpg/%.jpg 
 	convert -flop $< $(subst .jpg,r.jpg,$(subst jpg/,jpg/mirrored/,$<))
 	./convert_to_rgb.sh $<
 	mv $(subst rgb/,jpg/,$(@)) rgb/
 	./convert_to_rgb.sh $(subst .jpg,r.jpg,$(subst jpg/,jpg/mirrored/,$<))
 	mv $(subst .jpg,r.rgb,$(subst jpg/,jpg/mirrored/,$<)) rgb/
 
+rgb/%.rgb : tif/%.tif
+	convert -flop $< $(subst .tif,r.tif,$(subst tif/,tif/mirrored/,$<))
+	./convert_to_rgb.sh $<
+	mv $(subst rgb/,tif/,$(@)) rgb/
+	./convert_to_rgb.sh $(subst .tif,r.tif,$(subst tif/,tif/mirrored/,$<))
+	mv $(subst .tif,r.rgb,$(subst tif/,tif/mirrored/,$<)) rgb/
+
 clean_images:
 	$(shell rm jpg/mirrored/*)
+	$(shell rm tif/mirrored/*)
 	$(shell	rm rgb/*)
 
-images: rgbhdr $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard jpg/*.jpg)))))
+images: rgbhdr $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard jpg/*.jpg tif/*.tif)))))
 
 sdcard: images midi
 	@cp rgb/*.rgb sdcard
@@ -66,6 +74,6 @@ cleansd:
 	@if [ -d "rgb" ]; then rm -rf rgb; fi; mkdir rgb
 	touch rgb/"THIS FOLDER IS AUTOMATICALLY GENERATED"
 
-clean:
+clean: clean_images
 	rm rgbhdr
 	rm snd16to12
