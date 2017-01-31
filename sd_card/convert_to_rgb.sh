@@ -26,7 +26,18 @@ height=`${IDENTIFY} -format %h $filename`
 
 echo $newfilename
 ${RGBHDR} $width $height
-${FFMPEG} -loglevel panic -vcodec jpegls -i $filename -vcodec rawvideo -f rawvideo -pix_fmt rgb565 out.raw 
+
+CODEC=jpegls
+
+if [[ $filename == *.tif ]];
+then
+    CODEC=tiff
+fi
+
+   
+
+
+${FFMPEG} -loglevel panic -vcodec ${CODEC} -i $filename -vcodec rawvideo -f rawvideo -pix_fmt rgb565 out.raw 
 
 cat hdr.rgb out.raw > ${newfilename}
     
