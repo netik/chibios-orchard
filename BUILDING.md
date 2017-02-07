@@ -106,18 +106,6 @@ xPSR: 0x81000000 pc: 0x0000904c psp: 0x1ffffbd0
 
 Code should run!
 
-8\. Get a shell
-
-If you have the Olimex debugger plugged in, and a USB cable plugged
-into the development board, you should see a shell at
-
-```sudo cu -s 115200 -l /dev/cu.usbmodem41412```
-
-This device name is not static -- the last few digits of this are randomized, so you may have to
-do an ls /dev/cu.* to find the serial port. 
-
-Type 'help'. There's lots of commands and things to play with there.
-
 ## Appendix A: Programming tools.
 
 If you are using the freescale KW01 demo board, you'll need the

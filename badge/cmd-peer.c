@@ -21,12 +21,14 @@ void cmd_peerlist(BaseSequentialStream *chp, int argc, char *argv[])
 
   for(i = 0; i < MAX_ENEMIES; i++) {
     if( enemies[i] != NULL ) {
-      chprintf(chp, "%d: %d %s (hp:%d, ic:%d, lvl:%d)\n\r", i,
-	       enemies[i]->ttl,
+      chprintf(chp, "%d: [%08x] %s (hp:%d, in_combat:%d, lvl:%d, ttl %d)\n\r",
+               i,
+               enemies[i]->netid,
 	       enemies[i]->name,
 	       enemies[i]->hp,
 	       enemies[i]->in_combat,
-	       enemies[i]->level);
+	       enemies[i]->level,
+               enemies[i]->ttl);
     }
   }
 }

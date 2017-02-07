@@ -291,7 +291,7 @@ static void state_move_select_tick() {
     chprintf(stream, "\r\nTIMEOUT in select, sending turnover\r\n");
 #endif /* DEBUG_FIGHT_NETWORK */
     
-    // we're in MOVE_SELECT, so this tells us that we haven't moved at all. sad.
+    // we're in MOVE_SELECT, so this tells us that we haven't moved at all.
     // we'll now tell our opponent, that our turn is over. 
     next_fight_state = POST_MOVE;
     sendGamePacket(OP_TURNOVER);
@@ -1222,21 +1222,25 @@ static void fight_event(OrchardAppContext *context,
 
   // handle UGFX events.
   if (event->type == ugfxEvent) {
-#ifdef DEBUG_FIGHT_TICK
-    chprintf(stream, "ugfxevent during state %d\r\n", current_fight_state);
-#endif
     pe = event->ugfx.pEvent;
+
+#ifdef DEBUG_FIGHT_STATE
+    chprintf(stream, "ugfxevent (type %d) during state %d\r\n", pe->type, current_fight_state);
+#endif
+
     // we handle all of the buttons on all of the possible screens
     // in this event handler, along with our countdowns
     switch(pe->type) {
     case GEVENT_GWIN_BUTTON:
+      last_ui_time = chVTGetSystemTime();
+
       if ( ((GEventGWinButton*)pe)->gwin == p->ghExitButton) { 
+        chprintf(stream, "\r\nFIGHT: e switch app\r\n");
         orchardAppRun(orchardAppByName("Badge"));
         return;
       }
       if ( ((GEventGWinButton*)pe)->gwin == p->ghNextEnemy) { 
         if (nextEnemy()) {
-          last_ui_time = chVTGetSystemTime();
           screen_select_draw(FALSE);
         }
         return;
@@ -1244,8 +1248,6 @@ static void fight_event(OrchardAppContext *context,
       if ( ((GEventGWinButton*)pe)->gwin == p->ghAttack) { 
         // we are attacking.
         started_it = 1;
-        last_ui_time = chVTGetSystemTime();
-        
         memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(user));
         config->in_combat = true;
 
@@ -1272,11 +1274,6 @@ static void fight_event(OrchardAppContext *context,
         return;
       }
       if ( ((GEventGWinButton*)pe)->gwin == p->ghAccept) { 
-        gwinDestroy (p->ghDeny);
-        gwinDestroy (p->ghAccept);
-        p->ghDeny = NULL;
-        p->ghAccept = NULL;
-        
         next_fight_state = VS_SCREEN;
         sendGamePacket(OP_STARTBATTLE_ACK);
         return;
@@ -1284,7 +1281,6 @@ static void fight_event(OrchardAppContext *context,
       
       if ( ((GEventGWinButton*)pe)->gwin == p->ghPrevEnemy) { 
         if (prevEnemy()) {
-          last_ui_time = chVTGetSystemTime();
           screen_select_draw(FALSE);
         }
         return;
@@ -1321,6 +1317,8 @@ static void fight_exit(OrchardAppContext *context) {
   userconfig *config = getConfig();
   p = context->priv;
 
+  chprintf(stream, "\r\nFIGHT: fight_exit\r\n");
+
   // don't change back to idle state from any other function. Let fight_exit take care of it.
   changeState(IDLE);
   
@@ -1333,9 +1331,13 @@ static void fight_exit(OrchardAppContext *context) {
   config->in_combat = 0;
   return;
 }
+
 static void fightRadioEventHandler(KW01_PKT * pkt) {
   user *u;
   userconfig *config = getConfig();
+
+  /* this code runs in the MAIN thread, it runs along side our thread */
+  /* everything else runs in the app's thread */
   
   u = (user *)pkt->kw01_payload; 
 
@@ -1344,15 +1346,12 @@ static void fightRadioEventHandler(KW01_PKT * pkt) {
     memcpy(&current_enemy, u, sizeof(user));
     ourattack = 0;
     theirattack = 0;
-  }
 
-  if (instance.app != orchardAppByName("Fight")) {
-    // not in app
-    orchardAppRun(orchardAppByName("Fight"));
-    changeState(APPROVAL_DEMAND);
-  } else {
-    // if we are in our app on the select screen, 
-    changeState(APPROVAL_DEMAND);
+    if (instance.app != orchardAppByName("Fight")) {
+      // not in app
+      chprintf(stream, "\r\nFIGHT: b switch app\r\n");
+      orchardAppRun(orchardAppByName("Fight"));
+    }
   }
   
   orchardAppRadioCallback (pkt);
@@ -1362,18 +1361,12 @@ static void fightRadioEventHandler(KW01_PKT * pkt) {
 static void radio_event_do(KW01_PKT * pkt)
 {
   /* this is the state machine that handles transitions for the game via the radio */
-  /* this code runs in the MAIN thread, it runs along side our thread */
-  /* everything else runs in the app's thread */
   user *u;
-  userconfig *config;
-
-  config = getConfig();
   u = (user *)pkt->kw01_payload; 
-  last_ui_time = chVTGetSystemTime(); // radio is a state-change, so reset this.
-    
+
   if (u->opcode == 0) {
 #ifdef DEBUG_FIGHT_NETWORK
-    chprintf(stream, "\r\n%08x --> RECV Invalid opcode. (seq=%d) Ignored (%08x to %08x?)\r\n", u->netid, u->seq, pkt->kw01_hdr.kw01_src, pkt->kw01_hdr.kw01_dst);
+    chprintf(stream, "\r\n%08x --> RECV Invalid opcode. (seq=%d) Ignored (%08x to %08x proto %x)\r\n", u->netid, u->seq, pkt->kw01_hdr.kw01_src, pkt->kw01_hdr.kw01_dst, pkt->kw01_hdr.kw01_prot);
 #endif /* DEBUG_FIGHT_NETWORK */
     return;
   }
@@ -1383,7 +1376,7 @@ static void radio_event_do(KW01_PKT * pkt)
   if (u->opcode == OP_ACK) {
     chprintf(stream, "\r\n%08x --> RECV ACK (seq=%d, acknum=%d, mystate=%d, opcode 0x%x)\r\n", u->netid, u->seq, u->acknum, current_fight_state, next_fight_state, u->opcode);
   } else { 
-    chprintf(stream, "\r\n%08x --> RECV OP  (seq=%d, mystate=%d, opcode 0x%x)\r\n", u->netid, u->seq, current_fight_state, u->opcode);
+    chprintf(stream, "\r\n%08x --> RECV OP  (proto=0x%x, seq=%d, mystate=%d, opcode 0x%x)\r\n", pkt->kw01_hdr.kw01_prot, u->netid, u->seq, current_fight_state, u->opcode);
   }
 #endif /* DEBUG_FIGHT_NETWORK */
   
@@ -1405,6 +1398,15 @@ static void radio_event_do(KW01_PKT * pkt)
       sendACK(u);
     
   switch (current_fight_state) {
+  case ENEMY_SELECT:
+    if (u->opcode == OP_STARTBATTLE) {
+      memcpy(&current_enemy, u, sizeof(user));
+      ourattack = 0;
+      theirattack = 0;
+      changeState(APPROVAL_DEMAND);
+      return;
+    }
+    break;
   case WAITACK:
     if (u->opcode == OP_RST) {
       orchardAppTimer(instance.context, 0, false); // shut down the timer
@@ -1557,7 +1559,6 @@ static void radio_event_do(KW01_PKT * pkt)
 static uint32_t fight_init(OrchardAppContext *context) {
   userconfig *config = getConfig();
 
-
   if (context == NULL) {
     /* This should only happen for auto-init */
     radioHandlerSet (&KRADIO1, RADIO_PROTOCOL_FIGHT,
@@ -1570,7 +1571,8 @@ static uint32_t fight_init(OrchardAppContext *context) {
     }
     
   }
-  
+
+  // we don't want any stack space added to us. 
   return 0;
 }
 

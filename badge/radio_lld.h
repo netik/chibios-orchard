@@ -89,11 +89,11 @@ typedef struct kw01_pkt_hdr {
 #ifdef KW01_RADIO_HWFILTER
 	uint8_t		kw01_dst;	/* Destination node */
 	uint8_t		kw01_src;	/* Source node */
-	uint16_t	kw01_prot;	/* Protocol type */
+	uint8_t   	kw01_prot;	/* Protocol type */
 #else
 	uint32_t	kw01_dst;	/* Destination node */
 	uint32_t	kw01_src;	/* Source node */
-	uint32_t	kw01_prot;	/* Protocol type */
+        uint8_t	        kw01_prot;	/* Protocol type */
 #endif
 } KW01_PKT_HDR;
 
