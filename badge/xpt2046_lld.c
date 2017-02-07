@@ -86,7 +86,7 @@ uint16_t xptGet (uint8_t cmd)
 
 	spiAcquireBus (&SPID2);
 	br = SPID2.spi->BR;
-	SPID2.spi->BR = 0x75;
+	SPID2.spi->BR = 0x30;
 	palClearPad (XPT_CHIP_SELECT_PORT, XPT_CHIP_SELECT_PIN);
 	SPI1->C1 &= ~SPIx_C1_SPIE;
 

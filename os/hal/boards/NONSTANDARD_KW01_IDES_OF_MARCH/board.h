@@ -76,8 +76,6 @@
 #define RED_LED_PORT		GPIOE
 #define RED_LED_PIN		16
 
-/* Note: actually PTB1 on Freedom board */
-
 #define GREEN_LED_PORT		GPIOB
 #define GREEN_LED_PIN		1
 
@@ -89,14 +87,41 @@
 #define BLUE_SOLO_LED_PORT	GPIOE
 #define BLUE_SOLO_LED_PIN	17
 
+/* TPM audio */
+
 #define TPM2_PORT		GPIOB
 #define TPM2_PIN		2
 
 #define RADIO_CHIP_SELECT_PORT	GPIOD
 #define RADIO_CHIP_SELECT_PIN	0
 
-#define RADIO_RESET_PORT	GPIOC
-#define RADIO_RESET_PIN		2
+#define RADIO_RESET_PORT	GPIOD
+#define RADIO_RESET_PIN		7
+
+/* Radio RX/TX interrupt */
+
+#define RADIO_DIO0_PORT		GPIOC
+#define RADIO_DIO0_PIN		3
+
+/* joypad buttons */
+
+#define BUTTON_UP_PORT		GPIOA
+#define BUTTON_UP_PIN		19
+
+#define BUTTON_DOWN_PORT	GPIOC
+#define BUTTON_DOWN_PIN		4
+
+#define BUTTON_LEFT_PORT	GPIOC
+#define BUTTON_LEFT_PIN		2
+
+#define BUTTON_RIGHT_PORT	GPIOC
+#define BUTTON_RIGHT_PIN	1
+
+#define BUTTON_ENTER_PORT	GPIOA
+#define BUTTON_ENTER_PIN	4
+
+#define TILT_SENSOR_PORT	GPIOD
+#define TILT_SEMSOR_PIN		6
 
 /* DAC audio */
 
