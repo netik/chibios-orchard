@@ -724,7 +724,7 @@ radioStart (SPIDriver * sp)
 	chprintf (stream, "Auto-calibrated squelch level: -%ddBm\r\n",
 		  rssi / 2);
 #else
-	radioWrite (radio, KW01_RSSITHRESH, 0xA0);
+	radioWrite (radio, KW01_RSSITHRESH, 0xFF);
 #endif
 	return;
 }
