@@ -36,15 +36,20 @@ static uint32_t lastseq = 0;
 static int16_t last_hit = -1;
 static int16_t last_damage = -1;
 static uint8_t turnover_sent = false;       // make sure we only transmit turnover once. 
+static font_t fontSM;
+static font_t fontLG;
+static font_t fontFF;
+static font_t fontXS;
+static uint16_t screen_width;
+static uint16_t screen_height;
+static uint16_t fontsm_height;
+static uint16_t fontlg_height;
 
 static void radio_event_do(KW01_PKT * pkt);
 
 static void changeState(fight_state nextstate) {
   // call previous state exit
   // so long as we are updating state, no one else gets in.
-
-  // a state change always resets the UI clock
-  last_ui_time = chVTGetSystemTime();
 
   if (nextstate == current_fight_state) {
     // do nothing.
@@ -71,9 +76,7 @@ static void changeState(fight_state nextstate) {
 }
 
 static void screen_alert_draw(char *msg) {
-  font_t fontFF;
   gdispClear(Black);
-  fontFF = gdispOpenFont (FONT_FIXED);
   gdispDrawStringBox (0,
 		      (gdispGetHeight() / 2) - (gdispGetFontMetric(fontFF, fontHeight) / 2),
 		      gdispGetWidth(),
@@ -149,14 +152,11 @@ static void state_waitack_tick(void) {
 
 static void state_approval_demand_enter(void) {
   GWidgetInit wi;
-  font_t fontFF;
   FightHandles *p = instance.context->priv;
   char tmp[40];
   int xpos, ypos;
 
-  fontFF = gdispOpenFont(FONT_FIXED);
   gdispClear(Black);
-  gwinSetDefaultFont(gdispOpenFont(FONT_FIXED));
 
   putImageFile(IMG_GUARD_IDLE_R, POS_PLAYER2_X, POS_PLAYER2_Y - 20);
 
@@ -199,6 +199,7 @@ static void state_approval_demand_enter(void) {
   ypos = ypos + gdispGetFontMetric(fontFF, fontHeight) + 5;
 
   drawProgressBar(xpos,ypos,100,10,maxhp(current_enemy.level), current_enemy.hp, 0, false);
+  gwinSetDefaultFont(fontFF);
   
   // draw UI
   gwinSetDefaultStyle(&RedButtonStyle, FALSE);
@@ -250,7 +251,6 @@ static void state_nextround_enter() {
 
 static void state_move_select_enter() {
   uint16_t ypos = STATUS_Y;
-  font_t fontSM;
   FightHandles *p;
   p = instance.context->priv;
   
@@ -260,7 +260,6 @@ static void state_move_select_enter() {
   last_hit = -1;
   turnover_sent = false;
 
-  fontSM = gdispOpenFont (FONT_SM);
   clearstatus();
   
   putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER2_Y);
@@ -268,8 +267,8 @@ static void state_move_select_enter() {
 
   gdispDrawStringBox (0,
                       ypos,
-                      gdispGetWidth(),
-                      gdispGetFontMetric(fontSM, fontHeight),
+                      screen_width,
+                      fontsm_height,
                       "Attack! High, Mid, Low?",
                       fontSM, White, justifyCenter);
   
@@ -307,8 +306,6 @@ static void screen_select_draw(int8_t initial) {
   // setting initial to TRUE will cause a repaint of the entire
   // scene. We set this to FALSE on next/previous moves to improve
   // redraw performance
-  font_t fontFF, fontSM;
-  font_t fontXS;
   user **enemies = enemiesGet();
 
   if (initial == TRUE) { 
@@ -320,10 +317,6 @@ static void screen_select_draw(int8_t initial) {
   }
   
   putImageFile(IMG_GUARD_IDLE_L, POS_PCENTER_X, POS_PCENTER_Y);
-
-  fontSM = gdispOpenFont (FONT_SM);
-  fontFF = gdispOpenFont (FONT_FIXED);
-  fontXS = gdispOpenFont (FONT_XS);
 
   uint16_t xpos = 0; // cursor, so if we move or add things we don't have to rethink this  
   uint16_t ypos = 0; // cursor, so if we move or add things we don't have to rethink this
@@ -380,9 +373,6 @@ static void screen_select_draw(int8_t initial) {
   
   drawProgressBar(xpos,ypos,100,10,maxhp(enemies[current_enemy_idx]->level), enemies[current_enemy_idx]->hp, 0, false);
 
-  gdispCloseFont(fontSM);
-  gdispCloseFont(fontFF);
-  gdispCloseFont(fontXS);
 }
 
 static void state_enemy_select_enter(void) {
@@ -415,35 +405,29 @@ static void state_enemy_select_exit() {
 }
 
 static void state_vs_screen_enter() {
-
-  // versus screen!
-  char attackfn1[13];
-  char attackfn2[13];
   
-  font_t fontSM;
-  font_t fontLG;
+  // versus screen!
+  char attackfn[13];
   userconfig *config = getConfig();
   uint16_t ypos = 0; // cursor, so if we move or add things we don't have to rethink this
-
+  
   gdispClear(Black);
 
   putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER2_Y);
   putImageFile(IMG_GUARD_IDLE_R, POS_PLAYER2_X, POS_PLAYER2_Y);
-  
-  fontSM = gdispOpenFont(FONT_SM);
-  fontLG = gdispOpenFont(FONT_LG);
+
 
   gdispDrawStringBox (0,
 		      ypos,
-		      gdispGetWidth(),
-		      gdispGetFontMetric(fontSM, fontHeight),
+		      screen_width,
+		      fontsm_height,
 		      config->name,
 		      fontSM, Lime, justifyLeft);
 
   gdispDrawStringBox (0,
 		      ypos,
-		      gdispGetWidth(),
-		      gdispGetFontMetric(fontSM, fontHeight),
+		      screen_width,
+		      fontsm_height,
                       current_enemy.name,
 		      fontSM, Red, justifyRight);
 
@@ -451,64 +435,58 @@ static void state_vs_screen_enter() {
 
   if (current_fight_state == VS_SCREEN) {
     // disable the timer, we are going to do some animations
-    orchardAppTimer(instance.context, 0, false); // shut down the timer
-    gdispFillArea(0,gdispGetHeight() - 20,gdispGetWidth(),20,Black); // wipe the bottom
+    gdispFillArea(0,screen_height- 20,screen_width,20,Black); // wipe the bottom
     
     gdispFillArea(0,
 		  ypos,
-		  gdispGetWidth(),
-		  gdispGetFontMetric(fontSM, fontHeight),
+                  screen_width,
+                  fontsm_height,
 		  Black);
 
     blinkText(0,
 	      110,
-	      gdispGetWidth(),
-	      gdispGetFontMetric(fontLG, fontHeight),
+	      screen_width,
+	      fontlg_height,
 	      "VS",
 	      fontLG,
 	      White,
 	      justifyCenter,
 	      10,
 	      200);
-
+    
     updatehp();
+
     ypos = ypos + 15;
     clearstatus();
 
     // animate them 
     char pos[6] = "hmlhml";
     
+    // we always say we're waiting.
+    gdispFillArea(0,screen_height - 20,screen_width,20,Black);
+    
+    gdispDrawStringBox (0,
+                        screen_height - 20,
+                        screen_width,
+                          fontsm_height,
+                        "GET READY!",
+                        fontSM, White, justifyCenter);
+
     for (uint8_t i=0; i < 6; i++) {
-      chsnprintf(attackfn1, sizeof(attackfn1), "gatt%c1.rgb", pos[i]);
-      chsnprintf(attackfn2, sizeof(attackfn2), "gatt%c1r.rgb", pos[i]);
-
-      putImageFile(attackfn1, POS_PLAYER1_X, POS_PLAYER1_Y);
-      putImageFile(attackfn2, POS_PLAYER2_X, POS_PLAYER2_Y);
-
-      // we always say we're waiting.
-      gdispFillArea(0,gdispGetHeight() - 20,gdispGetWidth(),20,Black);
-      
-      gdispDrawStringBox (0,
-                          gdispGetHeight() - 20,
-                          gdispGetWidth(),
-                          gdispGetFontMetric(fontSM, fontHeight),
-                          "GET READY!",
-                          fontSM, White, justifyCenter);
-
+      chsnprintf(attackfn, sizeof(attackfn), "gatt%c1.rgb", pos[i]);
+      putImageFile(attackfn, POS_PLAYER1_X, POS_PLAYER1_Y);
+      chsnprintf(attackfn, sizeof(attackfn), "gatt%c1r.rgb", pos[i]);
+      putImageFile(attackfn, POS_PLAYER2_X, POS_PLAYER2_Y);
       chThdSleepMilliseconds(200);
-
     }
-
-    // re-enable the timer, our animations are over.
-    orchardAppTimer(instance.context, FRAME_INTERVAL_US, true);
 
     changeState(MOVE_SELECT);
     
   } else { 
     gdispDrawStringBox (0,
                         STATUS_Y,
-                        gdispGetWidth(),
-                        gdispGetFontMetric(fontSM, fontHeight),
+                        screen_width,
+                        fontsm_height,
                         "Waiting for enemy to accept!",
                         fontSM, White, justifyCenter);
   }
@@ -625,9 +603,7 @@ static void sendAttack(void) {
   // challenger
   
   clearstatus();
-  font_t fontSM;
-  fontSM = gdispOpenFont (FONT_SM);
-  
+
   // clear middle
   //  gdispFillArea(140,70,40,110,Black);
 
@@ -703,8 +679,6 @@ static void draw_select_buttons(void) {
   GWidgetInit wi;
   coord_t totalheight = gdispGetHeight();
   FightHandles *p = instance.context->priv;
-  font_t fontFF;
-  fontFF = gdispOpenFont(FONT_FIXED);
 
   // Left
   gwinWidgetClearInit(&wi);
@@ -730,7 +704,7 @@ static void draw_select_buttons(void) {
 
   // Fight
   gwinSetDefaultStyle(&RedButtonStyle, FALSE);
-  gwinSetDefaultFont(gdispOpenFont(FONT_FIXED));
+  gwinSetDefaultFont(fontFF);
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
   wi.g.x = 85;
@@ -824,11 +798,8 @@ static void show_results(void) {
   char theirdmg_s[10];
   uint16_t textx, text_p1_y, text_p2_y;
   color_t p1color, p2color;
-  font_t fontFF;
   userconfig *config = getConfig();
   
-  fontFF = gdispOpenFont(FONT_FIXED);
-
   // get the right filename for the attack
   if (ourattack & ATTACK_HI) {
     c='h';
@@ -977,12 +948,8 @@ static void show_results(void) {
 static void updatehp(void)  {
   // update the hit point counters at the top of the screen
   userconfig *config = getConfig();
-  font_t fontXS, fontSM;
   char tmp[20];
   
-  fontSM = gdispOpenFont (FONT_FIXED);
-  fontXS = gdispOpenFont (FONT_XS);
-
   // center KO 
   gdispDrawStringBox (1, 16, gdispGetWidth()-1,
 		      gdispGetFontMetric(fontSM, fontHeight),
@@ -1329,6 +1296,11 @@ static void fight_exit(OrchardAppContext *context) {
   context->priv = NULL;
 
   config->in_combat = 0;
+
+  gdispCloseFont(fontLG);
+  gdispCloseFont(fontSM);
+  gdispCloseFont(fontFF);
+  gdispCloseFont(fontXS);
   return;
 }
 
@@ -1349,7 +1321,6 @@ static void fightRadioEventHandler(KW01_PKT * pkt) {
 
     if (instance.app != orchardAppByName("Fight")) {
       // not in app
-      chprintf(stream, "\r\nFIGHT: b switch app\r\n");
       orchardAppRun(orchardAppByName("Fight"));
     }
   }
@@ -1548,7 +1519,7 @@ static void radio_event_do(KW01_PKT * pkt)
              pkt->kw01_hdr.kw01_src, u->opcode, u->seq,
              current_fight_state, fight_state_name[current_fight_state]);
 #else
-    chprintf(stream, "\r\n%08x --> RECV %x - no handler - (seq=%d, mystate=%d %s)\r\n",
+    chprintf(stream, "\r\n%08x --> RECV %x - no handler - (seq=%d, mystate=%d)\r\n",
              pkt->kw01_hdr.kw01_src, u->opcode, u->seq,
              current_fight_state);
 #endif
@@ -1558,6 +1529,16 @@ static void radio_event_do(KW01_PKT * pkt)
 
 static uint32_t fight_init(OrchardAppContext *context) {
   userconfig *config = getConfig();
+
+  fontSM = gdispOpenFont(FONT_SM);
+  fontLG = gdispOpenFont(FONT_LG);
+  fontXS = gdispOpenFont (FONT_XS);
+  fontFF = gdispOpenFont (FONT_FIXED);
+  screen_width = gdispGetWidth();
+  screen_height = gdispGetHeight();
+  
+  fontsm_height = gdispGetFontMetric(fontSM, fontHeight);
+  fontlg_height = gdispGetFontMetric(fontSM, fontHeight);
 
   if (context == NULL) {
     /* This should only happen for auto-init */

@@ -64,10 +64,12 @@ osxsd:	sdcard
 	@cp sdcard/* /Volumes/NO\ NAME/
 	@sync
 
-firmware:
-	@if [ ! -d "sdcard" ]; then mkdir sdcard; fi
-	@cp ../updater/updater.bin sdcard
-	@cp ../badge/build/badge.bin sdcard
+# only update the binaries to save time.
+osxsdfw:	sdcard
+	@echo "Updating binaries on /Volumes/NO\ NAME/"
+	@cp ../updater/updater.bin /Volumes/NO\ NAME/
+	@cp sdcard/badge.bin /Volumes/NO\ NAME/
+	@sync
 
 cleansd:
 	@if [ -d "sdcard" ]; then rm -rf sdcard; fi; mkdir sdcard

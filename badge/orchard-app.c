@@ -303,7 +303,14 @@ void orchardAppTimer(const OrchardAppContext *context,
   chVTSet(&context->instance->timer, US2ST(usecs), timer_do_send_message, NULL);
 }
 
-static THD_WORKING_AREA(waOrchardAppThread, 0x300);
+// jna: second argument here is stack space allocated to the application thread.
+// 0x300 = 768  = Breaks app-fight.c badly
+// 0x400 = 1024 = Works fine with app-fight.c.
+//
+// Please don't modify this unless absolutely necessary. I will figure
+// out how to reduce stack usage in app-fight.c 
+
+static THD_WORKING_AREA(waOrchardAppThread, 0x400);
 static THD_FUNCTION(orchard_app_thread, arg) {
 
   (void)arg;
