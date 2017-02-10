@@ -320,15 +320,19 @@ void ext_lld_stop(EXTDriver *extp) {
  *
  * @notapi
  */
+
 void ext_lld_channel_enable(EXTDriver *extp, expchannel_t channel) {
 
   uint32_t irqc;
   uint32_t mode = extp->config->channels[channel].mode;
-  if (mode & EXT_CH_MODE_RISING_EDGE)
+
+  mode &= EXT_CH_MODE_EDGES_MASK;
+
+  if (mode == EXT_CH_MODE_RISING_EDGE)
     irqc = PCR_IRQC_RISING_EDGE;
-  else if (extp->config->channels[channel].mode & EXT_CH_MODE_FALLING_EDGE)
+  else if (mode == EXT_CH_MODE_FALLING_EDGE)
     irqc = PCR_IRQC_FALLING_EDGE;
-  else if (extp->config->channels[channel].mode & EXT_CH_MODE_BOTH_EDGES)
+  else if (mode == EXT_CH_MODE_BOTH_EDGES)
     irqc = PCR_IRQC_EITHER_EDGE;
   else
     irqc = PCR_IRQC_DISABLED;
