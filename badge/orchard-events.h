@@ -70,11 +70,7 @@ struct evt_table {
     table.listeners
 
 extern event_source_t rf_pkt_rdy;
-extern event_source_t gpiox_rdy;
-
-// BM radio protocol events
-extern event_source_t radio_page;
-extern event_source_t radio_app;
+extern event_source_t tilt_rdy;
 
 void orchardEventsStart(void);
 

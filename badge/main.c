@@ -240,7 +240,7 @@ int main(void)
 
   /* Turn on the blue LED */
   palClearPad (BLUE_SOLO_LED_PORT, BLUE_SOLO_LED_PIN);
-  evtTableInit(orchard_events, 4);
+  evtTableInit(orchard_events, 5);
 
   /* init the shell and show our banners */
   orchardShellInit();
