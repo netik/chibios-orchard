@@ -108,7 +108,6 @@ static void init_config(userconfig *config) {
 void configStart(void) {
   const userconfig *config;
   osalMutexObjectInit(&config_mutex);
-  osalMutexLock(&config_mutex);
   
   config = (const userconfig *) CONFIG_FLASH_ADDR;
   
@@ -133,8 +132,8 @@ void configStart(void) {
   }
 
   memcpy(&config_cache, config, sizeof(userconfig));
-  
-  osalMutexUnlock(&config_mutex);
+
+  return;  
 }
 
 struct userconfig *getConfig(void) {
