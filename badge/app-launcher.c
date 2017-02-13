@@ -158,7 +158,6 @@ static void redraw_list(struct launcher_list *list) {
 
   gdispCloseFont(font);
   gdispFlush();
-  orchardGfxEnd();
 }
 
 static uint32_t launcher_init(OrchardAppContext *context) {
