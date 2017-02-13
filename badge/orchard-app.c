@@ -52,6 +52,7 @@ static uint8_t ui_override = 0;
 
 uint8_t shout_received;
 uint8_t shout_ok;
+volatile int radio_event_pending = FALSE;
 
 static void run_ping(void *arg) {
   (void)arg;
@@ -148,11 +149,14 @@ static void ugfx_event(eventid_t id) {
 }
 
 void orchardAppRadioCallback (KW01_PKT * pkt) {
+  thread_t * th;
 
   (void)pkt;
 
   if (instance.context == NULL)
     return;
+
+  radio_event_pending = TRUE;
 
   chEvtBroadcast (&orchard_app_radio);
 
@@ -165,7 +169,10 @@ void orchardAppRadioCallback (KW01_PKT * pkt) {
    * never calls the event handler.
    */
 
-  chThdSleepMilliseconds (5000);
+  th = chMsgWait ();
+  chMsgRelease (th, MSG_OK);
+
+  radio_event_pending = FALSE;
 
   return;
 }
@@ -189,8 +196,10 @@ static void radio_event(eventid_t id) {
    * the first one in the thread registry list (it never exits).
    */
 
-  t = chRegFirstThread ();
-  chThdResume (&t, MSG_OK);
+  if (radio_event_pending == TRUE) {
+    t = chRegFirstThread ();
+    chMsgSend (t, MSG_OK);
+  }
 
   return;
 }
@@ -221,8 +230,10 @@ static void terminate(eventid_t id) {
   evt.app.event = appTerminate;
   instance.app->event(instance.context, &evt);
 
-  t = chRegFirstThread ();
-  chThdResume (&t, MSG_OK);
+  if (radio_event_pending == TRUE) {
+    t = chRegFirstThread ();
+    chMsgSend (t, MSG_OK);
+  }
 
   chThdTerminate(instance.thr);
 }

@@ -47,7 +47,7 @@
 
 DACDriver DAC1;
 
-static THD_WORKING_AREA(waDacThread, 256);
+static THD_WORKING_AREA(waDacThread, 1024);
 
 /*
  * Note: dacpos and daxmax must be volatile to prevent the compiler
@@ -80,7 +80,8 @@ THD_FUNCTION(dacThread, arg)
         UINT br;
 	uint16_t * p;
 	uint16_t * buf = NULL;
-        userconfig *config;
+	userconfig *config;
+	thread_t * th;
 
         (void)arg;
 
@@ -90,9 +91,9 @@ THD_FUNCTION(dacThread, arg)
 	buf = chHeapAlloc (NULL, (DAC_SAMPLES * sizeof(uint16_t)) * 2);
 
 	while (1) {
-		dacbuf = NULL;
-                chThdSleep (TIME_INFINITE);
-                
+		th = chMsgWait ();
+		chMsgRelease (th, MSG_OK);
+ 
 		if (config->sound_enabled == 0)
 			continue;
 
@@ -107,6 +108,7 @@ THD_FUNCTION(dacThread, arg)
 			continue;
 		}
 
+		play = 1;
 		pitEnable (&PIT1, 1);
 
 		while (1) {
@@ -179,19 +181,13 @@ dacStart (DACDriver * dac)
 void
 dacPlay (char * file)
 {
-	thread_t * t;
-
 	play = 0;
-	while (dacbuf != NULL)
-		chThdSleepMicroseconds(1);
 
 	if (file == NULL)
 		return;
 
 	fname = file;
-	play = 1;
-	t = pThread;
-	chThdResume (&t, MSG_OK);
+	chMsgSend (pThread, MSG_OK);
 
 	return;
 }

@@ -246,7 +246,7 @@
  *
  * @note    The default is @p TRUE.
  */
-#define CH_CFG_USE_MESSAGES                 FALSE
+#define CH_CFG_USE_MESSAGES                 TRUE
 
 /**
  * @brief   Synchronous Messages queuing mode.

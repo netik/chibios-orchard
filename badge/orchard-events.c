@@ -35,12 +35,13 @@ tiltIntrHandle (eventid_t id)
 
 	pad = palReadPad (GPIOA, 4);
 
-	if (pad == 1)
+	if (pad == 1) {
 		playDoh ();
-	if (pad == 0)
+		chprintf (stream, "Released!\r\n", pad);
+	} else if (pad == 0) {
 		playWoohoo ();
-
-	chprintf (stream, "moo...%x\r\n", pad);
+		chprintf (stream, "Pressed!\r\n", pad);
+	}
 
 	return;
 }
