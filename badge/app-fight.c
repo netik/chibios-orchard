@@ -45,8 +45,6 @@ static uint16_t screen_height;
 static uint16_t fontsm_height;
 static uint16_t fontlg_height;
 
-static void radio_event_do(KW01_PKT * pkt);
-
 static void changeState(fight_state nextstate) {
   // call previous state exit
   // so long as we are updating state, no one else gets in.
@@ -404,18 +402,14 @@ static void state_enemy_select_exit() {
   p->ghPrevEnemy = NULL;
 }
 
-static void state_vs_screen_enter() {
-  
-  // versus screen!
-  char attackfn[13];
-  userconfig *config = getConfig();
+static void draw_idle_players() {
   uint16_t ypos = 0; // cursor, so if we move or add things we don't have to rethink this
-  
+  userconfig *config = getConfig();
+
   gdispClear(Black);
 
   putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER2_Y);
   putImageFile(IMG_GUARD_IDLE_R, POS_PLAYER2_X, POS_PLAYER2_Y);
-
 
   gdispDrawStringBox (0,
 		      ypos,
@@ -433,63 +427,49 @@ static void state_vs_screen_enter() {
 
   ypos = ypos + gdispGetFontMetric(fontSM, fontHeight);
 
-  if (current_fight_state == VS_SCREEN) {
-    // disable the timer, we are going to do some animations
-    gdispFillArea(0,screen_height- 20,screen_width,20,Black); // wipe the bottom
-    
-    gdispFillArea(0,
-		  ypos,
-                  screen_width,
-                  fontsm_height,
-		  Black);
+  
+}
+  
+static void state_vs_screen_enter() {
+  // versus screen!
+  char attackfn[13];
 
-    blinkText(0,
-	      110,
-	      screen_width,
-	      fontlg_height,
-	      "VS",
-	      fontLG,
-	      White,
-	      justifyCenter,
-	      10,
-	      200);
-    
-    updatehp();
-
-    ypos = ypos + 15;
-    clearstatus();
-
-    // animate them 
-    char pos[6] = "hmlhml";
-    
-    // we always say we're waiting.
-    gdispFillArea(0,screen_height - 20,screen_width,20,Black);
-    
-    gdispDrawStringBox (0,
-                        screen_height - 20,
-                        screen_width,
-                          fontsm_height,
-                        "GET READY!",
-                        fontSM, White, justifyCenter);
-
-    for (uint8_t i=0; i < 6; i++) {
-      chsnprintf(attackfn, sizeof(attackfn), "gatt%c1.rgb", pos[i]);
-      putImageFile(attackfn, POS_PLAYER1_X, POS_PLAYER1_Y);
-      chsnprintf(attackfn, sizeof(attackfn), "gatt%c1r.rgb", pos[i]);
-      putImageFile(attackfn, POS_PLAYER2_X, POS_PLAYER2_Y);
-      chThdSleepMilliseconds(200);
-    }
-
-    changeState(MOVE_SELECT);
-    
-  } else { 
-    gdispDrawStringBox (0,
-                        STATUS_Y,
-                        screen_width,
-                        fontsm_height,
-                        "Waiting for enemy to accept!",
-                        fontSM, White, justifyCenter);
+  blinkText(0,
+            110,
+            screen_width,
+            fontlg_height,
+            "VS",
+            fontLG,
+            White,
+            justifyCenter,
+            10,
+            200);
+  
+  updatehp();
+  clearstatus();
+  
+  // animate them 
+  char pos[6] = "hmlhml";
+  
+  // we always say we're waiting.
+  gdispFillArea(0,screen_height - 20,screen_width,20,Black);
+  
+  gdispDrawStringBox (0,
+                      screen_height - 20,
+                      screen_width,
+                      fontsm_height,
+                      "GET READY!",
+                      fontSM, White, justifyCenter);
+  
+  for (uint8_t i=0; i < 6; i++) {
+    chsnprintf(attackfn, sizeof(attackfn), "gatt%c1.rgb", pos[i]);
+    putImageFile(attackfn, POS_PLAYER1_X, POS_PLAYER1_Y);
+    chsnprintf(attackfn, sizeof(attackfn), "gatt%c1r.rgb", pos[i]);
+    putImageFile(attackfn, POS_PLAYER2_X, POS_PLAYER2_Y);
+    chThdSleepMilliseconds(200);
   }
+  
+  changeState(MOVE_SELECT);
 }
 
 static void countdown_tick() {
@@ -1032,7 +1012,13 @@ static void fight_start(OrchardAppContext *context) {
 }
 
 static void state_approval_wait_enter(void) {
-  state_vs_screen_enter(); // cheat - call this enter routine to draw. 
+  gdispDrawStringBox (0,
+                      STATUS_Y,
+                      screen_width,
+                      fontsm_height,
+                      "Waiting for enemy to accept!",
+                        fontSM, White, justifyCenter);
+  draw_idle_players();
 
   // progress bar
   last_tick_time = chVTGetSystemTime();

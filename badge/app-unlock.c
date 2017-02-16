@@ -1,7 +1,47 @@
+/*
+ * app-unlock.c
+ * 
+ * the unlock screen that allows people to unlock features in 
+ * the badge
+ *
+ */
+
 #include "orchard-app.h"
 #include "orchard-ui.h"
 #include "userconfig.h"
 #include "ides_gfx.h"
+#include "images.h"
+
+
+// WidgetStyle: Ivory
+const GWidgetStyle ivory = {
+  HTML2COLOR(0xffefbe),              // background
+  HTML2COLOR(0x2A8FCD),              // focus
+
+  // Enabled color set
+  {
+    HTML2COLOR(0x000000),         // text
+    HTML2COLOR(0x404040),         // edge
+    HTML2COLOR(0xffefbe),         // background
+    HTML2COLOR(0x00E000),         // progress (inactive area)
+  },
+
+  // Disabled color set
+  {
+    HTML2COLOR(0xC0C0C0),         // text
+    HTML2COLOR(0x808080),         // edge
+    HTML2COLOR(0xE0E0E0),         // fill
+    HTML2COLOR(0xC0E0C0),         // progress (active area)
+  },
+
+  // Pressed color set
+  {
+    HTML2COLOR(0x404040),         // text
+    HTML2COLOR(0x404040),         // edge
+    HTML2COLOR(0x808080),         // fill
+    HTML2COLOR(0x00E000),         // progress (active area)
+  }
+};
 
 // handles
 typedef struct _UnlockHandles {
@@ -14,23 +54,14 @@ typedef struct _UnlockHandles {
   GHandle ghNum3;
   GHandle ghNum4;
   GHandle ghNum5;
-  GHandle gh1Up;
-  GHandle gh1Dn;
-  GHandle gh2Dn;
-  GHandle gh3Dn;
-  GHandle gh4Dn;
-  GHandle gh5Dn;
-  GHandle gh2Up;
-  GHandle gh3Up;
-  GHandle gh4Up;
-  GHandle gh5Up;
+
   GHandle ghBack;
   GHandle ghUnlock;
   
   // Fonts
-  font_t font_dejavu_sans_32;
+  font_t font_jupiterpro_36;
   font_t font_manteka_20;
-  
+
 } UnlockHandles;
 
 static uint32_t last_ui_time = 0;
@@ -41,207 +72,103 @@ static void init_unlock_ui(UnlockHandles *p) {
 
   GWidgetInit wi;
   
-  p->font_dejavu_sans_32 = gdispOpenFont("DejaVuSans32");
+  p->font_jupiterpro_36 = gdispOpenFont("Jupiter_Pro_2561336");
   p->font_manteka_20 = gdispOpenFont("manteka20");
   
   gwinWidgetClearInit(&wi);
 
-  // Create label widget: ghNum1
+  // create button widget: ghNum1
   wi.g.show = TRUE;
-  wi.g.x = 50;
-  wi.g.y = 100;
-  wi.g.width = 20;
-  wi.g.height = 30;
+  wi.g.x = 40;
+  wi.g.y = 40;
+  wi.g.width = 40;
+  wi.g.height = 40;
   wi.text = "0";
-  wi.customDraw = gwinLabelDrawJustifiedCenter;
+  wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
-  wi.customStyle = 0;
-  p->ghNum1 = gwinLabelCreate(0, &wi);
-  gwinLabelSetBorder(p->ghNum1, TRUE);
-  gwinSetFont(p->ghNum1, p->font_dejavu_sans_32);
+  wi.customStyle = &ivory;
+  p->ghNum1 = gwinButtonCreate(0, &wi);
+  gwinSetFont(p->ghNum1, p->font_jupiterpro_36);
   gwinRedraw(p->ghNum1);
 
-  // Create label widget: ghNum2
+  // create button widget: ghNum2
   wi.g.show = TRUE;
-  wi.g.x = 100;
-  wi.g.y = 100;
-  wi.g.width = 20;
-  wi.g.height = 30;
+  wi.g.x = 90;
+  wi.g.y = 40;
+  wi.g.width = 40;
+  wi.g.height = 40;
   wi.text = "0";
-  wi.customDraw = gwinLabelDrawJustifiedCenter;
+  wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
-  wi.customStyle = 0;
-  p->ghNum2 = gwinLabelCreate(0, &wi);
-  gwinLabelSetBorder(p->ghNum2, TRUE);
-  gwinSetFont(p->ghNum2, p->font_dejavu_sans_32);
+  wi.customStyle = &ivory;
+  p->ghNum2 = gwinButtonCreate(0, &wi);
+  gwinSetFont(p->ghNum2, p->font_jupiterpro_36);
   gwinRedraw(p->ghNum2);
 
-  // Create label widget: ghNum3
+  // create button widget: ghNum3
   wi.g.show = TRUE;
-  wi.g.x = 150;
-  wi.g.y = 100;
-  wi.g.width = 20;
-  wi.g.height = 30;
+  wi.g.x = 140;
+  wi.g.y = 40;
+  wi.g.width = 40;
+  wi.g.height = 40;
   wi.text = "0";
-  wi.customDraw = gwinLabelDrawJustifiedCenter;
+  wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
-  wi.customStyle = 0;
-  p->ghNum3 = gwinLabelCreate(0, &wi);
-  gwinLabelSetBorder(p->ghNum3, TRUE);
-  gwinSetFont(p->ghNum3, p->font_dejavu_sans_32);
+  wi.customStyle = &ivory;
+  p->ghNum3 = gwinButtonCreate(0, &wi);
+  gwinSetFont(p->ghNum3, p->font_jupiterpro_36);
   gwinRedraw(p->ghNum3);
 
-  // Create label widget: ghNum4
+  // create button widget: ghNum4
   wi.g.show = TRUE;
-  wi.g.x = 200;
-  wi.g.y = 100;
-  wi.g.width = 20;
-  wi.g.height = 30;
+  wi.g.x = 190;
+  wi.g.y = 40;
+  wi.g.width = 40;
+  wi.g.height = 40;
   wi.text = "0";
-  wi.customDraw = gwinLabelDrawJustifiedCenter;
+  wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
-  wi.customStyle = 0;
-  p->ghNum4 = gwinLabelCreate(0, &wi);
-  gwinLabelSetBorder(p->ghNum4, TRUE);
-  gwinSetFont(p->ghNum4, p->font_dejavu_sans_32);
+  wi.customStyle = &ivory;
+  p->ghNum4 = gwinButtonCreate(0, &wi);
+  gwinSetFont(p->ghNum4, p->font_jupiterpro_36);
   gwinRedraw(p->ghNum4);
 
-  // Create label widget: ghNum5
+  // create button widget: ghNum5
   wi.g.show = TRUE;
-  wi.g.x = 250;
-  wi.g.y = 100;
-  wi.g.width = 20;
-  wi.g.height = 30;
+  wi.g.x = 240;
+  wi.g.y = 40;
+  wi.g.width = 40;
+  wi.g.height = 40;
   wi.text = "0";
-  wi.customDraw = gwinLabelDrawJustifiedCenter;
+  wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
-  wi.customStyle = 0;
-  p->ghNum5 = gwinLabelCreate(0, &wi);
-  gwinLabelSetBorder(p->ghNum5, TRUE);
-  gwinSetFont(p->ghNum5, p->font_dejavu_sans_32);
+  wi.customStyle = &ivory;
+  p->ghNum5 = gwinButtonCreate(0, &wi);
+  gwinSetFont(p->ghNum5,  p->font_jupiterpro_36);
   gwinRedraw(p->ghNum5);
-
-  // create button widget: gh1Up
-  wi.g.show = TRUE;
-  wi.g.x = 40;
-  wi.g.y = 50;
-  wi.g.width = 40;
-  wi.g.height = 40;
-  wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowUp;
-  p->gh1Up = gwinButtonCreate(0, &wi);
-
-  // create button widget: gh1Dn
-  wi.g.show = TRUE;
-  wi.g.x = 40;
-  wi.g.y = 140;
-  wi.g.width = 40;
-  wi.g.height = 40;
-  wi.customDraw = gwinButtonDraw_ArrowDown;
-  p->gh1Dn = gwinButtonCreate(0, &wi);
-
-  // create button widget: gh2Dn
-  wi.g.show = TRUE;
-  wi.g.x = 90;
-  wi.g.y = 140;
-  wi.g.width = 40;
-  wi.g.height = 40;
-  wi.text = "";  
-  wi.customDraw = gwinButtonDraw_ArrowDown;
-  p->gh2Dn = gwinButtonCreate(0, &wi);
-
-  // create button widget: gh3Dn
-  wi.g.show = TRUE;
-  wi.g.x = 140;
-  wi.g.y = 140;
-  wi.g.width = 40;
-  wi.g.height = 40;
-  wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowDown;
-  p->gh3Dn = gwinButtonCreate(0, &wi);
-
-  // create button widget: gh4Dn
-  wi.g.show = TRUE;
-  wi.g.x = 190;
-  wi.g.y = 140;
-  wi.g.width = 40;
-  wi.g.height = 40;
-  wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowDown;
-  p->gh4Dn = gwinButtonCreate(0, &wi);
-
-  // create button widget: gh5Dn
-  wi.g.show = TRUE;
-  wi.g.x = 240;
-  wi.g.y = 140;
-  wi.g.width = 40;
-  wi.g.height = 40;
-  wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowDown;
-  p->gh5Dn = gwinButtonCreate(0, &wi);
-
-  // create button widget: gh2Up
-  wi.g.show = TRUE;
-  wi.g.x = 90;
-  wi.g.y = 50;
-  wi.g.width = 40;
-  wi.g.height = 40;
-  wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowUp;
-  p->gh2Up = gwinButtonCreate(0, &wi);
-
-  // create button widget: gh3Up
-  wi.g.show = TRUE;
-  wi.g.x = 140;
-  wi.g.y = 50;
-  wi.g.width = 40;
-  wi.g.height = 40;
-  wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowUp;
-  p->gh3Up = gwinButtonCreate(0, &wi);
-
-  // create button widget: gh4Up
-  wi.g.show = TRUE;
-  wi.g.x = 190;
-  wi.g.y = 50;
-  wi.g.width = 40;
-  wi.g.height = 40;
-  wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowUp;
-  p->gh4Up = gwinButtonCreate(0, &wi);
-
-  // create button widget: gh5Up
-  wi.g.show = TRUE;
-  wi.g.x = 240;
-  wi.g.y = 50;
-  wi.g.width = 40;
-  wi.g.height = 40;
-  wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowUp;
-  p->gh5Up = gwinButtonCreate(0, &wi);
-
+  
   // create button widget: ghBack
   wi.g.show = TRUE;
   wi.g.x = 10;
-  wi.g.y = 210;
-  wi.g.width = 60;
-  wi.g.height = 20;
-  wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowLeft;
+  wi.g.y = 100;
+  wi.g.width = 110;
+  wi.g.height = 30;
+  wi.text = "<-";
+  wi.customStyle = &ivory;
   p->ghBack = gwinButtonCreate(0, &wi);
 
-  // create button widget: ghBack
+  // create button widget: ghUnlock
   wi.g.show = TRUE;
   wi.g.x = 200;
-  wi.g.y = 200;
+  wi.g.y = 100;
   wi.g.width = 110;
   wi.g.height = 30;
   wi.text = "UNLOCK";
   wi.customDraw = 0;
+  wi.customStyle = &ivory;
   p->ghUnlock = gwinButtonCreate(0, &wi);
   gwinSetFont(p->ghUnlock, p->font_manteka_20);
   gwinRedraw(p->ghUnlock);
-
 }
 
 
@@ -265,6 +192,9 @@ static void unlock_start(OrchardAppContext *context)
   // clear the screen
   gdispClear (Black);
 
+  /* background */
+  putImageFile(IMG_UNLOCKBG, 0, 0);
+
   // idle ui timer
   orchardAppTimer(context, 1000, true);
   last_ui_time = chVTGetSystemTime();
@@ -283,7 +213,7 @@ static void unlock_start(OrchardAppContext *context)
   for (i=0;i<5;i++) {
     code[i] = 0;
   }
-  
+
   orchardAppTimer(context, 1000, true);  
 }
 
@@ -298,12 +228,10 @@ static void updatecode(OrchardAppContext *context, uint8_t position, int8_t dire
 
   // check boundaries
   if (code[position] & 0x80) {
-    chprintf(stream, "under\r\n");
     code[position] = 0x0f; // underflow of unsigned int
   }
 
   if (code[position] > 0x0f) {
-    chprintf(stream, "over\r\n");
     code[position] = 0;
   }
 
@@ -360,36 +288,35 @@ static void unlock_event(OrchardAppContext *context,
     last_ui_time = chVTGetSystemTime();
     
     if (pe->type == GEVENT_GWIN_BUTTON) {
-      if ( ((GEventGWinButton*)pe)->gwin == p->gh1Up)
+      if ( ((GEventGWinButton*)pe)->gwin == p->ghBack) {
+        orchardAppExit();
+        return;
+      }
+      
+      if ( ((GEventGWinButton*)pe)->gwin == p->ghUnlock) {
+        /* TODO: Check for valid code */
+        orchardAppExit();
+        return;
+      }
+      
+      /* tapping the number advances the value */
+      if ( ((GEventGWinButton*)pe)->gwin == p->ghNum1)
         updatecode(context,0,1);
 
-      if ( ((GEventGWinButton*)pe)->gwin == p->gh2Up)
+      if ( ((GEventGWinButton*)pe)->gwin == p->ghNum2)
         updatecode(context,1,1);
 
-      if ( ((GEventGWinButton*)pe)->gwin == p->gh3Up)
+      if ( ((GEventGWinButton*)pe)->gwin == p->ghNum3)
         updatecode(context,2,1);
 
-      if ( ((GEventGWinButton*)pe)->gwin == p->gh4Up)
+      if ( ((GEventGWinButton*)pe)->gwin == p->ghNum4)
         updatecode(context,3,1);
 
-      if ( ((GEventGWinButton*)pe)->gwin == p->gh5Up)
+      if ( ((GEventGWinButton*)pe)->gwin == p->ghNum5)
         updatecode(context,4,1);
 
-      
-      if ( ((GEventGWinButton*)pe)->gwin == p->gh1Dn)
-        updatecode(context,0,-1);
+      /* TODO: support buttons */
 
-      if ( ((GEventGWinButton*)pe)->gwin == p->gh2Dn)
-        updatecode(context,1,-1);
-
-      if ( ((GEventGWinButton*)pe)->gwin == p->gh3Dn)
-        updatecode(context,2,-1);
-
-      if ( ((GEventGWinButton*)pe)->gwin == p->gh4Dn)
-        updatecode(context,3,-1);
-
-      if ( ((GEventGWinButton*)pe)->gwin == p->gh5Dn)
-        updatecode(context,4,-1);
     }
   }
 }
@@ -400,7 +327,6 @@ static void unlock_exit(OrchardAppContext *context) {
 
   p = context->priv;
 
-  gdispCloseFont (p->font_dejavu_sans_32);
   gdispCloseFont (p->font_manteka_20);
   
   gwinDestroy(p->ghNum1);
@@ -408,16 +334,7 @@ static void unlock_exit(OrchardAppContext *context) {
   gwinDestroy(p->ghNum3);
   gwinDestroy(p->ghNum4);
   gwinDestroy(p->ghNum5);
-  gwinDestroy(p->gh1Up);
-  gwinDestroy(p->gh1Dn);
-  gwinDestroy(p->gh2Dn);
-  gwinDestroy(p->gh3Dn);
-  gwinDestroy(p->gh4Dn);
-  gwinDestroy(p->gh5Dn);
-  gwinDestroy(p->gh2Up);
-  gwinDestroy(p->gh3Up);
-  gwinDestroy(p->gh4Up);
-  gwinDestroy(p->gh5Up);
+
   gwinDestroy(p->ghBack);
   gwinDestroy(p->ghUnlock);
   

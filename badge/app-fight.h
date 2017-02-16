@@ -195,6 +195,9 @@ static void state_levelup_enter(void);
 static void state_levelup_tick(void);
 static void state_levelup_exit(void);
 
+static void radio_event_do(KW01_PKT * pkt);
+static void draw_idle_players(void);
+
 /* the function state table, a list of pointers to functions to run the game */
 state_funcs fight_funcs[] = { { // none
                                  NULL,

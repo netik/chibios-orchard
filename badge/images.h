@@ -33,6 +33,9 @@ Matthew (graphics,art)\r\n\r\n"
 #define IMG_BLOCK         "block.rgb"
 #define IMG_ATTACK        "attack.rgb"
 
+// app
+#define IMG_UNLOCKBG      "unlockbg.rgb"
+
 // guard
 #define IMG_GATTH1        "gatth1.rgb"
 #define IMG_GATTH1R       "gatth1r.rgb"
@@ -88,5 +91,5 @@ Matthew (graphics,art)\r\n\r\n"
 #define POS_FLOOR_Y    200
 
 /* screen locations */
-#define STATUS_Y            38     /* where the status row is on screen */
+#define STATUS_Y       38     /* where the status row is on screen */
 
