@@ -131,6 +131,7 @@ CSRC = main.c \
        app-launcher.c \
        app-name.c \
        app-fight.c \
+       app-unlock.c \
        app-notify.c \
        app-update.c \
        app-credits.c \
