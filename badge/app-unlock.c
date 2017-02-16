@@ -1,7 +1,7 @@
 #include "orchard-app.h"
 #include "orchard-ui.h"
 #include "userconfig.h"
-#include "ides-gfx.h"
+#include "ides_gfx.h"
 
 // handles
 typedef struct _UnlockHandles {
