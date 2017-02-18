@@ -20,7 +20,10 @@ fi
 
 filename=$1
 newfilename=${filename%.*}.rgb
-newfilename=`echo ${newfilename} | tr A-Z a-z`
+# I don't know what the purpose of trying to convert to
+# lower case is here. All this does is break the script on UNIX
+# when the file names have upper case characters.
+#newfilename=`echo ${newfilename} | tr A-Z a-z`
 width=`${IDENTIFY} -format %w $filename`
 height=`${IDENTIFY} -format %h $filename`
 
@@ -29,7 +32,9 @@ ${RGBHDR} $width $height
 
 CODEC=jpegls
 
-if [[ $filename == *.tif ]];
+extension=.tif
+
+if [ "$filename" != "${filename%"$extension"*}" ];
 then
     CODEC=tiff
 fi

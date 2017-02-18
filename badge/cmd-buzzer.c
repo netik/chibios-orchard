@@ -116,6 +116,9 @@ static void buzzer_play(BaseSequentialStream *chp, int argc, char *argv[]) {
   case 15:
     playDrWho();
     break;
+  case 16:
+    playRickroll();
+    break;
   default:
     chprintf(chp, "No song specified\r\n");
   }

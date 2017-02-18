@@ -270,7 +270,6 @@ static void unlock_event(OrchardAppContext *context,
                        const OrchardAppEvent *event)
 {
   GEvent * pe;
-  userconfig *config = getConfig();
   UnlockHandles * p;
 
   p = context->priv;
