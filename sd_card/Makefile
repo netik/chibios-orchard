@@ -49,6 +49,8 @@ sdcard: images midi
 	@find midi -name \*.bin -exec cp {} sdcard \;
 	@cp ../updater/updater.bin sdcard
 	@cp ../badge/build/badge.bin sdcard
+	@mkdir sdcard/video
+	@cp -R video/* sdcard/video
 	@cp dac/*.raw sdcard
 	@mv -f sdcard/credits_mario.rgb sdcard/credits.rgb
 	@echo
