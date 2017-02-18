@@ -10,6 +10,7 @@ void oledReleaseBus(void);
 void oledCmd(uint8_t cmd);
 void oledData(uint8_t *data, uint16_t length);
 void oledOrchardBanner(void);
+void oledOrchardSponsor(void);
 void oledSDFail(void);
 
 #endif /* __OLED_H__ */

@@ -3,6 +3,7 @@
 #include "oled.h"
 #include "spi.h"
 #include "string.h"
+#include "rand.h"
 
 #include "orchard.h"
 #include "orchard-ui.h"
@@ -59,5 +60,109 @@ void oledOrchardBanner(void)
     gdispImageClose (&myImage);
   }
   splash_footer();
+  return;
+}
+
+typedef struct sponsor {
+    char * logo;
+    char * caption;
+} SPONSOR;
+
+#ifdef notyet
+/* Don't have any real sponsor logos yet. */
+static const SPONSOR real_sponsors[] = {
+  {
+     NULL,
+     NULL
+  }
+};
+#endif
+
+static const SPONSOR gag_sponsors[] = {
+  {
+    "yoyodyne.rgb",
+    "Transportation provided by"
+  },
+  {
+    "tyrell.rgb",
+    "Labor resources provided by"
+  },
+  {
+    "ocp.rgb",
+    "Security by"
+  },
+  {
+    "cyberdyn.rgb",
+    "Technical support by"
+  },
+  {
+    "wolfram.rgb",
+    "Legal counsel"
+  },
+  {
+    "zorg.rgb",
+    "Human resource services by"
+  },
+  {
+    "weyland.rgb",
+    "Public relations by"
+  },
+  {
+    "umbrella.rgb",
+    "Health services by"
+  },
+  {
+    "ellingsn.rgb",
+    "Trash collection by"
+  },
+  {
+    "lexcorp.rgb",
+    "Research and development by"
+  },
+  {
+    "jupiter.rgb",
+    "Catering by"
+  }
+};
+
+static void
+sponsorDisplay (const SPONSOR * p)
+{
+  gdispImage myImage;
+  font_t font;
+
+  if (gdispImageOpenFile (&myImage, p->logo) != GDISP_IMAGE_ERR_OK)
+    return;
+
+  gdispImageDraw (&myImage, 0, 0, myImage.width, myImage.height, 0, 0);
+  gdispImageClose (&myImage);
+
+  if (p->caption != NULL) {
+    font = gdispOpenFont (FONT_LG_SANS);
+    gdispDrawStringBox (0, 5, gdispGetWidth(),
+      gdispGetFontMetric(font, fontHeight), p->caption, font, Green,
+      justifyCenter);
+    gdispCloseFont (font);  
+  }
+
+  chThdSleepMilliseconds (3000);
+
+  return;
+}
+
+void oledOrchardSponsor(void)
+{
+  const SPONSOR * p;
+  volatile int i;
+
+  /* Display of real sponsor logos should go here */
+
+  i = rand () % 10;
+  i = rand () % 10;
+
+  p = &gag_sponsors[i];
+
+  sponsorDisplay (p);
+
   return;
 }
