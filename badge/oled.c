@@ -122,6 +122,10 @@ static const SPONSOR gag_sponsors[] = {
   {
     "jupiter.rgb",
     "Catering by"
+  },
+  {
+    NULL,
+    NULL
   }
 };
 
@@ -157,8 +161,8 @@ void oledOrchardSponsor(void)
 
   /* Display of real sponsor logos should go here */
 
-  i = rand () % 10;
-  i = rand () % 10;
+  i = rand () % 12;
+  i = rand () % 12;
 
   p = &gag_sponsors[i];
 
