@@ -14,12 +14,15 @@
 # sync will become more pronounced the longer the video plays.
 #
 
-ffmpeg -i "$1" -vf fps=5 $2/out%05d.jpg
+ffmpeg -i "$1" -vf fps=8 $2/out%05d.jpg
+rm -f $2/video.bin
 
 for i in `ls $2/out*.jpg`
 do
 	convert -resize 150x112\! $i $i
-	./convert_to_rgb.sh $i
+	ffmpeg -loglevel panic -vcodec jpegls -i $i -vcodec rawvideo -f rawvideo -pix_fmt rgb565 $2/out.rgb
+	cat $2/out.rgb >> $2/video.bin
+	rm -f $2/out.rgb
 done
 
 rm $2/*.jpg

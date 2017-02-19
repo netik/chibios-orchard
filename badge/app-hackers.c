@@ -36,27 +36,75 @@
 #include "dac_lld.h"
 #include "rand.h"
 
+#include "ff.h"
+#include "ffconf.h"
+
 #include <string.h>
 
-#define FRAMES_PER_SECOND	5
-#define FRAME_DELAY_TICKS	(CH_CFG_ST_FREQUENCY / FRAMES_PER_SECOND)
+#define FRAMES_PER_SECOND	8
+#define FRAMERES_HORIZONTAL	150
+#define FRAMERES_VERTICAL	112
+#define FRAME_DELAY_TICKS	\
+	((CH_CFG_ST_FREQUENCY / FRAMES_PER_SECOND) / FRAMERES_VERTICAL)
+
+static int delayTicks = 0;
 
 static uint32_t hackers_init(OrchardAppContext *context)
 {
+	volatile uint32_t stime;
+	volatile uint32_t etime;
+	uint32_t cum;
+	uint32_t diff;
+	int samplecnt;
+	pixel_t buf[FRAMERES_HORIZONTAL];
+	FIL f;
+	UINT br;
+	int i;
+
 	(void)context;
+
+	if (delayTicks != 0)
+		return (0);
+
+	f_open (&f, "drwho.raw", FA_READ);
+
+	cum = 0;
+	samplecnt = 0;
+
+	for (i = 0; i < 500; i++) {
+		stime = chVTGetSystemTime ();
+		f_read (&f, buf, sizeof(buf), &br);
+		etime = chVTGetSystemTime ();
+		diff = etime - stime;
+		if (diff > 10 && diff < 100) {
+			cum += (etime - stime);
+			samplecnt++;
+		}
+	}
+
+	f_close (&f);
+
+	cum /= samplecnt;
+
+	delayTicks = 1;
+
+	if (cum < FRAME_DELAY_TICKS)
+		delayTicks += FRAME_DELAY_TICKS - cum;
+
 	return (0);
 }
 
 static void hackers_start(OrchardAppContext *context)
 {
 	GWidgetInit wi;
-	gdispImage myImage;
  	GHandle ghExitButton;
 	GEvent * pe;
 	GListener gl;
-	char vname[32];
-	char aname[32];
-	char * track = "hackers";
+	char fname[64];
+	char * track;
+	pixel_t buf[FRAMERES_HORIZONTAL];
+	FIL f;
+	UINT br;
 	int i;
 
 	(void)context;
@@ -89,45 +137,44 @@ static void hackers_start(OrchardAppContext *context)
 			break;
 		case 2:
 		default:
-			track = "fbi";
+			track = "hackers";
 			break;
 	}
+
+	chsnprintf (fname, sizeof(fname), "video/%s/video.bin", track, i);
+	if (f_open (&f, fname, FA_READ) != FR_OK)
+		goto out;
 
 	/* start the audio */
 
-	chsnprintf (aname, sizeof(aname), "%s/sample.raw", track);
-	dacPlay (aname);
-
-	if (strcmp (track, "fbi") == 0) {
-		gdispImageOpenFile (&myImage, "fbi.rgb");
-		gdispImageDraw (&myImage, 0, 0,
-		    myImage.width, myImage.height, 0, 0);
-		gdispImageClose (&myImage);
-		chThdSleepMilliseconds (3400);
-		goto out;
-	}
+	chsnprintf (fname, sizeof(fname), "video/%s/sample.raw", track);
+	dacPlay (fname);
 
 	/* start the video (and hope they stay in sync) */
 
-	i = 1;
+	i = 0;
 	while (1) {
-		chsnprintf (vname, sizeof(vname), "%s/out%05d.rgb", track, i);
-		if (gdispImageOpenFile (&myImage, vname) !=
-		    GDISP_IMAGE_ERR_OK)
+		f_read (&f, buf, sizeof(buf), &br);
+		if (br == 0)
 			break;
-		gdispImageDraw (&myImage, 85, 64,
-		    myImage.width, myImage.height, 0, 0);
-		gdispImageClose (&myImage);
-		chThdSleepMilliseconds (50);
-		pe = geventEventWait(&gl, 0);
+		gdispBlitAreaEx (85, 64 + i,	/* Screen position */
+		    FRAMERES_HORIZONTAL, 1,	/* Drawing dimentions */
+		    0, 0,			/* Position in pixel buffer */
+		    FRAMERES_HORIZONTAL,	/* Width of pixel buffer */
+		    buf);
+		i++;
+		if (i == FRAMERES_VERTICAL)
+			i = 0;
+		pe = geventEventWait (&gl, 0);
 		if (pe != NULL && pe->type == GEVENT_GWIN_BUTTON)
 			break;
-		i++;
-        }
+		chThdSleep (delayTicks);
+	}
+
+	f_close (&f);
+	dacPlay (NULL);
 
 out:
-
-	dacPlay (NULL);
 
 	geventDetachSource (&gl, NULL);
 	gwinDestroy (ghExitButton);
@@ -151,5 +198,5 @@ static void hackers_exit(OrchardAppContext *context)
 	return;
 }
 
-orchard_app("Hackers", /*APP_FLAG_HIDDEN|APP_FLAG_AUTOINIT*/ 0,
+orchard_app("Hackers", /*APP_FLAG_HIDDEN|*/APP_FLAG_AUTOINIT,
 	hackers_init, hackers_start, hackers_event, hackers_exit);
