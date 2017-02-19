@@ -63,6 +63,7 @@ static void set_viewport(GDisplay *g) {
 	SPI1->DL = (uint8_t) (g->p.x + g->p.cx - 1);
 	while ((SPI1->S & SPIx_S_SPTEF) == 0)
 		;
+	(void)SPI1->DL;
 
 	write_index (g, 0x2B);
 	palSetPad (SCREEN_CMDDATA_PORT, SCREEN_CMDDATA_PIN);
@@ -72,6 +73,7 @@ static void set_viewport(GDisplay *g) {
 	SPI1->DL = (uint8_t) (g->p.y + g->p.cy - 1);
 	while ((SPI1->S & SPIx_S_SPTEF) == 0)
 		;
+	(void)SPI1->DL;
 
 	return;
 }

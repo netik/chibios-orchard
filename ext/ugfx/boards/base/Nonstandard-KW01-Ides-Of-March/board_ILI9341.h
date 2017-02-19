@@ -69,6 +69,7 @@ static inline void write_index(GDisplay *g, uint16_t index) {
 	SPI1->DL = index & 0xFF;
 	while ((SPI1->S & SPIx_S_SPTEF) == 0)
 		;
+	(void)SPI1->DL;
 	return;
 }
 
@@ -78,6 +79,7 @@ static inline void write_data(GDisplay *g, uint16_t data) {
 	SPI1->DL = data & 0xFF;
 	while ((SPI1->S & SPIx_S_SPTEF) == 0)
 		;
+	(void)SPI1->DL;
 	return;
 }
 
