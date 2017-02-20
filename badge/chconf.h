@@ -54,7 +54,7 @@
  * @details Frequency of the system timer that drives the system ticks. This
  *          setting also defines the system tick time unit.
  */
-#define CH_CFG_ST_FREQUENCY                 1000
+#define CH_CFG_ST_FREQUENCY                 20000
 
 /**
  * @brief   Time delta constant for the tick-less mode.

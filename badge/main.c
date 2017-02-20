@@ -413,6 +413,9 @@ int main(void)
     chThdSleepMilliseconds(IMG_SPLASH_NO_SOUND_DISPLAY_TIME);
   }
 
+  /* Promote sponsors */
+  oledOrchardSponsor ();
+
   /* run apps */
   orchardAppInit();
   evtTableHook(orchard_events, orchard_app_terminated, orchard_app_restart);
@@ -420,7 +423,9 @@ int main(void)
 
   /* handle radio events for ping */
   radioHandlerSet(radioDriver, RADIO_PROTOCOL_PING, radio_ping_handler);
-  
+ 
+  chThdSetPriority (NORMALPRIO + 1);
+ 
   while (TRUE)
     chEvtDispatch(evtHandlers(orchard_events), chEvtWaitOne(ALL_EVENTS));
 }

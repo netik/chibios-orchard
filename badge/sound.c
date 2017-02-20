@@ -157,6 +157,10 @@ void playDrWho(void) {
   dacPlay ("drwho.raw");
 }
 
+void playRickroll(void) {
+  dacPlay ("rickroll.raw");
+}
+
 void playHardFail(void) {
   /* sad panda tone */
   pwmThreadPlay (soundSadPanda);

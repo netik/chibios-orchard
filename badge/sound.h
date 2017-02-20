@@ -18,5 +18,6 @@ extern void playMario(void);
 extern void playDoh(void);
 extern void playWoohoo(void);
 extern void playDrWho(void);
+extern void playRickroll(void);
 
 #endif /* __SOUND_H__ */
