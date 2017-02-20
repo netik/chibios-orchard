@@ -260,6 +260,19 @@ LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
 	        SPI1->C2 |= SPIx_C2_SPMODE;
 	        palSetPad (SCREEN_CMDDATA_PORT, SCREEN_CMDDATA_PIN);
 	}
+	LLDSPEC	void gdisp_lld_write_start_ex(GDisplay *g) {
+		acquire_bus(g);
+		/*
+		 * Switch the SPI controller to do 16-bit transfers
+		 * and set the graphics controller for data mode.
+		 * Make sure the FIFO drains completely before
+		 * switching into 16-bit mode.
+		 */
+		while ((SPI1->S & SPIx_S_SPTEF) == 0)
+			;
+	        SPI1->C2 |= SPIx_C2_SPMODE;
+	        palSetPad (SCREEN_CMDDATA_PORT, SCREEN_CMDDATA_PIN);
+	}
 	LLDSPEC	void gdisp_lld_write_color(GDisplay *g) {
 		while ((SPI1->S & SPIx_S_TNEAREF) == 0)
 			;

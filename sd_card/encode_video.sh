@@ -19,7 +19,7 @@ rm -f $2/video.bin
 
 for i in `ls $2/out*.jpg`
 do
-	convert -resize 150x112\! $i $i
+	convert -resize 128x96\! $i $i
 	ffmpeg -loglevel panic -vcodec jpegls -i $i -vcodec rawvideo -f rawvideo -pix_fmt rgb565 $2/out.rgb
 	cat $2/out.rgb >> $2/video.bin
 	rm -f $2/out.rgb
