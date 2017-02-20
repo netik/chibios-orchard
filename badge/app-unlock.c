@@ -328,6 +328,7 @@ static void unlock_exit(OrchardAppContext *context) {
   p = context->priv;
 
   gdispCloseFont (p->font_manteka_20);
+  gdispCloseFont (p->font_jupiterpro_36);
   
   gwinDestroy(p->ghNum1);
   gwinDestroy(p->ghNum2);
