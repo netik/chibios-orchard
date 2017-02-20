@@ -67,6 +67,8 @@ static void init_config(userconfig *config) {
   config->signature = CONFIG_SIGNATURE;
   config->version = CONFIG_VERSION;
 
+  config->unlocks = 0;
+
   /* this is a very, very naive approach to uniqueness, but it might work. */
   /* an alternate approach would be to store all 80 bits, but then our radio */
   /* packets would be huge. */
@@ -103,6 +105,7 @@ static void init_config(userconfig *config) {
   config->led_r = rand() % 255;
   config->led_g = rand() % 255;
   config->led_b = rand() % 255;
+
 }
 
 void configStart(void) {

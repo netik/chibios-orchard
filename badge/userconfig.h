@@ -11,7 +11,7 @@
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0
-#define CONFIG_VERSION    1
+#define CONFIG_VERSION    2
 #define CONFIG_NAME_MAXLEN 10
 
 #define maxhp(level)       (50+(20*(level-1)))
@@ -34,7 +34,8 @@ typedef struct userconfig {
 
   /* hw config */
   uint8_t led_pattern;
-
+  uint8_t unlocks;
+  
   /* used for solid-color */
   uint8_t led_r;
   uint8_t led_g;
