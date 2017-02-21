@@ -63,7 +63,7 @@ sdcard: images midi
 # copy the card to the right folder on my osx box
 osxsd:	sdcard
 	@echo "Copying to /Volumes/NO\ NAME/"
-	@cp sdcard/* /Volumes/NO\ NAME/
+	@cp -R sdcard/* /Volumes/NO\ NAME/
 	@sync
 
 # only update the binaries to save time.
