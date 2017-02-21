@@ -6,8 +6,8 @@
  * goes in here 
  */
 
-#define CONFIG_FLASH_ADDR 0x1e000
-#define CONFIG_FLASH_SECTOR_BASE 120
+#define CONFIG_FLASH_ADDR 0x1fc00
+#define CONFIG_FLASH_SECTOR_BASE 127
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0

@@ -21,8 +21,8 @@ MEMORY
 {
     flash0   : org = 0x00000000, len = 0x100
     flashcfg : org = 0x00000400, len = 0x10
-    flash    : org = 0x00000410, len = 128k - 0x410 - 8k
-    flashram : org = 0x0001E000, len = 8k
+    flash    : org = 0x00000410, len = 128k - 0x410 - 1k
+    flashram : org = 0x0001FC00, len = 1k
     ram0     : org = 0x1FFFF000, len = 16k
     ram1     : org = 0x00000000, len = 0
     ram2     : org = 0x00000000, len = 0

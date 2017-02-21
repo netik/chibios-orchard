@@ -50,13 +50,15 @@ extern LLDSPEC void gdisp_lld_write_start_ex(GDisplay *g);
 #define FRAME_DELAY_TICKS	\
 	(((CH_CFG_ST_FREQUENCY / FRAMES_PER_SECOND) / FRAMERES_VERTICAL) * 2)
 
-static uint32_t hackers_init(OrchardAppContext *context)
+static uint32_t
+hackers_init(OrchardAppContext *context)
 {
 	(void)context;
 	return (0);
 }
 
-static void hackers_start(OrchardAppContext *context)
+static void
+hackers_start(OrchardAppContext *context)
 {
 	uint32_t start_ticks;
 	uint32_t frame_draw_ticks;
@@ -97,7 +99,7 @@ static void hackers_start(OrchardAppContext *context)
 
 	switch (i) {
 		case 0:
-			track = "hackers";
+			track = "hackers2";
 			break;
 		case 1:
 			track = "bill";
@@ -255,7 +257,8 @@ out:
 	return;
 }
 
-void hackers_event(OrchardAppContext *context, const OrchardAppEvent *event)
+static void
+hackers_event(OrchardAppContext *context, const OrchardAppEvent *event)
 {
 	(void)context;
 	(void)event;
@@ -263,7 +266,8 @@ void hackers_event(OrchardAppContext *context, const OrchardAppEvent *event)
 	return;
 }
 
-static void hackers_exit(OrchardAppContext *context)
+static void
+hackers_exit(OrchardAppContext *context)
 {
 	(void)context;
 	return;
