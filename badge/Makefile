@@ -5,7 +5,7 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -Os -ggdb -fomit-frame-pointer -falign-functions=16 -nostdlib
+  USE_OPT = -O2 -ggdb -fomit-frame-pointer -falign-functions=16 -nostdlib
   USE_OPT += -DBIG_ENDIAN=0 -DLITTLE_ENDIAN=1 -Dasm=__asm__
   USE_OPT += -ansi # -pedantic
 endif
