@@ -1,5 +1,5 @@
 #include <stdio.h>
-
+#include <string.h>
 #include "ch.h"
 #include "hal.h"
 #include "chprintf.h"
@@ -94,7 +94,6 @@ static void redraw_list(struct launcher_list *list) {
   uint8_t app_modulus;
   uint8_t max_list;
   uint8_t drawn;
-
   userconfig *config = getConfig();
 
   chsnprintf(tmp, sizeof(tmp), "%d of %d apps", list->selected + 1, list->total);
@@ -163,7 +162,7 @@ static void redraw_list(struct launcher_list *list) {
 static uint32_t launcher_init(OrchardAppContext *context) {
 
   (void)context;
-
+  
   gdispClear(Black);
   shout_ok = 1;
 
@@ -172,11 +171,12 @@ static uint32_t launcher_init(OrchardAppContext *context) {
 
 static void launcher_start(OrchardAppContext *context) {
 
+  userconfig *config = getConfig();
   struct launcher_list *list;
   const OrchardApp *current;
   unsigned int total_apps = 0;
 
-  /* Rebuild the app list */
+  /* How many apps do we have? */
   current = orchard_app_list;
   while (current->name) {
     if ((current->flags & APP_FLAG_HIDDEN) == 0)
@@ -215,7 +215,11 @@ static void launcher_start(OrchardAppContext *context) {
   // set up our idle timer
   orchardAppTimer(context, 1000, true);
   last_ui_time = chVTGetSystemTime();
-  
+
+  // forcibly run the name app if our name is blank. Sorry. 
+  if (strlen(config->name) == 0) { 
+    orchardAppRun(orchardAppByName("Set your name"));
+  }
   return;
 }
 
@@ -265,15 +269,16 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
 static void launcher_exit(OrchardAppContext *context) {
   struct launcher_list *list;
 
-  list = (struct launcher_list *)context->priv;
 
+  list = (struct launcher_list *)context->priv;
+  
   gwinDestroy (list->ghButton1);
   gwinDestroy (list->ghButton2);
   gwinDestroy (list->ghButton3);
-
+  
   geventRegisterCallback (&list->gl, NULL, NULL);
   geventDetachSource (&list->gl, NULL);
-
+  
   chHeapFree (context->priv);
   context->priv = NULL;
   shout_ok = 0;
