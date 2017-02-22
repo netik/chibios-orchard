@@ -182,12 +182,18 @@ void
 dacPlay (char * file)
 {
 	play = 0;
-
-	if (file == NULL)
-		return;
-
 	fname = file;
 	chMsgSend (pThread, MSG_OK);
+
+	return;
+}
+
+void
+dacSamplesPlay (uint16_t * p, int cnt)
+{
+	dacpos = 0;
+	dacmax = cnt;
+	dacbuf = p;
 
 	return;
 }

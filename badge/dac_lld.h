@@ -70,4 +70,6 @@ extern DACDriver DAC1;
 extern void dacStart (DACDriver *);
 extern void dacPlay (char *);
 
+extern void dacSamplesPlay (uint16_t * p, int cnt);
+
 #endif /* _DAC_LLD_H_ */
