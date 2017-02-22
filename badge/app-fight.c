@@ -434,6 +434,10 @@ static void state_vs_screen_enter() {
   // versus screen!
   char attackfn[13];
 
+  gdispClear(Black);
+
+  draw_idle_players();
+  
   blinkText(0,
             110,
             screen_width,
