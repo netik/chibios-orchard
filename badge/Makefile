@@ -271,7 +271,7 @@ ULIBDIR =
 
 # List all user libraries here
 #ULIBS = lib/armv6-m-libgcc.a lib/libc-nano-armv6-m.a
-ULIBS = -lc_nano -lnosys -lm -lgcc
+ULIBS = -lc_nano -lnosys -lgcc
 
 #
 # End of user defines
