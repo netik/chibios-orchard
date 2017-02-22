@@ -74,7 +74,7 @@ const struct FXENTRY fxlist[] = {
 void ledClear(void);
 
 /* Maclaurin series of sin(x), weak approximation */
-#define msin(x) (1- ((x^2)/factorial(2)) + ((x^4)/factorial(4)) - ((x^6)/factorial(6)) + ((x^8)/factorial(8)))
+#define msin(x) (x - ((x^3)/factorial(3)) + ((x^5)/factorial(5)) - ((x^7)/factorial(7)) + ((x^9)/factorial(9)))
 
 uint16_t factorial(uint16_t n)
 {
