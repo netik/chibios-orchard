@@ -702,9 +702,9 @@ static void draw_select_buttons(void) {
   // Exit
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
-  wi.g.width = 40;
+  wi.g.width = 60;
   wi.g.height = 20;
-  wi.g.y = totalheight - 40;
+  wi.g.y = totalheight - 60;
   wi.g.x = 0;
   wi.text = "";
   wi.customDraw = noRender;
@@ -1327,6 +1327,12 @@ static void radio_event_do(KW01_PKT * pkt)
   user *u;
   u = (user *)pkt->kw01_payload; 
 
+  if (pkt->kw01_hdr.kw01_prot != RADIO_PROTOCOL_FIGHT ) {
+    /* the event hander seems to broadcast events to everyone. Ignore
+       the ones that are not for us */
+    return;
+  }
+  
   if (u->opcode == 0) {
 #ifdef DEBUG_FIGHT_NETWORK
     chprintf(stream, "\r\n%08x --> RECV Invalid opcode. (seq=%d) Ignored (%08x to %08x proto %x)\r\n", u->netid, u->seq, pkt->kw01_hdr.kw01_src, pkt->kw01_hdr.kw01_dst, pkt->kw01_hdr.kw01_prot);
@@ -1339,7 +1345,7 @@ static void radio_event_do(KW01_PKT * pkt)
   if (u->opcode == OP_ACK) {
     chprintf(stream, "\r\n%08x --> RECV ACK (seq=%d, acknum=%d, mystate=%d, opcode 0x%x)\r\n", u->netid, u->seq, u->acknum, current_fight_state, next_fight_state, u->opcode);
   } else { 
-    chprintf(stream, "\r\n%08x --> RECV OP  (proto=0x%x, seq=%d, mystate=%d, opcode 0x%x)\r\n", pkt->kw01_hdr.kw01_prot, u->netid, u->seq, current_fight_state, u->opcode);
+    chprintf(stream, "\r\n%08x --> RECV OP  (proto=0x%x, seq=%d, mystate=%d, opcode 0x%x)\r\n", u->netid, pkt->kw01_hdr.kw01_prot, u->seq, current_fight_state, u->opcode);
   }
 #endif /* DEBUG_FIGHT_NETWORK */
   
