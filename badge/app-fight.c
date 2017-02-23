@@ -1016,18 +1016,20 @@ static void fight_start(OrchardAppContext *context) {
 }
 
 static void state_approval_wait_enter(void) {
-  gdispDrawStringBox (0,
-                      STATUS_Y,
-                      screen_width,
-                      fontsm_height,
-                      "Waiting for enemy to accept!",
-                        fontSM, White, justifyCenter);
   draw_idle_players();
 
   // progress bar
   last_tick_time = chVTGetSystemTime();
   countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value.
   drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, true, false);
+
+  gdispDrawStringBox (0,
+                      STATUS_Y,
+                      screen_width,
+                      fontsm_height,
+                      "Waiting for enemy to accept!",
+                      fontSM, White, justifyCenter);
+
 }
 
 static void sendACK(user *inbound) {
@@ -1528,7 +1530,7 @@ static uint32_t fight_init(OrchardAppContext *context) {
   screen_height = gdispGetHeight();
   
   fontsm_height = gdispGetFontMetric(fontSM, fontHeight);
-  fontlg_height = gdispGetFontMetric(fontSM, fontHeight);
+  fontlg_height = gdispGetFontMetric(fontLG, fontHeight);
 
   if (context == NULL) {
     /* This should only happen for auto-init */
