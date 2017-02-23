@@ -1232,7 +1232,8 @@ static void fight_event(OrchardAppContext *context,
         orchardAppRun(orchardAppByName("Badge"));
         return;
       }
-      if ( ((GEventGWinButton*)pe)->gwin == p->ghAccept) { 
+      if ( ((GEventGWinButton*)pe)->gwin == p->ghAccept) {
+        config->in_combat = true;
         next_fight_state = VS_SCREEN;
         sendGamePacket(OP_STARTBATTLE_ACK);
         return;
