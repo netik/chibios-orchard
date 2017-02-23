@@ -16,10 +16,16 @@ void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, int32_
   // for overflow here.
   
   color_t c = Lime;
-
-  if (currentval < 0) { currentval = 0; } // never overflow
+  float remain_f;
   
-  float remain_f = (float) currentval / (float)maxval;
+  if (currentval < 0) { currentval = 0; } // never overflow
+  if (currentval > maxval) {
+    // prevent bar overflow
+    remain_f = 1;
+  } else {  
+    remain_f = (float) currentval / (float)maxval;
+  }
+  
   int16_t remain = width * remain_f;
   
   if (use_leds == 1) {

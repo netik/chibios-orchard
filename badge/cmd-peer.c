@@ -102,7 +102,7 @@ void cmd_peersim(BaseSequentialStream *chp, int argc, char *argv[]) {
       enemies[i]->netid = i; // fake 
       enemies[i]->ttl = 10;
       enemies[i]->in_combat = 0;
-      enemies[i]->hp = 1337;
+      enemies[i]->hp = maxhp(9) * .5; // start at 50% HP to test
       enemies[i]->level = 9;
 
       chsnprintf(tmp, sizeof(tmp), "test%05d",i);
