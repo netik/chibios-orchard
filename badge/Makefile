@@ -124,6 +124,7 @@ CSRC = main.c \
        cmd-threads.c \
        cmd-buzzer.c \
        cmd-caesar.c \
+       cmd-config.c \
        cmd-led.c \
        cmd-reset.c \
        cmd-peer.c \

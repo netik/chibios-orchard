@@ -184,7 +184,6 @@ static void state_approval_demand_enter(void) {
 		      tmp,
 		      fontFF, Yellow, justifyLeft);
 
-
   ypos = ypos + gdispGetFontMetric(fontFF, fontHeight);
   chsnprintf(tmp, sizeof(tmp), "HP %d", current_enemy.hp);
   gdispDrawStringBox (xpos,
@@ -993,7 +992,8 @@ static void fight_start(OrchardAppContext *context) {
 
   // are we entering a fight?
   chprintf(stream, "\r\nFIGHT: entering with enemy %08x state %d\r\n", current_enemy.netid, current_fight_state);
-  
+  last_tick_time = chVTGetSystemTime();
+    
   if (current_enemy.netid != 0 && current_fight_state != APPROVAL_DEMAND) {
     changeState(APPROVAL_DEMAND);
   }
@@ -1019,7 +1019,7 @@ static void state_approval_wait_enter(void) {
   draw_idle_players();
 
   // progress bar
-  last_tick_time = chVTGetSystemTime();
+  last_tick_time = chVTGetSystemTime(); 
   countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value.
   drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, true, false);
 
