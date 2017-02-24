@@ -1,74 +1,27 @@
---------------------------
-1. Get Orientation switch and make orientation work.
+-------------------------
+1. Get Orientation switch- done
+1a. and make orientation work.
 
 2. Game protocol and Game - IN PROGRESS
-
-2a. Screen: "VS" after enemy select - DONE
-
 2b. Game: Restrict players if xp or level too high
-
 2c. Game: Provide means to earn XP if no other players around
-
 2d. Game: hit/block animations with damage indicated - 50%
-
-2e. Game: More sounds
-
-2f. Auto-heal on badge screen. (HP/time = heals) - DONE
-
-2g. Screens: - DONE
-    End of Fight You - DONE
-    End of Fight Them - DONE
-    Timeout - DONE
-    Tie ?
-    
-2h. Game/Debug: Check radio protocol and make enemy simulator
-    (enemysim) - DONE
-
+2e. Game: More sounds, integrate mortal combat sounds
+2f.  Tie screen?
 2i. Integrate new Casear / Senator animations,
     Draw the right one based on the user's class
+
+"level up screen" 
+
+BUG: Sometimes attack is zero from other player, this is bullshit.
 
 3. Casear Game Mechanics
 
 4. Gold / Economy Mechanics
 
-3. Game graphics ( can be done last ) -- IN PROGRESS
-
 4. Automatic jump to name page if not conf'd 
 
-5. ENTROPY - maybe use time of every touch to roll more entropy into
-   the system, or an accel chip? - DONE
-
-  if ( config reg is not set ) {
-    jump to name entry app
-  } else {
-    jump to game
-  }
-
-6. (bonus) Cryptix: Need puzzle / konami code, whatev
-
 7. (bonus) Video/Movie/Frames
-
-HW NEEDS
--------------
-1. Battery + Charging, amperage tests - DONE
-
-2. Board layout - DONE
-
-3. Prototype #1 - DONE
-
-Screen
-------
-
-A 4-button joystick and button would be better than this, maybe?
-
-
-COMMAND BACKLOG
-----------------------------
-led <red> <green> <blue> - DONE 
-   Set all LEDs to a specific color. RGB values are 0-255.
-   
-led <index> <red> <green> <blue>  - DON'T CARE. 
-   Set specific LED to specific color
 
 chat on
 chat off
@@ -79,22 +32,10 @@ setup/config from termianl
    disable chat, sounds, etc.
    disable fight entirely
    
-unlocks:
+unlocks: -- screen built and working
    ability to unlock extra animations and led sequences
 
-peers (enemylist)
-   ability to show peers
-   
-ping
-   ability to ping another badge id
-   
-uname - DONE
-
-sudo
-
 set
-
-whoami - DONE
 
 
 

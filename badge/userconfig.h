@@ -102,7 +102,7 @@ typedef struct _userpkt {
   /* Battle Payload */
   /* A bitwise map indicating the attack type */
   uint8_t attack_bitmap;  /* 1 */
-  uint8_t damage;         /* 1 */
+  int16_t damage;         /* 2 */
 
 } user;
 

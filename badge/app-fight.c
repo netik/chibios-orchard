@@ -288,7 +288,8 @@ static void state_move_select_tick() {
 #endif /* DEBUG_FIGHT_NETWORK */
     
     // we're in MOVE_SELECT, so this tells us that we haven't moved at all.
-    // we'll now tell our opponent, that our turn is over. 
+    // we'll now tell our opponent, that our turn is over.
+    last_hit=0;
     next_fight_state = POST_MOVE;
     sendGamePacket(OP_TURNOVER);
   }
@@ -843,6 +844,9 @@ static void show_results(void) {
   chsnprintf (ourdmg_s, sizeof(ourdmg_s), "-%d", last_damage );
   chsnprintf (theirdmg_s, sizeof(theirdmg_s), "-%d", last_hit );
 
+#ifdef DEBUG_FIGHT_STATE
+  chprintf(stream,"FIGHT: Damage report! Us: %d Them: %d", last_damage, last_hit);
+#endif
   // 45 down. 
   // 140 | -40- | 140
   for (uint8_t i=0; i < 2; i++) { 
@@ -1123,14 +1127,15 @@ static void sendGamePacket(uint8_t opcode) {
   packet.luck = config->luck;
   packet.might = config->might;
 
-  if ((opcode == OP_IMOVED) && (last_hit == -1)) {
+  /* we'll always send -1, unless the user has made a move, then we'll calculate the hit. */
+  if (last_hit == -1 && ourattack != 0) {
     // if this is a turn-over packet, then we also transmit damage (to
     // them). calc_hit will also set ATTACK_ISCRIT in ourattack if
     // need be.
     last_hit = calc_hit(config, &current_enemy);
-    packet.damage = last_hit;
   }
 
+  packet.damage = last_hit;
   packet.attack_bitmap = ourattack;
   
   resendPacket();
@@ -1333,6 +1338,13 @@ static void radio_event_do(KW01_PKT * pkt)
        the ones that are not for us */
     return;
   }
+
+  /* does this payload contain damage information? */
+  if (u->damage != -1 && u->opcode != OP_ACK && u->opcode != OP_RST) { 
+    theirattack = u->attack_bitmap;
+    last_damage = u->damage;
+  }
+
   
   if (u->opcode == 0) {
 #ifdef DEBUG_FIGHT_NETWORK
@@ -1405,7 +1417,6 @@ static void radio_event_do(KW01_PKT * pkt)
       // sent turn over, but, we are waiting on an ACK.
       // so, act as if we got the ACK and move on.
       // we will have already ACK'd their packet anyway. 
-
 #ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "\r\n%08x --> got turnover in wait_ack? nextstate=0x%x, currentstate=0x%x, damage=%d\r\n    We're waiting on seq %d opcode %d\r\n",
                u->netid,
@@ -1462,8 +1473,6 @@ static void radio_event_do(KW01_PKT * pkt)
     if (u->opcode == OP_IMOVED) {
       // If I see OP_IMOVED from the other side while we are in
       // MOVE_SELECT, store that move for later. 
-      theirattack = u->attack_bitmap;
-      last_damage = u->damage;
       
 #ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "\r\nRECV MOVE: (select) %d. our move %d.\r\n", theirattack, ourattack);
@@ -1472,6 +1481,7 @@ static void radio_event_do(KW01_PKT * pkt)
     }
     if (u->opcode == OP_TURNOVER) {
       // uh-oh, the turn is over and we haven't moved!
+
       next_fight_state = POST_MOVE;
 #ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "\r\nmove_select/imoved, sending turnover\r\n");
@@ -1483,8 +1493,7 @@ static void radio_event_do(KW01_PKT * pkt)
   case POST_MOVE: // no-op
     // if we get a turnover packet, or we're out of time, we can calc damage and show results.
     if (u->opcode == OP_IMOVED) {
-      theirattack = u->attack_bitmap;
-      last_damage = u->damage;
+
 #ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "\r\nRECV MOVE: (postmove) %d. our move %d.\r\n", theirattack, ourattack);
 #endif /* DEBUG_FIGHT_NETWORK */
