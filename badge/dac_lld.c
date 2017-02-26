@@ -151,6 +151,9 @@ THD_FUNCTION(dacThread, arg)
 
 		/* We're done, close the file. */
 
+		dacpos = 0;
+		dacmax = 0;
+		dacbuf = NULL;
 		play = 0;
 		f_close (&f);
 		pitDisable (&PIT1, 1);

@@ -269,6 +269,7 @@ videoPlay (char * fname)
 	/* Re-initialize the DAC's PIT frequency, in case we changed it. */
 
 	pitDisable (&PIT1, 1);
+	dacSamplesPlay (NULL, 0);
 	CSR_WRITE_4(&PIT1, PIT_LDVAL1,
 	    KINETIS_BUSCLK_FREQUENCY / DAC_SAMPLERATE);
 
