@@ -30,6 +30,84 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*
+ * This module implements a video playback routine for the Freescale/NXP
+ * KW01 and a 320x240 display with ILI9341 chip. It's fairly rudimentary
+ * and relies on several gimmicks. We're limited in terms of I/O performance
+ * due to the fact that a) the SD card and screen share the same SPI port,
+ * b) our system clock is limited to 48MHz and c) some SD cards are slower
+ * than others.
+ *
+ * Best performance is achieved when using full speed SPI clock and an SD
+ * card of class 10 or better. As of this writing, we limit the SPI clock
+ * to one half its normal rate because our early prototype hardware using
+ * the MCU Friend display/SD slot/touch modules using standard SD cards
+ * was not fast enough to handle the maximum rate. This should be changed
+ * for production hardware.
+ *
+ * We use a video frame resolution of 128x96 pixels and a frame rate of 8
+ * frames per second. The 128.96 resulution is upscaled on the fly to the
+ * full 320x240 resolution of the display. This is a little tricky because
+ * it results in a ratio of 2.5 to 1. Upscaling by a factor of 2 would be
+ * easy, but 2.5 is slightly more complicated. (You can't draw half a pixel.)
+ *
+ * The upscaling is accomplished using the following algorithm:
+ *
+ * - We always draw each pixel twice
+ * - Every other pixel is drawn three times
+ * - We also always draw every scan line twice
+ * - Every other scanline is drawn three times
+ *
+ * This results in a cadence of 1:2, 1:3, 1:2, 1:3, etc... which yields
+ * an overall increase of 2.5.
+ *
+ * Audio playback is accomplished using the DAC. Audio and video are stored
+ * in the same file. The audio sample rate has been deliberately chosen to
+ * be 9216Hz. This results in 12 audio samples for each 128-pixel scanline 
+ * in a video frame at a rate of 8 frames per second. Audio is played by
+ * loading samples into a buffer and having each sample written to the DAC
+ * data register by an interrupt service routine tied to one of the interval
+ * timers, which is set to trigger at the same frequency as the audio
+ * sample rate.
+ *
+ * The video and audio are stored on the SD card in a single file with the
+ * video pixel data and audio sample data interleaved using the following
+ * pattern:
+ *
+ * [ 2 video scanlines (256 pixels) ][ 24 audio samples ]
+ * [ 2 video scanlines (256 pixels) ][ 24 audio samples ]
+ * [ 2 video scanlines (256 pixels) ][ 24 audio samples ]
+ *
+ * When playing back, each interleaved chunk is read back and the audio
+ * is stored in a buffer while the video is written to the screen. When
+ * enough audio samples have been buffered, the DAC is allowed to play
+ * them.
+ *
+ * To maintain synchronization, each time a new chunk of samples is queued
+ * up to play, we wait until the previous chunk of samples has completed
+ * playing before proceeding. This kills two birds with one stone: first, it
+ * ensures the video and audio stay in sync, and second it keeps both audio
+ * and video playing at the correct rate. Since the video is synced to the
+ * audio, as long as we play the audio at the correct rate, which is
+ * enforced by the interval timer, the video will implicitly be forced to
+ * play at the correct rate too.
+ *
+ * Encoding of the videe and audio is done on a host system using ffmpeg.
+ * The video is extracted as individual uncompressed frames in the native
+ * RGB565 pixel format supported by the ILI9341 display controller. The
+ * audio is converted to 16-bit monoaural raw sample data, and then processed
+ * with a custom utility to convert the 16-bit samples to 12-bit samples
+ * (which is the resulution limit of the DAC). Finally, another custom
+ * program combines the raw video and audio samples together.
+ *
+ * If the SD card is too slow, things will still work, but there will be
+ * pauses between the audio samples, which will make things sound choppy
+ * or warbly. To compensate for this, if we detect that we are processing
+ * samples faster than we can load new ones, we reduce the interval timer
+ * frequency until we hit a rate that we can sustain. Hopefully this
+ * condition should not arise very often with the production hardware.
+ */
+
 #include "ch.h"
 #include "hal.h"
 #include "osal.h"
@@ -47,6 +125,7 @@
 #include "orchard-ui.h"
 
 #include "src/gdisp/gdisp_driver.h"
+
 extern LLDSPEC void gdisp_lld_write_start_ex(GDisplay *g);
 
 #define SAMPLE_CHUNKS		64
