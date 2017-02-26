@@ -20,6 +20,9 @@ rgbhdr: rgbhdr.c
 snd16to12: snd16to12.c
 	cc -o snd16to12 snd16to12.c -lm
 
+videomerge: videomerge.c
+	cc -o videomerge vidromerge.c
+
 # This rule will build the mirrored and standard images only if the
 # jpgs have changed. Rebuilding them all the time was time consuming.
 rgb/%.rgb : jpg/%.jpg 
@@ -49,9 +52,8 @@ sdcard: images midi
 	@find midi -name \*.bin -exec cp {} sdcard \;
 	@cp ../updater/updater.bin sdcard
 	@cp ../badge/build/badge.bin sdcard
-	@[ -d $(dir sdcard/video) ] || mkdir -p sdcard/video
-	@cp -R video/* sdcard/video
 	@cp dac/*.raw sdcard
+	@cp video/*.vid sdcard
 	@mv -f sdcard/credits_mario.rgb sdcard/credits.rgb
 	@echo
 	@echo 'sdcard built!'

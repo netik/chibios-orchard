@@ -149,6 +149,7 @@ CSRC = main.c \
        led.c \
        oled.c \
        orchard-events.c \
+       video_lld.c \
        radio_lld.c \
        pit_lld.c \
        tpm_lld.c \

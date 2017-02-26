@@ -47,7 +47,7 @@
 
 DACDriver DAC1;
 
-static THD_WORKING_AREA(waDacThread, 1024);
+static THD_WORKING_AREA(waDacThread, 512 /*1024*/);
 
 /*
  * Note: dacpos and daxmax must be volatile to prevent the compiler
@@ -59,7 +59,7 @@ static volatile int dacpos;
 static volatile int dacmax;
 
 static char * fname;
-static thread_t * pThread;
+static thread_t * pThread = NULL;
 static uint8_t play;
 
 static void
@@ -115,9 +115,9 @@ THD_FUNCTION(dacThread, arg)
 
 			/* Start the samples playing */
 
+			dacbuf = p;
 			dacpos = 0;
 			dacmax = br / 2;
-			dacbuf = p;
 
 			/* Swap buffers and load the next block of samples */
 
@@ -172,8 +172,10 @@ dacStart (DACDriver * dac)
 
 	pit1Start (&PIT1, dacWrite);
 
-	pThread = chThdCreateStatic (waDacThread, sizeof(waDacThread),
-		DAC_THREAD_PRIO, dacThread, NULL);
+	if (pThread == NULL) {
+		pThread = chThdCreateStatic (waDacThread, sizeof(waDacThread),
+			DAC_THREAD_PRIO, dacThread, NULL);
+	}
 
 	return;
 }
@@ -191,9 +193,22 @@ dacPlay (char * file)
 void
 dacSamplesPlay (uint16_t * p, int cnt)
 {
+	dacbuf = p;
 	dacpos = 0;
 	dacmax = cnt;
-	dacbuf = p;
 
 	return;
+}
+
+int
+dacWait (void)
+{
+	int waits = 0;
+
+	while (dacpos != dacmax) {
+		chThdSleep (1);
+		waits++;
+	}
+
+	return (waits);
 }

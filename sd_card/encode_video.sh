@@ -22,7 +22,7 @@ ffmpeg -i "$1" -r 8 -s 128x96 -f rawvideo -pix_fmt rgb565 $2/video.bin
 
 # Extract audio
 
-ffmpeg -i "$1" -ac 1 -ar 8820 $2/sample.wav
+ffmpeg -i "$1" -ac 1 -ar 9216 $2/sample.wav
 
 # Convert to raw samples, boost gain a little
 
@@ -34,3 +34,8 @@ mv $2/sample.u16 $2/sample.raw
 ./snd16to12 $2/sample.raw
 
 rm -f $2/sample.wav
+
+./videomerge $2/video.bin $2/sample.raw $2/video.vid
+
+rm -f $2/video.bin $2/sample.raw
+
