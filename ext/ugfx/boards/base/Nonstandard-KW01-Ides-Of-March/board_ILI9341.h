@@ -70,12 +70,14 @@ static inline void write_index(GDisplay *g, uint16_t index) {
 	while ((SPI1->S & SPIx_S_SPTEF) == 0)
 		;
 	(void)SPI1->DL;
+	palSetPad (SCREEN_CMDDATA_PORT, SCREEN_CMDDATA_PIN);
 	return;
 }
 
 static inline void write_data(GDisplay *g, uint16_t data) {
 	(void) g;
-	palSetPad (SCREEN_CMDDATA_PORT, SCREEN_CMDDATA_PIN);
+	while ((SPI1->S & SPIx_S_SPTEF) == 0)
+		;
 	SPI1->DL = data & 0xFF;
 	while ((SPI1->S & SPIx_S_SPTEF) == 0)
 		;
