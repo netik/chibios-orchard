@@ -12,7 +12,7 @@
 # rgbhdr, ImageMagick, and FFMPeg are required to convert images. 
 #
 
-all: rgbhdr snd16to12
+all: rgbhdr snd16to12 videomerge
 
 rgbhdr: rgbhdr.c
 	cc -o rgbhdr rgbhdr.c
@@ -21,7 +21,7 @@ snd16to12: snd16to12.c
 	cc -o snd16to12 snd16to12.c -lm
 
 videomerge: videomerge.c
-	cc -o videomerge vidromerge.c
+	cc -o videomerge videomerge.c
 
 # This rule will build the mirrored and standard images only if the
 # jpgs have changed. Rebuilding them all the time was time consuming.
