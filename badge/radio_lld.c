@@ -173,7 +173,7 @@ radioReceive (RADIODriver * radio)
 
 	pkt = &radio->kw01_pkt;
 
-        /* Get the signal strength reading for this frame. */
+	/* Get the signal strength reading for this frame. */
 
 	pkt->kw01_rssi = radioSpiRead (radio, KW01_RSSIVAL);
 
@@ -221,12 +221,13 @@ radioReceive (RADIODriver * radio)
 #endif
 
 	/* Set the payload length (don't include the header length) */
+
 	for (i = 0; i < KW01_PKT_HANDLERS_MAX; i++) {
 		ph = &radio->kw01_handlers[i];
 		if (ph->kw01_handler != NULL &&
 		    ph->kw01_prot == pkt->kw01_hdr.kw01_prot) {
-                  ph->kw01_handler (pkt);
-                  return(0);
+			ph->kw01_handler (pkt);
+			return(0);
 		}
 	}
 
