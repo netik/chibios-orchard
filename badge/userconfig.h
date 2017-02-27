@@ -14,6 +14,21 @@
 #define CONFIG_VERSION    2
 #define CONFIG_NAME_MAXLEN 10
 
+/* bit patterns for unlocks - stored in config, */
+/* char unlock_codes[] in app-unlock.c */
+#define UL_EFF        ( 1 << 0 ) // +10% Defense, EFF logo on badge screen '1EFF1'
+#define UL_HP         ( 1 << 1 ) // +10% HP  'DEFAD'
+#define UL_MIGHT      ( 1 << 2 ) // +1 might 'A7A7A'
+#define UL_LUCK       ( 1 << 3 ) // +20% additional luck '77007'
+#define UL_HEALZ      ( 1 << 4 ) // 1/2 heal time  'AED17'
+#define UL_LEDZ       ( 1 << 5 ) // unlocks additional LED patterns '01AC0'
+#define UL_CAESAR     ( 1 << 6 ) // always caesar, can heal as caesar 'BAEAC'
+#define UL_SENATOR    ( 1 << 7 ) // always senator (adds 20% to all attacks) 'DE01A'
+#define UL_TIMELORD   ( 1 << 8 ) // can transmit time '90046' - the dr#'s number
+
+/* can we display these on top LEDs */
+
+
 #define maxhp(level)       (50+(20*(level-1)))
 
 typedef enum _player_type {
@@ -50,6 +65,7 @@ typedef struct userconfig {
   
   uint16_t lastcombat; // how long since combat started
   uint8_t in_combat; 
+  uint16_t unlocks;
 
   /* todo: determine which stats are relevant to the game (egan) */
   int16_t hp;

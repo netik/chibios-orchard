@@ -15,12 +15,14 @@ void cmd_peerlist(BaseSequentialStream *chp, int argc, char *argv[])
   (void)argv;
   (void)argc;
   user **enemies;
-  int i;
-  
-  enemies = enemiesGet();
+  int i,cnt;
 
+  cnt = 0;
+  enemies = enemiesGet();
+  
   for(i = 0; i < MAX_ENEMIES; i++) {
     if( enemies[i] != NULL ) {
+      cnt++;
       chprintf(chp, "%d: [%08x] %s (hp:%d, in_combat:%d, lvl:%d, ttl %d)\n\r",
                i,
                enemies[i]->netid,
@@ -30,6 +32,10 @@ void cmd_peerlist(BaseSequentialStream *chp, int argc, char *argv[])
 	       enemies[i]->level,
                enemies[i]->ttl);
     }
+  }
+
+  if (cnt == 0) {
+    chprintf(chp, "No enemies. Why so lonely?\r\n");
   }
 }
 

@@ -23,20 +23,27 @@ BUG: Sometimes attack is zero from other player, this is bullshit.
 
 7. (bonus) Video/Movie/Frames
 
-chat on
-chat off
-chat msg ....
-   Terminal shout
+8. Random command-line improvements
+     "unlock xxxxx" should work because typing should just work.
+     chat on
+     chat off
+     chat msg ....
+          Terminal shout
 
-setup/config from termianl
-   disable chat, sounds, etc.
-   disable fight entirely
+     setup/config from terminal ( sound on/off at a minimum )
+     DND: do not disturb -- disable chat, sounds, etc.
+     Disable fight entirely
    
-unlocks: -- screen built and working
-   ability to unlock extra animations and led sequences
+     unlocks: -- screen built and working
+         ability to unlock extra animations and led sequences (what are they, we haven't defined them.)
+         EFF unlock and logo
+         Get list from laptop
 
-set
+Cleanups:
 
+Remove "VICTORY" and "DEFEATED" screens and replace them with the proper, dead animationn of the characters
+
+         
 
 
 
