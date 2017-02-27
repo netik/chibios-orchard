@@ -57,9 +57,33 @@ static void cmd_config_set(BaseSequentialStream *chp, int argc, char *argv[]) {
 
   userconfig *config = getConfig();
 
-  if (!strcasecmp(argv[1], "name") && (argc == 3)) {
+  if (argc != 3) {
+    chprintf(chp, "Invalid set command.\r\nUsage: config set var value\r\n");
+    return;
+  }
+  
+  if (!strcasecmp(argv[1], "name")) {
     strncpy(config->name, argv[2], CONFIG_NAME_MAXLEN);
     chprintf(chp, "Name set.\r\n");
+    return;
+  }
+
+  if (!strcasecmp(argv[1], "sound")) {
+    if (!strcmp(argv[2], "1")) {
+      config->sound_enabled = 1;
+    } else {
+      config->sound_enabled = 0;
+    }
+    
+    strncpy(config->name, argv[2], CONFIG_NAME_MAXLEN);
+    chprintf(chp, "Sound set to %d.\r\n", config->sound_enabled);
+    return;
+  }
+
+  // remove this before launch
+  if (!strcasecmp(argv[1], "type")) {
+    config->p_type = atoi(argv[2]);
+    chprintf(chp, "Type set to %d.\r\n", config->p_type);
     return;
   }
   
@@ -83,9 +107,10 @@ static void cmd_config(BaseSequentialStream *chp, int argc, char *argv[])
   if (argc == 0) {
     chprintf(chp, "config commands:\r\n");
     chprintf(chp, "   show             show config\r\n");
-    chprintf(chp, "   set              set variable\r\n");
+    chprintf(chp, "   set nnn yyy      set variable nnn to yyy (vars: name, sound, type)\r\n");
     chprintf(chp, "   save             save config to flash\r\n\r\n");
-    chprintf(chp, "warning: if another thread calls Save, your changes will get saved. Oh well.\r\n");
+    chprintf(chp, "warning: if another thread updates the config, your changes could conflict!\r\n");
+    chprintf(chp, "         use with caution!\r\n");
     return;
   }
 
