@@ -47,7 +47,7 @@
 
 DACDriver DAC1;
 
-static THD_WORKING_AREA(waDacThread, 512 /*1024*/);
+static THD_WORKING_AREA(waDacThread, 512);
 
 /*
  * Note: dacpos and daxmax must be volatile to prevent the compiler
@@ -175,10 +175,8 @@ dacStart (DACDriver * dac)
 
 	pit1Start (&PIT1, dacWrite);
 
-	if (pThread == NULL) {
-		pThread = chThdCreateStatic (waDacThread, sizeof(waDacThread),
-			DAC_THREAD_PRIO, dacThread, NULL);
-	}
+	pThread = chThdCreateStatic (waDacThread, sizeof(waDacThread),
+		DAC_THREAD_PRIO, dacThread, NULL);
 
 	return;
 }
