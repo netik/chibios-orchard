@@ -39,8 +39,8 @@ typedef struct dac_driver {
 
 #define DAC_THREAD_PRIO		3
 
-#define DAC_SAMPLERATE		8820
-#define DAC_SAMPLES		600
+#define DAC_SAMPLERATE		9216
+#define DAC_SAMPLES		450
 #define DAC_BYTES		(DAC_SAMPLES * 2)
 
 #define KINETIS_DAC_IRQ_VECTOR Vector98
@@ -69,5 +69,8 @@ extern DACDriver DAC1;
 
 extern void dacStart (DACDriver *);
 extern void dacPlay (char *);
+
+extern void dacSamplesPlay (uint16_t * p, int cnt);
+extern int dacWait (void);
 
 #endif /* _DAC_LLD_H_ */

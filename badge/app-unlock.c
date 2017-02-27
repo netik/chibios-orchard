@@ -293,7 +293,6 @@ static void unlock_event(OrchardAppContext *context,
                        const OrchardAppEvent *event)
 {
   GEvent * pe;
-  userconfig *config = getConfig();
   UnlockHandles * p;
   uint8_t i;
 
@@ -368,6 +367,7 @@ static void unlock_exit(OrchardAppContext *context) {
   p = context->priv;
 
   gdispCloseFont (p->font_manteka_20);
+  gdispCloseFont (p->font_jupiterpro_36);
   
   gwinDestroy(p->ghNum1);
   gwinDestroy(p->ghNum2);

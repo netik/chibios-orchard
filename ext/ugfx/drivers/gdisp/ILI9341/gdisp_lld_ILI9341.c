@@ -24,6 +24,8 @@
 
 #include "board_ILI9341.h"
 
+static uint8_t idx;
+
 /*===========================================================================*/
 /* Driver local definitions.                                                 */
 /*===========================================================================*/
@@ -56,22 +58,26 @@
 
 static void set_viewport(GDisplay *g) {
 	write_index (g, 0x2A);
-	palSetPad (SCREEN_CMDDATA_PORT, SCREEN_CMDDATA_PIN);
+	while ((SPI1->S & SPIx_S_SPTEF) == 0)
+		;
 	SPI1->DL = (g->p.x >> 8);
 	SPI1->DL = (uint8_t) g->p.x;
 	SPI1->DL = (g->p.x + g->p.cx - 1) >> 8;
 	SPI1->DL = (uint8_t) (g->p.x + g->p.cx - 1);
 	while ((SPI1->S & SPIx_S_SPTEF) == 0)
 		;
+	(void)SPI1->DL;
 
 	write_index (g, 0x2B);
-	palSetPad (SCREEN_CMDDATA_PORT, SCREEN_CMDDATA_PIN);
+	while ((SPI1->S & SPIx_S_SPTEF) == 0)
+		;
 	SPI1->DL = (g->p.y >> 8);
 	SPI1->DL = (uint8_t) g->p.y;
 	SPI1->DL = (g->p.y + g->p.cy - 1) >> 8;
 	SPI1->DL = (uint8_t) (g->p.y + g->p.cy - 1);
 	while ((SPI1->S & SPIx_S_SPTEF) == 0)
 		;
+	(void)SPI1->DL;
 
 	return;
 }
@@ -256,15 +262,29 @@ LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
 		while ((SPI1->S & SPIx_S_SPTEF) == 0)
 			;
 	        SPI1->C2 |= SPIx_C2_SPMODE;
-	        palSetPad (SCREEN_CMDDATA_PORT, SCREEN_CMDDATA_PIN);
+	}
+	LLDSPEC	void gdisp_lld_write_start_ex(GDisplay *g) {
+		acquire_bus(g);
+		/*
+		 * Switch the SPI controller to do 16-bit transfers
+		 * and set the graphics controller for data mode.
+		 * Make sure the FIFO drains completely before
+		 * switching into 16-bit mode.
+		 */
+		while ((SPI1->S & SPIx_S_SPTEF) == 0)
+			;
+	        SPI1->C2 |= SPIx_C2_SPMODE;
 	}
 	LLDSPEC	void gdisp_lld_write_color(GDisplay *g) {
-		while ((SPI1->S & SPIx_S_TNEAREF) == 0)
-			;
-		SPI1->DH = gdispColor2Native(g->p.color) >> 8;
-		SPI1->DL = (uint8_t)gdispColor2Native(g->p.color);
-		(void)SPI1->DL;
-		(void)SPI1->DH;
+		volatile pixel_t * dst;
+		dst = (pixel_t *)&SPI1->DL;
+		dst[0] = g->p.color;
+		idx++;
+		if (idx == 4) {
+			while ((SPI1->S & SPIx_S_SPTEF) == 0)
+				;
+			idx = 0;
+		}
 	}
 	LLDSPEC	void gdisp_lld_write_stop(GDisplay *g) {
 		/*

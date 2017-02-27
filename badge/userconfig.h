@@ -6,8 +6,8 @@
  * goes in here 
  */
 
-#define CONFIG_FLASH_ADDR 0x1e000
-#define CONFIG_FLASH_SECTOR_BASE 120
+#define CONFIG_FLASH_ADDR 0x1fc00
+#define CONFIG_FLASH_SECTOR_BASE 127
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0
@@ -49,7 +49,8 @@ typedef struct userconfig {
 
   /* hw config */
   uint8_t led_pattern;
-
+  uint8_t unlocks;
+  
   /* used for solid-color */
   uint8_t led_r;
   uint8_t led_g;
@@ -117,7 +118,7 @@ typedef struct _userpkt {
   /* Battle Payload */
   /* A bitwise map indicating the attack type */
   uint8_t attack_bitmap;  /* 1 */
-  uint8_t damage;         /* 1 */
+  int16_t damage;         /* 2 */
 
 } user;
 

@@ -182,17 +182,16 @@ static void print_mcu_info(void) {
 static void radio_ping_handler(KW01_PKT *pkt) {
   user * u;
 
-#ifdef testing
+#ifdef DEBUG_PINGS
   chprintf(stream, "\r\nGot a ping --  %02x -> %02x : %02x (signal strength: -%ddBm)\r\n",
 	   pkt->kw01_hdr.kw01_src,
            pkt->kw01_hdr.kw01_dst,
            pkt->kw01_hdr.kw01_prot,
            (uint8_t)KW01_RSSI(pkt->kw01_rssi));
 #endif
-
   u = (user *)pkt->kw01_payload;
 
-#ifdef testing
+#ifdef DEBUG_PINGS
   chprintf(stream, "\r\nmaybe from %s level %d seq %d ttl %d ptype %d incombat %d hp %d\r\n", u->name, u->level, u->seq, u->ttl, u->p_type, u->in_combat, u->hp );
 #endif
 
@@ -413,6 +412,9 @@ int main(void)
     chThdSleepMilliseconds(IMG_SPLASH_NO_SOUND_DISPLAY_TIME);
   }
 
+  /* Promote sponsors */
+  oledOrchardSponsor ();
+
   /* run apps */
   orchardAppInit();
   evtTableHook(orchard_events, orchard_app_terminated, orchard_app_restart);
@@ -420,7 +422,9 @@ int main(void)
 
   /* handle radio events for ping */
   radioHandlerSet(radioDriver, RADIO_PROTOCOL_PING, radio_ping_handler);
-  
+ 
+  chThdSetPriority (NORMALPRIO + 1);
+ 
   while (TRUE)
     chEvtDispatch(evtHandlers(orchard_events), chEvtWaitOne(ALL_EVENTS));
 }

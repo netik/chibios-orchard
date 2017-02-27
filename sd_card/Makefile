@@ -12,13 +12,16 @@
 # rgbhdr, ImageMagick, and FFMPeg are required to convert images. 
 #
 
-all: rgbhdr snd16to12
+all: rgbhdr snd16to12 videomerge
 
 rgbhdr: rgbhdr.c
 	cc -o rgbhdr rgbhdr.c
 
 snd16to12: snd16to12.c
 	cc -o snd16to12 snd16to12.c -lm
+
+videomerge: videomerge.c
+	cc -o videomerge videomerge.c
 
 # This rule will build the mirrored and standard images only if the
 # jpgs have changed. Rebuilding them all the time was time consuming.
@@ -50,6 +53,7 @@ sdcard: images midi
 	@cp ../updater/updater.bin sdcard
 	@cp ../badge/build/badge.bin sdcard
 	@cp dac/*.raw sdcard
+	@cp video/*.vid sdcard
 	@mv -f sdcard/credits_mario.rgb sdcard/credits.rgb
 	@echo
 	@echo 'sdcard built!'
@@ -61,7 +65,7 @@ sdcard: images midi
 # copy the card to the right folder on my osx box
 osxsd:	sdcard
 	@echo "Copying to /Volumes/NO\ NAME/"
-	@cp sdcard/* /Volumes/NO\ NAME/
+	@cp -R sdcard/* /Volumes/NO\ NAME/
 	@sync
 
 # only update the binaries to save time.

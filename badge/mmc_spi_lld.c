@@ -126,16 +126,12 @@ BYTE xchg_spi (		/* Returns received data */
 	BYTE dat		/* Data to be sent */
 )
 {
-	SPI1->C1 &= ~SPIx_C1_SPIE;
-
 	while ((SPI1->S & SPIx_S_SPTEF) == 0)
 		;
 	SPI1->DL = dat;
 	while ((SPI1->S & SPIx_S_SPRF) == 0)
 		;
 	dat = SPI1->DL;
-
-	SPI1->C1 |= SPIx_C1_SPIE;
 
 	return (dat);
 }
@@ -150,18 +146,12 @@ void rcvr_spi_multi (
 {
 	UINT i;
 
-	SPI1->C1 &= ~SPIx_C1_SPIE;
-
 	for (i = 0; i < cnt; i++) {
-		while ((SPI1->S & SPIx_S_SPTEF) == 0)
-			;
 	   	SPI1->DL = 0xFF;
 		while ((SPI1->S & SPIx_S_SPRF) == 0)
 			;
 		p[i] = SPI1->DL;
 	}
-
-	SPI1->C1 |= SPIx_C1_SPIE;
 
 	return;
 }
@@ -176,8 +166,6 @@ void xmit_spi_multi (
 {
 	UINT i;
 
-	SPI1->C1 &= ~SPIx_C1_SPIE;
-
 	for (i = 0; i < cnt; i++) {
 		while ((SPI1->S & SPIx_S_SPTEF) == 0)
 			;
@@ -186,8 +174,6 @@ void xmit_spi_multi (
 			;
 		(void)SPI1->DL;
 	}
-
-	SPI1->C1 |= SPIx_C1_SPIE;
 
 	return;
 }
@@ -376,6 +362,7 @@ DSTATUS mmc_disk_initialize (void)
 	if (Stat & STA_NODISK) return Stat;	/* No card in the socket? */
 
 	spiAcquireBus (&SPID2);
+	SPI1->C1 &= ~SPIx_C1_SPIE;
 	pitEnable (&PIT1, 0);
 	power_on();							/* Turn on the socket power */
 	FCLK_SLOW();
@@ -415,6 +402,7 @@ DSTATUS mmc_disk_initialize (void)
 	}
 
 	pitDisable (&PIT1, 0);
+	SPI1->C1 |= SPIx_C1_SPIE;
 	spiReleaseBus (&SPID2);
 
 	return Stat;
@@ -453,6 +441,7 @@ DRESULT mmc_disk_read (
 
 	cmd = count > 1 ? CMD18 : CMD17;			/*  READ_MULTIPLE_BLOCK : READ_SINGLE_BLOCK */
 	spiAcquireBus(&SPID2);
+	SPI1->C1 &= ~SPIx_C1_SPIE;
 	pitEnable (&PIT1, 0);
 	if (send_cmd(cmd, sector) == 0) {
 		do {
@@ -463,6 +452,7 @@ DRESULT mmc_disk_read (
 	}
 	deselect();
 	pitDisable (&PIT1, 0);
+	SPI1->C1 |= SPIx_C1_SPIE;
 	spiReleaseBus(&SPID2);
 
 	return count ? RES_ERROR : RES_OK;
@@ -488,6 +478,7 @@ DRESULT mmc_disk_write (
 	if (!(CardType & CT_BLOCK)) sector *= 512;	/* Convert to byte address if needed */
 
 	spiAcquireBus(&SPID2);
+	SPI1->C1 &= ~SPIx_C1_SPIE;
 	pitEnable (&PIT1, 0);
 	if (count == 1) {	/* Single block write */
 		if ((send_cmd(CMD24, sector) == 0)	/* WRITE_BLOCK */
@@ -507,6 +498,7 @@ DRESULT mmc_disk_write (
 	}
 	deselect();
 	pitDisable (&PIT1, 0);
+	SPI1->C1 |= SPIx_C1_SPIE;
 	spiReleaseBus(&SPID2);
 
 	return count ? RES_ERROR : RES_OK;
@@ -536,6 +528,7 @@ DRESULT mmc_disk_ioctl (
 	if (Stat & STA_NOINIT) return RES_NOTRDY;
 
 	spiAcquireBus(&SPID2);
+	SPI1->C1 &= ~SPIx_C1_SPIE;
 	pitEnable (&PIT1, 0);
 	res = RES_ERROR;
 	switch (cmd) {
@@ -676,6 +669,7 @@ DRESULT mmc_disk_ioctl (
 	}
 
 	pitDisable (&PIT1, 0);
+	SPI1->C1 |= SPIx_C1_SPIE;
 	spiReleaseBus(&SPID2);
 	return res;
 }

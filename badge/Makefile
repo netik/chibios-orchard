@@ -124,6 +124,7 @@ CSRC = main.c \
        cmd-threads.c \
        cmd-buzzer.c \
        cmd-caesar.c \
+       cmd-config.c \
        cmd-led.c \
        cmd-reset.c \
        cmd-peer.c \
@@ -135,6 +136,7 @@ CSRC = main.c \
        app-notify.c \
        app-update.c \
        app-credits.c \
+       app-hackers.c \
        app-shout.c \
        app-chat.c \
        app-default.c \
@@ -147,6 +149,7 @@ CSRC = main.c \
        led.c \
        oled.c \
        orchard-events.c \
+       video_lld.c \
        radio_lld.c \
        pit_lld.c \
        tpm_lld.c \
@@ -270,7 +273,7 @@ ULIBDIR =
 
 # List all user libraries here
 #ULIBS = lib/armv6-m-libgcc.a lib/libc-nano-armv6-m.a
-ULIBS = -lc_nano -lnosys -lm -lgcc
+ULIBS = -lc_nano -lnosys -lgcc
 
 #
 # End of user defines

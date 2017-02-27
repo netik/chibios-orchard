@@ -32,9 +32,9 @@ static void draw_badge_buttons(DefaultHandles * p) {
   // Apply some default values for GWIN
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
-  wi.g.width = 40;
-  wi.g.height = 40;
-  wi.g.y = totalheight - 40;
+  wi.g.width = 60;
+  wi.g.height = 60;
+  wi.g.y = totalheight - 60;
   wi.g.x = 0;
   wi.text = "";
   wi.customDraw = noRender;
@@ -43,10 +43,10 @@ static void draw_badge_buttons(DefaultHandles * p) {
 
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
-  wi.g.width = 40;
-  wi.g.height = 40;
-  wi.g.y = totalheight - 40;
-  wi.g.x = gdispGetWidth() - 40;
+  wi.g.width = 60;
+  wi.g.height = 60;
+  wi.g.y = totalheight - 60;
+  wi.g.x = gdispGetWidth() - 60;
   wi.text = "";
   wi.customDraw = noRender;
 

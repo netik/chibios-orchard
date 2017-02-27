@@ -73,6 +73,20 @@ const struct FXENTRY fxlist[] = {
 
 void ledClear(void);
 
+/* Maclaurin series of sin(x), weak approximation */
+#define msin(x) (x - ((x^3)/factorial(3)) + ((x^5)/factorial(5)) - ((x^7)/factorial(7)) + ((x^9)/factorial(9)))
+
+uint16_t factorial(uint16_t n)
+{
+  uint16_t c;
+  uint16_t result = 1;
+
+  for (c = 1; c <= n; c++)
+    result = result * c;
+
+  return result;
+}
+
 void ledSetBrightness(uint8_t bval) {
   led_brightshift = bval;
 }
@@ -383,7 +397,8 @@ static void anim_solid_color(void) {
 
   // solid color spiral (green)
   for(i=0; i < led_config.pixel_count; i++) {
-    ledSetRGB(led_config.fb, i, 0, ((sin(i+fx_position) * 127 + 128)/255)*180,  0);
+    // range 0-16 + 
+    ledSetRGB(led_config.fb, i, 0, ((msin((i+fx_position)) * 127 + 128)/255)*180,  0);
   }
 
   fx_position++;
