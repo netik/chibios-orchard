@@ -1001,7 +1001,7 @@ radioDefaultHandlerSet (RADIODriver * radio, KW01_PKT_FUNC handler)
 */
 
 void
-radioHandlerSet (RADIODriver * radio, uint8_t prot, KW01_PKT_FUNC handler)
+radioHandlerSet (RADIODriver * radio, kw01_proto_t prot, KW01_PKT_FUNC handler)
 {
 	uint8_t i;
 	KW01_PKT_HANDLER * p;
@@ -1034,13 +1034,8 @@ radioHandlerSet (RADIODriver * radio, uint8_t prot, KW01_PKT_FUNC handler)
 */
 
 int
-#ifdef KW01_RADIO_HWFILTER
-radioSend (RADIODriver * radio, uint8_t dest, uint8_t prot,
+radioSend (RADIODriver * radio, kw01_dst_t dest, kw01_proto_t prot,
            uint8_t len, const void *payload)
-#else
-radioSend (RADIODriver * radio, uint32_t dest, uint8_t prot,
-           uint8_t len, const void *payload)
-#endif
 {
 	KW01_PKT_HDR hdr;
 	uint8_t reg;
