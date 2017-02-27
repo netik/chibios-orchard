@@ -83,17 +83,29 @@
  * field is used when address filtering is enabled. The radio also
  * appends a two byte CRC when hardware CRC calculation/checking is
  * enabled. Everything else is defined by the user.
+ *
+ * Note: the fields in the header structure are deliberately chosen to
+ * make the header a multiple of 4 bytes in size. This is to prevent
+ * the compiler for silently inserting any additional padding.
  */
+
+#ifdef KW01_RADIO_HWFILTER
+typedef uint8_t		kw01_dst_t;
+typedef uint16_t	kw01_proto_t;
+#else
+typedef uint32_t	kw01_dst_t;
+typedef uint32_t	kw01_proto_t;
+#endif
 
 typedef struct kw01_pkt_hdr {
 #ifdef KW01_RADIO_HWFILTER
 	uint8_t		kw01_dst;	/* Destination node */
 	uint8_t		kw01_src;	/* Source node */
-	uint16_t	kw01_prot;	/* Protocol type */
+	kw01_proto_t	kw01_prot;	/* Protocol type */
 #else
 	uint32_t	kw01_dst;	/* Destination node */
 	uint32_t	kw01_src;	/* Source node */
-	uint32_t	kw01_prot;	/* Protocol type */
+	kw01_proto_t	kw01_prot;	/* Protocol type */
 #endif
 } KW01_PKT_HDR;
 
@@ -134,13 +146,8 @@ extern void radioWrite (RADIODriver *, uint8_t, uint8_t);
 extern void radioDump (RADIODriver *, uint8_t addr, void *bfr, int count);
 extern void radioAcquire (RADIODriver *);
 extern void radioRelease (RADIODriver *);
-#ifdef KW01_RADIO_HWFILTER
-extern int radioSend(RADIODriver *, uint8_t dest, uint8_t prot,
-			uint8_t len, const void *payload);
-#else
-extern int radioSend(RADIODriver *, uint32_t dest, uint8_t prot,
-			uint8_t len, const void *payload);
-#endif
+extern int radioSend(RADIODriver *, kw01_dst_t dest, kw01_proto_t prot,
+			uint8_t len, const void * payload);
 
 extern int radioFrequencySet (RADIODriver *, uint32_t freq);
 extern int radioDeviationSet (RADIODriver *, uint32_t freq);
@@ -158,6 +165,6 @@ extern int radioTemperatureGet (RADIODriver *);
 extern int radioAesEnable (RADIODriver *, const uint8_t *, uint8_t);
 extern void radioAesDisable (RADIODriver *);
 extern void radioDefaultHandlerSet (RADIODriver *, KW01_PKT_FUNC);
-extern void radioHandlerSet (RADIODriver *, uint8_t, KW01_PKT_FUNC);
+extern void radioHandlerSet (RADIODriver *, kw01_proto_t, KW01_PKT_FUNC);
 
 #endif /* _RADIO_H_ */
