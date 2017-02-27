@@ -25,6 +25,7 @@ Matthew (graphics,art)\r\n\r\n"
 // Remember! Filenames must be in old school dos format (8x3)
 //                         12345678.123
 #define IMG_SPLASH        "SPQR.RGB"
+#define IMG_EFFLOGO       "efflogo.rgb"
 
 #define IMG_GROUND        "ground.rgb" // ground 
 #define IMG_GROUND_BTNS   "grbutt.rgb" // ground with no buttons

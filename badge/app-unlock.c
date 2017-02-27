@@ -85,10 +85,10 @@ static char *unlock_desc[] = { "+10% DEF",
                                "+1 MIGHT",
                                "+20% LUCK",
                                "FASTER HEAL",
-                               "LEDs",
-                               "CAESAR",
-                               "SENATOR",
-                               "TIMELORD" };
+                               "MOAR LEDs",
+                               "U R CAESAR",
+                               "U R SENATOR",
+                               "U R TIMELORD" };
 
 static uint32_t last_ui_time = 0;
 static uint8_t code[5];

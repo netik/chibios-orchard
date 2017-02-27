@@ -11,8 +11,10 @@
 #include "fontlist.h"
 
 #include "ides_gfx.h"
+#include "unlocks.h"
 
 #include "userconfig.h"
+
 // we will heal the player at N hp per this interval
 #define HEAL_INTERVAL_US 1000000
 #define HEAL_AMT 5
@@ -199,7 +201,9 @@ static void redraw_badge(int8_t drawchar) {
 		      tmp2,
 		      fontSM, White, justifyRight);
 
-  
+  /* EFF supporter, +10% AGL/Defense and Logo */
+  if (config->unlocks & UL_PLUSDEF) 
+      putImageFile(IMG_EFFLOGO, 270, ypos+4);
 
 }
 

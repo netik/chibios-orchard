@@ -80,10 +80,15 @@ static void cmd_config_set(BaseSequentialStream *chp, int argc, char *argv[]) {
     return;
   }
 
-  // remove this before launch
+  // remove these before launch!!
   if (!strcasecmp(argv[1], "type")) {
     config->p_type = atoi(argv[2]);
     chprintf(chp, "Type set to %d.\r\n", config->p_type);
+    return;
+  }
+  if (!strcasecmp(argv[1], "unlocks")) {
+    config->unlocks = atoi(argv[2]);
+    chprintf(chp, "Unlocks set to %d.\r\n", config->unlocks);
     return;
   }
   
