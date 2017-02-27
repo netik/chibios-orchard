@@ -71,7 +71,7 @@ static void init_config(userconfig *config) {
   /* an alternate approach would be to store all 80 bits, but then our radio */
   /* packets would be huge. */
   config->netid = SIM->UIDML ^ SIM->UIDL;
-  
+  config->unlocks = 0;
   config->led_pattern = 8;
   config->led_shift = 4;
   config->sound_enabled = 1;
@@ -79,7 +79,6 @@ static void init_config(userconfig *config) {
   config->p_type = p_guard;  
   memset(config->name, 0, CONFIG_NAME_MAXLEN);
 
-  /* reset here */
   config->won = 0;
   config->lost = 0;
 

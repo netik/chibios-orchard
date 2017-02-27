@@ -64,6 +64,29 @@ typedef struct _UnlockHandles {
 
 } UnlockHandles;
 
+#define MAX_ULCODES 9
+
+/* codes, packed as bits */
+static uint8_t unlock_codes[MAX_ULCODES][3] = { { 0x01, 0xef, 0xf1 }, // 0
+                                                { 0x0d, 0xef, 0xad }, // 1
+                                                { 0x0a, 0x7a, 0xa7 }, // 2
+                                                { 0x07, 0x70, 0x07 }, // 3
+                                                { 0x0a, 0xed, 0x17 }, // 4
+                                                { 0x00, 0x1a, 0xc0 }, // 5
+                                                { 0x0b, 0xae, 0xac }, // 6
+                                                { 0x0d, 0xe0, 0x1a }, // 7
+                                                { 0x09, 0x00, 0x46 }  // 8
+};
+static char *unlock_desc[] = { "+10% DEF",
+                               "+10% HP",
+                               "+1 MIGHT",
+                               "+20% LUCK",
+                               "FASTER HEAL",
+                               "LEDs",
+                               "CAESAR",
+                               "SENATOR",
+                               "TIMELORD" };
+
 static uint32_t last_ui_time = 0;
 static uint8_t code[5];
 static void updatecode(OrchardAppContext *, uint8_t, int8_t);
@@ -272,6 +295,7 @@ static void unlock_event(OrchardAppContext *context,
   GEvent * pe;
   userconfig *config = getConfig();
   UnlockHandles * p;
+  uint8_t i;
 
   p = context->priv;
 
@@ -294,7 +318,23 @@ static void unlock_event(OrchardAppContext *context,
       }
       
       if ( ((GEventGWinButton*)pe)->gwin == p->ghUnlock) {
-        /* TODO: Check for valid code */
+        /* ceck for valid code */
+        for (i=0; i < MAX_ULCODES; i++) {
+
+          if ((unlock_codes[i][0] == codes[0]) &&
+              (unlock_codes[i][1] == ((codes[1] << 4) + codes[2])) &&
+              (unlock_codes[i][2] == ((codes[3] << 4) + codes[4]))) {
+            printf("match! %d\n" , i);
+            // set bit 
+
+            // save to config
+
+            // display message -- should we tell them? or just say unlock successful?
+
+          }
+        }
+
+
         orchardAppExit();
         return;
       }
