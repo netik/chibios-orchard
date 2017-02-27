@@ -151,7 +151,7 @@ static THD_FUNCTION(shell_thread, p) {
   chRegSetThreadName("shell");
   chprintf(chp, "\r\nDEFCON25 SPQR Badge Shell (based on ChibiOS/RT)\r\n");
   while (true) {
-    chprintf(chp, "hail! % ");
+    chprintf(chp, "hail!> ");
     if (shellGetLine(chp, line, sizeof(line))) {
       chprintf(chp, "\r\nlogout");
       break;
