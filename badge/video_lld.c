@@ -112,7 +112,6 @@
 #include "hal.h"
 #include "osal.h"
 
-#include "pit_lld.h"
 #include "dac_lld.h"
 #include "dac_reg.h"
 #include "pit_lld.h"
