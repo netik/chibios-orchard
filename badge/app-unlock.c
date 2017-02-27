@@ -320,10 +320,9 @@ static void unlock_event(OrchardAppContext *context,
         /* ceck for valid code */
         for (i=0; i < MAX_ULCODES; i++) {
 
-          if ((unlock_codes[i][0] == codes[0]) &&
-              (unlock_codes[i][1] == ((codes[1] << 4) + codes[2])) &&
-              (unlock_codes[i][2] == ((codes[3] << 4) + codes[4]))) {
-            printf("match! %d\n" , i);
+          if ((unlock_codes[i][0] == code[0]) &&
+              (unlock_codes[i][1] == ((code[1] << 4) + code[2])) &&
+              (unlock_codes[i][2] == ((code[3] << 4) + code[4]))) {
             // set bit 
 
             // save to config
