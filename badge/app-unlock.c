@@ -6,12 +6,15 @@
  *
  */
 
+#include <string.h>
 #include "orchard-app.h"
 #include "orchard-ui.h"
 #include "userconfig.h"
 #include "ides_gfx.h"
 #include "images.h"
+#include "sound.h"
 
+#define ALERT_DELAY 2500   // how long alerts stay on the screen.
 
 // WidgetStyle: Ivory
 const GWidgetStyle ivory = {
@@ -67,7 +70,7 @@ typedef struct _UnlockHandles {
 #define MAX_ULCODES 9
 
 /* codes, packed as bits */
-static uint8_t unlock_codes[MAX_ULCODES][3] = { { 0x01, 0xef, 0xf1 }, // 0
+static uint8_t unlock_codes[MAX_ULCODES][3] = { { 0x01, 0xde, 0xf1 }, // 0
                                                 { 0x0d, 0xef, 0xad }, // 1
                                                 { 0x0a, 0x7a, 0xa7 }, // 2
                                                 { 0x07, 0x70, 0x07 }, // 3
@@ -90,6 +93,17 @@ static char *unlock_desc[] = { "+10% DEF",
 static uint32_t last_ui_time = 0;
 static uint8_t code[5];
 static void updatecode(OrchardAppContext *, uint8_t, int8_t);
+static void unlock_result(UnlockHandles *, char *);
+
+static void unlock_result(UnlockHandles *p, char *msg) {
+  gdispClear(Black);
+  gdispDrawStringBox (0,
+		      (gdispGetHeight() / 2) - (gdispGetFontMetric(p->font_manteka_20, fontHeight) / 2),
+		      gdispGetWidth(),
+		      gdispGetFontMetric(p->font_manteka_20, fontHeight),
+		      msg,
+		      p->font_manteka_20, Yellow, justifyCenter);
+}
 
 static void init_unlock_ui(UnlockHandles *p) {
 
@@ -295,7 +309,9 @@ static void unlock_event(OrchardAppContext *context,
   GEvent * pe;
   UnlockHandles * p;
   uint8_t i;
-
+  char tmp[40];
+  userconfig *config = getConfig();
+  
   p = context->priv;
 
   // idle timeout
@@ -317,22 +333,36 @@ static void unlock_event(OrchardAppContext *context,
       }
       
       if ( ((GEventGWinButton*)pe)->gwin == p->ghUnlock) {
-        /* ceck for valid code */
+        /* check for valid code */
         for (i=0; i < MAX_ULCODES; i++) {
 
           if ((unlock_codes[i][0] == code[0]) &&
               (unlock_codes[i][1] == ((code[1] << 4) + code[2])) &&
               (unlock_codes[i][2] == ((code[3] << 4) + code[4]))) {
-            // set bit 
-
+            // set bit
+            config->unlocks |= (1 << i);
+            
             // save to config
-
+            configSave(config);
+            
             // display message -- should we tell them? or just say unlock successful?
-
+            strcpy(tmp, unlock_desc[i]);
+            strcat(tmp, " unlocked!");
+            unlock_result(p, tmp);
+            // TODO: Set all LEDs white, blink.
+            playVictory();
+            chThdSleepMilliseconds(ALERT_DELAY);
+            orchardAppRun(orchardAppByName("Badge"));
+            return;
           }
         }
 
-
+        unlock_result(p, "unlock failed.");
+        playHardFail();
+            
+        // TODO: Playhardfail, set all lights red. 
+        chThdSleepMilliseconds(ALERT_DELAY);
+        orchardAppRun(orchardAppByName("Badge"));
         orchardAppExit();
         return;
       }
