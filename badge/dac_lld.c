@@ -54,6 +54,8 @@ static THD_WORKING_AREA(waDacThread, 512);
  * from optimizing accesses to them.
  */
 
+uint16_t * dacBuf;
+
 static volatile uint16_t * dacbuf = NULL;
 static volatile int dacpos;
 static volatile int dacmax;
@@ -77,9 +79,8 @@ static
 THD_FUNCTION(dacThread, arg)
 {
 	FIL f;
-        UINT br;
+	UINT br;
 	uint16_t * p;
-	uint16_t * buf = NULL;
 	userconfig *config;
 	thread_t * th;
 
@@ -87,8 +88,6 @@ THD_FUNCTION(dacThread, arg)
 
 	chRegSetThreadName ("dac");
 	config = getConfig();
-
-	buf = chHeapAlloc (NULL, (DAC_SAMPLES * sizeof(uint16_t)) * 2);
 
 	while (1) {
 		th = chMsgWait ();
@@ -102,7 +101,7 @@ THD_FUNCTION(dacThread, arg)
 
 		/* Load the first block of samples. */
 
-		p = buf;
+		p = dacBuf;
 		if (f_read (&f, p, DAC_BYTES, &br) != FR_OK) {
 			f_close (&f);
 			continue;
@@ -121,10 +120,10 @@ THD_FUNCTION(dacThread, arg)
 
 			/* Swap buffers and load the next block of samples */
 
-			if (p == buf)
+			if (p == dacBuf)
 				p += DAC_SAMPLES;
 			else
-				p = buf;
+				p = dacBuf;
 
 			if (f_read (&f, p, DAC_BYTES, &br) != FR_OK)
 				break;
@@ -174,6 +173,8 @@ dacStart (DACDriver * dac)
 	DAC_WRITE_2(dac, DAC0_DAT0L, 0);
 
 	pit1Start (&PIT1, dacWrite);
+
+	dacBuf = chHeapAlloc (NULL, (DAC_SAMPLES * sizeof(uint16_t)) * 2);
 
 	pThread = chThdCreateStatic (waDacThread, sizeof(waDacThread),
 		DAC_THREAD_PRIO, dacThread, NULL);
