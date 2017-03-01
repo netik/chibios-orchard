@@ -6,6 +6,7 @@
 
 #include "orchard-app.h"
 #include "led.h"
+#include "string.h"
 
 void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, int32_t maxval, int32_t currentval, uint8_t use_leds, uint8_t reverse) {
   // draw a bar if reverse is true, we draw right to left vs left to
@@ -52,6 +53,27 @@ void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, int32_
 }
 
 
+char *getAvatarImage(int ptype, char *imgtype, uint8_t frameno, uint8_t reverse) {
+  static char fname[13];
+  const char classlist[] = "gsc";
+
+  /* return an image based on the desired character class, image type,
+   * and frame number. It is up to the caller to supply the correct
+   * player type. Unexpected results will occur if the player type is
+   * greater than 2!
+   * 
+   * 0 = guard
+   * 1 = senator
+   * 2 = caesar
+   *
+   * getAvatarImage(0,'deth',1) == gdeth1.rgb
+   * getAvatarImage(2,'attm',1) == cattm1.rgb
+   */
+
+  chsnprintf(fname, sizeof(fname), "%c%s%d%s.rgb", classlist[ptype], imgtype, frameno, reverse == true ? "r" : "");
+  return(fname);
+         
+}
 
 int putImageFile(char *name, int16_t x, int16_t y) {
   gdispImage img;

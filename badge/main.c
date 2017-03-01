@@ -71,12 +71,13 @@ static const SPIConfig spi1_config = {
   0
 };
 
+/* jna: change the 0x00 here to 0x10 to support the older boards */
 static const SPIConfig spi2_config = {
   NULL,
   /* HW dependent part.*/
   MMC_CHIP_SELECT_PORT,
   MMC_CHIP_SELECT_PIN,
-  0x10
+  0x00
 };
 
 #if HAL_USE_MMC_SPI

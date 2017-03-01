@@ -13,7 +13,7 @@
 
 #include <string.h>
 
-#define MCUFRIEND
+#define EASTRISING
 
 #ifdef MCUFRIEND
 static const float calibrationData[] = {

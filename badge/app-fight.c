@@ -156,7 +156,8 @@ static void state_approval_demand_enter(void) {
 
   gdispClear(Black);
 
-  putImageFile(IMG_GUARD_IDLE_R, POS_PLAYER2_X, POS_PLAYER2_Y - 20);
+  putImageFile(getAvatarImage(current_enemy.p_type, "idla", 1, true),
+                              POS_PLAYER2_X, POS_PLAYER2_Y - 20);
 
   gdispDrawStringBox (0,
 		      18,
@@ -249,8 +250,10 @@ static void state_nextround_enter() {
 static void state_move_select_enter() {
   uint16_t ypos = STATUS_Y;
   FightHandles *p;
-  p = instance.context->priv;
+  userconfig *config = getConfig();
   
+  p = instance.context->priv;
+
   ourattack = 0;
   theirattack = 0;
   last_damage = -1;
@@ -258,9 +261,12 @@ static void state_move_select_enter() {
   turnover_sent = false;
 
   clearstatus();
+
+  putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
+               POS_PLAYER1_X, POS_PLAYER1_Y);
   
-  putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER2_Y);
-  putImageFile(IMG_GUARD_IDLE_R, POS_PLAYER2_X, POS_PLAYER2_Y);
+  putImageFile(getAvatarImage(current_enemy.p_type, "idla", 1, true),
+               POS_PLAYER2_X, POS_PLAYER2_Y);
 
   gdispDrawStringBox (0,
                       ypos,
@@ -314,8 +320,9 @@ static void screen_select_draw(int8_t initial) {
     gdispFillArea(31,22,260,POS_FLOOR_Y-22,Black);
   }
   
-  putImageFile(IMG_GUARD_IDLE_L, POS_PCENTER_X, POS_PCENTER_Y);
-
+  putImageFile(getAvatarImage(enemies[current_enemy_idx]->p_type, "idla", 1, false),
+               POS_PCENTER_X, POS_PCENTER_Y);
+  
   uint16_t xpos = 0; // cursor, so if we move or add things we don't have to rethink this  
   uint16_t ypos = 0; // cursor, so if we move or add things we don't have to rethink this
 
@@ -408,9 +415,11 @@ static void draw_idle_players() {
 
   gdispClear(Black);
 
-  putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER2_Y);
-  putImageFile(IMG_GUARD_IDLE_R, POS_PLAYER2_X, POS_PLAYER2_Y);
-
+  putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
+               POS_PLAYER1_X, POS_PLAYER1_Y);
+  putImageFile(getAvatarImage(current_enemy.p_type, "idla", 1, true),
+               POS_PLAYER2_X, POS_PLAYER2_Y);
+ 
   gdispDrawStringBox (0,
 		      ypos,
 		      screen_width,
@@ -432,10 +441,9 @@ static void draw_idle_players() {
   
 static void state_vs_screen_enter() {
   // versus screen!
-  char attackfn[13];
-
+  userconfig *config = getConfig();
+  
   gdispClear(Black);
-
   draw_idle_players();
   
   blinkText(0,
@@ -453,8 +461,6 @@ static void state_vs_screen_enter() {
   clearstatus();
   
   // animate them 
-  char pos[6] = "hmlhml";
-  
   // we always say we're waiting.
   gdispFillArea(0,screen_height - 20,screen_width,20,Black);
   
@@ -465,11 +471,16 @@ static void state_vs_screen_enter() {
                       "GET READY!",
                       fontSM, White, justifyCenter);
   
-  for (uint8_t i=0; i < 6; i++) {
-    chsnprintf(attackfn, sizeof(attackfn), "gatt%c1.rgb", pos[i]);
-    putImageFile(attackfn, POS_PLAYER1_X, POS_PLAYER1_Y);
-    chsnprintf(attackfn, sizeof(attackfn), "gatt%c1r.rgb", pos[i]);
-    putImageFile(attackfn, POS_PLAYER2_X, POS_PLAYER2_Y);
+  for (uint8_t i=0; i < 3; i++) {
+    putImageFile(getAvatarImage(config->p_type, "atth1", 1, false),
+                 POS_PLAYER2_X, POS_PLAYER2_Y);
+    putImageFile(getAvatarImage(current_enemy.p_type, "atth1", 1, true),
+                 POS_PLAYER2_X, POS_PLAYER2_Y);
+    chThdSleepMilliseconds(200);
+    putImageFile(getAvatarImage(config->p_type, "atth2", 1, false),
+                 POS_PLAYER2_X, POS_PLAYER2_Y);
+    putImageFile(getAvatarImage(current_enemy.p_type, "atth2", 1, true),
+                 POS_PLAYER2_X, POS_PLAYER2_Y);
     chThdSleepMilliseconds(200);
   }
   
@@ -898,7 +909,7 @@ static void show_results(void) {
     changeState(ENEMY_DEAD);
     playVictory();
     screen_alert_draw("VICTORY!");
-    config->xp += (80 + (config->level-1 * 16));
+    config->xp += (80 + ((config->level-1) * 16));
     config->won++;
     configSave(config);
     chThdSleepMilliseconds(ALERT_DELAY);
@@ -909,7 +920,7 @@ static void show_results(void) {
       /* if you are dead, then you will do the same */
       playDefeat();
       screen_alert_draw("YOU ARE DEFEATED.");
-      config->xp += (10 + (config->level-1 * 16));
+      config->xp += (10 + ((config->level-1) * 16));
       config->lost++;
       configSave(config);
       chThdSleepMilliseconds(ALERT_DELAY);
