@@ -269,7 +269,6 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
 static void launcher_exit(OrchardAppContext *context) {
   struct launcher_list *list;
 
-
   list = (struct launcher_list *)context->priv;
   
   gwinDestroy (list->ghButton1);

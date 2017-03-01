@@ -86,9 +86,37 @@ static void cmd_config_set(BaseSequentialStream *chp, int argc, char *argv[]) {
     chprintf(chp, "Type set to %d.\r\n", config->p_type);
     return;
   }
+
   if (!strcasecmp(argv[1], "unlocks")) {
     config->unlocks = atoi(argv[2]);
     chprintf(chp, "Unlocks set to %d.\r\n", config->unlocks);
+    return;
+  }
+  if (!strcasecmp(argv[1], "hp")) {
+    config->hp = atoi(argv[2]);
+    chprintf(chp, "HP set to %d.\r\n", config->hp);
+    return;
+  }
+  if (!strcasecmp(argv[1], "xp")) {
+    config->xp = atoi(argv[2]);
+    chprintf(chp, "XP set to %d.\r\n", config->xp);
+    return;
+  }
+  if (!strcasecmp(argv[1], "agl")) {
+    config->agl = atoi(argv[2]);
+    chprintf(chp, "agl set to %d.\r\n", config->agl);
+    return;
+  }
+
+  if (!strcasecmp(argv[1], "luck")) {
+    config->luck = atoi(argv[2]);
+    chprintf(chp, "luck set to %d.\r\n", config->luck);
+    return;
+  }
+
+  if (!strcasecmp(argv[1], "might")) {
+    config->might = atoi(argv[2]);
+    chprintf(chp, "might set to %d.\r\n", config->might);
     return;
   }
   

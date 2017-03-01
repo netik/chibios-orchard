@@ -1,7 +1,7 @@
 /*
   cmd-led.c
 
-  change the state of the led's
+  LED Animation Functions
   J. Adams <jna@retina.net>
 */
 
