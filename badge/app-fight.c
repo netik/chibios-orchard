@@ -473,12 +473,12 @@ static void state_vs_screen_enter() {
   
   for (uint8_t i=0; i < 3; i++) {
     putImageFile(getAvatarImage(config->p_type, "atth1", 1, false),
-                 POS_PLAYER2_X, POS_PLAYER2_Y);
+                 POS_PLAYER1_X, POS_PLAYER1_Y);
     putImageFile(getAvatarImage(current_enemy.p_type, "atth1", 1, true),
                  POS_PLAYER2_X, POS_PLAYER2_Y);
     chThdSleepMilliseconds(200);
     putImageFile(getAvatarImage(config->p_type, "atth2", 1, false),
-                 POS_PLAYER2_X, POS_PLAYER2_Y);
+                 POS_PLAYER1_X, POS_PLAYER1_Y);
     putImageFile(getAvatarImage(current_enemy.p_type, "atth2", 1, true),
                  POS_PLAYER2_X, POS_PLAYER2_Y);
     chThdSleepMilliseconds(200);
@@ -714,7 +714,7 @@ static void draw_select_buttons(void) {
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
   wi.g.width = 60;
-  wi.g.height = 20;
+  wi.g.height = 60;
   wi.g.y = totalheight - 60;
   wi.g.x = 0;
   wi.text = "";
