@@ -66,6 +66,7 @@ typedef struct dac_driver {
         } while ((0))
 
 extern DACDriver DAC1;
+extern uint16_t * dacBuf;
 
 extern void dacStart (DACDriver *);
 extern void dacPlay (char *);

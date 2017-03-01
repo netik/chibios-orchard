@@ -112,7 +112,6 @@
 #include "hal.h"
 #include "osal.h"
 
-#include "pit_lld.h"
 #include "dac_lld.h"
 #include "dac_reg.h"
 #include "pit_lld.h"
@@ -171,7 +170,6 @@ videoPlay (char * fname)
  	GHandle ghExitButton;
 	GEvent * pe;
 	GListener gl;
-	uint16_t * samples;
 	uint16_t * cur;
 	uint16_t * ps;
 	pixel_t * buf;
@@ -204,7 +202,7 @@ videoPlay (char * fname)
 	/* start the video */
 
 	/*
-	 * This tells the graphics controller the dimentions of the
+	 * This tells the graphics controller the dimensions of the
 	 * drawing area. The drawing aperture is like a circular
 	 * buffer: we can keep writing pixels to it sequentially and
 	 * when we fill the area, the controller will automatically
@@ -222,14 +220,13 @@ videoPlay (char * fname)
 	gdisp_lld_write_stop (GDISP);
 
 	buf = chHeapAlloc (NULL, VID_BUFSZ + VID_EXTRA);
-	samples = chHeapAlloc (NULL, AUD_BUFSZ);
 
 	dacPlay (NULL);
 
 	i = 0;
 	j = 0;
-	ps = samples;
-	cur = samples;
+	ps = dacBuf;
+	cur = dacBuf;
 	skipcnt = 0;
 	curwait = 0;
 	lastwait = 0;
@@ -254,16 +251,16 @@ videoPlay (char * fname)
 				skipcnt = 0;
 			lastwait = curwait;
 			dacSamplesPlay (cur, SAMPLES_PER_PLAY);
-			if (cur == samples)
-				cur = samples + SAMPLES_PER_PLAY; 
+			if (cur == dacBuf)
+				cur = dacBuf + SAMPLES_PER_PLAY; 
 			else
-				cur = samples;
+				cur = dacBuf;
 		}
 
 		ps += (SAMPLES_PER_LINE * 2);
 		i++;
 		if (i == (SAMPLE_CHUNKS / 2)) {
-			ps = samples;
+			ps = dacBuf;
 			i = 0;
 		}
 
@@ -341,7 +338,6 @@ videoPlay (char * fname)
 	}
 
 	chHeapFree (buf);
-	chHeapFree (samples);
 
 	f_close (&f);
 

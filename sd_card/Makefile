@@ -83,3 +83,4 @@ cleansd:
 clean: clean_images
 	rm rgbhdr
 	rm snd16to12
+	rm videomerge
