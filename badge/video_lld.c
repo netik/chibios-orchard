@@ -46,7 +46,7 @@
  * for production hardware.
  *
  * We use a video frame resolution of 128x96 pixels and a frame rate of 8
- * frames per second. The 128.96 resulution is upscaled on the fly to the
+ * frames per second. The 128x96 resulution is upscaled on the fly to the
  * full 320x240 resolution of the display. This is a little tricky because
  * it results in a ratio of 2.5 to 1. Upscaling by a factor of 2 would be
  * easy, but 2.5 is slightly more complicated. (You can't draw half a pixel.)
@@ -127,6 +127,10 @@
 
 extern LLDSPEC void gdisp_lld_write_start_ex(GDisplay *g);
 
+/* Enable this if SD card I/O is too slow. */
+
+#undef VIDEO_AUTO_RATE_ADJUST
+
 #define SAMPLE_CHUNKS		64
 #define SAMPLES_PER_LINE	12
 
@@ -144,6 +148,20 @@ extern LLDSPEC void gdisp_lld_write_start_ex(GDisplay *g);
 #define AUD_BUFSZ		(SAMPLE_BYTES_PER_LINE * SAMPLE_CHUNKS)
 
 #define SAMPLE_INTERVAL		((SAMPLE_CHUNKS / 4) - 1)
+
+/******************************************************************************
+*
+* write_pixel - write pixel data to the display
+*
+* This function is used to write pixel data to the ILI9341 screen controller.
+* We use this in place of the routine in the ILI9341 driver in order to save
+* a few cycles. We always write every pixel from the video data stream twice
+* in order to upscale it. To achieve a scaling ration of 2.5:1, we sometimes
+* write pixels three times. This function will always dump the necessary
+* number of pixels to the SPI channel and wait for it to drain.
+*
+* RETURNS: N/A
+*/
 
 static void
 write_pixel (pixel_t p1, int extra)
@@ -163,13 +181,50 @@ write_pixel (pixel_t p1, int extra)
         return;
 }
 
+static void
+draw_lines (pixel_t * buf, int extra)
+{
+	uint8_t p;
+
+	for (p = 0; p < FRAMERES_HORIZONTAL; p++) {
+		write_pixel (buf[p], p & 1);
+	}
+
+	for (p = 0; p < FRAMERES_HORIZONTAL; p++) {
+		write_pixel (buf[p], p & 1);
+	}
+
+	if (extra) {
+		for (p = 0; p < FRAMERES_HORIZONTAL; p++) {
+			write_pixel (buf[p], p & 1);
+		}
+	}
+
+	return;
+}
+
+/******************************************************************************
+*
+* videoPlay - play a video
+*
+* This function plays an encoded video file specified by <fname> from the
+* SD card. The file must be encoded using the encode_video.sh script. There
+* is no special header on the file. It contains raw RGB565 pixel data and
+* 12-bit samples which are output to the ILI9341 controller and the DAC,
+* respectively.
+*
+* The video will keep playing until the end of file is reached, or until the
+* user touches the touch screen.
+*
+* RETURNS: N/A
+*/
+
 void
 videoPlay (char * fname)
 {
-	GWidgetInit wi;
- 	GHandle ghExitButton;
-	GEvent * pe;
+	GEventMouse * me;
 	GListener gl;
+	GSourceHandle gs;
 	uint16_t * cur;
 	uint16_t * ps;
 	pixel_t * buf;
@@ -178,37 +233,32 @@ videoPlay (char * fname)
 	int p;
 	int i;
 	int j;
+#ifdef VIDEO_AUTO_RATE_ADJUST
 	uint32_t rate;
 	int lastwait;
 	int curwait;
 	int skipcnt;
-
-	gwinWidgetClearInit (&wi);
-	wi.g.show = TRUE;
-	wi.g.width = gdispGetWidth ();
-	wi.g.height = gdispGetHeight ();
-	wi.g.y = 0;
-	wi.g.x = 0;
-	wi.text = "";
-	wi.customDraw = noRender;
-
-	ghExitButton = gwinButtonCreate (NULL, &wi);
-	geventListenerInit (&gl);
-	gwinAttachListener (&gl);
+#endif
 
 	if (f_open (&f, fname, FA_READ) != FR_OK)
-		goto out;
+		return;
+
+	/* Capture mouse up/down events */
+
+	gs = ginputGetMouse (0);
+	geventListenerInit (&gl);
+	geventAttachSource (&gl, gs, GLISTEN_MOUSEMETA);
 
 	/* start the video */
 
 	/*
 	 * This tells the graphics controller the dimensions of the
-	 * drawing area. The drawing aperture is like a circular
+	 * drawing viewport. The drawing viewport is like a circular
 	 * buffer: we can keep writing pixels to it sequentially and
-	 * when we fill the area, the controller will automatically
+	 * when we reach the end, the controller will automatically
 	 * wrap back to the beginning. We tell the controller the
-	 * drawing frame is twice the size of our actual video
-	 * frame data.
+	 * drawing frame is 2.5 times the size of our actual video
+	 * frame data, and then upscale on the fly.
 	 */
 
 	GDISP->p.x = 0;
@@ -227,29 +277,45 @@ videoPlay (char * fname)
 	j = 0;
 	ps = dacBuf;
 	cur = dacBuf;
+#ifdef VIDEO_AUTO_RATE_ADJUST
 	skipcnt = 0;
 	curwait = 0;
 	lastwait = 0;
+#endif
+
+	/* Enable the PIT for the DAC */
 
 	pitEnable (&PIT1, 1);
 
 	while (1) {
 		/* Read two scan lines from the stream */
+
 		f_read (&f, buf, VID_BUFSZ + VID_EXTRA, &br);
 
 		if (br == 0)
 			break;
 
+		/* Extract the audio sample data */
+
 		for (p = 0; p < SAMPLES_PER_LINE * 2; p++)
 			ps[p] = buf[(VID_BUFSZ / 2) + p];
 
+		/*
+		 * When we have enough audio data buffered,
+		 * start it playing.
+		 */
+
 		if ((i & SAMPLE_INTERVAL) == SAMPLE_INTERVAL) {
+#ifdef VIDEO_AUTO_RATE_ADJUST
 			curwait = dacWait ();
 			if (curwait == 0 && lastwait == 0)
 				skipcnt++;
 			else
 				skipcnt = 0;
 			lastwait = curwait;
+#else
+			(void) dacWait ();
+#endif
 			dacSamplesPlay (cur, SAMPLES_PER_PLAY);
 			if (cur == dacBuf)
 				cur = dacBuf + SAMPLES_PER_PLAY; 
@@ -264,15 +330,30 @@ videoPlay (char * fname)
 			i = 0;
 		}
 
+#ifdef VIDEO_AUTO_RATE_ADJUST
+		/*
+		 * This is a hack to deal with slow SD cards. If the
+		 * card is too slow, audio will sound warbly due to
+		 * delays caused by waiting for data to load. To avoid
+		 * the warble, we reduce the PIT frequency a little
+		 * to slow down the audio until the rate matches
+		 * what the SD card can sustain.
+		 *
+		 * This should not be necessary now that we set the
+		 * SPI clock to full speed for SD card access, but
+		 * the code is kept around just in case.
+		 */
+
 		if (skipcnt > 5) {
 			skipcnt = 0;
 			rate = CSR_READ_4(&PIT1, PIT_LDVAL1);
  			rate += 100;
 			CSR_WRITE_4(&PIT1, PIT_LDVAL1, rate);
 		}
+#endif
 
 		/*
-		 * Now write them to the screen. Note: we write each
+		 * Write video data to the screen. Note: we write each
                  * pixel and line two and a half times. This scales up the
 		 * size of the displayed image, at the expense of pixelating
 		 * it But hey, old school pixelated video is elite, right?
@@ -295,34 +376,8 @@ videoPlay (char * fname)
 
 		/* Draw the first line twice. */
 
-		for (p = 0; p < FRAMERES_HORIZONTAL; p++) {
-			write_pixel (buf[p], p & 1);
-		}
-
-		for (p = 0; p < FRAMERES_HORIZONTAL; p++) {
-			write_pixel (buf[p], p & 1);
-		}
-
-		if (j & 1) {
-			for (p = 0; p < FRAMERES_HORIZONTAL; p++) {
-				write_pixel (buf[p], p & 1);
-			}
-		}
-
-		for (p = 0; p < FRAMERES_HORIZONTAL; p++) {
-			write_pixel (buf[p + FRAMERES_HORIZONTAL], p & 1);
-		}
-
-		for (p = 0; p < FRAMERES_HORIZONTAL; p++) {
-			write_pixel (buf[p + FRAMERES_HORIZONTAL], p & 1);
-		}
-
-		if (j & 1) {
-			for (p = 0; p < FRAMERES_HORIZONTAL; p++) {
-				write_pixel (buf[p + FRAMERES_HORIZONTAL],
-				    p & 1);
-			}
-		}
+		draw_lines (buf, j & 1);
+		draw_lines (buf + FRAMERES_HORIZONTAL, j & 1);
 
 		gdisp_lld_write_stop (GDISP);
 
@@ -330,15 +385,15 @@ videoPlay (char * fname)
 		if (j == FRAMERES_VERTICAL)
 			j = 0;
 
-		/* Check for the user requesting exit */
+		/* Check for the user requesting exit. */
 
-		pe = geventEventWait (&gl, 0);
-		if (pe != NULL && pe->type == GEVENT_GWIN_BUTTON)
+		me = (GEventMouse *)geventEventWait (&gl, 0);
+		if (me != NULL && me->type == GEVENT_TOUCH)
 			break;
 	}
 
+	geventDetachSource (&gl, NULL);
 	chHeapFree (buf);
-
 	f_close (&f);
 
 	/* Re-initialize the DAC's PIT frequency, in case we changed it. */
@@ -347,11 +402,6 @@ videoPlay (char * fname)
 	dacSamplesPlay (NULL, 0);
 	CSR_WRITE_4(&PIT1, PIT_LDVAL1,
 	    KINETIS_BUSCLK_FREQUENCY / DAC_SAMPLERATE);
-
-out:
-
-	geventDetachSource (&gl, NULL);
-	gwinDestroy (ghExitButton);
 
 	return;
 }

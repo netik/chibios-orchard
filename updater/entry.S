@@ -33,12 +33,12 @@
 #define _ASM
 #include "updater.h"
 
-	.cpu		cortex-m0
+	.cpu		cortex-m0plus
 	.fpu		softvfp
 
 	.thumb
 
-	.file		"entry.s"
+	.file		"entry.S"
 	.text
 
 	.section	.text.main,"ax",%progbits

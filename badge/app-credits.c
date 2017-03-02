@@ -53,7 +53,6 @@ typedef struct gdisp_image {
 } GDISP_IMAGE;
 
 typedef struct _CreditsHandles {
-	GHandle		ghExitButton;
 	GListener	gl;
 } CreditsHandles;
 
@@ -100,9 +99,9 @@ static void credits_start(OrchardAppContext *context)
 	uint16_t h;
 	pixel_t * buf;
 	CreditsHandles * p;
-	GWidgetInit wi;
 	orientation_t o;
-	GEvent * pe;
+	GEventMouse * me;
+	GSourceHandle gs;
 
 	if (f_open (&f, "credits.rgb", FA_READ) != FR_OK) {
 		orchardAppExit ();
@@ -114,18 +113,9 @@ static void credits_start(OrchardAppContext *context)
 
 	dacPlay ("mario.raw");
 
-	gwinWidgetClearInit (&wi);
-	wi.g.show = TRUE;
-	wi.g.width = gdispGetWidth();
-	wi.g.height = gdispGetHeight();
-  	wi.g.y = 0;
-  	wi.g.x = 0;
-  	wi.text = "";
- 	wi.customDraw = noRender;
-
-	p->ghExitButton = gwinButtonCreate (NULL, &wi);
+	gs = ginputGetMouse (0);
 	geventListenerInit (&p->gl);
-	gwinAttachListener (&p->gl);
+	geventAttachSource (&p->gl, gs, GLISTEN_MOUSEMETA);
 
 	f_read (&f, &hdr, sizeof(hdr), &br);
 	h = hdr.gdi_height_hi << 8 | hdr.gdi_height_lo;
@@ -144,8 +134,8 @@ static void credits_start(OrchardAppContext *context)
 			pos = 0;
 		scroll (o == GDISP_ROTATE_90 ?
 			(gdispGetWidth() - 1) - pos : pos);
-		pe = geventEventWait(&p->gl, 0);
-		if (pe != NULL && pe->type == GEVENT_GWIN_BUTTON)
+		me = (GEventMouse *)geventEventWait(&p->gl, 0);
+		if (me != NULL && me->type == GEVENT_TOUCH)
 			break;
 		chThdSleepMilliseconds (15);
 	}
@@ -180,7 +170,6 @@ static void credits_exit(OrchardAppContext *context)
 
 	if (p != NULL) {
 		geventDetachSource (&p->gl, NULL);
-		gwinDestroy (p->ghExitButton);
 
 		chHeapFree (p);
 		context->priv = NULL;
