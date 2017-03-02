@@ -47,7 +47,6 @@ static void led_run(BaseSequentialStream *chp, int argc, char *argv[]) {
   ledResetPattern();
   
   chprintf(chp, "Pattern changed to %s.\r\n", fxlist[pattern-1].name);
-  configSave(config);
 }
 
 static void led_all(BaseSequentialStream *chp, int argc, char *argv[]) {
@@ -81,7 +80,6 @@ static void led_all(BaseSequentialStream *chp, int argc, char *argv[]) {
   // the last pattern is always the 'ALL' state. 
   ledResetPattern();
   
-  configSave(config);
 
 }
 
@@ -106,7 +104,6 @@ static void led_dim(BaseSequentialStream *chp, int argc, char *argv[]) {
   chprintf(chp, "Level now %d.\r\n", level);
 
   config->led_shift = level;
-  configSave(config);
 }
 
 static void led_list(BaseSequentialStream *chp) {

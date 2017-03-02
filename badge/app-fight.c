@@ -472,14 +472,14 @@ static void state_vs_screen_enter() {
                       fontSM, White, justifyCenter);
   
   for (uint8_t i=0; i < 3; i++) {
-    putImageFile(getAvatarImage(config->p_type, "atth1", 1, false),
+    putImageFile(getAvatarImage(config->p_type, "atth", 1, false),
                  POS_PLAYER1_X, POS_PLAYER1_Y);
-    putImageFile(getAvatarImage(current_enemy.p_type, "atth1", 1, true),
+    putImageFile(getAvatarImage(current_enemy.p_type, "atth", 1, true),
                  POS_PLAYER2_X, POS_PLAYER2_Y);
     chThdSleepMilliseconds(200);
-    putImageFile(getAvatarImage(config->p_type, "atth2", 1, false),
+    putImageFile(getAvatarImage(config->p_type, "atth", 2, false),
                  POS_PLAYER1_X, POS_PLAYER1_Y);
-    putImageFile(getAvatarImage(current_enemy.p_type, "atth2", 1, true),
+    putImageFile(getAvatarImage(current_enemy.p_type, "atth", 2, true),
                  POS_PLAYER2_X, POS_PLAYER2_Y);
     chThdSleepMilliseconds(200);
   }
@@ -596,6 +596,7 @@ uint16_t calc_hit(userconfig *config, user *current_enemy) {
 static void sendAttack(void) {
   // animate the attack on our screen and send it to the the
   // challenger
+  userconfig *config = getConfig();
   
   clearstatus();
 
@@ -603,15 +604,18 @@ static void sendAttack(void) {
   //  gdispFillArea(140,70,40,110,Black);
 
   if (ourattack & ATTACK_HI) {
-    putImageFile(IMG_GATTH1, POS_PLAYER1_X, POS_PLAYER1_Y);
+    putImageFile(getAvatarImage(config->p_type, "atth", 1, false),
+               POS_PLAYER1_X, POS_PLAYER1_Y);
   }
 
   if (ourattack & ATTACK_MID) {
-    putImageFile(IMG_GATTM1, POS_PLAYER1_X, POS_PLAYER1_Y);
+    putImageFile(getAvatarImage(config->p_type, "attm", 1, false),
+               POS_PLAYER1_X, POS_PLAYER1_Y);
   }
   
   if (ourattack & ATTACK_LOW) {
-    putImageFile(IMG_GATTL1, POS_PLAYER1_X, POS_PCENTER_Y);
+    putImageFile(getAvatarImage(config->p_type, "attl", 1, false),
+               POS_PLAYER1_X, POS_PLAYER1_Y);
   }
 
   // we always say we're waiting. 
