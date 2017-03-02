@@ -124,6 +124,7 @@ uint16_t xptGet (uint8_t cmd)
 	return (val);
 }
 
+#ifdef notdef
 #include "chprintf.h"
 extern void * stream;
 void xptTest(void)
@@ -147,3 +148,4 @@ void xptTest(void)
 
 	return;
 }
+#endif
