@@ -52,7 +52,7 @@ hackers_start(OrchardAppContext *context)
 
 	chThdSetPriority (10);
 
-	i = rand () % 4;
+	i = rand () % 5;
 
 	switch (i) {
 		case 0:
@@ -65,6 +65,9 @@ hackers_start(OrchardAppContext *context)
 			track = "drwho.vid";
 			break;
 		case 3:
+			track = "hypnotod.vid";
+			break;
+		case 4:
 		default:
 			track = "hackplnt.vid";
 			break;
