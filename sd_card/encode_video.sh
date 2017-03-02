@@ -11,11 +11,11 @@
 # sox
 #
 # The destination directory must already exist
-# The video will have an absolute resolution of 150x112 pixels and
+# The video will have an absolute resolution of 128x96 pixels and
 # a frame rate of 8 frames per second. These values have been chosen
-# to coincide will with the audio sample rate of 8820Hz. The synchronization
-# is not perfect: short videos should be used, because the loss of
-# sync will become more pronounced the longer the video plays.
+# to coincide will with the audio sample rate of 9216Hz. The video
+# and audio will be synchronized as the video and audio data
+# will ultimately be merged back together into a single file.
 #
 
 rm -f $2/video.bin
