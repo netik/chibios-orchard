@@ -64,9 +64,16 @@ static void redraw_badge(int8_t drawchar) {
     // our image draws just a bit underneath the stats data. If we
     // draw the character during the HP update, it will blink and we
     // don't want that.
-    putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
-                 POS_PLAYER1_X, POS_PLAYER1_Y);
 
+    if (config->hp < (maxhp(config->level) / 2)) {
+      // show the whoop'd ass graphic if you're less than half. 
+      putImageFile(getAvatarImage(config->p_type, "deth", 1, false),
+                   POS_PLAYER1_X, POS_PLAYER1_Y);
+    } else { 
+      putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
+                   POS_PLAYER1_X, POS_PLAYER1_Y);
+    }
+    
     putImageFile(IMG_GROUND_BTNS, 0, POS_FLOOR_Y);
   }
 
@@ -272,8 +279,10 @@ static void default_event(OrchardAppContext *context,
         if (config->hp >= maxhp(config->level)) {
           config->hp = maxhp(config->level);
           configSave(config);
+          redraw_badge(true);
+        } else {
+          redraw_badge(false);
         }
-        redraw_badge(false);
     }
   }
 }

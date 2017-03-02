@@ -136,6 +136,7 @@ static void state_waitack_tick(void) {
   
   if ( (chVTGetSystemTime() - last_send_time) > MAX_ACKWAIT ) {
     if (packet.ttl > 0)  {
+      chprintf(stream, "\r\nResending packet...\r\n");
       resendPacket();
     } else { 
       orchardAppTimer(instance.context, 0, false); // shut down the timer
@@ -196,6 +197,7 @@ static void state_approval_demand_enter(void) {
 
   ypos = ypos + gdispGetFontMetric(fontFF, fontHeight) + 5;
 
+  // hp bar
   drawProgressBar(xpos,ypos,100,10,maxhp(current_enemy.level), current_enemy.hp, 0, false);
   gwinSetDefaultFont(fontFF);
   
@@ -262,17 +264,29 @@ static void state_move_select_enter() {
 
   clearstatus();
 
+  updatehp();
+
   putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
                POS_PLAYER1_X, POS_PLAYER1_Y);
   
   putImageFile(getAvatarImage(current_enemy.p_type, "idla", 1, true),
                POS_PLAYER2_X, POS_PLAYER2_Y);
 
+  putImageFile("ar50.rgb",
+               160,
+               POS_PLAYER2_Y);
+  putImageFile("ar50.rgb",
+               160,
+               POS_PLAYER2_Y+50);
+  putImageFile("ar50.rgb",
+               160,
+               POS_PLAYER2_Y+100);
+
   gdispDrawStringBox (0,
-                      ypos,
+                      0,
                       screen_width,
                       fontsm_height,
-                      "Attack! High, Mid, Low?",
+                      "Choose attack!",
                       fontSM, White, justifyCenter);
   
   // don't redraw if we don't have to.
@@ -285,7 +299,7 @@ static void state_move_select_enter() {
 }
 
 static void state_move_select_tick() {
-  drawProgressBar(40,gdispGetHeight() - 20,240,20,MOVE_WAIT_TIME,countdown, true, false);
+  drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y,PROGRESS_BAR_W,PROGRESS_BAR_H,MOVE_WAIT_TIME,countdown, true, false);
   
   if (countdown <= 0) {
     // transmit my move
@@ -436,6 +450,7 @@ static void draw_idle_players() {
 
   ypos = ypos + gdispGetFontMetric(fontSM, fontHeight);
 
+  putImageFile(IMG_GROUND_BCK, 0, POS_FLOOR_Y);
   
 }
   
@@ -456,16 +471,11 @@ static void state_vs_screen_enter() {
             justifyCenter,
             10,
             200);
-  
-  updatehp();
-  clearstatus();
-  
+
   // animate them 
   // we always say we're waiting.
-  gdispFillArea(0,screen_height - 20,screen_width,20,Black);
-  
   gdispDrawStringBox (0,
-                      screen_height - 20,
+                      STATUS_Y,
                       screen_width,
                       fontsm_height,
                       "GET READY!",
@@ -483,12 +493,12 @@ static void state_vs_screen_enter() {
                  POS_PLAYER2_X, POS_PLAYER2_Y);
     chThdSleepMilliseconds(200);
   }
-  
+    
   changeState(MOVE_SELECT);
 }
 
 static void countdown_tick() {
-  drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, true,false);
+  drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y,PROGRESS_BAR_W,PROGRESS_BAR_H,DEFAULT_WAIT_TIME,countdown, true, false);
   
   if (countdown <= 0) {
     orchardAppTimer(instance.context, 0, false); // shut down the timer
@@ -501,7 +511,7 @@ static void countdown_tick() {
 
 
 static void state_post_move_tick() {
-  drawProgressBar(40,gdispGetHeight() - 20,240,20,MOVE_WAIT_TIME,countdown, true,false);
+  drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y,PROGRESS_BAR_W,PROGRESS_BAR_H,MOVE_WAIT_TIME,countdown, true, false);
   
   // if we have a move and they have a move, then we go straight to show results
   // and we send them a op_turnover packet to push them along
@@ -1040,7 +1050,7 @@ static void state_approval_wait_enter(void) {
   // progress bar
   last_tick_time = chVTGetSystemTime(); 
   countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value.
-  drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, true, false);
+  drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y,PROGRESS_BAR_W,PROGRESS_BAR_H,DEFAULT_WAIT_TIME,countdown, true, false);
 
   gdispDrawStringBox (0,
                       STATUS_Y,
