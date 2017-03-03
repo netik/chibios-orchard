@@ -13,6 +13,12 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 */
+
+/* undefine this to show sponsors and play music at startup. It is
+   very time consuming to see this when doing development */
+
+#define FAST_STARTUP
+
 #include <string.h>
 
 #include "ch.h"
@@ -404,6 +410,7 @@ int main(void)
 
   /* Draw a banner... */
   uiStart();
+#ifndef FAST_STARTUP
   oledOrchardBanner();
 
   if (config->sound_enabled == 1) {
@@ -414,8 +421,9 @@ int main(void)
   }
 
   /* Promote sponsors */
-  oledOrchardSponsor ();
-
+  oledOrchardSponsor();
+#endif
+  
   /* run apps */
   orchardAppInit();
   evtTableHook(orchard_events, orchard_app_terminated, orchard_app_restart);

@@ -181,6 +181,7 @@ static void state_enemy_select_tick(void);
 static void state_enemy_select_exit(void);
 
 static void state_approval_demand_enter(void);
+static void state_approval_demand_tick(void);
 static void state_approval_demand_exit(void);
 
 static void state_approval_wait_enter(void);
@@ -227,7 +228,7 @@ state_funcs fight_funcs[] = { { // none
                               },
                               { // approval_demand
                                 state_approval_demand_enter,
-                                countdown_tick,
+                                state_approval_demand_tick,
                                 state_approval_demand_exit
                               },
                               {  // approval_wait

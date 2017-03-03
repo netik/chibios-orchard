@@ -161,7 +161,7 @@ static void state_approval_demand_enter(void) {
                               POS_PLAYER2_X, POS_PLAYER2_Y - 20);
 
   gdispDrawStringBox (0,
-		      18,
+		      0,
 		      gdispGetWidth(),
 		      gdispGetFontMetric(fontFF, fontHeight),
 		      "A CHALLENGER AWAITS!",
@@ -250,7 +250,6 @@ static void state_nextround_enter() {
 }
 
 static void state_move_select_enter() {
-  uint16_t ypos = STATUS_Y;
   FightHandles *p;
   userconfig *config = getConfig();
   
@@ -499,6 +498,18 @@ static void state_vs_screen_enter() {
 
 static void countdown_tick() {
   drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y,PROGRESS_BAR_W,PROGRESS_BAR_H,DEFAULT_WAIT_TIME,countdown, true, false);
+  
+  if (countdown <= 0) {
+    orchardAppTimer(instance.context, 0, false); // shut down the timer
+    screen_alert_draw("TIMED OUT!");
+    playHardFail();
+    chThdSleepMilliseconds(ALERT_DELAY);
+    orchardAppRun(orchardAppByName("Badge"));
+  }
+}
+
+static void state_approval_demand_tick() {
+  drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y+10,PROGRESS_BAR_W,PROGRESS_BAR_H,DEFAULT_WAIT_TIME,countdown, true, false);
   
   if (countdown <= 0) {
     orchardAppTimer(instance.context, 0, false); // shut down the timer

@@ -35,6 +35,7 @@
 #include "video_lld.h"
 #include "rand.h"
 
+
 static uint32_t
 hackers_init(OrchardAppContext *context)
 {
