@@ -42,6 +42,10 @@
 #include "diskio.h"
 #include "mmc.h"
 
+#ifndef UPDATER
+#include "dma_lld.h"
+#endif
+
 /* Peripheral controls (Platform dependent) */
 #define CS_LOW() 		/* Set MMC_CS = low */		\
 	palClearPad (MMC_CHIP_SELECT_PORT, MMC_CHIP_SELECT_PIN)
@@ -136,7 +140,6 @@ BYTE xchg_spi (		/* Returns received data */
 	return (dat);
 }
 
-
 /* Receive a data block fast */
 static
 void rcvr_spi_multi (
@@ -144,15 +147,88 @@ void rcvr_spi_multi (
 	UINT cnt	/* Size of data block */
 )
 {
+	/*
+	 * When compiling this module for the firmware updater,
+	 * use the slow but sure synchronous transfer mode. When
+	 * building for the firmware itself, use the faster DMA mode.
+	 */
+
+#ifdef UPDATER
 	UINT i;
 
 	for (i = 0; i < cnt; i++) {
-	   	SPI1->DL = 0xFF;
+		SPI1->DL = 0xFF;
 		while ((SPI1->S & SPIx_S_SPRF) == 0)
 			;
 		p[i] = SPI1->DL;
 	}
+#else
+	/*
+	 * Stop and restart the SPI channel. This right here? This is
+	 * magic. If the DMA controller has already been used in
+	 * non-DMA mode, you have to restart it in order to get it
+	 * to work in DMA mode. This isn't particularly clear from
+	 * the manual. If you don't do this, transfers return
+	 * garbage.
+	 */
 
+	SPI1->C1 &= ~SPIx_C1_SPE;
+	SPI1->C1 |= SPIx_C1_SPE;
+
+	/*
+	 * DMA transfers cause the SD card to overrun the receiver
+	 * and result in corrupted reads unless we enable the FIFO.
+	 */
+
+	SPI1->C3 |= SPIx_C3_FIFOMODE;
+
+	/* Set up the DMA source and destination addresses */
+
+	DMA->ch[0].DSR_BCR = cnt;
+	DMA->ch[0].SAR = (uint32_t)p;
+	DMA->ch[1].DSR_BCR = cnt;
+	DMA->ch[1].DAR = (uint32_t)p;
+
+	/*
+	 * When performing a block read, we need to have the
+	 * MOSI pin pulled high in order for the SD card to
+	 * send us data. This is usually accomplished by transmitting
+	 * a buffer of all 1s at the same time we're receiving. But
+	 * to do that, we need to do a memset() to populate the
+	 * transfer buffer with 1 bits, and that wasts CPU cycles.
+	 * To avoid this, we temporarily turn the MOSI pin back into
+	 * a GPIO and force it high. We still need to perform a TX
+	 * DMA transfer (otherwise the SPI controller won't toggle
+	 * the clock pin), but the contents of the buffer don't
+	 * matter: do the SD card it appears we're always sending
+	 * 1 bits.
+	 */
+
+	palSetPadMode (GPIOE, 1, PAL_MODE_OUTPUT_PUSHPULL);
+	palSetPad (GPIOE, 1);
+
+	/* Start the transfer */
+
+	SPI1->C2 |= SPIx_C2_RXDMAE;
+	DMA->ch[1].DCR |= DMA_DCRn_ERQ;
+	SPI1->C2 |= SPIx_C2_TXDMAE;
+	DMA->ch[0].DCR |= DMA_DCRn_ERQ;
+
+	/* Wait for it to complete. */
+
+	osalSysLock ();
+	osalThreadSuspendS (&dma1Thread);
+	osalSysUnlock ();
+
+	/* Release the MOSI pin. */
+
+	palSetPadMode (GPIOE, 1, PAL_MODE_ALTERNATIVE_2);
+
+	/* Disable SPI DMA mode and turn off the FIFO. */
+
+	SPI1->C2 &= ~(SPIx_C2_TXDMAE|SPIx_C2_RXDMAE);
+	SPI1->C3 &= ~SPIx_C3_FIFOMODE;
+#endif
 	return;
 }
 
