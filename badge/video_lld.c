@@ -374,7 +374,7 @@ videoPlay (char * fname)
 
 		gdisp_lld_write_start_ex (GDISP);
 
-		/* Draw the first line twice. */
+		/* Draw the two scanlines. */
 
 		draw_lines (buf, j & 1);
 		draw_lines (buf + FRAMERES_HORIZONTAL, j & 1);
