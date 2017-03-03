@@ -207,17 +207,34 @@ void rcvr_spi_multi (
 	palSetPadMode (GPIOE, 1, PAL_MODE_OUTPUT_PUSHPULL);
 	palSetPad (GPIOE, 1);
 
-	/* Start the transfer */
+	/*
+	 * Start the transfer and wait for it to complete.
+	 * We will be woken up by the DMA interrupt handler when
+	 * the transfer completion interrupt triggers.
+	 * Note: the whole block below is a critical sectiona nd
+	 * must be guarded with syslock/sysunlock. We must ensure
+	 * the interrupt service routine doesn't fire until
+	 * osalThreadSuspendS() has saved a reference to the
+	 * current thread to the dmaThread1 pointer, but we
+	 * have to do that after initiating the DMA transfer.
+	 * There is a chance the DMA completion interrupt
+	 * might trigger before dmaThread1 is updated, in which
+	 * case the interrupt service routine will fail to wake
+	 * us up. Initiating the transfer after calling osalSysLock()
+	 * closes this race condition window: it masks off interrupts
+	 * until osalThreadSuspendS() atomically puts this thread to
+	 * sleep and then unmasks them again.
+	 */
+
+	osalSysLock ();
 
 	SPI1->C2 |= SPIx_C2_RXDMAE;
 	DMA->ch[1].DCR |= DMA_DCRn_ERQ;
 	SPI1->C2 |= SPIx_C2_TXDMAE;
 	DMA->ch[0].DCR |= DMA_DCRn_ERQ;
 
-	/* Wait for it to complete. */
-
-	osalSysLock ();
 	osalThreadSuspendS (&dma1Thread);
+
 	osalSysUnlock ();
 
 	/* Release the MOSI pin. */
