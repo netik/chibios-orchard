@@ -200,7 +200,7 @@ void rcvr_spi_multi (
 	 * a GPIO and force it high. We still need to perform a TX
 	 * DMA transfer (otherwise the SPI controller won't toggle
 	 * the clock pin), but the contents of the buffer don't
-	 * matter: do the SD card it appears we're always sending
+	 * matter: to the SD card it appears we're always sending
 	 * 1 bits.
 	 */
 
