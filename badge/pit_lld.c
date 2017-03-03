@@ -69,10 +69,11 @@ static void pitIrq (void)
 OSAL_IRQ_HANDLER(KINETIS_PIT_IRQ_VECTOR)
 #endif
 {
+	uint32_t status;
+
 #ifndef UPDATER
 	OSAL_IRQ_PROLOGUE();
 #endif
-	uint32_t status;
 
 	/* Acknowledge the interrupt */
 

@@ -27,6 +27,7 @@
 #include "pit_lld.h"
 #include "tpm_lld.h"
 #include "dac_lld.h"
+#include "dma_lld.h"
 #include "sound.h"
 #include "rand.h"
 
@@ -265,6 +266,7 @@ int main(void)
   pit0Start (&PIT1, disk_timerproc);
 #endif
   dacStart (&DAC1);
+  dmaStart ();
   pwmInit();
   spiStart(&SPID1, &spi1_config);
   orchardEventsStart();
