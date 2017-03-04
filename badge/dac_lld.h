@@ -45,6 +45,8 @@ typedef struct dac_driver {
 
 #define KINETIS_DAC_IRQ_VECTOR Vector98
 
+#define dacStop()              dacPlay(NULL)
+
 #define DAC_READ_1(drv, addr)					\
         *(volatile uint8_t *)((drv)->dac_base + addr)
 

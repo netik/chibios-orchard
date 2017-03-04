@@ -18,6 +18,8 @@
 #include "userconfig.h"
 #include "app-fight.h"
 
+#include "dac_lld.h"
+
 /* Globals */
 static int32_t countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value. 
 static user current_enemy;                    // current enemy we are attacking/talking to 
@@ -32,6 +34,7 @@ static uint32_t last_tick_time = 0;
 static uint32_t last_send_time = 0;
 static uint8_t ourattack = 0;
 static uint8_t theirattack = 0;
+static uint8_t roundno = 1;
 static uint32_t lastseq = 0;
 static int16_t last_hit = -1;
 static int16_t last_damage = -1;
@@ -140,8 +143,8 @@ static void state_waitack_tick(void) {
       resendPacket();
     } else { 
       orchardAppTimer(instance.context, 0, false); // shut down the timer
+      dacPlay("fight/select3.raw");
       screen_alert_draw("OTHER PLAYER WENT AWAY");
-      playHardFail();
       chThdSleepMilliseconds(ALERT_DELAY);
       orchardAppRun(orchardAppByName("Badge"));
       return;
@@ -246,12 +249,14 @@ static void state_nextround_enter() {
 #ifdef DEBUG_FIGHT_TICK
   chprintf(stream, "\r\nFight: Starting new round!\r\n");
 #endif
+  roundno++;
   changeState(MOVE_SELECT);
 }
 
 static void state_move_select_enter() {
   FightHandles *p;
   userconfig *config = getConfig();
+  char tmp[25];
   
   p = instance.context->priv;
 
@@ -282,7 +287,7 @@ static void state_move_select_enter() {
                POS_PLAYER2_Y+100);
 
   gdispDrawStringBox (0,
-                      0,
+                      STATUS_Y,
                       screen_width,
                       fontsm_height,
                       "Choose attack!",
@@ -291,6 +296,12 @@ static void state_move_select_enter() {
   // don't redraw if we don't have to.
   if (p->ghAttackLow == NULL) 
     draw_attack_buttons();
+
+  // round N , fight!
+  chsnprintf(tmp, sizeof(tmp), "fight/round%d.raw", roundno);
+  dacPlay(tmp);
+  chThdSleepMilliseconds(1000);
+  dacPlay("fight/fight.raw");
   
   last_tick_time = chVTGetSystemTime();
   countdown=MOVE_WAIT_TIME;
@@ -502,7 +513,7 @@ static void countdown_tick() {
   if (countdown <= 0) {
     orchardAppTimer(instance.context, 0, false); // shut down the timer
     screen_alert_draw("TIMED OUT!");
-    playHardFail();
+    dacPlay("fight/select3.raw");
     chThdSleepMilliseconds(ALERT_DELAY);
     orchardAppRun(orchardAppByName("Badge"));
   }
@@ -514,7 +525,7 @@ static void state_approval_demand_tick() {
   if (countdown <= 0) {
     orchardAppTimer(instance.context, 0, false); // shut down the timer
     screen_alert_draw("TIMED OUT!");
-    playHardFail();
+    dacPlay("fight/select3.raw");
     chThdSleepMilliseconds(ALERT_DELAY);
     orchardAppRun(orchardAppByName("Badge"));
   }
@@ -905,7 +916,7 @@ static void show_results(void) {
       playHit();      
     }
 
-    playHit();
+    dacPlay("fight/hit1.raw");
 
     chThdSleepMilliseconds(300);
     gdispDrawStringBox (textx,text_p1_y,50,50,ourdmg_s,fontFF,Black,justifyLeft);
@@ -932,7 +943,7 @@ static void show_results(void) {
   
   if (current_enemy.hp == 0) {
     changeState(ENEMY_DEAD);
-    playVictory();
+    dacPlay("fight/drop.raw");
     screen_alert_draw("VICTORY!");
     config->xp += (80 + ((config->level-1) * 16));
     config->won++;
@@ -943,7 +954,7 @@ static void show_results(void) {
     if (config->hp == 0) {
       changeState(PLAYER_DEAD);
       /* if you are dead, then you will do the same */
-      playDefeat();
+      dacPlay("fight/defrmix.raw");
       screen_alert_draw("YOU ARE DEFEATED.");
       config->xp += (10 + ((config->level-1) * 16));
       config->lost++;
@@ -956,6 +967,7 @@ static void show_results(void) {
   if (config->hp == 0 || current_enemy.hp == 0) {
     // check for level UP
     if ((config->level != calc_level(config->xp)) && (config->level != 10)) {
+      dacPlay("fight/levelup.raw");
       config->level++;
       configSave(config);
       changeState(LEVELUP);
@@ -1041,7 +1053,7 @@ static void fight_start(OrchardAppContext *context) {
   if (current_fight_state == IDLE) {
     if (enemyCount() > 0) {
       changeState( ENEMY_SELECT );
-      
+      dacPlay("fight/chsmix.raw");
       if (enemies[current_enemy_idx] == NULL) {
 	nextEnemy();
       }
@@ -1247,6 +1259,7 @@ static void fight_event(OrchardAppContext *context,
       }
       if ( ((GEventGWinButton*)pe)->gwin == p->ghAttack) { 
         // we are attacking.
+        dacPlay("fight/select.raw");
         started_it = 1;
         memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(user));
         config->in_combat = true;
@@ -1317,7 +1330,8 @@ static void fight_exit(OrchardAppContext *context) {
   FightHandles * p;
   userconfig *config = getConfig();
   p = context->priv;
-
+  dacStop();
+  
   chprintf(stream, "\r\nFIGHT: fight_exit\r\n");
 
   // don't change back to idle state from any other function. Let fight_exit take care of it.
@@ -1491,7 +1505,7 @@ static void radio_event_do(KW01_PKT * pkt)
     if (u->opcode == OP_DECLINED) {
       orchardAppTimer(instance.context, 0, false); // shut down the timer
       screen_alert_draw("DENIED.");
-      playHardFail();
+      dacPlay("fight/select3.raw");
       ledSetProgress(-1);
       chThdSleepMilliseconds(ALERT_DELAY);
       changeState(ENEMY_SELECT);

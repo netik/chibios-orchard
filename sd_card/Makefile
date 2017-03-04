@@ -42,6 +42,9 @@ rgb/%.rgb : tif/%.tif
 dac/%.raw: dac/%.mp3
 	./sndmp3toraw.sh $<
 
+dac/fight/%.raw: dac/fight/%.mp3
+	./sndmp3toraw.sh $<
+
 clean_images:
 	$(shell rm jpg/mirrored/*)
 	$(shell rm tif/mirrored/*)
@@ -49,7 +52,7 @@ clean_images:
 
 images: rgbhdr $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard jpg/*.jpg tif/*.tif)))))
 
-sounds: snd16to12 $(addprefix dac/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/*.mp3)))))
+sounds: snd16to12 $(addprefix dac/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/fight*.mp3))))) $(addprefix dac/fight/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/fight/*.mp3)))))
 
 sdcard: images midi sounds
 	@cp rgb/*.rgb sdcard
@@ -58,6 +61,8 @@ sdcard: images midi sounds
 	@cp ../updater/updater.bin sdcard
 	@cp ../badge/build/badge.bin sdcard
 	@cp dac/*.raw sdcard
+	@if [ ! -d "sdcard/fight" ]; then mkdir sdcard/fight; fi
+	@cp dac/fight/*.raw sdcard/fight
 	@cp video/*.vid sdcard
 	@mv -f sdcard/credits_mario.rgb sdcard/credits.rgb
 	@echo
