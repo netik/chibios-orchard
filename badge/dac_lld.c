@@ -63,6 +63,7 @@ static volatile int dacmax;
 static char * fname;
 static thread_t * pThread = NULL;
 static uint8_t play;
+static uint8_t dacloop;
 
 static void
 dacWrite (void)
@@ -90,8 +91,10 @@ THD_FUNCTION(dacThread, arg)
 	config = getConfig();
 
 	while (1) {
-		th = chMsgWait ();
-		chMsgRelease (th, MSG_OK);
+		if (play == 0) {
+			th = chMsgWait ();
+			chMsgRelease (th, MSG_OK);
+		}
  
 		if (config->sound_enabled == 0)
 			continue;
@@ -153,7 +156,10 @@ THD_FUNCTION(dacThread, arg)
 		dacpos = 0;
 		dacmax = 0;
 		dacbuf = NULL;
-		play = 0;
+		if (play && dacloop == DAC_PLAY_ONCE) {
+			fname = NULL;
+			play = 0;
+		}
 		f_close (&f);
 		pitDisable (&PIT1, 1);
 	}
@@ -183,12 +189,20 @@ dacStart (DACDriver * dac)
 }
 
 void
-dacPlay (char * file)
+dacLoopPlay (char * file, uint8_t loop)
 {
 	play = 0;
+	dacloop = loop;
 	fname = file;
 	chMsgSend (pThread, MSG_OK);
 
+	return;
+}
+
+void
+dacPlay (char * file)
+{
+	dacLoopPlay (file, DAC_PLAY_ONCE);
 	return;
 }
 

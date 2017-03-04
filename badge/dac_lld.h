@@ -43,6 +43,9 @@ typedef struct dac_driver {
 #define DAC_SAMPLES		450
 #define DAC_BYTES		(DAC_SAMPLES * 2)
 
+#define DAC_PLAY_ONCE		0
+#define DAC_PLAY_LOOP		1
+
 #define KINETIS_DAC_IRQ_VECTOR Vector98
 
 #define DAC_READ_1(drv, addr)					\
@@ -70,6 +73,7 @@ extern uint16_t * dacBuf;
 
 extern void dacStart (DACDriver *);
 extern void dacPlay (char *);
+extern void dacLoopPlay (char *, uint8_t);
 
 extern void dacSamplesPlay (uint16_t * p, int cnt);
 extern int dacWait (void);
