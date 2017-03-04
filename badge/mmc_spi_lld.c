@@ -130,8 +130,7 @@ BYTE xchg_spi (		/* Returns received data */
 	BYTE dat		/* Data to be sent */
 )
 {
-	while ((SPI1->S & SPIx_S_SPTEF) == 0)
-		;
+	(void)SPI1->S;
 	SPI1->DL = dat;
 	while ((SPI1->S & SPIx_S_SPRF) == 0)
 		;

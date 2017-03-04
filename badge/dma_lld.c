@@ -122,7 +122,7 @@ dmaStart (void)
 
 	DMA->ch[0].DCR = DMA_DCRn_EINT | DMA_DCRn_D_REQ |
 	    DMA_DCRn_SSIZE(1) | DMA_DCRn_DSIZE(1) |
-	    DMA_DCRn_SINC | DMA_DCRn_CS;
+	    DMA_DCRn_SINC | DMA_DCRn_CS | DMA_DCRn_EADREQ;
 	DMA->ch[0].DAR = (uint32_t)&(SPI1->DL);
 
 	/* Initialize channel 1 for SPI RX */
@@ -132,7 +132,7 @@ dmaStart (void)
 
 	DMA->ch[1].DCR = DMA_DCRn_EINT | DMA_DCRn_D_REQ |
 	    DMA_DCRn_SSIZE(1) | DMA_DCRn_DSIZE(1) |
-	    DMA_DCRn_DINC | DMA_DCRn_CS;
+	    DMA_DCRn_DINC | DMA_DCRn_CS | DMA_DCRn_EADREQ;
 	DMA->ch[1].SAR = (uint32_t)&(SPI1->DL);
 
 	/* Initialize channel 2 for SPI TX with 16-bit transfers */
@@ -142,7 +142,7 @@ dmaStart (void)
 
 	DMA->ch[2].DCR = DMA_DCRn_EINT | DMA_DCRn_D_REQ |
 	    DMA_DCRn_SSIZE(2) | DMA_DCRn_DSIZE(2) |
-	    DMA_DCRn_SINC | DMA_DCRn_CS;
+	    DMA_DCRn_SINC | DMA_DCRn_CS | DMA_DCRn_EADREQ;
 	DMA->ch[2].DAR = (uint32_t)&(SPI1->DL);
 
 	/* Enable IRQ vectors */
