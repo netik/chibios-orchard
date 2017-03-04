@@ -14,6 +14,7 @@
 /* Driver hardware support.                                                  */
 /*===========================================================================*/
 
+#define GDISP_HARDWARE_BITFILLS			TRUE
 #define GDISP_HARDWARE_STREAM_WRITE		TRUE
 //#define GDISP_HARDWARE_STREAM_READ		TRUE
 #define GDISP_HARDWARE_CONTROL			TRUE

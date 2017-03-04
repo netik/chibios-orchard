@@ -7,6 +7,8 @@
 
 #include "gfx.h"
 
+#include "dma_lld.h"
+
 #if GFX_USE_GDISP
 
 #if defined(GDISP_SCREEN_HEIGHT)
@@ -295,6 +297,48 @@ LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
 			;
 	        SPI1->C2 &= ~SPIx_C2_SPMODE;
 		release_bus(g);
+	}
+#endif
+
+#if GDISP_HARDWARE_BITFILLS
+#if GDISP_PIXELFORMAT != GDISP_LLD_PIXELFORMAT
+#error "GDISP: ILI9341: BitBlit is only available in RGB565 pixel format"
+#endif
+
+	static void dma_with_inc (pixel_t * b, int cnt) {
+		SPI1->C1 &= ~SPIx_C1_SPE;
+		SPI1->C1 |= SPIx_C1_SPE;
+
+		DMA->ch[2].DSR_BCR = cnt * 2;
+		DMA->ch[2].SAR = (uint32_t)b;
+
+		osalSysLock ();
+		SPI1->C2 |= SPIx_C2_TXDMAE;
+		DMA->ch[2].DCR |= DMA_DCRn_ERQ;
+		osalThreadSuspendS (&dma2Thread);
+		osalSysUnlock ();
+ 
+		SPI1->C2 &= ~SPIx_C2_TXDMAE;
+
+		return;
+	}
+
+	LLDSPEC void gdisp_lld_blit_area(GDisplay *g) {
+		pixel_t         *buffer;
+		coord_t         ycnt;
+
+		buffer = (pixel_t *)g->p.ptr + g->p.x1 + g->p.y1 * g->p.x2;
+
+		gdisp_lld_write_start (g);
+		if (g->p.x2 == g->p.cx) {
+			dma_with_inc (buffer, g->p.cx*g->p.cy);
+		} else {
+			for (ycnt = g->p.cy; ycnt; ycnt--, buffer += g->p.x2)
+				dma_with_inc (buffer, g->p.cy);
+		}
+		gdisp_lld_write_stop (g);
+
+		return;
 	}
 #endif
 

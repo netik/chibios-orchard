@@ -87,6 +87,7 @@
 
 extern thread_reference_t dma0Thread;
 extern thread_reference_t dma1Thread;
+extern thread_reference_t dma2Thread;
 
 extern void dmaStart (void);
 

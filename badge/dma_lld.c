@@ -38,6 +38,7 @@
 
 thread_reference_t dma0Thread;
 thread_reference_t dma1Thread;
+thread_reference_t dma2Thread;
 
 OSAL_IRQ_HANDLER(KINETIS_DMA0_IRQ_VECTOR)
 {
@@ -83,6 +84,28 @@ OSAL_IRQ_HANDLER(KINETIS_DMA1_IRQ_VECTOR)
 	return;
 }
 
+OSAL_IRQ_HANDLER(KINETIS_DMA2_IRQ_VECTOR)
+{
+	OSAL_IRQ_PROLOGUE();
+
+	if (DMA->ch[2].DSR_BCR & DMA_DSR_BCRn_DONE) {
+
+		/* Wake any thread waiting for this DMA transfer to finish */
+
+		osalSysLockFromISR ();
+		osalThreadResumeI (&dma2Thread, MSG_OK);
+		osalSysUnlockFromISR ();                          
+
+		/* Ack the DMA completion interrupt */
+
+		DMA->ch[2].DSR_BCR |= DMA_DSR_BCRn_DONE;
+	}
+
+	OSAL_IRQ_EPILOGUE();
+
+	return;
+}
+
 void
 dmaStart (void)
 {
@@ -112,10 +135,21 @@ dmaStart (void)
 	    DMA_DCRn_DINC | DMA_DCRn_CS;
 	DMA->ch[1].SAR = (uint32_t)&(SPI1->DL);
 
+	/* Initialize channel 2 for SPI TX with 16-bit transfers */
+
+	DMAMUX->CHCFG[2] = DMAMUX_CHCFGn_ENBL |
+	    DMAMUX_CHCFGn_SOURCE(DMA_CHAN_SPI1_TX);
+
+	DMA->ch[2].DCR = DMA_DCRn_EINT | DMA_DCRn_D_REQ |
+	    DMA_DCRn_SSIZE(2) | DMA_DCRn_DSIZE(2) |
+	    DMA_DCRn_SINC | DMA_DCRn_CS;
+	DMA->ch[2].DAR = (uint32_t)&(SPI1->DL);
+
 	/* Enable IRQ vectors */
 
 	nvicEnableVector (DMA0_IRQn, 5);
 	nvicEnableVector (DMA1_IRQn, 5);
+	nvicEnableVector (DMA2_IRQn, 5);
 
 	return;
 }
