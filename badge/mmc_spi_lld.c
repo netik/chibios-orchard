@@ -200,7 +200,7 @@ void rcvr_spi_multi (
 	 * a GPIO and force it high. We still need to perform a TX
 	 * DMA transfer (otherwise the SPI controller won't toggle
 	 * the clock pin), but the contents of the buffer don't
-	 * matter: do the SD card it appears we're always sending
+	 * matter: to the SD card it appears we're always sending
 	 * 1 bits.
 	 */
 
@@ -211,13 +211,13 @@ void rcvr_spi_multi (
 	 * Start the transfer and wait for it to complete.
 	 * We will be woken up by the DMA interrupt handler when
 	 * the transfer completion interrupt triggers.
-	 * Note: the whole block below is a critical sectiona nd
+	 * Note: the whole block below is a critical section and
 	 * must be guarded with syslock/sysunlock. We must ensure
 	 * the interrupt service routine doesn't fire until
 	 * osalThreadSuspendS() has saved a reference to the
-	 * current thread to the dmaThread1 pointer, but we
-	 * have to do that after initiating the DMA transfer.
-	 * There is a chance the DMA completion interrupt
+	 * current thread to the dmaThread1 pointer, but we have
+	 * to call osalThreadSuspendS()  after initiating the DMA
+	 * transfer. There is a chance the DMA completion interrupt
 	 * might trigger before dmaThread1 is updated, in which
 	 * case the interrupt service routine will fail to wake
 	 * us up. Initiating the transfer after calling osalSysLock()
