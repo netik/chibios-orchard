@@ -867,9 +867,9 @@ static void show_results(void) {
   }
 
   if (c == ' ') 
-    strcpy(attackfn1, IMG_GIDLA1);
+    strcpy(attackfn1, "idla");
   else 
-    chsnprintf(attackfn1, sizeof(attackfn1), "gatt%c1.rgb", c);
+    chsnprintf(attackfn1, sizeof(attackfn1), "att%c", c);
 
   c = ' ';
   textx = 100;
@@ -889,9 +889,9 @@ static void show_results(void) {
   }
   
   if (c == ' ') 
-    strcpy(attackfn2, IMG_GIDLA1R);
+    strcpy(attackfn2, "idla");
   else 
-    chsnprintf(attackfn2, sizeof(attackfn2), "gatt%c1r.rgb", c);
+    chsnprintf(attackfn2, sizeof(attackfn2), "att%c", c);
 
   // compute damages
   // Both sides have sent damage based on stats.
@@ -916,8 +916,11 @@ static void show_results(void) {
   // 45 down. 
   // 140 | -40- | 140
   for (uint8_t i=0; i < 2; i++) { 
-    putImageFile(attackfn1, POS_PLAYER1_X, POS_PLAYER1_Y);
-    putImageFile(attackfn2, POS_PLAYER2_X, POS_PLAYER2_Y);
+    putImageFile(getAvatarImage(config->p_type, attackfn1, 1, false),
+               POS_PLAYER1_X, POS_PLAYER1_Y);
+  
+    putImageFile(getAvatarImage(current_enemy.p_type, attackfn2, 1, true),
+               POS_PLAYER2_X, POS_PLAYER2_Y);
 
     p1color = Red;
     p2color = Red;
@@ -941,8 +944,12 @@ static void show_results(void) {
     gdispDrawStringBox (textx,text_p1_y,50,50,ourdmg_s,fontFF,Black,justifyLeft);
     gdispDrawStringBox (textx+60,text_p2_y,50,50,theirdmg_s,fontFF,Black,justifyRight);
 
-    putImageFile(IMG_GUARD_IDLE_L, POS_PLAYER1_X, POS_PLAYER1_Y);
-    putImageFile(IMG_GUARD_IDLE_R, POS_PLAYER2_X, POS_PLAYER2_Y);
+    putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
+               POS_PLAYER1_X, POS_PLAYER1_Y);
+  
+    putImageFile(getAvatarImage(current_enemy.p_type, "idla", 1, true),
+               POS_PLAYER2_X, POS_PLAYER2_Y);
+
     chThdSleepMilliseconds(100);
   }
 
@@ -986,7 +993,7 @@ static void show_results(void) {
       putImageFile(getAvatarImage(config->p_type, "deth", 2, false),
                    POS_PLAYER1_X, POS_PLAYER1_Y);
       chThdSleepMilliseconds(250);
-      screen_alert_draw(true, "YOU ARE DEFEATED.");
+      screen_alert_draw(false, "YOU ARE DEFEATED.");
       config->xp += (10 + ((config->level-1) * 16));
       config->lost++;
       configSave(config);
