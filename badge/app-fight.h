@@ -2,7 +2,7 @@
 #define __APP_FIGHT_H__
 
 /* debugging - this protocol can be a real pain in the ass */
-#undef  DEBUG_FIGHT_TICK        // show the clock tick events, ugfx events, and other misc events
+#define  DEBUG_FIGHT_TICK        // show the clock tick events, ugfx events, and other misc events
 #define DEBUG_FIGHT_NETWORK    // show all network (radio) traffic
 #define DEBUG_FIGHT_STATE      // debug state changes
   
@@ -19,6 +19,13 @@
 #define MAX_RETRIES 4                  // if we do that 3 times, abort. 
 #define MOVE_WAIT_TIME MS2ST(60000)    // Max game time. MUST BE IN SYSTEM TICKS. If you do nothing, the game ends.
 #define ALERT_DELAY 1500               // how long alerts (screen_alert) stay on the screen.
+
+// where the progres bar goes 
+#define PROGRESS_BAR_X 60
+#define PROGRESS_BAR_Y 210
+#define PROGRESS_BAR_W 200
+#define PROGRESS_BAR_H 10
+
 
 /* MSB of attackbitmap represents the attack */
 #define ATTACK_MASK     0x38
@@ -174,6 +181,7 @@ static void state_enemy_select_tick(void);
 static void state_enemy_select_exit(void);
 
 static void state_approval_demand_enter(void);
+static void state_approval_demand_tick(void);
 static void state_approval_demand_exit(void);
 
 static void state_approval_wait_enter(void);
@@ -220,7 +228,7 @@ state_funcs fight_funcs[] = { { // none
                               },
                               { // approval_demand
                                 state_approval_demand_enter,
-                                countdown_tick,
+                                state_approval_demand_tick,
                                 state_approval_demand_exit
                               },
                               {  // approval_wait

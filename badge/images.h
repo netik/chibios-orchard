@@ -92,5 +92,5 @@ Matthew (graphics,art)\r\n\r\n"
 #define POS_FLOOR_Y    200
 
 /* screen locations */
-#define STATUS_Y       38     /* where the status row is on screen */
+#define STATUS_Y       20     /* where the status row is on screen */
 

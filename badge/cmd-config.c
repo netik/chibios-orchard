@@ -7,12 +7,26 @@
 #include "ch.h"
 #include "shell.h"
 #include "chprintf.h"
+#include "led.h"
 
 #include "orchard-shell.h"
 #include "orchard-app.h"
 
 #include "userconfig.h"
 
+/* prototypes */
+static void cmd_config_show(BaseSequentialStream *chp, int argc, char *argv[]);
+static void cmd_config_set(BaseSequentialStream *chp, int argc, char *argv[]);
+static void cmd_config_save(BaseSequentialStream *chp, int argc, char *argv[]);
+static void cmd_config(BaseSequentialStream *chp, int argc, char *argv[]);
+static void cmd_config_led_stop(BaseSequentialStream *chp);
+static void cmd_config_led_run(BaseSequentialStream *chp, int argc, char *argv[]);
+static void cmd_config_led_all(BaseSequentialStream *chp, int argc, char *argv[]);
+static void cmd_config_led_dim(BaseSequentialStream *chp, int argc, char *argv[]);
+static void cmd_config_led_list(BaseSequentialStream *chp);
+
+/* end prototypes */
+                
 static void cmd_config_show(BaseSequentialStream *chp, int argc, char *argv[])
 {
   (void)argv;
@@ -139,9 +153,15 @@ static void cmd_config(BaseSequentialStream *chp, int argc, char *argv[])
 
   if (argc == 0) {
     chprintf(chp, "config commands:\r\n");
-    chprintf(chp, "   show             show config\r\n");
-    chprintf(chp, "   set nnn yyy      set variable nnn to yyy (vars: name, sound, type)\r\n");
-    chprintf(chp, "   save             save config to flash\r\n\r\n");
+    chprintf(chp, "   show           show config\r\n");
+    chprintf(chp, "   set nnn yyy    set variable nnn to yyy (vars: name, sound, type)\r\n");
+    chprintf(chp, "   led list       list animations available\r\n");
+    chprintf(chp, "   led dim n      dimmer level (0-7) 0=brightest\r\n");
+    chprintf(chp, "   led run n      run pattern #n\r\n");
+    chprintf(chp, "   led all r g b  set all leds to one color (0-255)\r\n");
+    chprintf(chp, "   led stop       stop and blank LEDs\r\n");
+    chprintf(chp, "   save           save config to flash\r\n\r\n");
+
     chprintf(chp, "warning: if another thread updates the config, your changes could conflict!\r\n");
     chprintf(chp, "         use with caution!\r\n");
     return;
@@ -161,9 +181,132 @@ static void cmd_config(BaseSequentialStream *chp, int argc, char *argv[])
     cmd_config_save(chp, argc, argv);
     return;
   }
-
+  
+  if (!strcasecmp(argv[0], "led")) {
+    if (!strcasecmp(argv[1], "list")) {
+      cmd_config_led_list(chp);
+      return;
+    }
+    
+    if (!strcasecmp(argv[1], "dim")) {
+      cmd_config_led_dim(chp, argc, argv);
+      return;
+    }
+    
+    if (!strcasecmp(argv[1], "all")) {
+      cmd_config_led_all(chp, argc, argv);
+      return;
+    }
+    
+    if (!strcasecmp(argv[1], "run")) { 
+      cmd_config_led_run(chp, argc, argv);
+      return;
+    }
+    
+    if (!strcasecmp(argv[1], "stop")) { 
+      cmd_config_led_stop(chp);
+      return;
+    }
+  }
+  
   chprintf(chp, "Unrecognized config command.\r\n");
+  
+}
+
+/* LED configuration */
+extern struct FXENTRY fxlist[];
+
+static void cmd_config_led_stop(BaseSequentialStream *chp) {
+  effectsStop();
+  chprintf(chp, "Off.\r\n");
+}
+
+static void cmd_config_led_run(BaseSequentialStream *chp, int argc, char *argv[]) {
+
+  uint8_t pattern;
+  userconfig *config = getConfig();
+    
+  if (argc != 3) {
+    chprintf(chp, "No pattern specified\r\n");
+    return;
+  }
+
+  pattern = strtoul(argv[2], NULL, 0);
+  if ((pattern < 1) || (pattern > LED_PATTERN_COUNT)) {
+    chprintf(chp, "Invaild pattern #!\r\n");
+    return;
+  }
+
+  config->led_pattern = pattern-1;
+  ledResetPattern();
+  
+  chprintf(chp, "Pattern changed to %s.\r\n", fxlist[pattern-1].name);
+}
+
+static void cmd_config_led_all(BaseSequentialStream *chp, int argc, char *argv[]) {
+
+  int16_t r,g,b;
+  userconfig *config = getConfig();
+
+  if (argc != 4) {
+    chprintf(chp, "Not enough arguments.\r\n");
+    return;
+  }
+
+  r = strtoul(argv[2], NULL, 0);
+  g = strtoul(argv[3], NULL, 0);
+  b = strtoul(argv[4], NULL, 0);
+
+  if ((r < 0) || (r > 255) ||
+      (g < 0) || (g > 255) ||
+      (b < 0) || (b > 255) ) {
+    chprintf(chp, "Invaild value. Must be 0 to 255.\r\n");
+    return;
+  }
+
+  chprintf(chp, "LEDs set.\r\n");
+
+  config->led_r = r;
+  config->led_g = g;
+  config->led_b = b;
+  config->led_pattern = LED_PATTERN_COUNT - 1;
+
+  // the last pattern is always the 'ALL' state. 
+  ledResetPattern();
+  
 
 }
+
+static void cmd_config_led_dim(BaseSequentialStream *chp, int argc, char *argv[]) {
+
+  int8_t level;
+  userconfig *config = getConfig();
+
+  if (argc != 3) {
+    chprintf(chp, "level?\r\n");
+    return;
+  }
+
+  level = strtoul(argv[2], NULL, 0);
+
+  if ((level < 0) || (level > 7)) {
+    chprintf(chp, "Invaild level. Must be 0 to 7.\r\n");
+    return;
+  }
+
+  ledSetBrightness(level);
+  chprintf(chp, "Level now %d.\r\n", level);
+
+  config->led_shift = level;
+}
+
+static void cmd_config_led_list(BaseSequentialStream *chp) {
+  chprintf(chp, "\r\nAvailable LED Patterns\r\n");
+
+  for (int i=0; i < LED_PATTERN_COUNT; i++) {
+    chprintf(chp, "%2d) %s\r\n", i+1, fxlist[i].name);
+  }
+}
+
 
 orchard_command("config", cmd_config);

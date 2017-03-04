@@ -18,6 +18,8 @@
 #include "userconfig.h"
 #include "app-fight.h"
 
+#include "dac_lld.h"
+
 /* Globals */
 static int32_t countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value. 
 static user current_enemy;                    // current enemy we are attacking/talking to 
@@ -32,6 +34,7 @@ static uint32_t last_tick_time = 0;
 static uint32_t last_send_time = 0;
 static uint8_t ourattack = 0;
 static uint8_t theirattack = 0;
+static uint8_t roundno = 1;
 static uint32_t lastseq = 0;
 static int16_t last_hit = -1;
 static int16_t last_damage = -1;
@@ -136,11 +139,12 @@ static void state_waitack_tick(void) {
   
   if ( (chVTGetSystemTime() - last_send_time) > MAX_ACKWAIT ) {
     if (packet.ttl > 0)  {
+      chprintf(stream, "\r\nResending packet...\r\n");
       resendPacket();
     } else { 
       orchardAppTimer(instance.context, 0, false); // shut down the timer
+      dacPlay("fight/select3.raw");
       screen_alert_draw("OTHER PLAYER WENT AWAY");
-      playHardFail();
       chThdSleepMilliseconds(ALERT_DELAY);
       orchardAppRun(orchardAppByName("Badge"));
       return;
@@ -160,7 +164,7 @@ static void state_approval_demand_enter(void) {
                               POS_PLAYER2_X, POS_PLAYER2_Y - 20);
 
   gdispDrawStringBox (0,
-		      18,
+		      0,
 		      gdispGetWidth(),
 		      gdispGetFontMetric(fontFF, fontHeight),
 		      "A CHALLENGER AWAITS!",
@@ -196,6 +200,7 @@ static void state_approval_demand_enter(void) {
 
   ypos = ypos + gdispGetFontMetric(fontFF, fontHeight) + 5;
 
+  // hp bar
   drawProgressBar(xpos,ypos,100,10,maxhp(current_enemy.level), current_enemy.hp, 0, false);
   gwinSetDefaultFont(fontFF);
   
@@ -226,6 +231,7 @@ static void state_approval_demand_enter(void) {
   last_tick_time = chVTGetSystemTime();
   countdown=DEFAULT_WAIT_TIME;
 
+  roundno = 1;
   started_it = 0;
   playAttacked();
   
@@ -244,13 +250,14 @@ static void state_nextround_enter() {
 #ifdef DEBUG_FIGHT_TICK
   chprintf(stream, "\r\nFight: Starting new round!\r\n");
 #endif
+  roundno++;
   changeState(MOVE_SELECT);
 }
 
 static void state_move_select_enter() {
-  uint16_t ypos = STATUS_Y;
   FightHandles *p;
   userconfig *config = getConfig();
+  char tmp[25];
   
   p = instance.context->priv;
 
@@ -262,22 +269,40 @@ static void state_move_select_enter() {
 
   clearstatus();
 
+  updatehp();
+
   putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
                POS_PLAYER1_X, POS_PLAYER1_Y);
   
   putImageFile(getAvatarImage(current_enemy.p_type, "idla", 1, true),
                POS_PLAYER2_X, POS_PLAYER2_Y);
 
+  putImageFile("ar50.rgb",
+               160,
+               POS_PLAYER2_Y);
+  putImageFile("ar50.rgb",
+               160,
+               POS_PLAYER2_Y+50);
+  putImageFile("ar50.rgb",
+               160,
+               POS_PLAYER2_Y+100);
+
   gdispDrawStringBox (0,
-                      ypos,
+                      STATUS_Y+12,
                       screen_width,
                       fontsm_height,
-                      "Attack! High, Mid, Low?",
+                      "Choose attack!",
                       fontSM, White, justifyCenter);
   
   // don't redraw if we don't have to.
   if (p->ghAttackLow == NULL) 
     draw_attack_buttons();
+
+  // round N , fight!
+  chsnprintf(tmp, sizeof(tmp), "fight/round%d.raw", roundno);
+  dacPlay(tmp);
+  chThdSleepMilliseconds(1000);
+  dacPlay("fight/fight.raw");
   
   last_tick_time = chVTGetSystemTime();
   countdown=MOVE_WAIT_TIME;
@@ -285,7 +310,7 @@ static void state_move_select_enter() {
 }
 
 static void state_move_select_tick() {
-  drawProgressBar(40,gdispGetHeight() - 20,240,20,MOVE_WAIT_TIME,countdown, true, false);
+  drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y,PROGRESS_BAR_W,PROGRESS_BAR_H,MOVE_WAIT_TIME,countdown, true, false);
   
   if (countdown <= 0) {
     // transmit my move
@@ -381,6 +406,7 @@ static void screen_select_draw(int8_t initial) {
 }
 
 static void state_enemy_select_enter(void) {
+  roundno = 1;
   screen_select_draw(TRUE);
   draw_select_buttons();
 }
@@ -436,6 +462,7 @@ static void draw_idle_players() {
 
   ypos = ypos + gdispGetFontMetric(fontSM, fontHeight);
 
+  putImageFile(IMG_GROUND_BCK, 0, POS_FLOOR_Y);
   
 }
   
@@ -456,16 +483,11 @@ static void state_vs_screen_enter() {
             justifyCenter,
             10,
             200);
-  
-  updatehp();
-  clearstatus();
-  
+
   // animate them 
   // we always say we're waiting.
-  gdispFillArea(0,screen_height - 20,screen_width,20,Black);
-  
   gdispDrawStringBox (0,
-                      screen_height - 20,
+                      STATUS_Y,
                       screen_width,
                       fontsm_height,
                       "GET READY!",
@@ -483,17 +505,29 @@ static void state_vs_screen_enter() {
                  POS_PLAYER2_X, POS_PLAYER2_Y);
     chThdSleepMilliseconds(200);
   }
-  
+    
   changeState(MOVE_SELECT);
 }
 
 static void countdown_tick() {
-  drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, true,false);
+  drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y,PROGRESS_BAR_W,PROGRESS_BAR_H,DEFAULT_WAIT_TIME,countdown, true, false);
   
   if (countdown <= 0) {
     orchardAppTimer(instance.context, 0, false); // shut down the timer
     screen_alert_draw("TIMED OUT!");
-    playHardFail();
+    dacPlay("fight/select3.raw");
+    chThdSleepMilliseconds(ALERT_DELAY);
+    orchardAppRun(orchardAppByName("Badge"));
+  }
+}
+
+static void state_approval_demand_tick() {
+  drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y+10,PROGRESS_BAR_W,PROGRESS_BAR_H,DEFAULT_WAIT_TIME,countdown, true, false);
+  
+  if (countdown <= 0) {
+    orchardAppTimer(instance.context, 0, false); // shut down the timer
+    screen_alert_draw("TIMED OUT!");
+    dacPlay("fight/select3.raw");
     chThdSleepMilliseconds(ALERT_DELAY);
     orchardAppRun(orchardAppByName("Badge"));
   }
@@ -501,7 +535,7 @@ static void countdown_tick() {
 
 
 static void state_post_move_tick() {
-  drawProgressBar(40,gdispGetHeight() - 20,240,20,MOVE_WAIT_TIME,countdown, true,false);
+  drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y,PROGRESS_BAR_W,PROGRESS_BAR_H,MOVE_WAIT_TIME,countdown, true, false);
   
   // if we have a move and they have a move, then we go straight to show results
   // and we send them a op_turnover packet to push them along
@@ -884,7 +918,7 @@ static void show_results(void) {
       playHit();      
     }
 
-    playHit();
+    dacPlay("fight/hit1.raw");
 
     chThdSleepMilliseconds(300);
     gdispDrawStringBox (textx,text_p1_y,50,50,ourdmg_s,fontFF,Black,justifyLeft);
@@ -911,7 +945,7 @@ static void show_results(void) {
   
   if (current_enemy.hp == 0) {
     changeState(ENEMY_DEAD);
-    playVictory();
+    dacPlay("fight/drop.raw");
     screen_alert_draw("VICTORY!");
     config->xp += (80 + ((config->level-1) * 16));
     config->won++;
@@ -922,7 +956,7 @@ static void show_results(void) {
     if (config->hp == 0) {
       changeState(PLAYER_DEAD);
       /* if you are dead, then you will do the same */
-      playDefeat();
+      dacPlay("fight/defrmix.raw");
       screen_alert_draw("YOU ARE DEFEATED.");
       config->xp += (10 + ((config->level-1) * 16));
       config->lost++;
@@ -935,6 +969,7 @@ static void show_results(void) {
   if (config->hp == 0 || current_enemy.hp == 0) {
     // check for level UP
     if ((config->level != calc_level(config->xp)) && (config->level != 10)) {
+      dacPlay("fight/levelup.raw");
       config->level++;
       configSave(config);
       changeState(LEVELUP);
@@ -1020,7 +1055,7 @@ static void fight_start(OrchardAppContext *context) {
   if (current_fight_state == IDLE) {
     if (enemyCount() > 0) {
       changeState( ENEMY_SELECT );
-      
+      dacPlay("fight/chsmix.raw");
       if (enemies[current_enemy_idx] == NULL) {
 	nextEnemy();
       }
@@ -1040,7 +1075,7 @@ static void state_approval_wait_enter(void) {
   // progress bar
   last_tick_time = chVTGetSystemTime(); 
   countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value.
-  drawProgressBar(40,gdispGetHeight() - 20,240,20,DEFAULT_WAIT_TIME,countdown, true, false);
+  drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y,PROGRESS_BAR_W,PROGRESS_BAR_H,DEFAULT_WAIT_TIME,countdown, true, false);
 
   gdispDrawStringBox (0,
                       STATUS_Y,
@@ -1226,6 +1261,7 @@ static void fight_event(OrchardAppContext *context,
       }
       if ( ((GEventGWinButton*)pe)->gwin == p->ghAttack) { 
         // we are attacking.
+        dacPlay("fight/select.raw");
         started_it = 1;
         memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(user));
         config->in_combat = true;
@@ -1296,7 +1332,8 @@ static void fight_exit(OrchardAppContext *context) {
   FightHandles * p;
   userconfig *config = getConfig();
   p = context->priv;
-
+  dacStop();
+  
   chprintf(stream, "\r\nFIGHT: fight_exit\r\n");
 
   // don't change back to idle state from any other function. Let fight_exit take care of it.
@@ -1470,7 +1507,7 @@ static void radio_event_do(KW01_PKT * pkt)
     if (u->opcode == OP_DECLINED) {
       orchardAppTimer(instance.context, 0, false); // shut down the timer
       screen_alert_draw("DENIED.");
-      playHardFail();
+      dacPlay("fight/select3.raw");
       ledSetProgress(-1);
       chThdSleepMilliseconds(ALERT_DELAY);
       changeState(ENEMY_SELECT);
