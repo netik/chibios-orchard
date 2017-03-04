@@ -231,6 +231,7 @@ static void state_approval_demand_enter(void) {
   last_tick_time = chVTGetSystemTime();
   countdown=DEFAULT_WAIT_TIME;
 
+  roundno = 1;
   started_it = 0;
   playAttacked();
   
@@ -287,7 +288,7 @@ static void state_move_select_enter() {
                POS_PLAYER2_Y+100);
 
   gdispDrawStringBox (0,
-                      STATUS_Y,
+                      STATUS_Y+12,
                       screen_width,
                       fontsm_height,
                       "Choose attack!",
@@ -405,6 +406,7 @@ static void screen_select_draw(int8_t initial) {
 }
 
 static void state_enemy_select_enter(void) {
+  roundno = 1;
   screen_select_draw(TRUE);
   draw_select_buttons();
 }
