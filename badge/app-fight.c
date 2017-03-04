@@ -76,8 +76,19 @@ static void changeState(fight_state nextstate) {
 
 }
 
-static void screen_alert_draw(char *msg) {
-  gdispClear(Black);
+static void screen_alert_draw(uint8_t clear, char *msg) {
+  uint16_t middle = (gdispGetHeight() / 2);
+
+  if (clear) {
+    gdispClear(Black);
+  } else {
+    // just black out the drawing area. 
+    gdispFillArea( 0, middle - 20, 320, 40, Black );
+  }
+  
+  gdispDrawThickLine(0,middle - 20, 320, middle -20, Red, 2, FALSE);
+  gdispDrawThickLine(0,middle + 20, 320, middle +20, Red, 2, FALSE);
+    
   gdispDrawStringBox (0,
 		      (gdispGetHeight() / 2) - (gdispGetFontMetric(fontFF, fontHeight) / 2),
 		      gdispGetWidth(),
@@ -144,7 +155,7 @@ static void state_waitack_tick(void) {
     } else { 
       orchardAppTimer(instance.context, 0, false); // shut down the timer
       dacPlay("fight/select3.raw");
-      screen_alert_draw("OTHER PLAYER WENT AWAY");
+      screen_alert_draw(true, "OTHER PLAYER WENT AWAY");
       chThdSleepMilliseconds(ALERT_DELAY);
       orchardAppRun(orchardAppByName("Badge"));
       return;
@@ -514,7 +525,7 @@ static void countdown_tick() {
   
   if (countdown <= 0) {
     orchardAppTimer(instance.context, 0, false); // shut down the timer
-    screen_alert_draw("TIMED OUT!");
+    screen_alert_draw(true, "TIMED OUT!");
     dacPlay("fight/select3.raw");
     chThdSleepMilliseconds(ALERT_DELAY);
     orchardAppRun(orchardAppByName("Badge"));
@@ -526,7 +537,7 @@ static void state_approval_demand_tick() {
   
   if (countdown <= 0) {
     orchardAppTimer(instance.context, 0, false); // shut down the timer
-    screen_alert_draw("TIMED OUT!");
+    screen_alert_draw(true, "TIMED OUT!");
     dacPlay("fight/select3.raw");
     chThdSleepMilliseconds(ALERT_DELAY);
     orchardAppRun(orchardAppByName("Badge"));
@@ -786,7 +797,7 @@ static uint8_t nextEnemy() {
     return TRUE;
   } else {
     // we failed, so time to die
-    screen_alert_draw("NO ENEMIES NEARBY!");
+    screen_alert_draw(true, "NO ENEMIES NEARBY!");
     chThdSleepMilliseconds(ALERT_DELAY);
     orchardAppRun(orchardAppByName("Badge"));
     return FALSE;
@@ -812,7 +823,7 @@ static uint8_t prevEnemy() {
     return TRUE;
   } else {
     // we failed, so time to die.
-    screen_alert_draw("NO ENEMIES NEARBY!");
+    screen_alert_draw(true, "NO ENEMIES NEARBY!");
     chThdSleepMilliseconds(ALERT_DELAY);
     orchardAppRun(orchardAppByName("Badge"));
     return FALSE;
@@ -952,7 +963,13 @@ static void show_results(void) {
   if (current_enemy.hp == 0) {
     changeState(ENEMY_DEAD);
     dacPlay("fight/drop.raw");
-    screen_alert_draw("VICTORY!");
+    putImageFile(getAvatarImage(current_enemy.p_type, "deth", 1, false),
+                 POS_PLAYER2_X, POS_PLAYER2_Y);
+    chThdSleepMilliseconds(250);
+    putImageFile(getAvatarImage(current_enemy.p_type, "deth", 2, false),
+                 POS_PLAYER2_X, POS_PLAYER2_Y);
+    chThdSleepMilliseconds(250);
+    screen_alert_draw(false, "VICTORY!");
     config->xp += (80 + ((config->level-1) * 16));
     config->won++;
     configSave(config);
@@ -963,10 +980,17 @@ static void show_results(void) {
       changeState(PLAYER_DEAD);
       /* if you are dead, then you will do the same */
       dacPlay("fight/defrmix.raw");
-      screen_alert_draw("YOU ARE DEFEATED.");
+      putImageFile(getAvatarImage(config->p_type, "deth", 1, false),
+                   POS_PLAYER1_X, POS_PLAYER1_Y);
+      chThdSleepMilliseconds(250);
+      putImageFile(getAvatarImage(config->p_type, "deth", 2, false),
+                   POS_PLAYER1_X, POS_PLAYER1_Y);
+      chThdSleepMilliseconds(250);
+      screen_alert_draw(true, "YOU ARE DEFEATED.");
       config->xp += (10 + ((config->level-1) * 16));
       config->lost++;
       configSave(config);
+      chThdSleepMilliseconds(ALERT_DELAY);
       chThdSleepMilliseconds(ALERT_DELAY);
       orchardAppRun(orchardAppByName("Badge"));
     }
@@ -1067,7 +1091,7 @@ static void fight_start(OrchardAppContext *context) {
       }
     } else {
       // punt if no enemies
-      screen_alert_draw("NO ENEMIES NEARBY!");
+      screen_alert_draw(true, "NO ENEMIES NEARBY!");
       chThdSleepMilliseconds(ALERT_DELAY);
       orchardAppRun(orchardAppByName("Badge"));
       return;
@@ -1275,7 +1299,7 @@ static void fight_event(OrchardAppContext *context,
         // We're going to preemptively call this before changing state
         // so the screen doesn't go black while we wait for an ACK.
         next_fight_state = APPROVAL_WAIT;
-        screen_alert_draw("Connecting...");
+        screen_alert_draw(true, "Connecting...");
         sendGamePacket(OP_STARTBATTLE);
         return;
       }
@@ -1288,7 +1312,7 @@ static void fight_event(OrchardAppContext *context,
         
         next_fight_state = IDLE;
         sendGamePacket(OP_DECLINED);
-        screen_alert_draw("Dulce bellum inexpertis.");
+        screen_alert_draw(true, "Dulce bellum inexpertis.");
         playHardFail();
         chThdSleepMilliseconds(ALERT_DELAY);
         orchardAppRun(orchardAppByName("Badge"));
@@ -1450,7 +1474,7 @@ static void radio_event_do(KW01_PKT * pkt)
   case WAITACK:
     if (u->opcode == OP_RST) {
       orchardAppTimer(instance.context, 0, false); // shut down the timer
-      screen_alert_draw("CONNECTION LOST");
+      screen_alert_draw(true, "CONNECTION LOST");
       playHardFail();
       chThdSleepMilliseconds(ALERT_DELAY);
       orchardAppRun(orchardAppByName("Badge"));
@@ -1512,7 +1536,7 @@ static void radio_event_do(KW01_PKT * pkt)
   case APPROVAL_WAIT:
     if (u->opcode == OP_DECLINED) {
       orchardAppTimer(instance.context, 0, false); // shut down the timer
-      screen_alert_draw("DENIED.");
+      screen_alert_draw(true, "DENIED.");
       dacPlay("fight/select3.raw");
       ledSetProgress(-1);
       chThdSleepMilliseconds(ALERT_DELAY);
