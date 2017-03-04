@@ -462,7 +462,7 @@ static void draw_idle_players() {
 
   ypos = ypos + gdispGetFontMetric(fontSM, fontHeight);
 
-  putImageFile(IMG_GROUND_BCK, 0, POS_FLOOR_Y);
+  putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
   
 }
   
@@ -652,7 +652,13 @@ static void sendAttack(void) {
                POS_PLAYER1_X, POS_PLAYER1_Y);
   }
 
-  // we always say we're waiting. 
+  // remove the old message
+  gdispFillArea (0,
+                 STATUS_Y+12,
+                 screen_width,
+                 fontsm_height,
+                 Black);
+  
   gdispDrawStringBox (0,
                       STATUS_Y,
                       gdispGetWidth(),
