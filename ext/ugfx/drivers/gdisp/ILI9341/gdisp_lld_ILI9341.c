@@ -306,9 +306,6 @@ LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
 #endif
 
 	static void dma_with_inc (pixel_t * b, int cnt) {
-		SPI1->C1 &= ~SPIx_C1_SPE;
-		SPI1->C1 |= SPIx_C1_SPE;
-
 		DMA->ch[2].DSR_BCR = cnt * 2;
 		DMA->ch[2].SAR = (uint32_t)b;
 
