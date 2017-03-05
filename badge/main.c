@@ -17,7 +17,7 @@
 /* undefine this to show sponsors and play music at startup. It is
    very time consuming to see this when doing development */
 
-#define FAST_STARTUP
+#undef FAST_STARTUP
 
 #include <string.h>
 

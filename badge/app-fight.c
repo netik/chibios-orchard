@@ -568,7 +568,7 @@ static void state_post_move_tick() {
 
 static void state_show_results_enter() {
   clearstatus();
-  gdispFillArea(0,gdispGetHeight() - 20,gdispGetWidth(),20,Black);
+  putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
   show_results();
 }
 
@@ -1177,7 +1177,7 @@ static void sendRST(user *inbound) {
 static void resendPacket(void) {
   // resend the last sent packet, pausing a random amount of time to prevent collisions
   packet.ttl--; // deduct TTL
-  chThdSleepMilliseconds(rand() % MAX_HOLDOFF);
+  chThdSleepMilliseconds((rand() % MAX_HOLDOFF) + 1);
 
 #ifdef DEBUG_FIGHT_NETWORK
   chprintf(stream, "\r\n%ld Transmit (to=%08x): currentstate=%d, ttl=%d, seq=%d, opcode=0x%x\r\n", chVTGetSystemTime()  , current_enemy.netid, current_fight_state, packet.ttl, packet.seq, packet.opcode);
@@ -1320,13 +1320,14 @@ static void fight_event(OrchardAppContext *context,
         next_fight_state = IDLE;
         sendGamePacket(OP_DECLINED);
         screen_alert_draw(true, "Dulce bellum inexpertis.");
-        playHardFail();
+        dacPlay("fight/drop.raw");
         chThdSleepMilliseconds(ALERT_DELAY);
         orchardAppRun(orchardAppByName("Badge"));
         return;
       }
       if ( ((GEventGWinButton*)pe)->gwin == p->ghAccept) {
         config->in_combat = true;
+        dacPlay("fight/excellnt.raw");
         next_fight_state = VS_SCREEN;
         sendGamePacket(OP_STARTBATTLE_ACK);
         return;

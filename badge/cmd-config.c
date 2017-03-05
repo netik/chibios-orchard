@@ -65,7 +65,6 @@ static void cmd_config_show(BaseSequentialStream *chp, int argc, char *argv[])
 }
 
 static void cmd_config_set(BaseSequentialStream *chp, int argc, char *argv[]) {
-  /* TODO: allow changing of a few basic settings */
   (void)argv;
   (void)argc;
 
@@ -100,7 +99,11 @@ static void cmd_config_set(BaseSequentialStream *chp, int argc, char *argv[]) {
     chprintf(chp, "Type set to %d.\r\n", config->p_type);
     return;
   }
-
+  if (!strcasecmp(argv[1], "level")) {
+    config->level = atoi(argv[2]);
+    chprintf(chp, "level set to %d.\r\n", config->level);
+    return;
+  }
   if (!strcasecmp(argv[1], "unlocks")) {
     config->unlocks = atoi(argv[2]);
     chprintf(chp, "Unlocks set to %d.\r\n", config->unlocks);
