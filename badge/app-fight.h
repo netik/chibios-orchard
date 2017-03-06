@@ -66,6 +66,9 @@ typedef struct _FightHandles {
   GHandle ghAttackHi;
   GHandle ghAttackMid;
   GHandle ghAttackLow;
+
+  GHandle ghLevelUpAgl;
+  GHandle ghLevelUpMight;
 } FightHandles;
 
 // WidgetStyle: RedButton, the only button we really use
@@ -152,6 +155,7 @@ static void sendRST(user *inbound);
 
 /* Game state */
 static uint8_t calc_level(uint16_t xp);
+static uint8_t xp_for_level(uint8_t level);
 static void changeState(fight_state);
 static void clearstatus(void);
 static uint8_t prevEnemy(void);

@@ -247,6 +247,7 @@ static void state_approval_demand_enter(void) {
 
   roundno = 0;
   started_it = 0;
+  dacStop();
   playAttacked();
   
 }
@@ -307,7 +308,15 @@ static void state_move_select_enter() {
   dacPlay(tmp);
   chThdSleepMilliseconds(1000);
   dacPlay("fight/fight.raw");
-  
+  chThdSleepMilliseconds(1000);
+
+  // remove choose attack message 
+  gdispFillArea(0,
+		STATUS_Y+14,
+		gdispGetWidth(),
+                fontsm_height,
+		Black);
+    
   last_tick_time = chVTGetSystemTime();
   countdown=MOVE_WAIT_TIME;
 
@@ -429,9 +438,8 @@ static void state_enemy_select_tick(void) {
   } 
 }
 
-static void state_enemy_select_exit() { 
-  // shut down the select screen 
-
+static void state_enemy_select_exit() {
+  // shut down the select screen, stop music. 
   FightHandles *p = instance.context->priv;
 
   gdispClear(Black);  
@@ -632,17 +640,18 @@ static void state_show_results_enter() {
   // Both sides have sent damage based on stats.
   // If the hits were the same, deduct some damage
 
+  // update the health bars
+  updatehp();
+
   // if we didn't get a hit at all, they failed to do any damage. 
   if (last_damage == -1) last_damage = 0;
-  
+
   config->hp = config->hp - last_damage;
   if (config->hp < 0) { config->hp = 0; }
 
   current_enemy.hp = current_enemy.hp - last_hit;
   if (current_enemy.hp < 0) { current_enemy.hp = 0; }
 
-  // update the health bars
-  updatehp();
 
   // animate the characters
   chsnprintf (ourdmg_s, sizeof(ourdmg_s), "-%d", last_damage );
@@ -653,44 +662,44 @@ static void state_show_results_enter() {
 #endif
   // 45 down. 
   // 140 | -40- | 140
-  for (uint8_t i=0; i < 2; i++) { 
-    putImageFile(getAvatarImage(config->p_type, attackfn1, 1, false),
+  putImageFile(getAvatarImage(config->p_type, attackfn1, 1, false),
                POS_PLAYER1_X, POS_PLAYER1_Y);
   
-    putImageFile(getAvatarImage(current_enemy.p_type, attackfn2, 1, true),
+  putImageFile(getAvatarImage(current_enemy.p_type, attackfn2, 1, true),
                POS_PLAYER2_X, POS_PLAYER2_Y);
-
-    p1color = Red;
-    p2color = Red;
-
-    if (theirattack & ATTACK_ISCRIT) { p1color = Green; }
-    if (ourattack & ATTACK_ISCRIT) { p2color = Green; }
-    
-    // you attacking us
-    gdispDrawStringBox (textx,text_p1_y,50,50,ourdmg_s,fontFF,p1color,justifyLeft);
-    
-    // us attacking you
-    gdispDrawStringBox (textx+60,text_p2_y,50,50,theirdmg_s,fontFF,p2color,justifyRight);
-
-    if (theirattack & ATTACK_ISCRIT || ourattack & ATTACK_ISCRIT) {
-      dacPlay("fight/clank2.raw");
-    }
-
-    dacPlay("fight/hit1.raw");
-
-    chThdSleepMilliseconds(300);
-    gdispDrawStringBox (textx,text_p1_y,50,50,ourdmg_s,fontFF,Black,justifyLeft);
-    gdispDrawStringBox (textx+60,text_p2_y,50,50,theirdmg_s,fontFF,Black,justifyRight);
-
-    putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
-               POS_PLAYER1_X, POS_PLAYER1_Y);
   
-    putImageFile(getAvatarImage(current_enemy.p_type, "idla", 1, true),
-               POS_PLAYER2_X, POS_PLAYER2_Y);
-
-    chThdSleepMilliseconds(100);
+  p1color = Red;
+  p2color = Red;
+  
+  if (theirattack & ATTACK_ISCRIT) { p1color = Purple; }
+  if (ourattack & ATTACK_ISCRIT) { p2color = Purple; }
+  
+  // you attacking us
+  gdispDrawStringBox (textx,text_p1_y,50,50,ourdmg_s,fontFF,p1color,justifyLeft);
+  
+  // us attacking you
+  gdispDrawStringBox (textx+60,text_p2_y,50,50,theirdmg_s,fontFF,p2color,justifyRight);
+  
+  if (theirattack & ATTACK_ISCRIT || ourattack & ATTACK_ISCRIT) {
+    dacPlay("fight/clank2.raw");
+    chThdSleepMilliseconds(500); // sleep to finish playback
   }
 
+  dacPlay("fight/hit1.raw");
+  
+  updatehp();
+  
+  chThdSleepMilliseconds(300);
+  gdispDrawStringBox (textx,text_p1_y,50,50,ourdmg_s,fontFF,Black,justifyLeft);
+  gdispDrawStringBox (textx+60,text_p2_y,50,50,theirdmg_s,fontFF,Black,justifyRight);
+  
+  putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
+               POS_PLAYER1_X, POS_PLAYER1_Y);
+  
+  putImageFile(getAvatarImage(current_enemy.p_type, "idla", 1, true),
+               POS_PLAYER2_X, POS_PLAYER2_Y);
+  
+  chThdSleepMilliseconds(100);
   
   /* if I kill you, then I will show victory and head back to the badge screen */
 
@@ -746,10 +755,9 @@ static void state_show_results_enter() {
   if (config->hp == 0 || current_enemy.hp == 0) {
     // check for level UP
     if ((config->level != calc_level(config->xp)) && (config->level != 10)) {
-      dacPlay("fight/levelup.raw");
-      config->level++;
-      configSave(config);
+      // actual level up will be performed in-state
       changeState(LEVELUP);
+      return;
     }
 
     // someone died, time to exit. 
@@ -808,7 +816,22 @@ static uint8_t calc_level(uint16_t xp) {
   return 1;
 }
 
-uint16_t calc_hit(userconfig *config, user *current_enemy) {
+static uint8_t xp_for_level(uint8_t level) {
+  // return the required amount of XP for a given level
+  uint16_t xp_req[] = {
+ // 1    2    3    4    5    6    7   8     9   10   
+    0, 880,1440,2080,2800,3600,4480,5440,6480,7600
+  };
+  
+  if ((level <= 10) && (level >= 1)) {
+    return xp_req[level-1];
+  } else {
+    return 0;
+  }
+  
+}
+
+static uint16_t calc_hit(userconfig *config, user *current_enemy) {
   uint8_t basedmg;
   uint8_t basemult;
 
@@ -1035,13 +1058,98 @@ static uint8_t prevEnemy() {
   }
 }
 static void state_levelup_enter(void) {
+  GWidgetInit wi;
+  FightHandles *p = instance.context->priv;
+  userconfig *config = getConfig();
+  char tmp[34];
+
+  chsnprintf(tmp, sizeof(tmp), "LEVEL %d", config->level+1);
   gdispClear(Black);
+
+  putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
+               0,0);
+
+  gdispDrawStringBox (0,
+		      0,
+                      320,
+                      fontlg_height,
+		      "LEVEL UP!",
+		      fontLG, Yellow, justifyRight);
+
+  gdispDrawStringBox (0,
+		      fontlg_height,
+                      320,
+                      fontlg_height,
+		      tmp,
+		      fontLG, Yellow, justifyRight);
+  
+  gdispDrawThickLine(160,fontlg_height*2, 320, fontlg_height*2, Red, 2, FALSE);
+
+  chsnprintf(tmp, sizeof(tmp), "MAX HP NOW %d (+%d)", maxhp(config->level+1),
+             maxhp(config->level+1) - maxhp(config->level));
+  gdispDrawStringBox (0,
+		      (fontlg_height*2) + 20,
+                      320,
+                      fontsm_height,
+		      tmp,
+		      fontSM, Pink, justifyRight);
+
+  if (config->level+1 <= 9) {
+    chsnprintf(tmp, sizeof(tmp), "NEXT LEVEL AT %d XP", xp_for_level(config->level+2));
+    gdispDrawStringBox (0,
+		      (fontlg_height*2) + 40,
+                      320,
+                      fontsm_height,
+		      tmp,
+		      fontSM, Pink, justifyRight);
+  }  
+  dacPlay("fight/leveiup.raw");
+
+  gdispDrawStringBox (0,
+		      180,
+		      gdispGetWidth(),
+		      gdispGetFontMetric(fontFF, fontHeight),
+		      "Upgrade Available",
+		      fontFF, White, justifyCenter);
+  // draw UI 
+  gwinSetDefaultStyle(&RedButtonStyle, FALSE);
+  gwinWidgetClearInit(&wi);
+  wi.g.show = TRUE;
+  wi.g.x = 0;
+  wi.g.y = 210;
+  wi.g.width = 150;
+  wi.g.height = 30;
+  wi.text = "AGILITY +1";
+  p->ghLevelUpAgl = gwinButtonCreate(0, &wi);
+  
+  gwinSetDefaultStyle(&RedButtonStyle, FALSE);
+  gwinWidgetClearInit(&wi);
+  wi.g.show = TRUE;
+  wi.g.x = 170;
+  wi.g.y = 210;
+  wi.g.width = 150;
+  wi.g.height = 30;
+  wi.text = "MIGHT +1";
+  p->ghLevelUpMight = gwinButtonCreate(0, &wi);
+  // note: actual level upgrade occurs at button-push in fightEvent
+
 }
 
 static void state_levelup_tick(void) {
+  /* no-op we will hold the levelup screen indefinately until the user
+   * chooses. the user is also in-combat and cannot accept new fights
+   */
 }
 
 static void state_levelup_exit(void) {
+  FightHandles *p = instance.context->priv;
+
+  if (p->ghLevelUpMight != NULL) 
+    gwinDestroy (p->ghLevelUpMight);
+  
+  if (p->ghLevelUpAgl != NULL) 
+    gwinDestroy (p->ghLevelUpAgl);
+
 }
 
 
@@ -1337,6 +1445,32 @@ static void fight_event(OrchardAppContext *context,
         return;
       }
 
+      /* level up */
+      if ( ((GEventGWinButton*)pe)->gwin == p->ghLevelUpMight) {
+        config->might++;
+        config->level++;
+        config->hp = maxhp(config->level); // restore hp
+        configSave(config);
+        dacPlay("fight/select.raw");
+        screen_alert_draw(false, "Might Upgraded!");
+        chThdSleepMilliseconds(ALERT_DELAY);
+        orchardAppRun(orchardAppByName("Badge"));
+        return;
+      }
+      if ( ((GEventGWinButton*)pe)->gwin == p->ghLevelUpAgl) {
+        config->agl++;
+        config->level++;
+        config->hp = maxhp(config->level); // restore hp
+        configSave(config);
+
+        screen_alert_draw(false, "Agility Upgraded!");
+        dacPlay("fight/select.raw");
+        chThdSleepMilliseconds(ALERT_DELAY);
+        orchardAppRun(orchardAppByName("Badge"));
+        return;
+      }
+
+      /* accept-deny for the being attacked page */
       if ( ((GEventGWinButton*)pe)->gwin == p->ghDeny) { 
         // "war is sweet to those who have not experienced it."
         // Pindar, 522-443 BC.
