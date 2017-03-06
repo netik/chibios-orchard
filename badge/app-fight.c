@@ -1371,8 +1371,9 @@ static void sendGamePacket(uint8_t opcode) {
   packet.ttl = MAX_RETRIES+1;
   packet.opcode = opcode;
   strncpy(packet.name, config->name, CONFIG_NAME_MAXLEN);
-
   packet.in_combat = config->in_combat;
+  packet.unlocks = config->unlocks;
+  
   packet.hp = config->hp;
   packet.level = config->level;
   packet.p_type = config->p_type;
