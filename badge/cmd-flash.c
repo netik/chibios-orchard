@@ -59,7 +59,7 @@ void cmd_flasherase(BaseSequentialStream *chp, int argc, char *argv[]) {
   
   (void)argv;
   if (argc != 2) {
-    chprintf(chp, "Usage: flasherase <sector number> <number of 1k sectors>\r\n");
+    chprintf(chp, "Usage: flasherase <sector number> <number of 1k sectors>\r\n       \'flasherase 127 1\', followed by a 'reset' = factory settings.\r\n");
     return;
   }
   

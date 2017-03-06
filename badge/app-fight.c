@@ -34,7 +34,7 @@ static uint32_t last_tick_time = 0;
 static uint32_t last_send_time = 0;
 static uint8_t ourattack = 0;
 static uint8_t theirattack = 0;
-static uint8_t roundno = 1;
+static uint8_t roundno = 0;
 static uint8_t animtick = 1;
 static uint32_t lastseq = 0;
 static int16_t last_hit = -1;
@@ -245,7 +245,7 @@ static void state_approval_demand_enter(void) {
   last_tick_time = chVTGetSystemTime();
   countdown=DEFAULT_WAIT_TIME;
 
-  roundno = 1;
+  roundno = 0;
   started_it = 0;
   playAttacked();
   
@@ -264,7 +264,6 @@ static void state_nextround_enter() {
 #ifdef DEBUG_FIGHT_TICK
   chprintf(stream, "Fight: Starting new round!\r\n");
 #endif
-  roundno++;
   changeState(MOVE_SELECT);
 }
 
@@ -303,6 +302,7 @@ static void state_move_select_enter() {
     draw_attack_buttons();
 
   // round N , fight!
+  roundno++;
   chsnprintf(tmp, sizeof(tmp), "fight/round%d.raw", roundno);
   dacPlay(tmp);
   chThdSleepMilliseconds(1000);
@@ -418,7 +418,7 @@ static void screen_select_draw(int8_t initial) {
 }
 
 static void state_enemy_select_enter(void) {
-  roundno = 1;
+  roundno = 0;
   screen_select_draw(TRUE);
   draw_select_buttons();
 }
