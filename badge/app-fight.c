@@ -652,6 +652,7 @@ static void state_show_results_enter() {
   current_enemy.hp = current_enemy.hp - last_hit;
   if (current_enemy.hp < 0) { current_enemy.hp = 0; }
 
+  // TODO: If hits are the same, discount the damage (or do we call it a block?)
 
   // animate the characters
   chsnprintf (ourdmg_s, sizeof(ourdmg_s), "-%d", last_damage );
@@ -1133,6 +1134,7 @@ static void state_levelup_enter(void) {
   p->ghLevelUpMight = gwinButtonCreate(0, &wi);
   // note: actual level upgrade occurs at button-push in fightEvent
 
+  gwinSetDefaultStyle(&BlackWidgetStyle, FALSE);
 }
 
 static void state_levelup_tick(void) {
