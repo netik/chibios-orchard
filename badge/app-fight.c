@@ -848,7 +848,7 @@ static uint16_t calc_hit(userconfig *config, user *current_enemy) {
   // TODO: AGL
   
   // did we crit?
-  if ( (int)rand() % 100 > config->luck ) { 
+  if ( (int)rand() % 100 <= config->luck ) { 
     ourattack |= ATTACK_ISCRIT;
     basedmg = basedmg * 2;
   }
