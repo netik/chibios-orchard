@@ -816,7 +816,7 @@ static uint8_t calc_level(uint16_t xp) {
   return 1;
 }
 
-static uint8_t xp_for_level(uint8_t level) {
+static uint16_t xp_for_level(uint8_t level) {
   // return the required amount of XP for a given level
   uint16_t xp_req[] = {
  // 1    2    3    4    5    6    7   8     9   10   
