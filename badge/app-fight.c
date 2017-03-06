@@ -16,6 +16,7 @@
 #include "sound.h"
 
 #include "userconfig.h"
+#include "unlocks.h"
 #include "app-fight.h"
 
 #include "dac_lld.h"
@@ -657,6 +658,28 @@ static void state_show_results_enter() {
   p1color = Red;
   p2color = Red;
 
+  // do we have the DEF unlock?
+  if (config->unlocks & UL_PLUSDEF) {
+    last_damage = (int)(last_damage * 0.9);
+#ifdef DEBUG_FIGHT_STATE
+    chprintf(stream,"FIGHT: Our damage reduced due to UL_PLUSDEF now:%d\r\n", last_damage);
+#endif
+  }
+  // do they have the DEF unlock?
+  if (current_enemy.unlocks & UL_PLUSDEF) {
+    last_hit = (int)(last_hit * 0.9);
+#ifdef DEBUG_FIGHT_STATE
+    chprintf(stream,"FIGHT: Our Hit reduced due to UL_PLUSDEF now:%d\r\n", last_hit);
+#endif
+  }
+  
+  if (config->unlocks & UL_PLUSDEF) {
+    last_damage = (int)(last_damage * 0.9);
+#ifdef DEBUG_FIGHT_STATE
+    chprintf(stream,"FIGHT: Damage reduced due to match us:%d them:%d\r\n", last_damage, last_hit);
+#endif
+  }
+  
   if ( ((theirattack & ATTACK_MASK) > 0) &&
        ((ourattack & ATTACK_MASK) > 0) &&
        ((theirattack & ATTACK_ISCRIT) == 0) &&
@@ -862,17 +885,17 @@ static uint16_t calc_hit(userconfig *config, user *current_enemy) {
   uint8_t basedmg;
   uint8_t basemult;
 
-  // 15-20
+  // This code calculates base hit and luck only for transmitting to
+  // other badge. Do not implement buffs here, implement them in
+  // show_results.
+
+  // base multiplier is always 15-20
   basemult = (rand() % 5) + 15;
   
-  // base multiplier is between 15 and 20 
+  // base damage takes their AGL into account.
+  // egan needs to revise this, because +/- a few damage doesn't make it worth the trouble?
   basedmg = (basemult * config->level) + config->might - current_enemy->agl;
 
-  // TODO: BUFFS
-
-  // TODO: Matching attack
-  // TODO: AGL
-  
   // did we crit?
   if ( (int)rand() % 100 <= config->luck ) { 
     ourattack |= ATTACK_ISCRIT;
@@ -1053,6 +1076,7 @@ static uint8_t nextEnemy() {
   } else {
     // we failed, so time to die
     screen_alert_draw(true, "NO ENEMIES NEARBY!");
+    dacPlay("fight/select3.raw");
     chThdSleepMilliseconds(ALERT_DELAY);
     orchardAppRun(orchardAppByName("Badge"));
     return FALSE;
@@ -1540,7 +1564,6 @@ static void fight_event(OrchardAppContext *context,
       }
       
       if ((ourattack & ATTACK_MASK) == 0) {
-        // TODO -- modify for three attacks per Egan's spec.
         if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackLow) {
           ourattack &= ~ATTACK_MASK;
           ourattack |= ATTACK_LOW;

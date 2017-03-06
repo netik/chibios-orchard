@@ -215,7 +215,7 @@ static void redraw_badge(int8_t drawchar) {
 		      tmp2,
 		      fontSM, White, justifyRight);
 
-  /* EFF supporter, +10% AGL/Defense and Logo */
+  /* EFF supporter, +10% Defense and Logo */
   if (config->unlocks & UL_PLUSDEF) 
       putImageFile(IMG_EFFLOGO, 270, ypos+4);
 

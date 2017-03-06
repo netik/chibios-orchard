@@ -342,6 +342,11 @@ static void unlock_event(OrchardAppContext *context,
               (unlock_codes[i][2] == ((code[3] << 4) + code[4]))) {
             // set bit
             config->unlocks |= (1 << i);
+
+            // if it's the luck upgrade, we set luck directly.
+            if (i == 3) {
+              config->luck = 40;
+            }
             
             // save to config
             configSave(config);
@@ -349,8 +354,9 @@ static void unlock_event(OrchardAppContext *context,
             strcpy(tmp, unlock_desc[i]);
             strcat(tmp, " unlocked!");
             unlock_result(p, tmp);
+
             // TODO: Set all LEDs white, blink.
-            dacPlay("fight/levelup.raw");
+            dacPlay("fight/leveiup.raw");
             chThdSleepMilliseconds(ALERT_DELAY);
             orchardAppRun(orchardAppByName("Badge"));
             return;
@@ -358,7 +364,7 @@ static void unlock_event(OrchardAppContext *context,
         }
 
         unlock_result(p, "unlock failed.");
-        playHardFail();
+        dacPlay("fight/pathtic.raw");
             
         // TODO: Playhardfail, set all lights red. 
         chThdSleepMilliseconds(ALERT_DELAY);
