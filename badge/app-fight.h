@@ -4,7 +4,7 @@
 /* debugging - this protocol can be a real pain in the ass */
 #undef DEBUG_FIGHT_TICK        // show the clock tick events, ugfx events, and other misc events
 #undef DEBUG_FIGHT_NETWORK    // show all network (radio) traffic
-#undef DEBUG_FIGHT_STATE      // debug state changes
+#define DEBUG_FIGHT_STATE      // debug state changes
   
 // production use 66666 uS = 15 FPS. Eeeviil...
 // testing use 1000000 (1 sec)

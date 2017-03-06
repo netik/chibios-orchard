@@ -215,7 +215,10 @@ static void state_approval_demand_enter(void) {
   ypos = ypos + gdispGetFontMetric(fontFF, fontHeight) + 5;
 
   // hp bar
-  drawProgressBar(xpos,ypos,100,10,maxhp(current_enemy.level), current_enemy.hp, 0, false);
+  drawProgressBar(xpos,ypos,100,10,
+                  maxhp(current_enemy.unlocks,
+                        current_enemy.level),
+                  current_enemy.hp, 0, false);
   gwinSetDefaultFont(fontFF);
   
   // draw UI
@@ -422,8 +425,10 @@ static void screen_select_draw(int8_t initial) {
 
   ypos = ypos + gdispGetFontMetric(fontFF, fontHeight) + 5;
   
-  drawProgressBar(xpos,ypos,100,10,maxhp(enemies[current_enemy_idx]->level), enemies[current_enemy_idx]->hp, 0, false);
-
+  drawProgressBar(xpos,ypos,100,10,
+                  maxhp(enemies[current_enemy_idx]->unlocks,
+                        enemies[current_enemy_idx]->level),
+                  enemies[current_enemy_idx]->hp, 0, false);
 }
 
 static void state_enemy_select_enter(void) {
@@ -646,14 +651,40 @@ static void state_show_results_enter() {
   // if we didn't get a hit at all, they failed to do any damage. 
   if (last_damage == -1) last_damage = 0;
 
+  // If hits are the same, discount the damage 20%, unless
+  // someone had a crit, crits override a match
+  
+  p1color = Red;
+  p2color = Red;
+
+  if ( ((theirattack & ATTACK_MASK) > 0) &&
+       ((ourattack & ATTACK_MASK) > 0) &&
+       ((theirattack & ATTACK_ISCRIT) == 0) &&
+       ((ourattack & ATTACK_ISCRIT) == 0) &&
+       (ourattack == theirattack) ) {
+#ifdef DEBUG_FIGHT_STATE
+    chprintf(stream,"FIGHT: Damage reduced due to match us:%d them:%d\r\n", last_damage, last_hit);
+#endif
+
+    last_damage = (int)(last_damage * 0.8);
+    last_hit    = (int)(last_hit * 0.8);
+
+    // hits are yellow because of match
+    p1color = Yellow;
+    p2color = Yellow;
+
+    // clank!
+    dacPlay("fight/clank1.raw");
+  } else { 
+    dacPlay("fight/hit1.raw");
+  }
+
   config->hp = config->hp - last_damage;
   if (config->hp < 0) { config->hp = 0; }
 
   current_enemy.hp = current_enemy.hp - last_hit;
   if (current_enemy.hp < 0) { current_enemy.hp = 0; }
-
-  // TODO: If hits are the same, discount the damage (or do we call it a block?)
-
+  
   // animate the characters
   chsnprintf (ourdmg_s, sizeof(ourdmg_s), "-%d", last_damage );
   chsnprintf (theirdmg_s, sizeof(theirdmg_s), "-%d", last_hit );
@@ -669,9 +700,6 @@ static void state_show_results_enter() {
   putImageFile(getAvatarImage(current_enemy.p_type, attackfn2, 1, true),
                POS_PLAYER2_X, POS_PLAYER2_Y);
   
-  p1color = Red;
-  p2color = Red;
-  
   if (theirattack & ATTACK_ISCRIT) { p1color = Purple; }
   if (ourattack & ATTACK_ISCRIT) { p2color = Purple; }
   
@@ -682,11 +710,9 @@ static void state_show_results_enter() {
   gdispDrawStringBox (textx+60,text_p2_y,50,50,theirdmg_s,fontFF,p2color,justifyRight);
   
   if (theirattack & ATTACK_ISCRIT || ourattack & ATTACK_ISCRIT) {
-    dacPlay("fight/clank2.raw");
-    chThdSleepMilliseconds(500); // sleep to finish playback
+    dacPlay("fight/hit1.raw");
+    chThdSleepMilliseconds(500); // sleep to finish playback -- two hit sounds = crit
   }
-
-  dacPlay("fight/hit1.raw");
   
   updatehp();
   
@@ -1086,24 +1112,25 @@ static void state_levelup_enter(void) {
   
   gdispDrawThickLine(160,fontlg_height*2, 320, fontlg_height*2, Red, 2, FALSE);
 
-  chsnprintf(tmp, sizeof(tmp), "MAX HP NOW %d (+%d)", maxhp(config->level+1),
-             maxhp(config->level+1) - maxhp(config->level));
-  gdispDrawStringBox (0,
-		      (fontlg_height*2) + 20,
-                      320,
-                      fontsm_height,
-		      tmp,
-		      fontSM, Pink, justifyRight);
-
   if (config->level+1 <= 9) {
     chsnprintf(tmp, sizeof(tmp), "NEXT LEVEL AT %d XP", xp_for_level(config->level+2));
-    gdispDrawStringBox (0,
+     gdispDrawStringBox (0,
 		      (fontlg_height*2) + 40,
                       320,
                       fontsm_height,
 		      tmp,
 		      fontSM, Pink, justifyRight);
   }  
+
+  chsnprintf(tmp, sizeof(tmp), "MAX HP NOW %d (+%d)",
+             maxhp(config->unlocks, config->level+1),
+             maxhp(config->unlocks, config->level+1) - maxhp(config->unlocks, config->level));
+  gdispDrawStringBox (0,
+		      (fontlg_height*2) + 20,
+                      320,
+                      fontsm_height,
+		      tmp,
+		      fontSM, Pink, justifyRight);
   dacPlay("fight/leveiup.raw");
 
   gdispDrawStringBox (0,
@@ -1171,8 +1198,17 @@ static void updatehp(void)  {
 		      "KO",
 		      fontSM, Red, justifyCenter);
   // hp bars
-  drawProgressBar(35,22,100,12,maxhp(config->level),config->hp,false,true);
-  drawProgressBar(185,22,100,12,maxhp(current_enemy.level),current_enemy.hp,false,false);
+  drawProgressBar(35,22,100,12,
+                  maxhp(config->unlocks, config->level),
+                  config->hp,
+                  false,
+                  true);
+  
+  drawProgressBar(185,22,100,12,
+                  maxhp(current_enemy.unlocks, current_enemy.level),
+                  current_enemy.hp,
+                  false,
+                  false);
 
   // numeric hp indicators
   gdispFillArea( 0, 23,
@@ -1451,7 +1487,7 @@ static void fight_event(OrchardAppContext *context,
       if ( ((GEventGWinButton*)pe)->gwin == p->ghLevelUpMight) {
         config->might++;
         config->level++;
-        config->hp = maxhp(config->level); // restore hp
+        config->hp = maxhp(config->unlocks, config->level); // restore hp
         configSave(config);
         dacPlay("fight/select.raw");
         screen_alert_draw(false, "Might Upgraded!");
@@ -1462,7 +1498,7 @@ static void fight_event(OrchardAppContext *context,
       if ( ((GEventGWinButton*)pe)->gwin == p->ghLevelUpAgl) {
         config->agl++;
         config->level++;
-        config->hp = maxhp(config->level); // restore hp
+        config->hp = maxhp(config->unlocks, config->level); // restore hp
         configSave(config);
 
         screen_alert_draw(false, "Agility Upgraded!");

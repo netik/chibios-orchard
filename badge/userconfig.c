@@ -5,6 +5,7 @@
 #include "chprintf.h"
 
 #include "flash.h"
+#include "unlocks.h"
 #include "userconfig.h"
 #include "orchard-shell.h"
 #include <string.h>
@@ -17,10 +18,22 @@ static int randomint(int max);
 
 mutex_t config_mutex;
 
+int16_t maxhp(uint16_t unlocks, uint8_t level) {
+  // return maxHP given some unlock data and level
+  uint16_t hp;
+
+  hp = (50+(20*(level-1)));
+
+  if (unlocks & UL_PLUSHP) {
+    hp = hp * 1.10;
+  }
+  return hp;
+}  
+
 void configSave(userconfig *newConfig) {
   int8_t ret;
   uint8_t *config;
-  
+    
   osalMutexLock(&config_mutex);  
   config = (uint8_t *)CONFIG_FLASH_ADDR;
   //  memcpy(config, newConfig, sizeof(userconfig) );
@@ -88,7 +101,6 @@ static void init_config(userconfig *config) {
   config->in_combat = 0;
   
   /* stats, dunno if we will use */
-  config->hp = maxhp(1);
   config->xp = 0;
   config->gold = 500;
   config->level = 1;
@@ -104,6 +116,8 @@ static void init_config(userconfig *config) {
   config->led_r = rand() % 255;
   config->led_g = rand() % 255;
   config->led_b = rand() % 255;
+
+  config->hp = maxhp(0, config->level);
 
 }
 

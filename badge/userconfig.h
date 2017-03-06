@@ -14,22 +14,7 @@
 #define CONFIG_VERSION    99
 #define CONFIG_NAME_MAXLEN 10
 
-/* bit patterns for unlocks - stored in config, */
-/* char unlock_codes[] in app-unlock.c */
-#define UL_EFF        ( 1 << 0 ) // +10% Defense, EFF logo on badge screen '1EFF1'
-#define UL_HP         ( 1 << 1 ) // +10% HP  'DEFAD'
-#define UL_MIGHT      ( 1 << 2 ) // +1 might 'A7A7A'
-#define UL_LUCK       ( 1 << 3 ) // +20% additional luck '77007'
-#define UL_HEALZ      ( 1 << 4 ) // 1/2 heal time  'AED17'
-#define UL_LEDZ       ( 1 << 5 ) // unlocks additional LED patterns '01AC0'
-#define UL_CAESAR     ( 1 << 6 ) // always caesar, can heal as caesar 'BAEAC'
-#define UL_SENATOR    ( 1 << 7 ) // always senator (adds 20% to all attacks) 'DE01A'
-#define UL_TIMELORD   ( 1 << 8 ) // can transmit time '90046' - the dr#'s number
-
 /* can we display these on top LEDs */
-
-
-#define maxhp(level)       (50+(20*(level-1)))
 
 typedef enum _player_type {
   p_guard,
@@ -44,7 +29,8 @@ typedef struct userconfig {
   uint32_t signature;
   uint32_t version;
 
-  /* unique network ID determined from use of lower 64 bits of SIM-UID */
+  /* unique network ID determined from use of lower 64 bits of
+     SIM-UID */
   uint32_t netid;
 
   /* hw config */
@@ -99,8 +85,9 @@ typedef struct _userpkt {
   /* Player Payload */
   char name[CONFIG_NAME_MAXLEN];  /* 16 */
   player_type p_type;     /* 1 */
-  uint8_t in_combat;      /* 1 */        
-  int16_t hp;            /* 2 */
+  uint8_t in_combat;      /* 1 */
+  uint16_t unlocks;       /* 2 */
+  int16_t hp;             /* 2 */
   uint16_t xp;            /* 2 */  
   uint16_t gold;          /* 2 */
 
@@ -121,8 +108,10 @@ typedef struct _userpkt {
 
 } user;
 
+/* prototypes */
 extern void configStart(void);
 extern void configSave(userconfig *);
 extern userconfig *getConfig(void);
+extern int16_t maxhp(uint16_t, uint8_t);
 
 #endif

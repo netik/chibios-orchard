@@ -65,7 +65,7 @@ static void redraw_badge(int8_t drawchar) {
     // draw the character during the HP update, it will blink and we
     // don't want that.
 
-    if (config->hp < (maxhp(config->level) / 2)) {
+    if (config->hp < (maxhp(config->unlocks,config->level) / 2)) {
       // show the whoop'd ass graphic if you're less than half. 
       putImageFile(getAvatarImage(config->p_type, "deth", 1, false),
                    POS_PLAYER1_X, POS_PLAYER1_Y);
@@ -119,7 +119,7 @@ static void redraw_badge(int8_t drawchar) {
 		      tmp,
 		      fontXS, White, justifyLeft);
 
-  drawProgressBar(163,ypos+6,120,11,maxhp(config->level), config->hp, 0, false);
+  drawProgressBar(163,ypos+6,120,11,maxhp(config->unlocks,config->level), config->hp, 0, false);
 
   gdispFillArea( 289, ypos+6, 
                  30,gdispGetFontMetric(fontXS, fontHeight),
@@ -276,7 +276,7 @@ static void default_event(OrchardAppContext *context,
 
   /* player healz */
   if (event->type == timerEvent) {
-    if (config->hp < maxhp(config->level)) { 
+    if (config->hp < maxhp(config->unlocks, config->level)) { 
         config->hp = config->hp + HEAL_AMT;
         if (config->unlocks & UL_HEAL) {
           // 2x heal if unlocked
@@ -285,8 +285,8 @@ static void default_event(OrchardAppContext *context,
 
         // if we are now fully healed, save that, and prevent
         // overflow.
-        if (config->hp >= maxhp(config->level)) {
-          config->hp = maxhp(config->level);
+        if (config->hp >= maxhp(config->unlocks, config->level)) {
+          config->hp = maxhp(config->unlocks, config->level);
           configSave(config);
           redraw_badge(true);
         } else {
