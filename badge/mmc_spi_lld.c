@@ -169,7 +169,7 @@ void rcvr_spi_multi (
 
 	SPI1->C3 |= SPIx_C3_FIFOMODE;
 
-	/* Set up the DMA source and destination addresses */
+	/* Set up the DMA source and destination addresses. */
 
 	DMA->ch[0].DSR_BCR = cnt;
 	DMA->ch[0].SAR = (uint32_t)p;
@@ -182,7 +182,7 @@ void rcvr_spi_multi (
 	 * send us data. This is usually accomplished by transmitting
 	 * a buffer of all 1s at the same time we're receiving. But
 	 * to do that, we need to do a memset() to populate the
-	 * transfer buffer with 1 bits, and that wasts CPU cycles.
+	 * transfer buffer with 1 bits, and that wastes CPU cycles.
 	 * To avoid this, we temporarily turn the MOSI pin back into
 	 * a GPIO and force it high. We still need to perform a TX
 	 * DMA transfer (otherwise the SPI controller won't toggle
@@ -198,6 +198,7 @@ void rcvr_spi_multi (
 	 * Start the transfer and wait for it to complete.
 	 * We will be woken up by the DMA interrupt handler when
 	 * the transfer completion interrupt triggers.
+	 *
 	 * Note: the whole block below is a critical section and
 	 * must be guarded with syslock/sysunlock. We must ensure
 	 * the interrupt service routine doesn't fire until
