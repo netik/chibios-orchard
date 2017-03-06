@@ -196,7 +196,12 @@ static void redraw_badge(int8_t drawchar) {
   
   /* MIGHT */
   ypos = ypos + gdispGetFontMetric(fontSM, fontHeight) + 2;
-  chsnprintf(tmp2, sizeof(tmp2), "%3d", config->might);
+  if (config->unlocks & UL_PLUSMIGHT) 
+    chsnprintf(tmp2, sizeof(tmp2), "%3d", config->might + 1);
+  else
+    chsnprintf(tmp2, sizeof(tmp2), "%3d", config->might);
+        
+
   gdispDrawStringBox (lmargin,
 		      ypos,
 		      60,
@@ -273,6 +278,10 @@ static void default_event(OrchardAppContext *context,
   if (event->type == timerEvent) {
     if (config->hp < maxhp(config->level)) { 
         config->hp = config->hp + HEAL_AMT;
+        if (config->unlocks & UL_HEAL) {
+          // 2x heal if unlocked
+          config->hp = config->hp + HEAL_AMT;
+        }
 
         // if we are now fully healed, save that, and prevent
         // overflow.

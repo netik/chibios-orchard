@@ -142,10 +142,12 @@ static void state_waitack_exit(void) {
 static void state_waitack_tick(void) { 
   // transmit/retry logic
 #ifdef DEBUG_FIGHT_TICK
-  chprintf(stream, "\r\nwaitack tick: %d %d %d\r\n",
+  chprintf(stream, "\r\nwaitack t:%d lastsend:%d max:%d nextstate:%d\r\n",
            chVTGetSystemTime(),
            last_send_time,
-           MAX_ACKWAIT);
+           MAX_ACKWAIT,
+           next_fight_state);
+  ;
 #endif /* DEBUG_FIGHT_TICK */
   
   if ( (chVTGetSystemTime() - last_send_time) > MAX_ACKWAIT ) {
@@ -628,6 +630,11 @@ uint16_t calc_hit(userconfig *config, user *current_enemy) {
   // base multiplier is between 15 and 20 
   basedmg = (basemult * config->level) + config->might - current_enemy->agl;
 
+  // TODO: BUFFS
+
+  // TODO: Matching attack
+  // TODO: AGL
+  
   // did we crit?
   if ( (int)rand() % 100 > config->luck ) { 
     ourattack |= ATTACK_ISCRIT;
@@ -1466,8 +1473,9 @@ static void radio_event_do(KW01_PKT * pkt)
   // Immediately ACK non-ACK / RST packets. We do not support retry on
   // ACK, because we support ARQ just like TCP/IP.  without the ACK,
   // the sender will retransmit automatically.
-  if (u->opcode != OP_ACK && u->opcode != OP_RST)
+  if (u->opcode != OP_ACK && u->opcode != OP_RST) { 
       sendACK(u);
+  }
     
   switch (current_fight_state) {
   case ENEMY_SELECT:
@@ -1524,6 +1532,22 @@ static void radio_event_do(KW01_PKT * pkt)
       }
     }
 
+    if (u->opcode == OP_STARTBATTLE_ACK && next_fight_state == MOVE_SELECT) {
+      // if the user hits accept _before_ the ACK has been sent by
+      // their badge, we have a race condition. break the race by changing state.
+      #ifdef DEBUG_FIGHT_NETWORK
+      chprintf(stream, "\r\n%08x --> got startbattleack in wait_ack? nextstate=0x%x, currentstate=0x%x\r\n    We're waiting on seq %d opcode %d",
+               u->netid,
+               next_fight_state,
+               current_fight_state,
+               packet.seq,
+               packet.opcode);
+#endif /* DEBUG_FIGHT_NETWORK */
+
+      changeState(MOVE_SELECT);
+      return;
+    }
+    
     if (u->opcode == OP_NEXTROUND) {
 #ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "\r\n%08x --> got nextround in wait_ack? nextstate=0x%x, currentstate=0x%x\r\n    We're waiting on seq %d opcode %d",
