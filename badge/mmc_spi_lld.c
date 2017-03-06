@@ -163,18 +163,6 @@ void rcvr_spi_multi (
 	}
 #else
 	/*
-	 * Stop and restart the SPI channel. This right here? This is
-	 * magic. If the DMA controller has already been used in
-	 * non-DMA mode, you have to restart it in order to get it
-	 * to work in DMA mode. This isn't particularly clear from
-	 * the manual. If you don't do this, transfers return
-	 * garbage.
-	 */
-
-	SPI1->C1 &= ~SPIx_C1_SPE;
-	SPI1->C1 |= SPIx_C1_SPE;
-
-	/*
 	 * DMA transfers cause the SD card to overrun the receiver
 	 * and result in corrupted reads unless we enable the FIFO.
 	 */

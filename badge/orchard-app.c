@@ -52,7 +52,9 @@ static uint8_t ui_override = 0;
 
 uint8_t shout_received;
 uint8_t shout_ok;
-volatile int radio_event_pending = FALSE;
+
+static KW01_PKT orchard_pkt;
+uint8_t orchard_pkt_busy;
 
 static void run_ping(void *arg) {
   (void)arg;
@@ -149,56 +151,39 @@ static void ugfx_event(eventid_t id) {
 }
 
 void orchardAppRadioCallback (KW01_PKT * pkt) {
-  thread_t * th;
-
-  (void)pkt;
 
   if (instance.context == NULL)
     return;
 
-  radio_event_pending = TRUE;
-
-  chEvtBroadcast (&orchard_app_radio);
-
   /*
-   * Pause until the event can be handled by the app thread. In
-   * reality we won't pause for an entire five seconds here: the chThdResume()
-   * call below should fire will before that. We could just sleep
-   * indefinitely, but we use a timed sleep just to make sure we don't
-   * become completely stuck forever if for some reason the app thread
-   * never calls the event handler.
+   * We buffer the current frame. If another frame arrives before
+   * the app has processed it, then we drop the new frame. We could
+   * expand this to permit buffering of more frames, but for now
+   * this seems sufficient.
    */
 
-  th = chMsgWait ();
-  chMsgRelease (th, MSG_OK);
+  if (orchard_pkt_busy == 0) {
+    memcpy (&orchard_pkt, pkt, sizeof(KW01_PKT));
+    orchard_pkt_busy++;
+  } else
+    return;
 
-  radio_event_pending = FALSE;
+  chEvtBroadcast (&orchard_app_radio);
 
   return;
 }
 
 static void radio_event(eventid_t id) {
   OrchardAppEvent evt;
-  thread_t * t;
 
   (void) id;
 
   if (instance.context != NULL) {
     evt.type = radioEvent;
-    evt.radio.pPkt = &KRADIO1.kw01_pkt;
+    evt.radio.pPkt = &orchard_pkt;
 
     instance.app->event (instance.context, &evt);
-  }
-
-  /*
-   * We're taking advantage of the fact that the radio event handler
-   * runs out of the main thread, and that the main thread is always
-   * the first one in the thread registry list (it never exits).
-   */
-
-  if (radio_event_pending == TRUE) {
-    t = chRegFirstThread ();
-    chMsgSend (t, MSG_OK);
+    orchard_pkt_busy--;
   }
 
   return;
@@ -219,7 +204,6 @@ static void ui_complete_cleanup(eventid_t id) {
 
 static void terminate(eventid_t id) {
   OrchardAppEvent evt;
-  thread_t * t;
 
   (void)id;
 
@@ -230,10 +214,7 @@ static void terminate(eventid_t id) {
   evt.app.event = appTerminate;
   instance.app->event(instance.context, &evt);
 
-  if (radio_event_pending == TRUE) {
-    t = chRegFirstThread ();
-    chMsgSend (t, MSG_OK);
-  }
+  orchard_pkt_busy = 0;
 
   chThdTerminate(instance.thr);
 }
@@ -401,18 +382,6 @@ static THD_FUNCTION(orchard_app_thread, arg) {
 
   instance->context = NULL;
 
-  /*
-   * The credits app never calls its event handler, so there's a
-   * chance the radio event handler could get stuck waiting to
-   * be woken up. It will time out after 5 seconds anyway, but
-   * we call the radio_event() handler once here to make sure
-   * it wakes up before the thread exits, otherwise the main
-   * thread will be blocked for a few seconds before it can
-   * launch the next app.
-   */
-
-  radio_event (0);
-
   /* Set up the next app to run when the orchard_app_terminated message is
      acted upon.*/
   if (instance->next_app)
@@ -427,6 +396,8 @@ static THD_FUNCTION(orchard_app_thread, arg) {
   evtTableUnhook(orchard_app_events, orchard_app_gfx, ugfx_event);
   evtTableUnhook(orchard_app_events, orchard_app_radio, radio_event);
  
+  orchard_pkt_busy = 0;
+
   /* Atomically broadcasting the event source and terminating the thread,
      there is not a chSysUnlock() because the thread terminates upon return.*/
   chSysLock();

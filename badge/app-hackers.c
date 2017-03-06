@@ -51,8 +51,6 @@ hackers_start(OrchardAppContext *context)
 
 	(void)context;
 
-	chThdSetPriority (10);
-
 	i = rand () % 5;
 
 	switch (i) {

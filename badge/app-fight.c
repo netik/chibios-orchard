@@ -55,12 +55,12 @@ static void changeState(fight_state nextstate) {
   if (nextstate == current_fight_state) {
     // do nothing.
 #ifdef DEBUG_FIGHT_STATE
-    chprintf(stream, "\r\nFIGHT: ignoring state change request, as we are already in state %d: %s...\r\n", nextstate, fight_state_name[nextstate]);
+    chprintf(stream, "FIGHT: ignoring state change request, as we are already in state %d: %s...\r\n", nextstate, fight_state_name[nextstate]);
 #endif
     return;
   }
 #ifdef DEBUG_FIGHT_STATE
-  chprintf(stream, "\r\nFIGHT: moving to state %d: %s...\r\n", nextstate, fight_state_name[nextstate]);
+  chprintf(stream, "FIGHT: moving to state %d: %s...\r\n", nextstate, fight_state_name[nextstate]);
 #endif
   
   if (fight_funcs[current_fight_state].exit != NULL) {
@@ -152,7 +152,7 @@ static void state_waitack_tick(void) {
   
   if ( (chVTGetSystemTime() - last_send_time) > MAX_ACKWAIT ) {
     if (packet.ttl > 0)  {
-      chprintf(stream, "\r\nResending packet...\r\n");
+      chprintf(stream, "Resending packet...\r\n");
       resendPacket();
     } else { 
       orchardAppTimer(instance.context, 0, false); // shut down the timer
@@ -261,7 +261,7 @@ static void state_approval_demand_exit(void) {
 
 static void state_nextround_enter() { 
 #ifdef DEBUG_FIGHT_TICK
-  chprintf(stream, "\r\nFight: Starting new round!\r\n");
+  chprintf(stream, "Fight: Starting new round!\r\n");
 #endif
   roundno++;
   changeState(MOVE_SELECT);
@@ -328,7 +328,7 @@ static void state_move_select_tick() {
   if (countdown <= 0) {
     // transmit my move
 #ifdef DEBUG_FIGHT_NETWORK
-    chprintf(stream, "\r\nTIMEOUT in select, sending turnover\r\n");
+    chprintf(stream, "TIMEOUT in select, sending turnover\r\n");
 #endif /* DEBUG_FIGHT_NETWORK */
     
     // we're in MOVE_SELECT, so this tells us that we haven't moved at all.
@@ -560,7 +560,7 @@ static void state_post_move_tick() {
     if (turnover_sent == false) {  // only send it once.
       next_fight_state = SHOW_RESULTS;
 #ifdef DEBUG_FIGHT_NETWORK
-      chprintf(stream, "\r\nwe are post-move, sending turnover\r\n");
+      chprintf(stream, "we are post-move, sending turnover\r\n");
 #endif
       sendGamePacket(OP_TURNOVER);
       turnover_sent = true;
@@ -918,7 +918,7 @@ static void show_results(void) {
   chsnprintf (theirdmg_s, sizeof(theirdmg_s), "-%d", last_hit );
 
 #ifdef DEBUG_FIGHT_STATE
-  chprintf(stream,"FIGHT: Damage report! Us: %d Them: %d", last_damage, last_hit);
+  chprintf(stream,"FIGHT: Damage report! Us: %d Them: %d\r\n", last_damage, last_hit);
 #endif
   // 45 down. 
   // 140 | -40- | 140
@@ -1089,7 +1089,7 @@ static void fight_start(OrchardAppContext *context) {
   geventRegisterCallback (&p->glFight, orchardAppUgfxCallback, &p->glFight);
 
   // are we entering a fight?
-  chprintf(stream, "\r\nFIGHT: entering with enemy %08x state %d\r\n", current_enemy.netid, current_fight_state);
+  chprintf(stream, "FIGHT: entering with enemy %08x state %d\r\n", current_enemy.netid, current_fight_state);
   last_tick_time = chVTGetSystemTime();
     
   if (current_enemy.netid != 0 && current_fight_state != APPROVAL_DEMAND) {
@@ -1144,7 +1144,7 @@ static void sendACK(user *inbound) {
   ackpacket.ttl = 4;
   ackpacket.opcode = OP_ACK;
 #ifdef DEBUG_FIGHT_NETWORK
-  chprintf(stream, "\r\ntransmit ACK (to=%08x for seq %d): ourstate=%d, ttl=%d, myseq=%d, theiropcode=0x%x\r\n",
+  chprintf(stream, "transmit ACK (to=%08x for seq %d): ourstate=%d, ttl=%d, myseq=%d, theiropcode=0x%x\r\n",
            inbound->netid,
            inbound->seq,
            current_fight_state,
@@ -1170,7 +1170,7 @@ static void sendRST(user *inbound) {
   rstpacket.opcode = OP_RST;
 
 #ifdef DEBUG_FIGHT_NETWORK
-  chprintf(stream, "\r\nTransmit RST (to=%08x for seq %d): currentstate=%d, ttl=%d, myseq=%d, opcode=0x%x\r\n",
+  chprintf(stream, "Transmit RST (to=%08x for seq %d): currentstate=%d, ttl=%d, myseq=%d, opcode=0x%x\r\n",
            inbound->netid,
            current_fight_state,
            inbound->seq,
@@ -1187,7 +1187,7 @@ static void resendPacket(void) {
   chThdSleepMilliseconds((rand() % MAX_HOLDOFF) + 1);
 
 #ifdef DEBUG_FIGHT_NETWORK
-  chprintf(stream, "\r\n%ld Transmit (to=%08x): currentstate=%d, ttl=%d, seq=%d, opcode=0x%x\r\n", chVTGetSystemTime()  , current_enemy.netid, current_fight_state, packet.ttl, packet.seq, packet.opcode);
+  chprintf(stream, "%ld Transmit (to=%08x): currentstate=%d, ttl=%d, seq=%d, opcode=0x%x\r\n", chVTGetSystemTime()  , current_enemy.netid, current_fight_state, packet.ttl, packet.seq, packet.opcode);
 #endif /* DEBUG_FIGHT_NETWORK */
   last_send_time = chVTGetSystemTime();
   radioSend (&KRADIO1, current_enemy.netid, RADIO_PROTOCOL_FIGHT, sizeof(packet), &packet);
@@ -1293,7 +1293,7 @@ static void fight_event(OrchardAppContext *context,
       last_ui_time = chVTGetSystemTime();
 
       if ( ((GEventGWinButton*)pe)->gwin == p->ghExitButton) { 
-        chprintf(stream, "\r\nFIGHT: e switch app\r\n");
+        chprintf(stream, "FIGHT: e switch app\r\n");
         orchardAppRun(orchardAppByName("Badge"));
         return;
       }
@@ -1379,7 +1379,7 @@ static void fight_exit(OrchardAppContext *context) {
   p = context->priv;
   dacStop();
   
-  chprintf(stream, "\r\nFIGHT: fight_exit\r\n");
+  chprintf(stream, "FIGHT: fight_exit\r\n");
 
   // don't change back to idle state from any other function. Let fight_exit take care of it.
   changeState(IDLE);
@@ -1445,7 +1445,7 @@ static void radio_event_do(KW01_PKT * pkt)
   
   if (u->opcode == 0) {
 #ifdef DEBUG_FIGHT_NETWORK
-    chprintf(stream, "\r\n%08x --> RECV Invalid opcode. (seq=%d) Ignored (%08x to %08x proto %x)\r\n", u->netid, u->seq, pkt->kw01_hdr.kw01_src, pkt->kw01_hdr.kw01_dst, pkt->kw01_hdr.kw01_prot);
+    chprintf(stream, "%08x --> RECV Invalid opcode. (seq=%d) Ignored (%08x to %08x proto %x)\r\n", u->netid, u->seq, pkt->kw01_hdr.kw01_src, pkt->kw01_hdr.kw01_dst, pkt->kw01_hdr.kw01_prot);
 #endif /* DEBUG_FIGHT_NETWORK */
     return;
   }
@@ -1453,9 +1453,9 @@ static void radio_event_do(KW01_PKT * pkt)
   // DEBUG
 #ifdef DEBUG_FIGHT_NETWORK
   if (u->opcode == OP_ACK) {
-    chprintf(stream, "\r\n%08x --> RECV ACK (seq=%d, acknum=%d, mystate=%d, opcode 0x%x)\r\n", u->netid, u->seq, u->acknum, current_fight_state, next_fight_state, u->opcode);
+    chprintf(stream, "%08x --> RECV ACK (seq=%d, acknum=%d, mystate=%d, opcode 0x%x)\r\n", u->netid, u->seq, u->acknum, current_fight_state, next_fight_state, u->opcode);
   } else { 
-    chprintf(stream, "\r\n%08x --> RECV OP  (proto=0x%x, seq=%d, mystate=%d, opcode 0x%x)\r\n", u->netid, pkt->kw01_hdr.kw01_prot, u->seq, current_fight_state, u->opcode);
+    chprintf(stream, "%08x --> RECV OP  (proto=0x%x, seq=%d, mystate=%d, opcode 0x%x)\r\n", u->netid, pkt->kw01_hdr.kw01_prot, u->seq, current_fight_state, u->opcode);
   }
 #endif /* DEBUG_FIGHT_NETWORK */
   
@@ -1463,7 +1463,7 @@ static void radio_event_do(KW01_PKT * pkt)
     // this is an invalid state, which we should not ACK for.
     // Let the remote client die.
 #ifdef DEBUG_FIGHT_NETWORK
-    chprintf(stream, "\r\n%08x --> SEND RST: rejecting opcode 0x%x beacuse i am idle\r\n", u->netid, u->opcode);
+    chprintf(stream, "%08x --> SEND RST: rejecting opcode 0x%x beacuse i am idle\r\n", u->netid, u->opcode);
 #endif /* DEBUG_FIGHT_NETWORK */
     sendRST(u);
     // we are idle, do nothing. 
@@ -1502,7 +1502,7 @@ static void radio_event_do(KW01_PKT * pkt)
       // however, if we have no next-state to go to, then we will timeout
       if (next_fight_state != NONE) {
 #ifdef DEBUG_FIGHT_NETWORK
-        chprintf(stream, "\r\n%08x --> moving to state %d from state %d due to ACK\n",
+        chprintf(stream, "%08x --> moving to state %d from state %d due to ACK\r\n",
                  u->netid, next_fight_state, current_fight_state, next_fight_state);
 #endif /* DEBUG_FIGHT_NETWORK */
       changeState(next_fight_state);
@@ -1516,7 +1516,7 @@ static void radio_event_do(KW01_PKT * pkt)
       // so, act as if we got the ACK and move on.
       // we will have already ACK'd their packet anyway. 
 #ifdef DEBUG_FIGHT_NETWORK
-      chprintf(stream, "\r\n%08x --> got turnover in wait_ack? nextstate=0x%x, currentstate=0x%x, damage=%d\r\n    We're waiting on seq %d opcode %d\r\n",
+      chprintf(stream, "%08x --> got turnover in wait_ack? nextstate=0x%x, currentstate=0x%x, damage=%d\r\nWe're waiting on seq %d opcode %d\r\n",
                u->netid,
                next_fight_state,
                current_fight_state,
@@ -1550,7 +1550,7 @@ static void radio_event_do(KW01_PKT * pkt)
     
     if (u->opcode == OP_NEXTROUND) {
 #ifdef DEBUG_FIGHT_NETWORK
-      chprintf(stream, "\r\n%08x --> got nextround in wait_ack? nextstate=0x%x, currentstate=0x%x\r\n    We're waiting on seq %d opcode %d",
+      chprintf(stream, "%08x --> got nextround in wait_ack? nextstate=0x%x, currentstate=0x%x\r\nWe're waiting on seq %d opcode %d",
                u->netid,
                next_fight_state,
                current_fight_state,
@@ -1589,7 +1589,7 @@ static void radio_event_do(KW01_PKT * pkt)
       // MOVE_SELECT, store that move for later. 
       
 #ifdef DEBUG_FIGHT_NETWORK
-      chprintf(stream, "\r\nRECV MOVE: (select) %d. our move %d.\r\n", theirattack, ourattack);
+      chprintf(stream, "RECV MOVE: (select) %d. our move %d.\r\n", theirattack, ourattack);
 #endif /* DEBUG_FIGHT_NETWORK */
 
     }
@@ -1598,7 +1598,7 @@ static void radio_event_do(KW01_PKT * pkt)
 
       next_fight_state = POST_MOVE;
 #ifdef DEBUG_FIGHT_NETWORK
-      chprintf(stream, "\r\nmove_select/imoved, sending turnover\r\n");
+      chprintf(stream, "move_select/imoved, sending turnover\r\n");
 #endif /* DEBUG_FIGHT_NETWORK */
       
       sendGamePacket(OP_TURNOVER);
@@ -1609,7 +1609,7 @@ static void radio_event_do(KW01_PKT * pkt)
     if (u->opcode == OP_IMOVED) {
 
 #ifdef DEBUG_FIGHT_NETWORK
-      chprintf(stream, "\r\nRECV MOVE: (postmove) %d. our move %d.\r\n", theirattack, ourattack);
+      chprintf(stream, "RECV MOVE: (postmove) %d. our move %d.\r\n", theirattack, ourattack);
 #endif /* DEBUG_FIGHT_NETWORK */
       return;
     }
@@ -1637,11 +1637,11 @@ static void radio_event_do(KW01_PKT * pkt)
   default:
     // this shouldn't fire, but log it if it does.
 #ifdef DEBUG_FIGHT_STATE
-    chprintf(stream, "\r\n%08x --> RECV %x - no handler - (seq=%d, mystate=%d %s)\r\n",
+    chprintf(stream, "%08x --> RECV %x - no handler - (seq=%d, mystate=%d %s)\r\n",
              pkt->kw01_hdr.kw01_src, u->opcode, u->seq,
              current_fight_state, fight_state_name[current_fight_state]);
 #else
-    chprintf(stream, "\r\n%08x --> RECV %x - no handler - (seq=%d, mystate=%d)\r\n",
+    chprintf(stream, "%08x --> RECV %x - no handler - (seq=%d, mystate=%d)\r\n",
              pkt->kw01_hdr.kw01_src, u->opcode, u->seq,
              current_fight_state);
 #endif
