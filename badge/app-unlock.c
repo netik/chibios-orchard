@@ -13,6 +13,7 @@
 #include "ides_gfx.h"
 #include "images.h"
 #include "sound.h"
+#include "dac_lld.h"
 
 #define ALERT_DELAY 2500   // how long alerts stay on the screen.
 
@@ -344,13 +345,12 @@ static void unlock_event(OrchardAppContext *context,
             
             // save to config
             configSave(config);
-            
-            // display message -- should we tell them? or just say unlock successful?
+
             strcpy(tmp, unlock_desc[i]);
             strcat(tmp, " unlocked!");
             unlock_result(p, tmp);
             // TODO: Set all LEDs white, blink.
-            playVictory();
+            dacPlay("fight/levelup.raw");
             chThdSleepMilliseconds(ALERT_DELAY);
             orchardAppRun(orchardAppByName("Badge"));
             return;

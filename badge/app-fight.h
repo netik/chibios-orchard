@@ -144,7 +144,6 @@ typedef struct _state {
 
 extern orchard_app_instance instance;
 
-/* Function Prototypes */
 /* Network */
 static void resendPacket(void);
 static void sendGamePacket(uint8_t opcode);
@@ -152,6 +151,7 @@ static void sendACK(user *inbound);
 static void sendRST(user *inbound);
 
 /* Game state */
+static uint8_t calc_level(uint16_t xp);
 static void changeState(fight_state);
 static void clearstatus(void);
 static uint8_t prevEnemy(void);
@@ -160,7 +160,6 @@ static void updatehp(void);
   
 /* Fight Sequence (OLD) */
 static void screen_select_draw(int8_t);
-static void show_results(void);
 static void draw_attack_buttons(void);
 static void draw_select_buttons(void);
   

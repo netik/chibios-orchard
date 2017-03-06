@@ -35,6 +35,7 @@ static uint32_t last_send_time = 0;
 static uint8_t ourattack = 0;
 static uint8_t theirattack = 0;
 static uint8_t roundno = 1;
+static uint8_t animtick = 1;
 static uint32_t lastseq = 0;
 static int16_t last_hit = -1;
 static int16_t last_damage = -1;
@@ -180,7 +181,7 @@ static void state_approval_demand_enter(void) {
 		      0,
 		      gdispGetWidth(),
 		      gdispGetFontMetric(fontFF, fontHeight),
-		      "A CHALLENGER AWAITS!",
+		      "YOU ARE BEING ATTACKED!",
 		      fontFF, Red, justifyCenter);
 
   ypos = (gdispGetHeight() / 2) - 60;
@@ -290,18 +291,8 @@ static void state_move_select_enter() {
   putImageFile(getAvatarImage(current_enemy.p_type, "idla", 1, true),
                POS_PLAYER2_X, POS_PLAYER2_Y);
 
-  putImageFile("ar50.rgb",
-               160,
-               POS_PLAYER2_Y);
-  putImageFile("ar50.rgb",
-               160,
-               POS_PLAYER2_Y+50);
-  putImageFile("ar50.rgb",
-               160,
-               POS_PLAYER2_Y+100);
-
   gdispDrawStringBox (0,
-                      STATUS_Y+12,
+                      STATUS_Y+14,
                       screen_width,
                       fontsm_height,
                       "Choose attack!",
@@ -324,6 +315,14 @@ static void state_move_select_enter() {
 
 static void state_move_select_tick() {
   drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y,PROGRESS_BAR_W,PROGRESS_BAR_H,MOVE_WAIT_TIME,countdown, true, false);
+
+  // animate arrows
+  gdispFillArea(160, POS_PLAYER2_Y, 50,150,Black);
+  putImageFile("ar50.rgb",
+               160,
+               POS_PLAYER2_Y + (50*animtick));
+  animtick++;
+  if (animtick > 2) animtick = 0;
   
   if (countdown <= 0) {
     // transmit my move
@@ -505,6 +504,7 @@ static void state_vs_screen_enter() {
                       fontsm_height,
                       "GET READY!",
                       fontSM, White, justifyCenter);
+  dacPlay("fight/vs.raw");
   
   for (uint8_t i=0; i < 3; i++) {
     putImageFile(getAvatarImage(config->p_type, "atth", 1, false),
@@ -569,9 +569,197 @@ static void state_post_move_tick() {
 }
 
 static void state_show_results_enter() {
+  // There is no tick() for this state; we iterate through and run an
+  // animation and then exit this state.
+  char c=' ';
+  char attackfn1[13];
+  char attackfn2[13];
+  char ourdmg_s[10];
+  char theirdmg_s[10];
+  uint16_t textx, text_p1_y, text_p2_y;
+  color_t p1color, p2color;
+  userconfig *config = getConfig();
+
+  // clear status bar, remove arrows, redraw ground
   clearstatus();
+  gdispFillArea(160, POS_PLAYER2_Y, 50,150,Black); 
   putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
-  show_results();
+  
+  // get the right filename for the attack
+  if (ourattack & ATTACK_HI) {
+    c='h';
+    text_p2_y = 40;
+  }
+
+  if (ourattack & ATTACK_MID) {
+    c='m';
+    text_p2_y = 120;
+  }
+  
+  if (ourattack & ATTACK_LOW) {
+    c='l';
+    text_p2_y = 160;
+  }
+
+  if (c == ' ') 
+    strcpy(attackfn1, "idla");
+  else 
+    chsnprintf(attackfn1, sizeof(attackfn1), "att%c", c);
+
+  c = ' ';
+  textx = 100;
+  if (theirattack & ATTACK_HI) {
+    c='h';
+    text_p1_y = 40;
+  }
+  
+  if (theirattack & ATTACK_MID) {
+    c='m';
+    text_p1_y = 120;
+  }
+  
+  if (theirattack & ATTACK_LOW) {
+    c='l';
+    text_p1_y = 160;
+  }
+  
+  if (c == ' ') 
+    strcpy(attackfn2, "idla");
+  else 
+    chsnprintf(attackfn2, sizeof(attackfn2), "att%c", c);
+
+  // compute damages
+  // Both sides have sent damage based on stats.
+  // If the hits were the same, deduct some damage
+
+  // if we didn't get a hit at all, they failed to do any damage. 
+  if (last_damage == -1) last_damage = 0;
+  
+  config->hp = config->hp - last_damage;
+  if (config->hp < 0) { config->hp = 0; }
+
+  current_enemy.hp = current_enemy.hp - last_hit;
+  if (current_enemy.hp < 0) { current_enemy.hp = 0; }
+
+  // update the health bars
+  updatehp();
+
+  // animate the characters
+  chsnprintf (ourdmg_s, sizeof(ourdmg_s), "-%d", last_damage );
+  chsnprintf (theirdmg_s, sizeof(theirdmg_s), "-%d", last_hit );
+
+#ifdef DEBUG_FIGHT_STATE
+  chprintf(stream,"FIGHT: Damage report! Us: %d Them: %d\r\n", last_damage, last_hit);
+#endif
+  // 45 down. 
+  // 140 | -40- | 140
+  for (uint8_t i=0; i < 2; i++) { 
+    putImageFile(getAvatarImage(config->p_type, attackfn1, 1, false),
+               POS_PLAYER1_X, POS_PLAYER1_Y);
+  
+    putImageFile(getAvatarImage(current_enemy.p_type, attackfn2, 1, true),
+               POS_PLAYER2_X, POS_PLAYER2_Y);
+
+    p1color = Red;
+    p2color = Red;
+
+    if (theirattack & ATTACK_ISCRIT) { p1color = Green; }
+    if (ourattack & ATTACK_ISCRIT) { p2color = Green; }
+    
+    // you attacking us
+    gdispDrawStringBox (textx,text_p1_y,50,50,ourdmg_s,fontFF,p1color,justifyLeft);
+    
+    // us attacking you
+    gdispDrawStringBox (textx+60,text_p2_y,50,50,theirdmg_s,fontFF,p2color,justifyRight);
+
+    if (theirattack & ATTACK_ISCRIT || ourattack & ATTACK_ISCRIT) {
+      dacPlay("fight/clank2.raw");
+    }
+
+    dacPlay("fight/hit1.raw");
+
+    chThdSleepMilliseconds(300);
+    gdispDrawStringBox (textx,text_p1_y,50,50,ourdmg_s,fontFF,Black,justifyLeft);
+    gdispDrawStringBox (textx+60,text_p2_y,50,50,theirdmg_s,fontFF,Black,justifyRight);
+
+    putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
+               POS_PLAYER1_X, POS_PLAYER1_Y);
+  
+    putImageFile(getAvatarImage(current_enemy.p_type, "idla", 1, true),
+               POS_PLAYER2_X, POS_PLAYER2_Y);
+
+    chThdSleepMilliseconds(100);
+  }
+
+  
+  /* if I kill you, then I will show victory and head back to the badge screen */
+
+  if (current_enemy.hp == 0 && config->hp == 0) {
+    /* both are dead, so whomever started the fight, wins */
+    if (started_it == 1) {
+      config->hp = 1;
+    } else {
+      current_enemy.hp = 1;
+    }
+  }
+  
+  if (current_enemy.hp == 0) {
+    changeState(ENEMY_DEAD);
+    dacPlay("fight/drop.raw");
+    putImageFile(getAvatarImage(current_enemy.p_type, "deth", 1, false),
+                 POS_PLAYER2_X, POS_PLAYER2_Y);
+    chThdSleepMilliseconds(250);
+    putImageFile(getAvatarImage(current_enemy.p_type, "deth", 2, false),
+                 POS_PLAYER2_X, POS_PLAYER2_Y);
+    chThdSleepMilliseconds(250);
+    screen_alert_draw(false, "VICTORY!");
+
+    // reward XP and exit 
+    config->xp += (80 + ((config->level-1) * 16));
+    config->won++;
+    configSave(config);
+    
+    chThdSleepMilliseconds(ALERT_DELAY);
+  } else {
+    if (config->hp == 0) {
+      changeState(PLAYER_DEAD);
+      /* if you are dead, then you will do the same */
+      dacPlay("fight/defrmix.raw");
+      putImageFile(getAvatarImage(config->p_type, "deth", 1, false),
+                   POS_PLAYER1_X, POS_PLAYER1_Y);
+      chThdSleepMilliseconds(250);
+      putImageFile(getAvatarImage(config->p_type, "deth", 2, false),
+                   POS_PLAYER1_X, POS_PLAYER1_Y);
+      chThdSleepMilliseconds(250);
+      screen_alert_draw(false, "YOU ARE DEFEATED.");
+
+      // reward (some) XP and exit 
+      config->xp += (10 + ((config->level-1) * 16));
+      config->lost++;
+      configSave(config);
+      
+      chThdSleepMilliseconds(ALERT_DELAY);
+      chThdSleepMilliseconds(ALERT_DELAY);
+    }
+  }  
+
+  if (config->hp == 0 || current_enemy.hp == 0) {
+    // check for level UP
+    if ((config->level != calc_level(config->xp)) && (config->level != 10)) {
+      dacPlay("fight/levelup.raw");
+      config->level++;
+      configSave(config);
+      changeState(LEVELUP);
+    }
+
+    // someone died, time to exit. 
+    orchardAppRun(orchardAppByName("Badge"));
+    return;
+  }
+
+  // no one is dead yet, go on! 
+  next_fight_state = NEXTROUND;
+  sendGamePacket(OP_NEXTROUND);
 }
 
 static void state_show_results_tick() { 
@@ -652,22 +840,32 @@ static void sendAttack(void) {
   
   clearstatus();
 
-  // clear middle
-  //  gdispFillArea(140,70,40,110,Black);
-
+  // clear middle to wipe arrow animations
+  gdispFillArea(160, POS_PLAYER2_Y, 50,150,Black);
+  
   if (ourattack & ATTACK_HI) {
     putImageFile(getAvatarImage(config->p_type, "atth", 1, false),
                POS_PLAYER1_X, POS_PLAYER1_Y);
+    putImageFile("ar50.rgb",
+                 160,
+                 POS_PLAYER2_Y);
   }
 
   if (ourattack & ATTACK_MID) {
     putImageFile(getAvatarImage(config->p_type, "attm", 1, false),
                POS_PLAYER1_X, POS_PLAYER1_Y);
+    putImageFile("ar50.rgb",
+                 160,
+                 POS_PLAYER2_Y + 50);
+    
   }
   
   if (ourattack & ATTACK_LOW) {
     putImageFile(getAvatarImage(config->p_type, "attl", 1, false),
                POS_PLAYER1_X, POS_PLAYER1_Y);
+    putImageFile("ar50.rgb",
+                 160,
+                 POS_PLAYER2_Y + 100);
   }
 
   // remove the old message
@@ -846,185 +1044,6 @@ static void state_levelup_tick(void) {
 static void state_levelup_exit(void) {
 }
 
-static void show_results(void) {
-  // remove the progress bar and status bar
-  char c=' ';
-  char attackfn1[13];
-  char attackfn2[13];
-  char ourdmg_s[10];
-  char theirdmg_s[10];
-  uint16_t textx, text_p1_y, text_p2_y;
-  color_t p1color, p2color;
-  userconfig *config = getConfig();
-  
-  // get the right filename for the attack
-  if (ourattack & ATTACK_HI) {
-    c='h';
-    text_p2_y = 40;
-  }
-
-  if (ourattack & ATTACK_MID) {
-    c='m';
-    text_p2_y = 120;
-  }
-  
-  if (ourattack & ATTACK_LOW) {
-    c='l';
-    text_p2_y = 180;
-  }
-
-  if (c == ' ') 
-    strcpy(attackfn1, "idla");
-  else 
-    chsnprintf(attackfn1, sizeof(attackfn1), "att%c", c);
-
-  c = ' ';
-  textx = 100;
-  if (theirattack & ATTACK_HI) {
-    c='h';
-    text_p1_y = 40;
-  }
-  
-  if (theirattack & ATTACK_MID) {
-    c='m';
-    text_p1_y = 120;
-  }
-  
-  if (theirattack & ATTACK_LOW) {
-    c='l';
-    text_p1_y = 180;
-  }
-  
-  if (c == ' ') 
-    strcpy(attackfn2, "idla");
-  else 
-    chsnprintf(attackfn2, sizeof(attackfn2), "att%c", c);
-
-  // compute damages
-  // Both sides have sent damage based on stats.
-  // If the hits were the same, deduct some damage
-
-  // if we didn't get a hit at all, they failed to do any damage. 
-  if (last_damage == -1) last_damage = 0;
-  
-  config->hp = config->hp - last_damage;
-  if (config->hp < 0) { config->hp = 0; }
-
-  current_enemy.hp = current_enemy.hp - last_hit;
-  if (current_enemy.hp < 0) { current_enemy.hp = 0; }
-
-  // animate the characters
-  chsnprintf (ourdmg_s, sizeof(ourdmg_s), "-%d", last_damage );
-  chsnprintf (theirdmg_s, sizeof(theirdmg_s), "-%d", last_hit );
-
-#ifdef DEBUG_FIGHT_STATE
-  chprintf(stream,"FIGHT: Damage report! Us: %d Them: %d\r\n", last_damage, last_hit);
-#endif
-  // 45 down. 
-  // 140 | -40- | 140
-  for (uint8_t i=0; i < 2; i++) { 
-    putImageFile(getAvatarImage(config->p_type, attackfn1, 1, false),
-               POS_PLAYER1_X, POS_PLAYER1_Y);
-  
-    putImageFile(getAvatarImage(current_enemy.p_type, attackfn2, 1, true),
-               POS_PLAYER2_X, POS_PLAYER2_Y);
-
-    p1color = Red;
-    p2color = Red;
-
-    if (theirattack & ATTACK_ISCRIT) { p1color = Green; }
-    if (ourattack & ATTACK_ISCRIT) { p2color = Green; }
-    
-    // you attacking us
-    gdispDrawStringBox (textx,text_p1_y,50,50,ourdmg_s,fontFF,p1color,justifyLeft);
-    
-    // us attacking you
-    gdispDrawStringBox (textx+60,text_p2_y,50,50,theirdmg_s,fontFF,p2color,justifyRight);
-
-    if (theirattack & ATTACK_ISCRIT || ourattack & ATTACK_ISCRIT) {
-      playHit();      
-    }
-
-    dacPlay("fight/hit1.raw");
-
-    chThdSleepMilliseconds(300);
-    gdispDrawStringBox (textx,text_p1_y,50,50,ourdmg_s,fontFF,Black,justifyLeft);
-    gdispDrawStringBox (textx+60,text_p2_y,50,50,theirdmg_s,fontFF,Black,justifyRight);
-
-    putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
-               POS_PLAYER1_X, POS_PLAYER1_Y);
-  
-    putImageFile(getAvatarImage(current_enemy.p_type, "idla", 1, true),
-               POS_PLAYER2_X, POS_PLAYER2_Y);
-
-    chThdSleepMilliseconds(100);
-  }
-
-  // update the health bars
-  updatehp();
-  
-  /* if I kill you, then I will show victory and head back to the badge screen */
-
-  if (current_enemy.hp == 0 && config->hp == 0) {
-    /* both are dead, so whomever started the fight, wins */
-    if (started_it == 1) {
-      config->hp = 1;
-    } else {
-      current_enemy.hp = 1;
-    }
-  }
-  
-  if (current_enemy.hp == 0) {
-    changeState(ENEMY_DEAD);
-    dacPlay("fight/drop.raw");
-    putImageFile(getAvatarImage(current_enemy.p_type, "deth", 1, false),
-                 POS_PLAYER2_X, POS_PLAYER2_Y);
-    chThdSleepMilliseconds(250);
-    putImageFile(getAvatarImage(current_enemy.p_type, "deth", 2, false),
-                 POS_PLAYER2_X, POS_PLAYER2_Y);
-    chThdSleepMilliseconds(250);
-    screen_alert_draw(false, "VICTORY!");
-    config->xp += (80 + ((config->level-1) * 16));
-    config->won++;
-    configSave(config);
-    chThdSleepMilliseconds(ALERT_DELAY);
-    orchardAppRun(orchardAppByName("Badge"));
-  } else {
-    if (config->hp == 0) {
-      changeState(PLAYER_DEAD);
-      /* if you are dead, then you will do the same */
-      dacPlay("fight/defrmix.raw");
-      putImageFile(getAvatarImage(config->p_type, "deth", 1, false),
-                   POS_PLAYER1_X, POS_PLAYER1_Y);
-      chThdSleepMilliseconds(250);
-      putImageFile(getAvatarImage(config->p_type, "deth", 2, false),
-                   POS_PLAYER1_X, POS_PLAYER1_Y);
-      chThdSleepMilliseconds(250);
-      screen_alert_draw(false, "YOU ARE DEFEATED.");
-      config->xp += (10 + ((config->level-1) * 16));
-      config->lost++;
-      configSave(config);
-      chThdSleepMilliseconds(ALERT_DELAY);
-      chThdSleepMilliseconds(ALERT_DELAY);
-      orchardAppRun(orchardAppByName("Badge"));
-    }
-  }  
-
-  if (config->hp == 0 || current_enemy.hp == 0) {
-    // check for level UP
-    if ((config->level != calc_level(config->xp)) && (config->level != 10)) {
-      dacPlay("fight/levelup.raw");
-      config->level++;
-      configSave(config);
-      changeState(LEVELUP);
-    }
-
-    return;
-  }
-
-  next_fight_state = NEXTROUND;
-  sendGamePacket(OP_NEXTROUND);
-}
 
 static void updatehp(void)  {
   // update the hit point counters at the top of the screen
