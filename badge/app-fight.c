@@ -188,12 +188,12 @@ static void state_approval_demand_enter(void) {
   ypos = (gdispGetHeight() / 2) - 60;
   xpos = 10;
 
-  gdispDrawStringBox (xpos,
+  gdispDrawStringBox (0,
 		      ypos,
 		      gdispGetWidth() - xpos,
-		      gdispGetFontMetric(fontFF, fontHeight),
+		      gdispGetFontMetric(fontLG, fontHeight),
 		      current_enemy.name,
-		      fontFF, Yellow, justifyLeft);
+		      fontLG, Yellow, justifyLeft);
   ypos=ypos+50;
   chsnprintf(tmp, sizeof(tmp), "LEVEL %d", current_enemy.level);
 
