@@ -306,7 +306,9 @@ static void state_move_select_enter() {
   if (p->ghAttackLow == NULL) 
     draw_attack_buttons();
 
-  // round N , fight!
+  // round N , fight!  note that we only have four of these, so after
+  // that we're just going to get file-not-found. oh well, add more
+  // later!
   roundno++;
   chsnprintf(tmp, sizeof(tmp), "fight/round%d.raw", roundno);
   dacPlay(tmp);
@@ -323,7 +325,6 @@ static void state_move_select_enter() {
     
   last_tick_time = chVTGetSystemTime();
   countdown=MOVE_WAIT_TIME;
-
 }
 
 static void state_move_select_tick() {
@@ -795,6 +796,7 @@ static void state_show_results_enter() {
       changeState(PLAYER_DEAD);
       /* if you are dead, then you will do the same */
       dacPlay("fight/defrmix.raw");
+
       putImageFile(getAvatarImage(config->p_type, "deth", 1, false),
                    POS_PLAYER1_X, POS_PLAYER1_Y);
       chThdSleepMilliseconds(250);
@@ -804,6 +806,21 @@ static void state_show_results_enter() {
       chsnprintf(tmp, sizeof(tmp), "YOU ARE DEFEATED (+%dXP)", XPLOSSFUNC);      
       screen_alert_draw(false, tmp);
 
+      // are you lame? I think you are. 
+      if (roundno == 1) {
+        chThdSleepMilliseconds(1500);
+        switch(rand() % 3 + 1) {
+        case 1:
+          dacPlay("fight/pathtic.raw");
+          break;
+        case 2:
+          dacPlay("fight/nvrwin.raw");
+          break;
+        default:
+          dacPlay("fight/usuck.raw");
+          break;
+        }
+      }
       // reward (some) XP and exit 
       config->xp += XPLOSSFUNC;
       config->lost++;
