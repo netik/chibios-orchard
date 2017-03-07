@@ -37,20 +37,35 @@
 #include "ff.h"
 #include "ffconf.h"
 
+#include "led.h"
+#include "radio_lld.h"
+
 #include "../updater/updater.h"
 
 typedef uint32_t (*pFwUpdate) (void);
 
 pFwUpdate fwupdatefunc = (pFwUpdate)(UPDATER_BASE | 1);
 
-static uint32_t update_init(OrchardAppContext *context)
+static void
+gtimerCallback (void * arg)
+{
+	(void)arg;
+
+	chThdExitS (MSG_OK);
+
+	return;
+}
+
+static uint32_t
+update_init(OrchardAppContext *context)
 {
 	(void)context;
 
 	return (0);
 }
 
-static void update_start(OrchardAppContext *context)
+static void
+update_start(OrchardAppContext *context)
 {
 	FIL f;
 	UINT br;
@@ -58,6 +73,7 @@ static void update_start(OrchardAppContext *context)
 	GWidgetInit wi;
 	font_t font;
 	FILINFO finfo;
+	GTimer * t;
 
 	(void)context;
 
@@ -98,19 +114,37 @@ static void update_start(OrchardAppContext *context)
 				"The system will reboot when\n"
 				"flashing is done. \n");
 
-	chThdSleepMilliseconds (2000);
-
 	/*
-	 * We're about to potentially overwrite memory in use by
-	 * other threads. If we allow any other thread to preempt
-	 * us, it might crash due to data corruption. To avoid
-	 * this, we jack this threads priority up to the max
-	 * so nobody else can steal the CPU from us.
+	 * We need to take over the system and we're about to clobber
+	 * the heap, so it's important that no other threads preempt
+	 * us. The major culprits are the main thread, which might
+	 * wake up when a radio event occurs, the LED thread and the
+	 * gtimer thread. We can stop the radio and LED thread
+	 * easily enough. For the gtimer thread, we schedule a
+	 * timer event that calls chThdExitS().
 	 */
 
 	chSysLock ();
 	chThdSetPriority (ABSPRIO);
 	chSysUnlock ();
+
+	/* Stop the radio */
+
+	radioStop (&KRADIO1);
+
+	/* Stop the LED thread */
+
+	effectsStop ();
+
+	/* Stop the gtimer thread */
+
+	t = chHeapAlloc (NULL, sizeof(GTimer));
+	gtimerInit (t);
+	gtimerStart (t, gtimerCallback, NULL, FALSE, 1);
+
+	/* Wait for the LED and gtimer threads to exit */
+
+	chThdSleepMilliseconds (2000);
 
 	f_open (&f, UPDATER_NAME, FA_READ);
 	f_read (&f, (char *)UPDATER_BASE, UPDATER_SIZE, &br);
@@ -139,7 +173,8 @@ done:
 	return;
 }
 
-void update_event(OrchardAppContext *context, const OrchardAppEvent *event)
+static void
+update_event(OrchardAppContext *context, const OrchardAppEvent *event)
 {
 	(void)context;
 	(void)event;
@@ -147,7 +182,8 @@ void update_event(OrchardAppContext *context, const OrchardAppEvent *event)
 	return;
 }
 
-static void update_exit(OrchardAppContext *context)
+static
+void update_exit(OrchardAppContext *context)
 {
 	(void)context;
 

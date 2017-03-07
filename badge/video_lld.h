@@ -33,6 +33,7 @@
 #ifndef _VIDEO_LLD_H_
 #define _VIDEO_LLD_H_
 
+extern void videoWinPlay (char *, int, int);
 extern void videoPlay (char *);
 
 #endif /* _VIDEO_LLD_H_ */

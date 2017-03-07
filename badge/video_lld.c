@@ -116,6 +116,7 @@
 #include "dac_reg.h"
 #include "pit_lld.h"
 #include "pit_reg.h"
+#include "dma_lld.h"
 
 #include "ff.h"
 #include "ffconf.h"
@@ -205,7 +206,7 @@ draw_lines (pixel_t * buf, int extra)
 
 /******************************************************************************
 *
-* videoPlay - play a video
+* videoWinPlay - play a video
 *
 * This function plays an encoded video file specified by <fname> from the
 * SD card. The file must be encoded using the encode_video.sh script. There
@@ -216,11 +217,16 @@ draw_lines (pixel_t * buf, int extra)
 * The video will keep playing until the end of file is reached, or until the
 * user touches the touch screen.
 *
+* If <x> and <y> are non-zero, then the video will be played at its native
+* 128x96 resolution at the specified X and Y coordinates on the screen. If
+* <x> and <y> are both 0, then the vide will be upscaled to consume the
+* entire display.
+*
 * RETURNS: N/A
 */
 
 void
-videoPlay (char * fname)
+videoWinPlay (char * fname, int x, int y)
 {
 	GEventMouse * me;
 	GListener gl;
@@ -261,10 +267,17 @@ videoPlay (char * fname)
 	 * frame data, and then upscale on the fly.
 	 */
 
-	GDISP->p.x = 0;
-	GDISP->p.y = 0;
-	GDISP->p.cx = gdispGetWidth ();
-	GDISP->p.cy = gdispGetHeight ();
+	if (x == 0 && y == 0) {
+		GDISP->p.x = 0;
+		GDISP->p.y = 0;
+		GDISP->p.cx = gdispGetWidth ();
+		GDISP->p.cy = gdispGetHeight ();
+	} else {
+		GDISP->p.x = x;
+		GDISP->p.y = y;
+		GDISP->p.cx = FRAMERES_HORIZONTAL;
+		GDISP->p.cy = FRAMERES_VERTICAL;
+	}
 
 	gdisp_lld_write_start (GDISP);
 	gdisp_lld_write_stop (GDISP);
@@ -358,6 +371,10 @@ videoPlay (char * fname)
 		 * size of the displayed image, at the expense of pixelating
 		 * it But hey, old school pixelated video is elite, right?
 		 *
+		 * In the case where we're drawing the video in the
+		 * same 128x96 pixel format in which it was encoded,
+		 * we can just DMA the pixels directly to the screen.
+		 *
 		 * Note: gdisp_lld_write_start_ex() is a custom version
 		 * of gdisp_lld_write_start() that doesn't update the
 		 * drawing area. We don't need to do that since all our
@@ -374,16 +391,27 @@ videoPlay (char * fname)
 
 		gdisp_lld_write_start_ex (GDISP);
 
-		/* Draw the two scanlines. */
+		if (x == 0 && y == 0) {
+			draw_lines (buf, j & 1);
+			draw_lines (buf + FRAMERES_HORIZONTAL, j & 1);
 
-		draw_lines (buf, j & 1);
-		draw_lines (buf + FRAMERES_HORIZONTAL, j & 1);
+			j++;
+			if (j == FRAMERES_VERTICAL)
+				j = 0;
+		} else {
+			DMA->ch[2].DSR_BCR = VID_BUFSZ;
+			DMA->ch[2].SAR = (uint32_t)buf;
+
+ 			osalSysLock ();
+			SPI1->C2 |= SPIx_C2_TXDMAE;
+			DMA->ch[2].DCR |= DMA_DCRn_ERQ;
+			osalThreadSuspendS (&dma2Thread);
+			osalSysUnlock ();
+ 
+			SPI1->C2 &= ~SPIx_C2_TXDMAE;
+		}
 
 		gdisp_lld_write_stop (GDISP);
-
-		j++;
-		if (j == FRAMERES_VERTICAL)
-			j = 0;
 
 		/* Check for the user requesting exit. */
 
@@ -403,5 +431,21 @@ videoPlay (char * fname)
 	CSR_WRITE_4(&PIT1, PIT_LDVAL1,
 	    KINETIS_BUSCLK_FREQUENCY / DAC_SAMPLERATE);
 
+	return;
+}
+
+/******************************************************************************
+*
+* videoPlay - play a video
+*
+* This is a shortcut version of videoWinPlay() that always plays a video at
+* full screen size.
+*
+* RETURNS: N/A
+*/
+
+void videoPlay (char * fname)
+{
+	videoWinPlay (fname, 0, 0);
 	return;
 }

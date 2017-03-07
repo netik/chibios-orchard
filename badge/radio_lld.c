@@ -736,6 +736,10 @@ radioStart (SPIDriver * sp)
 * This function stops all radio activity by forcing a hard reset of the
 * SX1233 module via its reset pin.
 *
+* NB: When we're using the radio as the clock source for the KW01 (i.e. we're
+* set up for PEE mode), we can't put the radio to sleep because that will
+* halt the external clock. We put it in standby mode instead.
+*
 * RETURNS: N/A
 */
 
@@ -744,8 +748,10 @@ radioStop (RADIODriver * radio)
 {
 #ifdef KW01_HARD_RESET
 	radioReset (radio);
-#endif
 	radioModeSet (radio, KW01_MODE_SLEEP);
+#else
+	radioModeSet (radio, KW01_MODE_STANDBY);
+#endif
 	return;
 }
 
