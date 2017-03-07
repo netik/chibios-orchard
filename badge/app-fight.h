@@ -54,6 +54,10 @@
 #define OP_ACK              0xf0   /* Network: I got your message with sequence # acknum */
 #define OP_RST              0xff   /* Network: I don't understand this message. Client should reset */
 
+/* rewards for winning or losing */
+#define XPWINFUNC  (80 + ((config->level-1) * 16))
+#define XPLOSSFUNC (10 + ((config->level-1) * 16))
+
 typedef struct _FightHandles {
   GListener glFight;
   GHandle ghExitButton;

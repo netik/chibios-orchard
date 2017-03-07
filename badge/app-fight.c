@@ -590,6 +590,8 @@ static void state_show_results_enter() {
   char attackfn2[13];
   char ourdmg_s[10];
   char theirdmg_s[10];
+  char tmp[35];
+
   uint16_t textx, text_p1_y, text_p2_y;
   color_t p1color, p2color;
   userconfig *config = getConfig();
@@ -670,13 +672,6 @@ static void state_show_results_enter() {
     last_hit = (int)(last_hit * 0.9);
 #ifdef DEBUG_FIGHT_STATE
     chprintf(stream,"FIGHT: Our Hit reduced due to UL_PLUSDEF now:%d\r\n", last_hit);
-#endif
-  }
-  
-  if (config->unlocks & UL_PLUSDEF) {
-    last_damage = (int)(last_damage * 0.9);
-#ifdef DEBUG_FIGHT_STATE
-    chprintf(stream,"FIGHT: Damage reduced due to match us:%d them:%d\r\n", last_damage, last_hit);
 #endif
   }
   
@@ -771,10 +766,26 @@ static void state_show_results_enter() {
     putImageFile(getAvatarImage(current_enemy.p_type, "deth", 2, false),
                  POS_PLAYER2_X, POS_PLAYER2_Y);
     chThdSleepMilliseconds(250);
-    screen_alert_draw(false, "VICTORY!");
+    chsnprintf(tmp, sizeof(tmp), "VICTORY!  (+%dXP)", XPWINFUNC);      
+    screen_alert_draw(false, tmp);
 
+    if (roundno == 1) {
+      // that was TOO easy, let's tell them about it
+      
+      // sleep to let drop.raw finish
+      chThdSleepMilliseconds(1500);
+      switch(rand() % 2 +1) {
+      case 1:
+        dacPlay("fight/outstnd.raw");
+        break;
+      default:
+        dacPlay("fight/flawless.raw");
+        break;
+      }
+    }
+    
     // reward XP and exit 
-    config->xp += (80 + ((config->level-1) * 16));
+    config->xp += XPWINFUNC;
     config->won++;
     configSave(config);
     
@@ -790,10 +801,11 @@ static void state_show_results_enter() {
       putImageFile(getAvatarImage(config->p_type, "deth", 2, false),
                    POS_PLAYER1_X, POS_PLAYER1_Y);
       chThdSleepMilliseconds(250);
-      screen_alert_draw(false, "YOU ARE DEFEATED.");
+      chsnprintf(tmp, sizeof(tmp), "YOU ARE DEFEATED (+%dXP)", XPLOSSFUNC);      
+      screen_alert_draw(false, tmp);
 
       // reward (some) XP and exit 
-      config->xp += (10 + ((config->level-1) * 16));
+      config->xp += XPLOSSFUNC;
       config->lost++;
       configSave(config);
       
