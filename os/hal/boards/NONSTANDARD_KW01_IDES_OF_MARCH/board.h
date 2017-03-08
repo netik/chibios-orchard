@@ -29,16 +29,14 @@
 #define BOARD_NAME                  "KW01 Ides Of March"
 
 /*
- * The Ides of March design is derived from the Freescale/NXP
- * Freedom KW019032 reference board. The following configuration actually works
- * with both boards, except for the green blinky LED used to indicate radio RX
- * activity. (We need the pin for the Freedom board's green LED for one of the
- * sound channels.) If you ignore that, they both work the same.
+ * The Ides of March design is derived from the Freescale/NXP Freedom
+ * KW019032 reference board. The following configuration actually works
+ * with both boards.
  * 
  * There are two possible CPU clocking options: one is to use the internal
  * 32.768KHz reference oscillator (FEI mode) and the other is to use the clock
- * from radio, which uses a 32MHz reference crystal (PEE mode). Both yield a
- * 48Mhz CPU clock and 24MHz bus clock. It's not clear just how accurate or
+ * from the radio, which uses a 32MHz reference crystal (PEE mode). Both yield
+ * a 48Mhz CPU clock and 24MHz bus clock. It's not clear just how accurate or
  * stable the internal reference clock is though, so we prefer the external
  * reference clock for now.
  */
@@ -58,11 +56,17 @@
 
 /* GPIO pin assignments */
 
+/* SD card chip select */
+
 #define MMC_CHIP_SELECT_PORT	GPIOB
 #define MMC_CHIP_SELECT_PIN	0
 
+/* Touch controller */
+
 #define XPT_CHIP_SELECT_PORT	GPIOE
 #define XPT_CHIP_SELECT_PIN	19
+
+/* Screen control */
 
 #define SCREEN_CHIP_SELECT_PORT	GPIOD
 #define SCREEN_CHIP_SELECT_PIN	4
@@ -70,8 +74,12 @@
 #define SCREEN_CMDDATA_PORT	GPIOE
 #define SCREEN_CMDDATA_PIN	18
 
+/* WS2812 LED chain */
+
 #define LED_CHAIN_PORT		GPIOE
 #define LED_CHAIN_PIN		17
+
+/* Indicator LEDs */
 
 #define RED_LED_PORT		GPIOE
 #define RED_LED_PIN		16
@@ -91,6 +99,8 @@
 
 #define TPM2_PORT		GPIOB
 #define TPM2_PIN		2
+
+/* Radio control */
 
 #define RADIO_CHIP_SELECT_PORT	GPIOD
 #define RADIO_CHIP_SELECT_PIN	0
@@ -119,6 +129,8 @@
 
 #define BUTTON_ENTER_PORT	GPIOA
 #define BUTTON_ENTER_PIN	4
+
+/* Rotation/tilt switch */
 
 #define TILT_SENSOR_PORT	GPIOD
 #define TILT_SEMSOR_PIN		6
