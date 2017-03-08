@@ -40,69 +40,46 @@ thread_reference_t dma0Thread;
 thread_reference_t dma1Thread;
 thread_reference_t dma2Thread;
 
-OSAL_IRQ_HANDLER(KINETIS_DMA0_IRQ_VECTOR)
+static void
+dmaIntHandle (uint8_t chan, thread_reference_t thd)
 {
-	OSAL_IRQ_PROLOGUE();
-
-	if (DMA->ch[0].DSR_BCR & DMA_DSR_BCRn_DONE) {
+	if (DMA->ch[chan].DSR_BCR & DMA_DSR_BCRn_DONE) {
 
 		/* Wake any thread waiting for this DMA transfer to finish */
 
 		osalSysLockFromISR ();
-		osalThreadResumeI (&dma0Thread, MSG_OK);
+		osalThreadResumeI (&thd, MSG_OK);
 		osalSysUnlockFromISR ();                          
 
 		/* Ack the DMA completion interrupt */
 
-		DMA->ch[0].DSR_BCR |= DMA_DSR_BCRn_DONE;
+		DMA->ch[chan].DSR_BCR |= DMA_DSR_BCRn_DONE;
 	}
 
-	OSAL_IRQ_EPILOGUE();
+	return;
+}
 
+OSAL_IRQ_HANDLER(KINETIS_DMA0_IRQ_VECTOR)
+{
+	OSAL_IRQ_PROLOGUE();
+	dmaIntHandle (0, dma0Thread);
+	OSAL_IRQ_EPILOGUE();
 	return;
 }
 
 OSAL_IRQ_HANDLER(KINETIS_DMA1_IRQ_VECTOR)
 {
 	OSAL_IRQ_PROLOGUE();
-
-	if (DMA->ch[1].DSR_BCR & DMA_DSR_BCRn_DONE) {
-
-		/* Wake any thread waiting for this DMA transfer to finish */
-
-		osalSysLockFromISR ();
-		osalThreadResumeI (&dma1Thread, MSG_OK);
-		osalSysUnlockFromISR ();                          
-
-		/* Ack the DMA completion interrupt */
-
-		DMA->ch[1].DSR_BCR |= DMA_DSR_BCRn_DONE;
-	}
-
+	dmaIntHandle (1, dma1Thread);
 	OSAL_IRQ_EPILOGUE();
-
 	return;
 }
 
 OSAL_IRQ_HANDLER(KINETIS_DMA2_IRQ_VECTOR)
 {
 	OSAL_IRQ_PROLOGUE();
-
-	if (DMA->ch[2].DSR_BCR & DMA_DSR_BCRn_DONE) {
-
-		/* Wake any thread waiting for this DMA transfer to finish */
-
-		osalSysLockFromISR ();
-		osalThreadResumeI (&dma2Thread, MSG_OK);
-		osalSysUnlockFromISR ();                          
-
-		/* Ack the DMA completion interrupt */
-
-		DMA->ch[2].DSR_BCR |= DMA_DSR_BCRn_DONE;
-	}
-
+	dmaIntHandle (2, dma2Thread);
 	OSAL_IRQ_EPILOGUE();
-
 	return;
 }
 
