@@ -8,6 +8,8 @@
 #include "led.h"
 #include "string.h"
 
+extern void handle_progress(void);
+
 void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, int32_t maxval, int32_t currentval, uint8_t use_leds, uint8_t reverse) {
   // draw a bar if reverse is true, we draw right to left vs left to
   // right
@@ -30,7 +32,8 @@ void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, int32_
   int16_t remain = width * remain_f;
   
   if (use_leds == 1) {
-   ledSetProgress(100 * remain_f);
+    ledSetFunction(handle_progress);
+    ledSetProgress(100 * remain_f);
   }
   
   if (remain_f >= 0.8) {

@@ -4,7 +4,7 @@
 #include "hal.h"
 #include "math.h"
 
-#define LEDS_COUNT 16
+#define LEDS_COUNT 12
 #define LEDS_TOP_INDEX 8
 
 #define sign(x) (( x > 0 ) - ( x < 0 ))
@@ -45,7 +45,8 @@ void effectsPrevPattern(void);
 void listEffects(void);
 void ledResetPattern(void);
 void ledSetBrightness(uint8_t bval);
-void ledSetProgress(int8_t percentage);
+void ledSetFunction(void *func);
+void ledSetProgress(float p);
 
 const char *effectsCurName(void);
 

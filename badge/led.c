@@ -18,9 +18,12 @@
    by the algorithms */
 static int16_t fx_index = 0;           // fx index 
 static int16_t fx_position = 0;        // fx position counter
+static float   led_progress = 0;       // last progress setting
 static int8_t  fx_direction = 1;       // fx direction
 static uint8_t led_brightshift = 0;    // right-shift value, normally zero.
-static int8_t  led_progress = -1;      // if > -1, the entire ring becomes a progress bar. 
+
+// the current function that updates the LEDs. Override with ledSetFunction();
+static void   (*led_current_func)(void) = NULL; 
 
 static struct led_config {
   uint8_t  *fb;          // effects frame buffer
@@ -91,16 +94,17 @@ void ledSetBrightness(uint8_t bval) {
   led_brightshift = bval;
 }
 
-void ledSetProgress(int8_t percentage) {
-  // we run the progress bar on the LEDs
-  // progress is a number between 0 and 100.
-  //
-  // setting this to -1 will run the normal animation loop.
+void ledSetFunction(void *func) {
   ledClear();
-  led_progress = percentage;
+  led_current_func = func;
 }
 
-static void handle_progress(void) {
+void ledSetProgress(float p) {
+  led_progress = p;
+}
+
+
+void handle_progress(void) {
   uint8_t i,c;
   
   float pct_lit = (float)led_progress / 100;
@@ -451,10 +455,13 @@ static void anim_all_same(void) {
 static THD_WORKING_AREA(waEffectsThread, 256);
 static THD_FUNCTION(effects_thread, arg) {
   (void)arg;
+  userconfig *config = getConfig();
+
   chRegSetThreadName("LED effects");
 
+  led_current_func = fxlist[config->led_pattern].function;
+
   while (!ledsOff) {
-    userconfig *config = getConfig();
 
     // transmit the actual framebuffer to the LED chain
     ledUpdate(led_config.fb, led_config.pixel_count);
@@ -464,11 +471,8 @@ static THD_FUNCTION(effects_thread, arg) {
     chThdSleepMilliseconds(EFFECTS_REDRAW_MS);
     
     // re-render the internal framebuffer animations
-    if (led_progress > -1) { 
-      handle_progress();
-    } else {
-      fxlist[config->led_pattern].function();
-    }
+    if (led_current_func != NULL) 
+      led_current_func();
     
     if( ledExitRequest ) {
       // force one full cycle through an update on request to force LEDs off
@@ -488,14 +492,16 @@ void effectsStart(void) {
 
   // set user config
   config = getConfig();
-  led_brightshift = config->led_shift; // start at 1/2 power
+  led_brightshift = config->led_shift;
 
   (*fxlist[config->led_pattern].function)();
   
   ledExitRequest = 0;
   ledsOff = 0;
 
+  /* LEDs are very, very sensitive to timing. Make this slightly
+   * better than a normal thread */
   chThdCreateStatic(waEffectsThread, sizeof(waEffectsThread),
-      NORMALPRIO - 6, effects_thread, &led_config);
+                    NORMALPRIO + 1, effects_thread, &led_config);
 }
 

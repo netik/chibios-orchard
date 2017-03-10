@@ -50,6 +50,8 @@ static uint16_t screen_height;
 static uint16_t fontsm_height;
 static uint16_t fontlg_height;
 
+extern struct FXENTRY fxlist[];
+
 static void changeState(fight_state nextstate) {
   // call previous state exit
   // so long as we are updating state, no one else gets in.
@@ -129,7 +131,7 @@ static void state_idle_enter(void) {
   memset(&current_enemy, 0, sizeof(current_enemy));
   memset(&packet, 0, sizeof(packet));
   
-  ledSetProgress(-1);
+  ledSetFunction(fxlist[config->led_pattern].function);
 }
 
 static void state_waitack_enter(void) {
@@ -803,7 +805,7 @@ static void state_show_results_enter() {
       putImageFile(getAvatarImage(config->p_type, "deth", 2, false),
                    POS_PLAYER1_X, POS_PLAYER1_Y);
       chThdSleepMilliseconds(250);
-      chsnprintf(tmp, sizeof(tmp), "YOU ARE DEFEATED (+%dXP)", XPLOSSFUNC);      
+      chsnprintf(tmp, sizeof(tmp), "YOU WERE DEFEATED (+%dXP)", XPLOSSFUNC);      
       screen_alert_draw(false, tmp);
 
       // are you lame? I think you are. 
@@ -1671,6 +1673,7 @@ static void fightRadioEventHandler(KW01_PKT * pkt) {
 static void radio_event_do(KW01_PKT * pkt)
 {
   /* this is the state machine that handles transitions for the game via the radio */
+  userconfig *config = getConfig();
   user *u;
   u = (user *)pkt->kw01_payload; 
 
@@ -1814,7 +1817,7 @@ static void radio_event_do(KW01_PKT * pkt)
       orchardAppTimer(instance.context, 0, false); // shut down the timer
       screen_alert_draw(true, "DENIED.");
       dacPlay("fight/select3.raw");
-      ledSetProgress(-1);
+      ledSetFunction(fxlist[config->led_pattern].function);
       chThdSleepMilliseconds(ALERT_DELAY);
       changeState(ENEMY_SELECT);
       orchardAppTimer(instance.context, FRAME_INTERVAL_US, true);
