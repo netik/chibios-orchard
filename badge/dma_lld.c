@@ -47,11 +47,9 @@ dmaIntHandle (uint8_t chan, thread_reference_t * thd)
 
 		/* Wake any thread waiting for this DMA transfer to finish */
 
-		if (thd != NULL) {
-			osalSysLockFromISR ();
-			osalThreadResumeI (thd, MSG_OK);
-			osalSysUnlockFromISR ();                          
-		}
+		osalSysLockFromISR ();
+		osalThreadResumeI (thd, MSG_OK);
+		osalSysUnlockFromISR ();                          
 
 		/* Ack the DMA completion interrupt */
 
