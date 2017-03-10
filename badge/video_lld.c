@@ -399,16 +399,7 @@ videoWinPlay (char * fname, int x, int y)
 			if (j == FRAMERES_VERTICAL)
 				j = 0;
 		} else {
-			DMA->ch[2].DSR_BCR = VID_BUFSZ;
-			DMA->ch[2].SAR = (uint32_t)buf;
-
- 			osalSysLock ();
-			SPI1->C2 |= SPIx_C2_TXDMAE;
-			DMA->ch[2].DCR |= DMA_DCRn_ERQ;
-			osalThreadSuspendS (&dma2Thread);
-			osalSysUnlock ();
- 
-			SPI1->C2 &= ~SPIx_C2_TXDMAE;
+			dmaSend16 (buf, VID_BUFSZ);
 		}
 
 		gdisp_lld_write_stop (GDISP);

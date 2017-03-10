@@ -162,77 +162,7 @@ void rcvr_spi_multi (
 		p[i] = SPI1->DL;
 	}
 #else
-	/*
-	 * DMA transfers cause the SD card to overrun the receiver
-	 * and result in corrupted reads unless we enable the FIFO.
-	 */
-
-	SPI1->C3 |= SPIx_C3_FIFOMODE;
-
-	/* Set up the DMA source and destination addresses. */
-
-	DMA->ch[0].DSR_BCR = cnt;
-	DMA->ch[0].SAR = (uint32_t)p;
-	DMA->ch[1].DSR_BCR = cnt;
-	DMA->ch[1].DAR = (uint32_t)p;
-
-	/*
-	 * When performing a block read, we need to have the
-	 * MOSI pin pulled high in order for the SD card to
-	 * send us data. This is usually accomplished by transmitting
-	 * a buffer of all 1s at the same time we're receiving. But
-	 * to do that, we need to do a memset() to populate the
-	 * transfer buffer with 1 bits, and that wastes CPU cycles.
-	 * To avoid this, we temporarily turn the MOSI pin back into
-	 * a GPIO and force it high. We still need to perform a TX
-	 * DMA transfer (otherwise the SPI controller won't toggle
-	 * the clock pin), but the contents of the buffer don't
-	 * matter: to the SD card it appears we're always sending
-	 * 1 bits.
-	 */
-
-	palSetPadMode (GPIOE, 1, PAL_MODE_OUTPUT_PUSHPULL);
-	palSetPad (GPIOE, 1);
-
-	/*
-	 * Start the transfer and wait for it to complete.
-	 * We will be woken up by the DMA interrupt handler when
-	 * the transfer completion interrupt triggers.
-	 *
-	 * Note: the whole block below is a critical section and
-	 * must be guarded with syslock/sysunlock. We must ensure
-	 * the interrupt service routine doesn't fire until
-	 * osalThreadSuspendS() has saved a reference to the
-	 * current thread to the dmaThread1 pointer, but we have
-	 * to call osalThreadSuspendS()  after initiating the DMA
-	 * transfer. There is a chance the DMA completion interrupt
-	 * might trigger before dmaThread1 is updated, in which
-	 * case the interrupt service routine will fail to wake
-	 * us up. Initiating the transfer after calling osalSysLock()
-	 * closes this race condition window: it masks off interrupts
-	 * until osalThreadSuspendS() atomically puts this thread to
-	 * sleep and then unmasks them again.
-	 */
-
-	osalSysLock ();
-
-	SPI1->C2 |= SPIx_C2_RXDMAE;
-	DMA->ch[1].DCR |= DMA_DCRn_ERQ;
-	SPI1->C2 |= SPIx_C2_TXDMAE;
-	DMA->ch[0].DCR |= DMA_DCRn_ERQ;
-
-	osalThreadSuspendS (&dma1Thread);
-
-	osalSysUnlock ();
-
-	/* Release the MOSI pin. */
-
-	palSetPadMode (GPIOE, 1, PAL_MODE_ALTERNATIVE_2);
-
-	/* Disable SPI DMA mode and turn off the FIFO. */
-
-	SPI1->C2 &= ~(SPIx_C2_TXDMAE|SPIx_C2_RXDMAE);
-	SPI1->C3 &= ~SPIx_C3_FIFOMODE;
+	dmaRecv8 (p, cnt);
 #endif
 	return;
 }
@@ -245,17 +175,18 @@ void xmit_spi_multi (
 	UINT cnt		/* Size of data block */
 )
 {
+#ifdef UPDATER
 	UINT i;
 
 	for (i = 0; i < cnt; i++) {
-		while ((SPI1->S & SPIx_S_SPTEF) == 0)
-			;
 		SPI1->DL = p[i];
 		while ((SPI1->S & SPIx_S_SPRF) == 0)
 			;
 		(void)SPI1->DL;
 	}
-
+#else
+	dmaSend8 (p, cnt);
+#endif
 	return;
 }
 

@@ -90,5 +90,8 @@ extern thread_reference_t dma1Thread;
 extern thread_reference_t dma2Thread;
 
 extern void dmaStart (void);
+extern void dmaSend8 (const void * src, uint32_t len);
+extern void dmaRecv8 (const void * dst, uint32_t len);
+extern void dmaSend16 (const void * src, uint32_t len);
 
 #endif /* _DMA_LLD_H_ */

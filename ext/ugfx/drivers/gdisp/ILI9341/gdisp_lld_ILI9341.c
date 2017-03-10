@@ -304,34 +304,18 @@ LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
 #if GDISP_PIXELFORMAT != GDISP_LLD_PIXELFORMAT
 #error "GDISP: ILI9341: BitBlit is only available in RGB565 pixel format"
 #endif
-
-	static void dma_with_inc (pixel_t * b, int cnt) {
-		DMA->ch[2].DSR_BCR = cnt * 2;
-		DMA->ch[2].SAR = (uint32_t)b;
-
-		osalSysLock ();
-		SPI1->C2 |= SPIx_C2_TXDMAE;
-		DMA->ch[2].DCR |= DMA_DCRn_ERQ;
-		osalThreadSuspendS (&dma2Thread);
-		osalSysUnlock ();
- 
-		SPI1->C2 &= ~SPIx_C2_TXDMAE;
-
-		return;
-	}
-
 	LLDSPEC void gdisp_lld_blit_area(GDisplay *g) {
-		pixel_t         *buffer;
+		const pixel_t  *buffer;
 		coord_t         ycnt;
 
 		buffer = (pixel_t *)g->p.ptr + g->p.x1 + g->p.y1 * g->p.x2;
 
 		gdisp_lld_write_start (g);
 		if (g->p.x2 == g->p.cx) {
-			dma_with_inc (buffer, g->p.cx*g->p.cy);
+			dmaSend16 (buffer, g->p.cx*g->p.cy * 2);
 		} else {
 			for (ycnt = g->p.cy; ycnt; ycnt--, buffer += g->p.x2)
-				dma_with_inc (buffer, g->p.cy);
+				dmaSend16 (buffer, g->p.cy * 2);
 		}
 		gdisp_lld_write_stop (g);
 
