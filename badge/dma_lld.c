@@ -276,7 +276,7 @@ dmaSend8 (const void * src, uint32_t len)
 *
 * This function uses DMA channel 0 and DMA channel 1 to receive a block of
 * data from a slave connected to the SPI1 controller. The data is received
-* a byte at a a time. The <dst> argument is a pointer to a memory buffer
+* a byte at a time. The <dst> argument is a pointer to a memory buffer
 * where the received data should be deposited and <len> indicates the amount
 * of data to transfer in bytes. The <dst> address can be anywhere in RAM.
 *
