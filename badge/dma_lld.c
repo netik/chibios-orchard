@@ -30,22 +30,72 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*
+ * This module implements support for using the DMA controllers in the
+ * Freescale/NXP KW01 in conjunction with SPI channel 1. This allows us to
+ * perform high speed transfers over the SPI bus for the display and SD card
+ * with minimal CPU overhead.
+ *
+ * The KW01 has four DMA controllers which may be configured to perform either
+ * memory/memory transfers, or peripheral/memory transfers, for a number of
+ * different peripherals. Our board design requires the use of 8-bit transfers
+ * for the SD card and 16-bit transfers for the display. We use three of the
+ * DMA channels, each configured for a different mode:
+ *
+ * Channel 0: SPI1 8-bit TX
+ * Channel 1: SPI1 8-bit RX
+ * Channel 2: SPI1 16-bit TX
+ * Channel 3: unused
+ *
+ * We could re-configure the channels on the fly, however we prefer to keep
+ * them statically configured to reduce the amount of instructions required
+ * to perform each transfer.
+ *
+ * We provide interrupt handling support such that each channel generates an
+ * interrupt when a transfer completes, allowing the calling thread to sleep
+ * and other threads to execute while the transfer is in progress.
+ *
+ * Getting the DMA controller to work with the SPI controller depends on
+ * one important configuration option: we must enable "cycle-steal" mode, by
+ * setting the CS bit in the DCR register. This allows the SPI1 controller to
+ * stop and restart the DMA channel as needed as data is received or
+ * transmitted. Memory/memory transfers don't need "cycle-steal" mode enabled.
+ */
+
 #include "ch.h"
 #include "hal.h"
 #include "osal.h"
 
 #include "dma_lld.h"
 
-thread_reference_t dma0Thread;
-thread_reference_t dma1Thread;
-thread_reference_t dma2Thread;
+static thread_reference_t dma0Thread;
+static thread_reference_t dma1Thread;
+static thread_reference_t dma2Thread;
+
+/******************************************************************************
+*
+* dmaIntHandle - DMA interrupt handler
+*
+* This function is called whenever one of the three DMA channel interrupts
+* is triggered. It acknowledges the transfer completion interrupt and wakes
+* up any thread that might be waiting for the transfer to finish. This code
+* is broken out as a helper routine as it is common to all three interrupt
+* handlers. The <chan> argument indicates the DMA controller channel (0-2)
+* and the <thd> argument is a pointer to a thread reference. If thd is
+* NULL, osalThreadResumeI() has no effect.
+*
+* RETURNS: N/A
+*/
 
 static void
 dmaIntHandle (uint8_t chan, thread_reference_t * thd)
 {
 	if (DMA->ch[chan].DSR_BCR & DMA_DSR_BCRn_DONE) {
 
-		/* Wake any thread waiting for this DMA transfer to finish */
+		/*
+		 * Wake any thread waiting for this
+		 * DMA transfer to finish
+		 */
 
 		osalSysLockFromISR ();
 		osalThreadResumeI (thd, MSG_OK);
@@ -59,6 +109,16 @@ dmaIntHandle (uint8_t chan, thread_reference_t * thd)
 	return;
 }
 
+/******************************************************************************
+*
+* Vector40 - interrupt service routine for DMA channel 0
+*
+* This function is invoked when DMA channel 0 triggers an interrupt. It uses
+* the dmaIntHandle() halper routine to ack the interrupt.
+*
+* RETURNS: N/A
+*/
+
 OSAL_IRQ_HANDLER(KINETIS_DMA0_IRQ_VECTOR)
 {
 	OSAL_IRQ_PROLOGUE();
@@ -66,6 +126,16 @@ OSAL_IRQ_HANDLER(KINETIS_DMA0_IRQ_VECTOR)
 	OSAL_IRQ_EPILOGUE();
 	return;
 }
+
+/******************************************************************************
+*
+* Vector44 - interrupt service routine for DMA channel 1
+*
+* This function is invoked when DMA channel 1 triggers an interrupt. It uses
+* the dmaIntHandle() halper routine to ack the interrupt.
+*
+* RETURNS: N/A
+*/
 
 OSAL_IRQ_HANDLER(KINETIS_DMA1_IRQ_VECTOR)
 {
@@ -75,6 +145,16 @@ OSAL_IRQ_HANDLER(KINETIS_DMA1_IRQ_VECTOR)
 	return;
 }
 
+/******************************************************************************
+*
+* Vector48 - interrupt service routine for DMA channel 2
+*
+* This function is invoked when DMA channel 2 triggers an interrupt. It uses
+* the dmaIntHandle() halper routine to ack the interrupt.
+*
+* RETURNS: N/A
+*/
+
 OSAL_IRQ_HANDLER(KINETIS_DMA2_IRQ_VECTOR)
 {
 	OSAL_IRQ_PROLOGUE();
@@ -82,6 +162,24 @@ OSAL_IRQ_HANDLER(KINETIS_DMA2_IRQ_VECTOR)
 	OSAL_IRQ_EPILOGUE();
 	return;
 }
+
+/******************************************************************************
+*
+* dmaStart - enable and configure the DMA channels
+*
+* This function enables the DMA controller module in the KW01 and configures
+* the first three channels for use with the SPI1 controller. The following
+* channel setup is used:
+*
+* Channel0: SPI1 TX, 8-bit transfers, source increment
+* Channel1: SPI1 RX, 8-bit transfers, destination increment
+* Channel2: SPI1 TX, 16-bit transfers, source increment
+*
+* The NVIC is also programmed to enable the interrupts corresponding each
+* channel.
+*
+* RETURNS: N/A
+*/
 
 void
 dmaStart (void)
@@ -130,6 +228,24 @@ dmaStart (void)
 	return;
 }
 
+/******************************************************************************
+*
+* dmaSend8 - perform an 8-bit DMA transmit operation on SPI controller 1
+*
+* This function uses DMA channel 0 to transmit a block of data to a slave
+* connected to the SPI1 controller. The data is transmitted a byte at a
+* a time. The <src> argument is a pointer to the memory buffer to be sent
+* and <len> indicates the amount of data to transfer in bytes. The <src>
+* address can be anywhere in RAM or flash.
+*
+* The calling thread will be suspended while the transfer is in progress.
+* It will be woken up when the DMA completion interrupt fires. Only a
+* single channel is needed for this operation. Any data returned by the
+* slave is ignored.
+*
+* RETURNS: N/A
+*/
+
 void
 dmaSend8 (const void * src, uint32_t len)
 {
@@ -137,6 +253,8 @@ dmaSend8 (const void * src, uint32_t len)
 
 	DMA->ch[0].DSR_BCR = len;
 	DMA->ch[0].SAR = (uint32_t)src;
+
+	/* Initiate the transfer */
 
 	osalSysLock ();
 
@@ -151,6 +269,33 @@ dmaSend8 (const void * src, uint32_t len)
 
 	return;
 }
+
+/******************************************************************************
+*
+* dmaRecv8 - perform an 8-bit DMA receive operation on SPI controller 1
+*
+* This function uses DMA channel 0 and DMA channel 1 to receive a block of
+* data from a slave connected to the SPI1 controller. The data is received
+* a byte at a a time. The <dst> argument is a pointer to a memory buffer
+* where the received data should be deposited and <len> indicates the amount
+* of data to transfer in bytes. The <dst> address can be anywhere in RAM.
+*
+* The calling thread will be suspended while the transfer is in progress.
+* It will be woken up when the DMA completion interrupt fires. Two DMA
+* channels are needed for this operation because the SPI controller only
+* pulses the clock when data is transmitted, thus we must send data in
+* order to prompt the slave to reply to us.
+*
+* In most cases, the caller is responsible for providing a buffer filled
+* with 0xFF bytes which are transmitted as part of the exchange. (Usually
+* the same buffer used to receive the data is re-used for this purpose.)
+* To avoid having to do this, this function temporarily reprograms the
+* MOSI pin as a GPIO and pulls it high. This makes the slave think the SPI
+* controller is always sending 1 bits regardless of what is actually in
+* the buffer. The pin is reset to MOSI mode before this function exits.
+*
+* RETURNS: N/A
+*/
 
 void
 dmaRecv8 (const void * dst, uint32_t len)
@@ -230,6 +375,28 @@ dmaRecv8 (const void * dst, uint32_t len)
 	return;
 }
 
+/******************************************************************************
+*
+* dmaSend16 - perform an 16-bit DMA transmit operation on SPI controller 1
+*
+* This function uses DMA channel 2 to transmit a block of data to a slave
+* connected to the SPI1 controller. The data is transmitted two bytes at a
+* a time. The <src> argument is a pointer to the memory buffer to be sent
+* and <len> indicates the amount of data to transfer in bytes. The <src>
+* address can be anywhere in RAM or flash.
+*
+* This function is used primarily for the display controller, which uses
+* 16-bit pixel data. Note that the <len> argument must still specify the
+* buffer size in bytes, not words.
+*
+* The calling thread will be suspended while the transfer is in progress.
+* It will be woken up when the DMA completion interrupt fires. Only a
+* single channel is needed for this operation. Any data returned by the
+* slave is ignored.
+*
+* RETURNS: N/A
+*/
+
 void
 dmaSend16 (const void * src, uint32_t len)
 {
@@ -241,6 +408,8 @@ dmaSend16 (const void * src, uint32_t len)
 
 	DMA->ch[2].DSR_BCR = len;
 	DMA->ch[2].SAR = (uint32_t)src;
+
+	/* Initiate the transfer */
 
 	osalSysLock ();
 
