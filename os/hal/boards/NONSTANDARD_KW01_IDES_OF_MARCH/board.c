@@ -186,10 +186,10 @@ void __early_init(void) {
 
   /*
    * The Freescale/NXP KW019032 board has a 32MHz crystal attached to
-   * the radio, and the CLKOUT pin of the radion wired to the PTA18/EXTAL0
+   * the radio, and the CLKOUT pin of the radio wired to the PTA18/EXTAL0
    * pin of the MCU. We have the option of either using the KW01's
    * internal 32.768KHz reference (FEI mode) or the 32MHz reference from
-   * the radion (PEE mode). (At power on or reset, the CPU is running in
+   * the radio (PEE mode). (At power on or reset, the CPU is running in
    * FEI mode and we can customize the configuration in the clock init code
    * in the hal_lld module.) However there's one catch: at power on/reset,
    * the radio applies a divisor of 32 to the CLKOUT signal, meaning we
@@ -247,7 +247,7 @@ void __early_init(void) {
   SPI0->C1 |= SPIx_C1_SPE | SPIx_C1_MSTR;
   (void)SPI0->S;
  
-  /* Now program the radio to generate a 32Mhz clock output */
+  /* Now program the radio to output a 32Mhz clock */
 
   palClearPad (RADIO_CHIP_SELECT_PORT, RADIO_CHIP_SELECT_PIN);
   while ((SPI0->S & SPIx_S_SPTEF) == 0)
