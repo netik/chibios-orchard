@@ -49,7 +49,6 @@ static uint16_t screen_width;
 static uint16_t screen_height;
 static uint16_t fontsm_height;
 static uint16_t fontlg_height;
-
 extern struct FXENTRY fxlist[];
 
 static void changeState(fight_state nextstate) {

@@ -13,7 +13,7 @@
 // WAIT_TIMEs are always in system ticks.
 // caveat! the system timer is a uint32_t and can roll over! be aware!
 
-#define DEFAULT_WAIT_TIME MS2ST(20000) // how long we wait for the user to respond. MUST BE IN SYSTEM TICKS. 
+#define DEFAULT_WAIT_TIME MS2ST(10000) // how long we wait for the user to respond. MUST BE IN SYSTEM TICKS. 
 #define MAX_ACKWAIT MS2ST(500)         // if no ACK in 500MS, resend the last packet. MUST BE IN SYSTEM TICKS. 
 #define MAX_HOLDOFF 100                // we introduce a small delay if we are resending (contention protocol). MUST BE IN mS
 #define MAX_RETRIES 4                  // if we do that 3 times, abort. 

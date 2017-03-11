@@ -31,6 +31,7 @@ typedef struct _SetupHandles {
 } SetupHandles;
 
 static uint32_t last_ui_time = 0;
+extern struct FXENTRY fxlist[];
 
 static void draw_setup_buttons(SetupHandles * p) {
   userconfig *config = getConfig();
@@ -241,12 +242,15 @@ static void setup_event(OrchardAppContext *context,
 	config->led_pattern++;
 	ledResetPattern();
 	if (config->led_pattern >= LED_PATTERN_COUNT) config->led_pattern = 0;
+        ledSetFunction(fxlist[config->led_pattern].function);
       }
       
       if (((GEventGWinButton*)pe)->gwin == p->ghButtonPatUp) {
 	config->led_pattern--;
 	ledResetPattern();
 	if (config->led_pattern == 255) config->led_pattern = LED_PATTERN_COUNT - 1;
+        ledSetFunction(fxlist[config->led_pattern].function);
+
       }
       
       // update ui

@@ -502,6 +502,6 @@ void effectsStart(void) {
   /* LEDs are very, very sensitive to timing. Make this slightly
    * better than a normal thread */
   chThdCreateStatic(waEffectsThread, sizeof(waEffectsThread),
-                    NORMALPRIO + 1, effects_thread, &led_config);
+                    NORMALPRIO  +1, effects_thread, &led_config);
 }
 
