@@ -34,7 +34,7 @@
  * This module implements support for the periodic interval timer in
  * the KW01. The PIT block has two timers tied to the same IRQ in the
  * NVIC. We both timers: one to provide delay timer support for the
- * FatFs SPI module and the other for playing audio samples through
+ * SD/MMC SPI module and the other for playing audio samples through
  * the DAC.
  *
  * During early bootstrap, we also use the second PIT as an entropy
@@ -45,6 +45,11 @@
  * PIT1 to count the number of timer ticks it takes before we
  * reach the main() function. Later, PIT1 is re-initialized for
  * use by the DAC.
+ *
+ * This module is use for both the main ChibiOS/firmware build and with the
+ * firmware updater build. Functionality is stripped down in the updater
+ * case as only one timer is needed there, and the updater lacks the full
+ * ChibiOS interrupt handling framework.
  */
 
 #include "ch.h"
@@ -63,6 +68,21 @@ PITDriver PIT1;
 #include "updater.h"
 
 extern isr vectors[];
+
+/******************************************************************************
+*
+* pitIrq/Vector98 - PIT interrupt handler
+*
+* This function is the interrupt service routine for the PIT module. There
+* is a single interrupt vector shared by both PIT instances. We check both
+* timers to see if their interval has expired and if so we call their
+* registered callout routines and acknowledge the interrupt.
+*
+* When compiled for use with the updater, only the PIT0 timer is handled
+* since the firmeare updater doesn't use the DAC.
+*
+* RETURNS: N/A
+*/
 
 static void pitIrq (void)
 #else
@@ -99,6 +119,26 @@ OSAL_IRQ_HANDLER(KINETIS_PIT_IRQ_VECTOR)
 
 	return;
 }
+
+/******************************************************************************
+*
+* pitStart - initialize the PIT module and start the PIT0 timer
+*
+* This function enables clocking for the PIT module and installes the PIT
+* interrupt handler. It also initializes the interval for PIT0 and starts
+* it running. It may be halted later by the SD/MMC module when it it's
+* no longer needed.
+*
+* When compiled for the firmware updater, this function also forces off
+* both timers before re-initializing PIT0. This is done in case either
+* timer was still running when the updater was launched.
+*
+* The <pit> argument is a pointer to a PITDriver handle. and <func> is a
+* pointer to the callback function which should be invoked on every PIT0
+* interrupt.
+*
+* RETURNS: N/A
+*/
 
 void
 pitStart (PITDriver * pit, PIT_FUNC func)
@@ -141,6 +181,21 @@ pitStart (PITDriver * pit, PIT_FUNC func)
 	return;
 }
 
+/******************************************************************************
+*
+* pit1Start - initialize the PIT1 timer
+*
+* This function is similar to pitStart(), except it initializes the PIT1
+* timer for use by the DAC instead of PIT0. This function must only be
+* called after pitStart().
+*
+* The <pit> argument is a pointer to a PITDriver handle. and <func> is a
+* pointer to the callback function which should be invoked on every PIT1
+* interrupt.
+*
+* RETURNS: N/A
+*/
+
 #ifndef UPDATER
 void
 pit1Start (PITDriver * pit, PIT_FUNC func)
@@ -156,6 +211,21 @@ pit1Start (PITDriver * pit, PIT_FUNC func)
 	return;
 }
 
+/******************************************************************************
+*
+* pitEnable - enable one of the PIT timers
+*
+* This function enables a specified PIT timer which has been previously
+* halted. It starts the timer running again and re-enables its interrupts.
+* This only affects the state of one timer: if both timers are halted,
+* the other timer will remain halted.
+*
+* The <pit> argument is a pointer to a PITDriver handle. and <pitidx> is
+* the index of the desired timer to enable (0 or 1).
+*
+* RETURNS: N/A
+*/
+
 void
 pitEnable (PITDriver * pit, uint8_t pitidx)
 {
@@ -168,6 +238,25 @@ pitEnable (PITDriver * pit, uint8_t pitidx)
 
 	return;
 }
+
+/******************************************************************************
+*
+* pitDisable - disable one of the PIT timers
+*
+* This function disables a specified PIT timer which has been previously
+* started. It halts the timer and disables its interrupts. This only affects
+* the state of one timer: if both are running, the other will remain
+* running. The previously registered callout functions are not affected.
+*
+* The <pit> argument is a pointer to a PITDriver handle. and <pitidx> is
+* the index of the desired timer to enable (0 or 1).
+*
+* This function, along with pitEnable(), are used by the DAC and SD/MMC
+* modules to stop the timers from generating unnecessary nterrupt activity
+* during idle periods.
+*
+* RETURNS: N/A
+*/
 
 void
 pitDisable (PITDriver * pit, uint8_t pitidx)
