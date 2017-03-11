@@ -85,10 +85,6 @@
 #define DMA_CHAN_DMAMUX2		62
 #define DMA_CHAN_DMAMUX3		63
 
-extern thread_reference_t dma0Thread;
-extern thread_reference_t dma1Thread;
-extern thread_reference_t dma2Thread;
-
 extern void dmaStart (void);
 extern void dmaSend8 (const void * src, uint32_t len);
 extern void dmaRecv8 (const void * dst, uint32_t len);
