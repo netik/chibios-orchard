@@ -131,8 +131,6 @@ gdispImageError gdispGImageDraw_NATIVE(GDisplay *g, gdispImage *img, coord_t x, 
 
 			/* Blit the chunk of data */
 			gdispGBlitArea(g, mx, y, len, 1, 0, 0, len, priv->buf);
-			chThdSleep (1);
-
 		}
 
 		/* Get the position for the start of the next line */
