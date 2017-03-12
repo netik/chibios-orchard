@@ -80,7 +80,7 @@ static uint8_t unlock_codes[MAX_ULCODES][3] = { { 0x01, 0xde, 0xf1 }, // 0
                                                 { 0x0b, 0xae, 0xac }, // 6
                                                 { 0x0d, 0xe0, 0x1a }, // 7
                                                 { 0x09, 0x00, 0x46 }, // 8
-                                                { 0xbb, 0xbb, 0xbb }  // 9
+                                                { 0x0b, 0xbb, 0xbb }  // 9
 };
 static char *unlock_desc[] = { "+10% DEF",
                                "+10% HP",
