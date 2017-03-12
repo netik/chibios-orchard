@@ -135,7 +135,7 @@ CSRC = main.c \
        app-notify.c \
        app-update.c \
        app-credits.c \
-       app-hackers.c \
+       app-video.c \
        app-shout.c \
        app-chat.c \
        app-default.c \
