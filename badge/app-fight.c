@@ -719,6 +719,12 @@ static void state_show_results_enter() {
   
   putImageFile(getAvatarImage(current_enemy.p_type, attackfn2, 1, true),
                POS_PLAYER2_X, POS_PLAYER2_Y);
+  chThdSleepMilliseconds(250);
+  putImageFile(getAvatarImage(config->p_type, attackfn1, 2, false),
+               POS_PLAYER1_X, POS_PLAYER1_Y);
+  
+  putImageFile(getAvatarImage(current_enemy.p_type, attackfn2, 2, true),
+               POS_PLAYER2_X, POS_PLAYER2_Y);
   
   if (theirattack & ATTACK_ISCRIT) { p1color = Purple; }
   if (ourattack & ATTACK_ISCRIT) { p2color = Purple; }
@@ -947,16 +953,16 @@ static void sendAttack(void) {
   gdispFillArea(160, POS_PLAYER2_Y, 50,150,Black);
   
   if (ourattack & ATTACK_HI) {
-    putImageFile(getAvatarImage(config->p_type, "atth", 1, false),
-               POS_PLAYER1_X, POS_PLAYER1_Y);
+    //    putImageFile(getAvatarImage(config->p_type, "atth", 1, false),
+    //               POS_PLAYER1_X, POS_PLAYER1_Y);
     putImageFile("ar50.rgb",
                  160,
                  POS_PLAYER2_Y);
   }
 
   if (ourattack & ATTACK_MID) {
-    putImageFile(getAvatarImage(config->p_type, "attm", 1, false),
-               POS_PLAYER1_X, POS_PLAYER1_Y);
+    //    putImageFile(getAvatarImage(config->p_type, "attm", 1, false),
+    //               POS_PLAYER1_X, POS_PLAYER1_Y);
     putImageFile("ar50.rgb",
                  160,
                  POS_PLAYER2_Y + 50);
@@ -964,8 +970,8 @@ static void sendAttack(void) {
   }
   
   if (ourattack & ATTACK_LOW) {
-    putImageFile(getAvatarImage(config->p_type, "attl", 1, false),
-               POS_PLAYER1_X, POS_PLAYER1_Y);
+    //    putImageFile(getAvatarImage(config->p_type, "attl", 1, false),
+    //               POS_PLAYER1_X, POS_PLAYER1_Y);
     putImageFile("ar50.rgb",
                  160,
                  POS_PLAYER2_Y + 100);
