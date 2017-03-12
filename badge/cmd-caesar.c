@@ -15,10 +15,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-static char *caesarShift(int8_t shift_size, char *str) {
+static void caesarShift(int8_t shift_size, char *str, char * output) {
   uint8_t i;
-  static char output[255];
-  memset(&output, 0, 255);
+  memset(output, 0, 255);
   
   for(i = 0; i < strlen(str); i++) {
     if ((str[i] >= 65) && (str[i] <= 90))
@@ -30,15 +29,16 @@ static char *caesarShift(int8_t shift_size, char *str) {
       output[i] = str[i];
 
     // stop buffer overflows
-    if (i == 254) { return(output); }
+    if (i == 254) { return; }
   }
-  return(output);
+  return;
 }
 
 
 static void cmd_caesar(BaseSequentialStream *chp, int argc, char *argv[])
 {
   int8_t shift_size;
+  char * output;
   
   (void)argv;
   (void)argc;
@@ -67,7 +67,10 @@ static void cmd_caesar(BaseSequentialStream *chp, int argc, char *argv[])
   // FOO BAR BAZ
   // SBB ONE ONM rot 13
 
-  chprintf(chp, "%s\r\n", caesarShift(shift_size, argv[1]));
+  output = chHeapAlloc (NULL, 255);
+  caesarShift(shift_size, argv[1], output);
+  chprintf(chp, "%s\r\n", output);
+  chHeapFree (output);
   return;
 }
 
