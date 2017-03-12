@@ -19,7 +19,9 @@
 typedef enum _player_type {
   p_guard,
   p_senator,
-  p_casear
+  p_casear,
+  p_gladiatrix,
+  p_bender
 } player_type;
 
 /* if you change the userconfig struct, update CONFIG_VERSION

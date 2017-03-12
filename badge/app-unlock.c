@@ -68,7 +68,7 @@ typedef struct _UnlockHandles {
 
 } UnlockHandles;
 
-#define MAX_ULCODES 9
+#define MAX_ULCODES 10
 
 /* codes, packed as bits */
 static uint8_t unlock_codes[MAX_ULCODES][3] = { { 0x01, 0xde, 0xf1 }, // 0
@@ -79,7 +79,8 @@ static uint8_t unlock_codes[MAX_ULCODES][3] = { { 0x01, 0xde, 0xf1 }, // 0
                                                 { 0x00, 0x1a, 0xc0 }, // 5
                                                 { 0x0b, 0xae, 0xac }, // 6
                                                 { 0x0d, 0xe0, 0x1a }, // 7
-                                                { 0x09, 0x00, 0x46 }  // 8
+                                                { 0x09, 0x00, 0x46 }, // 8
+                                                { 0xbb, 0xbb, 0xbb }  // 9
 };
 static char *unlock_desc[] = { "+10% DEF",
                                "+10% HP",
@@ -89,7 +90,8 @@ static char *unlock_desc[] = { "+10% DEF",
                                "MOAR LEDs",
                                "U R CAESAR",
                                "U R SENATOR",
-                               "U R TIMELORD" };
+                               "U R TIMELORD",
+                               "BENDER" };
 
 static uint32_t last_ui_time = 0;
 static uint8_t code[5];
@@ -348,6 +350,7 @@ static void unlock_event(OrchardAppContext *context,
               config->luck = 40;
             }
             
+            
             // save to config
             configSave(config);
 
@@ -356,7 +359,15 @@ static void unlock_event(OrchardAppContext *context,
             unlock_result(p, tmp);
 
             // TODO: Set all LEDs white, blink.
-            dacPlay("fight/leveiup.raw");
+            // if it's the bender upgrade, we become bender.
+            if (i == 9) {
+              config->p_type = p_bender;
+              dacPlay("biteass.raw");
+            } else {
+              // default sound
+              dacPlay("fight/leveiup.raw");
+            }
+              
             chThdSleepMilliseconds(ALERT_DELAY);
             orchardAppRun(orchardAppByName("Badge"));
             return;
