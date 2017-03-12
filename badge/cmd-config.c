@@ -95,44 +95,44 @@ static void cmd_config_set(BaseSequentialStream *chp, int argc, char *argv[]) {
 
   // remove these before launch!!
   if (!strcasecmp(argv[1], "type")) {
-    config->p_type = atoi(argv[2]);
+    config->p_type = strtoul (argv[2], NULL, 0);
     chprintf(chp, "Type set to %d.\r\n", config->p_type);
     return;
   }
   if (!strcasecmp(argv[1], "level")) {
-    config->level = atoi(argv[2]);
+    config->level = strtoul (argv[2], NULL, 0);
     chprintf(chp, "level set to %d.\r\n", config->level);
     return;
   }
   if (!strcasecmp(argv[1], "unlocks")) {
-    config->unlocks = atoi(argv[2]);
+    config->unlocks = strtoul (argv[2], NULL, 0);
     chprintf(chp, "Unlocks set to %d.\r\n", config->unlocks);
     return;
   }
   if (!strcasecmp(argv[1], "hp")) {
-    config->hp = atoi(argv[2]);
+    config->hp = strtoul (argv[2], NULL, 0);
     chprintf(chp, "HP set to %d.\r\n", config->hp);
     return;
   }
   if (!strcasecmp(argv[1], "xp")) {
-    config->xp = atoi(argv[2]);
+    config->xp = strtoul (argv[2], NULL, 0);
     chprintf(chp, "XP set to %d.\r\n", config->xp);
     return;
   }
   if (!strcasecmp(argv[1], "agl")) {
-    config->agl = atoi(argv[2]);
+    config->agl = strtoul (argv[2], NULL, 0);
     chprintf(chp, "agl set to %d.\r\n", config->agl);
     return;
   }
 
   if (!strcasecmp(argv[1], "luck")) {
-    config->luck = atoi(argv[2]);
+    config->luck = strtoul (argv[2], NULL, 0);
     chprintf(chp, "luck set to %d.\r\n", config->luck);
     return;
   }
 
   if (!strcasecmp(argv[1], "might")) {
-    config->might = atoi(argv[2]);
+    config->might = strtoul (argv[2], NULL, 0);
     chprintf(chp, "might set to %d.\r\n", config->might);
     return;
   }

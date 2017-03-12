@@ -265,7 +265,8 @@
 //#define GFILE_NEED_MEMFS                             FALSE
 //#define GFILE_NEED_ROMFS                             FALSE
 //#define GFILE_NEED_RAMFS                             FALSE
-#define GFILE_NEED_FATFS                             TRUE
+#define GFILE_NEED_FATFS                               TRUE
+#define GFILE_FATFS_READ_ONLY                          TRUE
 //#define GFILE_NEED_NATIVEFS                          FALSE
 //#define GFILE_NEED_CHBIOSFS                          FALSE
 

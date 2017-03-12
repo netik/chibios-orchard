@@ -20,20 +20,26 @@
  * The FAT file-system VMT
  ********************************************************/
 
+#ifndef GFILE_FATFS_READ_ONLY
 static bool_t fatfsDel(const char* fname);
 static bool_t fatfsExists(const char* fname);
 static long int fatfsFileSize(const char* fname);
 static bool_t fatfsRename(const char* oldname, const char* newname);
+#endif
 static bool_t fatfsOpen(GFILE* f, const char* fname);
 static void fatfsClose(GFILE* f);
 static int fatfsRead(GFILE* f, void* buf, int size);
+#ifndef GFILE_FATFS_READ_ONLY
 static int fatfsWrite(GFILE* f, const void* buf, int size);
 static bool_t fatfsSetPos(GFILE* f, long int pos);
 static long int fatfsGetSize(GFILE* f);
 static bool_t fatfsEOF(GFILE* f);
+#endif
 static bool_t fatfsMount(const char* drive);
+#ifndef GFILE_FATFS_READ_ONLY
 static bool_t fatfsUnmount(const char* drive);
 static bool_t fatfsSync(GFILE* f);
+#endif
 #if GFILE_NEED_FILELISTS && _FS_MINIMIZE <= 1
 	static gfileList *fatfsFlOpen(const char *path, bool_t dirs);
 	static const char *fatfsFlRead(gfileList *pfl);
@@ -43,6 +49,22 @@ static bool_t fatfsSync(GFILE* f);
 const GFILEVMT FsFatFSVMT = {
 	GFSFLG_WRITEABLE | GFSFLG_SEEKABLE,
 	'F',
+#ifdef GFILE_FATFS_READ_ONLY
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	fatfsOpen,
+	fatfsClose,
+	fatfsRead,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	fatfsMount,
+	NULL,
+	NULL,
+#else
 	fatfsDel,
 	fatfsExists,
 	fatfsFileSize,
@@ -54,7 +76,10 @@ const GFILEVMT FsFatFSVMT = {
 	fatfsSetPos,
 	fatfsGetSize,
 	fatfsEOF,
-	fatfsMount, fatfsUnmount, fatfsSync,
+	fatfsMount,
+	fatfsUnmount,
+	fatfsSync,
+#endif
 	#if GFILE_NEED_FILELISTS
 		#if _FS_MINIMIZE <= 1
 			fatfsFlOpen, fatfsFlRead, fatfsFlClose
@@ -95,6 +120,7 @@ static BYTE fatfs_flags2mode(GFILE* f)
 	return mode;
 }
 
+#ifndef GFILE_FATFS_READ_ONLY
 static bool_t fatfsDel(const char* fname)
 {
 	FRESULT ferr;
@@ -140,6 +166,7 @@ static bool_t fatfsRename(const char* oldname, const char* newname)
 
 	return TRUE;
 }
+#endif
 
 static bool_t fatfsOpen(GFILE* f, const char* fname)
 {
@@ -189,6 +216,7 @@ static int fatfsRead(GFILE* f, void* buf, int size)
 	return br;
 }
 
+#ifndef GFILE_FATFS_READ_ONLY
 static int fatfsWrite(GFILE* f, const void* buf, int size)
 {
 	int wr;
@@ -224,6 +252,7 @@ static bool_t fatfsEOF(GFILE* f)
 	else
 		return FALSE;
 }
+#endif
 
 static bool_t fatfsMount(const char* drive)
 {
@@ -240,6 +269,7 @@ static bool_t fatfsMount(const char* drive)
 	return FALSE;
 }
 
+#ifndef GFILE_FATFS_READ_ONLY
 static bool_t fatfsUnmount(const char* drive)
 {
 	(void)drive;
@@ -264,6 +294,7 @@ static bool_t fatfsSync(GFILE *f)
 
 	return TRUE;
 }
+#endif
 
 #if GFILE_NEED_FILELISTS && _FS_MINIMIZE <= 1
 	static gfileList *fatfsFlOpen(const char *path, bool_t dirs) {

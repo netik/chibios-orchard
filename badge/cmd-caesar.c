@@ -52,7 +52,7 @@ static void cmd_caesar(BaseSequentialStream *chp, int argc, char *argv[])
     chprintf(chp, "  message should not contain spaces.\r\n");
     return;
   } else {
-    shift_size = atoi(argv[0]);
+    shift_size = strtoul (argv[0], NULL, 0);;
     if (shift_size == 0 || shift_size > 26) {
       chprintf(chp, "Invalid shift size.\r\n");
       return;

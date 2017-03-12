@@ -162,6 +162,9 @@ THD_FUNCTION(dacThread, arg)
 		if (f_open (&f, fname, FA_READ) != FR_OK)
 			continue;
 
+		dacBuf = chHeapAlloc (NULL,
+		    (DAC_SAMPLES * sizeof(uint16_t)) * 2);
+
 		/* Load the first block of samples. */
 
 		p = dacBuf;
@@ -220,6 +223,7 @@ THD_FUNCTION(dacThread, arg)
 			fname = NULL;
 			play = 0;
 		}
+		chHeapFree (dacBuf);
 		f_close (&f);
 		pitDisable (&PIT1, 1);
 	}
@@ -251,8 +255,6 @@ dacStart (DACDriver * dac)
 	DAC_WRITE_2(dac, DAC0_DAT0L, 0);
 
 	pit1Start (&PIT1, dacWrite);
-
-	dacBuf = chHeapAlloc (NULL, (DAC_SAMPLES * sizeof(uint16_t)) * 2);
 
 	pThread = chThdCreateStatic (waDacThread, sizeof(waDacThread),
 		DAC_THREAD_PRIO, dacThread, NULL);

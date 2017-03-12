@@ -132,7 +132,7 @@ extern LLDSPEC void gdisp_lld_write_start_ex(GDisplay *g);
 
 #undef VIDEO_AUTO_RATE_ADJUST
 
-#define SAMPLE_CHUNKS		64
+#define SAMPLE_CHUNKS		32
 #define SAMPLES_PER_LINE	12
 
 #define FRAMERES_HORIZONTAL	128
@@ -288,6 +288,7 @@ videoWinPlay (char * fname, int x, int y)
 
 	i = 0;
 	j = 0;
+	dacBuf = chHeapAlloc (NULL, AUD_BUFSZ);
 	ps = dacBuf;
 	cur = dacBuf;
 #ifdef VIDEO_AUTO_RATE_ADJUST
@@ -413,6 +414,7 @@ videoWinPlay (char * fname, int x, int y)
 
 	geventDetachSource (&gl, NULL);
 	chHeapFree (buf);
+	chHeapFree (dacBuf);
 	f_close (&f);
 
 	/* Re-initialize the DAC's PIT frequency, in case we changed it. */

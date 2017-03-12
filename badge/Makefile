@@ -113,6 +113,10 @@ LDSCRIPT= $(STARTUPLD)/KL16Z128.ld
 # setting.
 
 CSRC = main.c \
+       strtoul.c \
+       strstr.c \
+       strcmp.c \
+       strcasecmp.c \
        userconfig.c \
        orchard-shell.c \
        orchard-app.c \

@@ -40,7 +40,7 @@ typedef struct dac_driver {
 #define DAC_THREAD_PRIO		3
 
 #define DAC_SAMPLERATE		9216
-#define DAC_SAMPLES		450
+#define DAC_SAMPLES		192
 #define DAC_BYTES		(DAC_SAMPLES * 2)
 
 #define DAC_PLAY_ONCE		0
