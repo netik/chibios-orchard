@@ -182,6 +182,33 @@ write_pixel (pixel_t p1, int extra)
         return;
 }
 
+/******************************************************************************
+*
+* draw_lines - draw video scanlines on the display
+*
+* This is a helper function which takes one scanline's worth of data read
+* from a video file and draws it to the screen. The <buf> argument is a
+* pointer to a buffer containing 16-bit pixel data. The size is assumed
+* to be the encoded horizontal video width (which is currently 128 pixels).
+*
+* Since the video is 128x96 pixels and the display is 320x240, we upscale
+* each scanline by a factor of 2.5 so that we fill the whole screen. Each
+* scanline is drawn at least twice. If the <extra> argument is non-zero,
+* the scanline is drawn a third time as well. This results in each line
+* being drawn 2.5 times. The write_pixel() function used to place each
+* pixel on the screen uses a similar transformation.
+*
+* Note that we manually draw the pixels rather than using DMA to draw each
+* display line. This is an intentional design trade-off. Since we perform
+* a transformation on each scanline before writing it to the screen, we
+* would have to allocate an additional RAM buffer and put the formatted
+* pixel data therebefore we could use a DMA transfer to write it to the
+* display. It turns out writing to the display without DMA is still fast
+* enough that we can get away without doing that.
+*
+* RETURNS: N/A
+*/
+
 static void
 draw_lines (pixel_t * buf, int extra)
 {
