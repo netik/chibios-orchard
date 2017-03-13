@@ -377,7 +377,7 @@ dmaRecv8 (const void * dst, uint32_t len)
 
 /******************************************************************************
 *
-* dmaSend16 - perform an 16-bit DMA transmit operation on SPI controller 1
+* dmaSend16 - perform a 16-bit DMA transmit operation on SPI controller 1
 *
 * This function uses DMA channel 2 to transmit a block of data to a slave
 * connected to the SPI1 controller. The data is transmitted two bytes at a
