@@ -8,10 +8,10 @@
 #include "shell.h"
 #include "chprintf.h"
 #include "led.h"
+#include "datetime.h"
 
 #include "orchard-shell.h"
 #include "orchard-app.h"
-
 #include "userconfig.h"
 
 /* prototypes */
@@ -33,6 +33,14 @@ static void cmd_config_show(BaseSequentialStream *chp, int argc, char *argv[])
   (void)argc;
   userconfig *config = getConfig();
 
+  DateTime dt;
+
+  if (rtc != 0) {
+      datetime_update(rtc, &dt);
+      chprintf(chp, "%d/%02d/%02d %02d:%02d:%02d\r\n", rtc, dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second);
+      chprintf(chp, "rtc        %ld (set at %ld) %s\r\n", rtc, rtc_set_at);
+  }
+  
   chprintf(chp, "name       %s (type: %d)\r\n", config->name, config->p_type);
   chprintf(chp, "signature  0x%08x\r\n", config->signature);
   chprintf(chp, "version    %d\r\n", config->version);
@@ -136,7 +144,13 @@ static void cmd_config_set(BaseSequentialStream *chp, int argc, char *argv[]) {
     chprintf(chp, "might set to %d.\r\n", config->might);
     return;
   }
-  
+
+  if (!strcasecmp(argv[1], "rtc")) {
+    rtc = strtoul (argv[2], NULL, 0);
+    rtc_set_at = chVTGetSystemTime();
+    chprintf(chp, "rtc set to %d.\r\n", rtc);
+    return;
+  }
   chprintf(chp, "Invalid set command.\r\n");
 }
 
@@ -242,6 +256,7 @@ static void cmd_config_led_run(BaseSequentialStream *chp, int argc, char *argv[]
 
   config->led_pattern = pattern-1;
   ledResetPattern();
+  ledSetFunction(fxlist[config->led_pattern].function);
   
   chprintf(chp, "Pattern changed to %s.\r\n", fxlist[pattern-1].name);
 }

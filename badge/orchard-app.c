@@ -115,6 +115,9 @@ static void execute_ping(eventid_t id) {
   upkt.gold      = config->gold;
   upkt.xp        = config->xp;
 
+  // if we have the clock, send the clock.
+  upkt.rtc       = rtc;
+  
   radioSend (&KRADIO1, RADIO_BROADCAST_ADDRESS,  RADIO_PROTOCOL_PING,
 	     sizeof (upkt), &upkt);
   

@@ -205,6 +205,12 @@ static void radio_ping_handler(KW01_PKT *pkt) {
 
   enemyAdd(u);
 
+  /* set the clock if any */
+  if ((u->rtc != 0) && (rtc == 0)) {
+    rtc = u->rtc;
+    rtc_set_at = chVTGetSystemTime(); // note this is in ticks
+  }
+  
   orchardAppRadioCallback (pkt);
 }
 
@@ -370,10 +376,16 @@ int main(void)
     gfxInit();
     chprintf (stream, "No SD card found.\r\n");
     oledSDFail();
-    configStart ();
+    configStart();
     config = getConfig ();
+
     /* override any sound choice the user has made */
     config->sound_enabled = 1;
+
+    /* put the LEDs in test mode because we failed */
+    ledStart (LEDS_COUNT, led_fb);
+    effectsStart ();
+    ledSetFunction(leds_test);
     
     playHardFail();
     /* nuke the main thread but keep our shell up for debugging */
@@ -400,7 +412,7 @@ int main(void)
   chprintf(stream, "%08x", SIM->UIDMH);
   chprintf(stream, "%08x", SIM->UIDML);
   chprintf(stream, "%08x / netid: %08x\r\n",SIM->UIDL, config->netid);
-  ledStart (16, led_fb);
+  ledStart (LEDS_COUNT, led_fb);
   effectsStart ();
 
   gfileMount ('F', "0:");

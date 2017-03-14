@@ -126,6 +126,33 @@ void handle_progress(void) {
 					     
 }
 
+void leds_test(void) {
+  /* walks through R, G, B to test LEDs. */
+  int i;
+
+  fx_position++; 
+
+  if (fx_position > 10)  {
+    fx_position = 0;
+    fx_index++;
+    if (fx_index > 2) { fx_index = 0; }
+  }
+
+  for(i=0; i < LEDS_COUNT; i++)  {
+    switch (fx_index) { 
+    case 0:
+      ledSetRGB(led_config.fb, i, 255, 0, 0);
+      break;
+    case 1:
+      ledSetRGB(led_config.fb, i, 0, 255, 0);
+      break;
+    default:
+      ledSetRGB(led_config.fb, i, 0,  0, 255);
+      break;
+    }
+  }
+}
+
 /* utility functions */
 // FIND INDEX OF ANTIPODAL (OPPOSITE) LED
 static int antipodal_index(int i) {

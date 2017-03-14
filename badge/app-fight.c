@@ -945,24 +945,18 @@ static uint16_t calc_hit(userconfig *config, user *current_enemy) {
 static void sendAttack(void) {
   // animate the attack on our screen and send it to the the
   // challenger
-  userconfig *config = getConfig();
-  
   clearstatus();
 
   // clear middle to wipe arrow animations
   gdispFillArea(160, POS_PLAYER2_Y, 50,150,Black);
   
   if (ourattack & ATTACK_HI) {
-    //    putImageFile(getAvatarImage(config->p_type, "atth", 1, false),
-    //               POS_PLAYER1_X, POS_PLAYER1_Y);
     putImageFile("ar50.rgb",
                  160,
                  POS_PLAYER2_Y);
   }
 
   if (ourattack & ATTACK_MID) {
-    //    putImageFile(getAvatarImage(config->p_type, "attm", 1, false),
-    //               POS_PLAYER1_X, POS_PLAYER1_Y);
     putImageFile("ar50.rgb",
                  160,
                  POS_PLAYER2_Y + 50);

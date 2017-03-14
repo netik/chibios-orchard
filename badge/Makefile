@@ -116,6 +116,7 @@ CSRC = main.c \
        strtoul.c \
        strstr.c \
        strcmp.c \
+       datetime.c \
        strcasecmp.c \
        userconfig.c \
        orchard-shell.c \

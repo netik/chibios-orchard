@@ -72,7 +72,7 @@ typedef struct userconfig {
 
 typedef struct _userpkt {
   /* this is a shortened form of userdata for transmission */
-  /* appx 52 bytes, max is 66 (AES limitiation) */
+  /* appx 51 bytes, max is 66 (AES limitiation) */
 
   /* stash this away for future attacks/lookups */
   /* unique network ID determined from use of lower 64 bits of SIM-UID */
@@ -84,6 +84,9 @@ typedef struct _userpkt {
   uint16_t acknum;        /* 2 - only used during acknowledgements */
   uint8_t ttl;            /* 1 */
 
+  /* clock, if any */
+  unsigned long rtc;      /* 4 */ 
+  
   /* Player Payload */
   char name[CONFIG_NAME_MAXLEN];  /* 16 */
   player_type p_type;     /* 1 */
@@ -115,5 +118,8 @@ extern void configStart(void);
 extern void configSave(userconfig *);
 extern userconfig *getConfig(void);
 extern int16_t maxhp(uint16_t, uint8_t);
+
+extern unsigned long rtc;
+extern unsigned long rtc_set_at;
 
 #endif

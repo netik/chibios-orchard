@@ -47,6 +47,7 @@ void ledResetPattern(void);
 void ledSetBrightness(uint8_t bval);
 void ledSetFunction(void *func);
 void ledSetProgress(float p);
+void leds_test(void);
 
 const char *effectsCurName(void);
 

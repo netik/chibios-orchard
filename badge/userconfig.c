@@ -10,6 +10,18 @@
 #include "orchard-shell.h"
 #include <string.h>
 
+/* We implement a naive real-time clock protocol like NTP but
+ * much worse. The global value rtc contains the current real time
+ * clock as a time_t value measured by # seconds since Jan 1, 1970.
+ *
+ * if our RTC value is set to 0, then we will set our RTC from any
+ * config packet that is non zero. we will also spread the virus
+ * of the real time clock to other badges. Thanks to Queercon's 
+ * Queercon 11 badge for this idea. 
+ */
+unsigned long rtc = 0;
+unsigned long rtc_set_at = 0;
+
 static userconfig config_cache;
 
 #ifdef RANDOM_DICE
