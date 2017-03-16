@@ -14,10 +14,14 @@
  * much worse. The global value rtc contains the current real time
  * clock as a time_t value measured by # seconds since Jan 1, 1970.
  *
- * if our RTC value is set to 0, then we will set our RTC from any
- * config packet that is non zero. we will also spread the virus
- * of the real time clock to other badges. Thanks to Queercon's 
- * Queercon 11 badge for this idea. 
+ * If our RTC value is set to 0, then we will set our RTC from any
+ * arriving user packet that is non zero. we will also spread the
+ * "virus" of the RTC to other badges. Thanks to Queercon 11's badge
+ * badge for this idea.
+ *
+ * TODO: If the packet is sent from a TIMELORD then immediately
+ * override the RTC even if it has been set before and start spilling
+ * out that value.
  */
 unsigned long rtc = 0;
 unsigned long rtc_set_at = 0;

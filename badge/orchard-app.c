@@ -88,7 +88,8 @@ void enemy_cleanup(void) {
 static void execute_ping(eventid_t id) {
   userconfig * config;
   user upkt;
-
+  unsigned long clockdelta;
+  
   (void) id;
 
   config = getConfig();
@@ -115,8 +116,11 @@ static void execute_ping(eventid_t id) {
   upkt.gold      = config->gold;
   upkt.xp        = config->xp;
 
-  // if we have the clock, send the clock.
-  upkt.rtc       = rtc;
+  // if we have the clock, send the current clock.
+  if (rtc != 0) {
+    clockdelta = ST2S((chVTGetSystemTime() - rtc_set_at));
+    upkt.rtc = rtc + clockdelta;
+  }
   
   radioSend (&KRADIO1, RADIO_BROADCAST_ADDRESS,  RADIO_PROTOCOL_PING,
 	     sizeof (upkt), &upkt);

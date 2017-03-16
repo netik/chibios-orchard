@@ -29,16 +29,19 @@ static void cmd_config_led_list(BaseSequentialStream *chp);
                 
 static void cmd_config_show(BaseSequentialStream *chp, int argc, char *argv[])
 {
+  tmElements_t dt;
+  unsigned long curtime;
+  unsigned long delta;
+  userconfig *config = getConfig();
   (void)argv;
   (void)argc;
-  userconfig *config = getConfig();
-
-  DateTime dt;
 
   if (rtc != 0) {
-      datetime_update(rtc, &dt);
-      chprintf(chp, "%d/%02d/%02d %02d:%02d:%02d\r\n", rtc, dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second);
-      chprintf(chp, "rtc        %ld (set at %ld) %s\r\n", rtc, rtc_set_at);
+    delta = ST2S((chVTGetSystemTime() - rtc_set_at));
+    curtime = rtc + delta;
+    breakTime(curtime, &dt);
+    
+    chprintf(chp, "%02d/%02d/%02d %02d:%02d:%02d\r\n", 1970+dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second);
   }
   
   chprintf(chp, "name       %s (type: %d)\r\n", config->name, config->p_type);

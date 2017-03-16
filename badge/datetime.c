@@ -1,49 +1,57 @@
-// naive implementation of seconds to datetime. 
 #include "ch.h"
 #include "hal.h"
 #include "datetime.h"
 
-static uint8_t monthDays[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+void breakTime(time_t timeInput, tmElements_t *tm) {
+  // break the given time_t into time components
+  // this is a more compact version of the C library localtime function
+  // note that year is offset from 1970 !!!
 
-void datetime_update(uint32_t time, DateTime* dt) {
-  uint32_t days = (time / 86400);
+  uint8_t year;
+  uint8_t month, monthLength;
+  uint32_t time;
+  unsigned long days;
 
-  dt->year = 1970;
-  dt->month = 1;
-  dt->day = 1;
+  time = (uint32_t)timeInput;
+  tm->Second = time % 60;
+  time /= 60; // now it is minutes
+  tm->Minute = time % 60;
+  time /= 60; // now it is hours
+  tm->Hour = time % 24;
+  time /= 24; // now it is days
+  tm->Wday = ((time + 4) % 7) + 1;  // Sunday is day 1
 
-  while(1) { // rewrite this!
-    char leap_year = (dt->year % 4) == 0;
+  year = 0;
+  days = 0;
+  while((unsigned)(days += (LEAP_YEAR(year) ? 366 : 365)) <= time) {
+    year++;
+  }
+  tm->Year = year; // year is offset from 1970
 
-    for(int i = 0; i < 12 ;i++) {
-      uint8_t days_in_month = monthDays[i];
+  days -= LEAP_YEAR(year) ? 366 : 365;
+  time  -= days; // now it is days in this year, starting at 0
 
-      if(i == 1 && leap_year) { // February of leap year
-        days_in_month++;
+  days=0;
+  month=0;
+  monthLength=0;
+  for (month=0; month<12; month++) {
+    if (month==1) { // february
+      if (LEAP_YEAR(year)) {
+        monthLength=29;
+      } else {
+        monthLength=28;
       }
-
-      if(days < days_in_month) {
-        dt->day = days + 1;
-        days = 0;
-        break;
-      }
-
-      days -= days_in_month;
-
-      dt->month++;
+    } else {
+      monthLength = monthDays[month];
     }
 
-    if(days == 0) {
+    if (time >= monthLength) {
+      time -= monthLength;
+    } else {
       break;
     }
-
-    dt->month = 1;
-    dt->year++;
   }
 
-  uint32_t seconds = (time % 86400);
-
-  dt->hour = seconds / 3600;
-  dt->minute = (seconds % 3600) / 60;
-  dt->second = (seconds % 3600) % 60;
+  tm->Month = month + 1;  // jan is month 1
+  tm->Day = time + 1;     // day of month
 }

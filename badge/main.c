@@ -19,6 +19,9 @@
 
 #undef FAST_STARTUP
 
+/* define this to halt on SD card Failure */
+#undef HALT_ON_SDFAIL
+
 #include <string.h>
 
 #include "ch.h"
@@ -220,6 +223,7 @@ static void radio_ping_handler(KW01_PKT *pkt) {
 int main(void)
 {
   userconfig * config;
+  config = NULL;
   /*
    * System initializations.
    * - HAL initialization, this also initializes the configured device drivers
@@ -384,13 +388,15 @@ int main(void)
 
     /* put the LEDs in test mode because we failed */
     ledStart (LEDS_COUNT, led_fb);
-    effectsStart ();
+    effectsStart();
     ledSetFunction(leds_test);
     
     playHardFail();
     /* nuke the main thread but keep our shell up for debugging */
+#ifdef HALT_ON_SDFAIL
     orchardShellRestart();
     chThdSleep (TIME_INFINITE);
+#endif
   }
   
 #endif
@@ -405,15 +411,23 @@ int main(void)
 
   randInit ();
 
-  /* we're goood */
-  configStart ();
-  config = getConfig ();
+  /* Things are good, load config and start LEDs. 
+   * 
+   * We check to see if config is null to avoid an edge case here if
+   * HALT_ON_SDFAIL is undefined and the SD card fails to start.  
+   *
+   */
+  if (config == NULL) { 
+    configStart ();
+    config = getConfig ();
+    ledStart (LEDS_COUNT, led_fb);
+    effectsStart();
+  }
+  
   chprintf(stream, "HW UDID: 0x");
   chprintf(stream, "%08x", SIM->UIDMH);
   chprintf(stream, "%08x", SIM->UIDML);
   chprintf(stream, "%08x / netid: %08x\r\n",SIM->UIDL, config->netid);
-  ledStart (LEDS_COUNT, led_fb);
-  effectsStart ();
 
   gfileMount ('F', "0:");
 
