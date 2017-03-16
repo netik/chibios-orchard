@@ -68,7 +68,7 @@ static void redraw_badge(int8_t drawchar) {
 
     if (config->hp < (maxhp(config->unlocks,config->level) / 2)) {
       // show the whoop'd ass graphic if you're less than half. 
-      putImageFile(getAvatarImage(config->p_type, "deth", 1, false),
+      putImageFile(getAvatarImage(config->p_type, "deth", 2, false),
                    POS_PLAYER1_X, POS_PLAYER1_Y);
     } else { 
       putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
