@@ -14,6 +14,7 @@
 #include "unlocks.h"
 
 #include "userconfig.h"
+#include "datetime.h"
 
 // we will heal the player at N hp per this interval
 #define HEAL_INTERVAL_US 1000000
@@ -219,6 +220,10 @@ static void redraw_badge(int8_t drawchar) {
   if (config->unlocks & UL_PLUSDEF) 
       putImageFile(IMG_EFFLOGO, 270, ypos+4);
 
+  gdispCloseFont (fontXS);
+  gdispCloseFont (fontLG);
+  gdispCloseFont (fontSM);
+
 }
 
 static uint32_t default_init(OrchardAppContext *context) {
@@ -252,6 +257,8 @@ static void default_event(OrchardAppContext *context,
   DefaultHandles * p;
   GEvent * pe;
   userconfig *config = getConfig();
+  tmElements_t dt;
+  char tmp[40];
   
   p = context->priv;
 
@@ -276,6 +283,28 @@ static void default_event(OrchardAppContext *context,
 
   /* player healz */
   if (event->type == timerEvent) {
+    /* draw the clock */
+    if (rtc != 0) {
+      font_t fontXS;
+      fontXS = gdispOpenFont (FONT_XS);
+        
+      breakTime(rtc + ST2S((chVTGetSystemTime() - rtc_set_at)), &dt);
+      chsnprintf(tmp, sizeof(tmp), "%02d/%02d/%02d %02d:%02d:%02d\r\n", dt.Month, dt.Day, 1970+dt.Year, dt.Hour, dt.Minute, dt.Second);
+      gdispCloseFont(fontXS);
+
+      gdispFillArea( 140, POS_FLOOR_Y-10, 
+                     100, gdispGetFontMetric(fontXS, fontHeight),
+                     Black );
+      
+      gdispDrawStringBox (0,
+                          POS_FLOOR_Y-10,
+                          gdispGetWidth(),
+                          gdispGetFontMetric(fontXS, fontHeight),
+                          tmp,
+                          fontXS, Yellow, justifyCenter);
+
+    }
+    
     if (config->hp < maxhp(config->unlocks, config->level)) { 
         config->hp = config->hp + HEAL_AMT;
         if (config->unlocks & UL_HEAL) {

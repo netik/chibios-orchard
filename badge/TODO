@@ -1,27 +1,23 @@
 -------------------------
-1. Get Orientation switch- done
-1a. and make orientation work.
+1.: Get Orientation switch- done
+1a. ... and make orientation work.
+1b. ... and make up down left right enter send events. 
 
 2. Game protocol and Game - IN PROGRESS
 2b. Game: Restrict players if xp or level too high
-2c. Game: Provide means to earn XP if no other players around
-2d. Game: hit/block animations with damage indicated - 50%
-2e. Game: More sounds, integrate mortal combat sounds
+2c. Game: Provide means to earn XP if no other players around 
+
 2f.  Tie screen?
-2i. Integrate new Casear / Senator animations,
-    Draw the right one based on the user's class
-
-"level up screen" 
-
-BUG: Sometimes attack is zero from other player, this is bullshit.
 
 3. Casear Game Mechanics
+- only does two rounds and runs away. 
+- cannot heal
+- large xp
+- you must be level 3 or higher
+- 10x normal HP
+- Is XP gained? 
 
-4. Gold / Economy Mechanics
-
-4. Automatic jump to name page if not conf'd 
-
-7. (bonus) Video/Movie/Frames
+4. Gold / Economy Mechanics - NOPE.
 
 8. Random command-line improvements
      "unlock xxxxx" should work because typing should just work.
@@ -34,16 +30,9 @@ BUG: Sometimes attack is zero from other player, this is bullshit.
      DND: do not disturb -- disable chat, sounds, etc.
      Disable fight entirely
    
-     unlocks: -- screen built and working
          ability to unlock extra animations and led sequences (what are they, we haven't defined them.)
-         EFF unlock and logo
          Get list from laptop
-
-Cleanups:
-
-Remove "VICTORY" and "DEFEATED" screens and replace them with the proper, dead animationn of the characters
-
          
-
+Completely revamp launcher with nicer graphics
 
 
