@@ -38,7 +38,7 @@ int16_t maxhp(uint16_t unlocks, uint8_t level) {
   // return maxHP given some unlock data and level
   uint16_t hp;
 
-  hp = (50+(20*(level-1)));
+  hp = (70+(20*(level-1)));
 
   if (unlocks & UL_PLUSHP) {
     hp = hp * 1.10;

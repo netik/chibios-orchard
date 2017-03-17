@@ -66,8 +66,8 @@ static void redraw_badge(int8_t drawchar) {
     // draw the character during the HP update, it will blink and we
     // don't want that.
 
-    if (config->hp < (maxhp(config->unlocks,config->level) / 2)) {
-      // show the whoop'd ass graphic if you're less than half. 
+    if (config->hp < (maxhp(config->unlocks,config->level) * .15)) {
+      // show the whoop'd ass graphic if you're less than 15% 
       putImageFile(getAvatarImage(config->p_type, "deth", 2, false),
                    POS_PLAYER1_X, POS_PLAYER1_Y);
     } else { 
