@@ -890,13 +890,13 @@ static uint8_t calc_level(uint16_t xp) {
   if(xp >= 2800) {
     return 5;
   }
-  if(xp >= 2080) {
+  if(xp >= 1440) {
     return 4;
   }
-  if(xp >= 1440) {
+  if(xp >= 800) {
     return 3;
   }
-  if(xp >= 880) {
+  if(xp >= 400) {
     return 2;
   }
   return 1;
@@ -906,7 +906,7 @@ static uint16_t xp_for_level(uint8_t level) {
   // return the required amount of XP for a given level
   uint16_t xp_req[] = {
  // 1    2    3    4    5    6    7   8     9   10   
-    0, 880,1440,2080,2800,3600,4480,5440,6480,7600
+    0, 400, 880, 1440,2080,2800,3600,4480,5440, 6480
   };
   
   if ((level <= 10) && (level >= 1)) {

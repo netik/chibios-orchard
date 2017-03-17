@@ -88,7 +88,7 @@ typedef struct _userpkt {
   unsigned long rtc;      /* 4 */ 
   
   /* Player Payload */
-  char name[CONFIG_NAME_MAXLEN];  /* 16 */
+  char name[CONFIG_NAME_MAXLEN + 1];  /* 16 */
   player_type p_type;     /* 1 */
   uint8_t in_combat;      /* 1 */
   uint16_t unlocks;       /* 2 */

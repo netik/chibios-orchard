@@ -289,19 +289,19 @@ static void default_event(OrchardAppContext *context,
       fontXS = gdispOpenFont (FONT_XS);
         
       breakTime(rtc + ST2S((chVTGetSystemTime() - rtc_set_at)), &dt);
-      chsnprintf(tmp, sizeof(tmp), "%02d/%02d/%02d %02d:%02d:%02d\r\n", dt.Month, dt.Day, 1970+dt.Year, dt.Hour, dt.Minute, dt.Second);
+      chsnprintf(tmp, sizeof(tmp), "%02d:%02d:%02d\r\n", dt.Hour, dt.Minute, dt.Second);
       gdispCloseFont(fontXS);
 
-      gdispFillArea( 140, POS_FLOOR_Y-10, 
-                     100, gdispGetFontMetric(fontXS, fontHeight),
+      gdispFillArea( 0,0, 
+                     60, gdispGetFontMetric(fontXS, fontHeight),
                      Black );
       
       gdispDrawStringBox (0,
-                          POS_FLOOR_Y-10,
+                          0,
                           gdispGetWidth(),
                           gdispGetFontMetric(fontXS, fontHeight),
                           tmp,
-                          fontXS, Yellow, justifyCenter);
+                          fontXS, Grey, justifyLeft);
 
     }
     
