@@ -104,11 +104,9 @@ static thread_t * pThread;
 #ifdef REV2_RADIO_WAR
 #include "radio_lld.h"
 
-volatile int warcnt  =0;
 OSAL_IRQ_HANDLER(KINETIS_TPM0_IRQ_VECTOR)
 {
 	TPM0->STATUS = 0xFF;
-	warcnt++;
 	radioInterrupt (NULL, 0);
 	return;
 }
