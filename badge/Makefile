@@ -19,6 +19,18 @@ ifeq ($(USE_OPT),)
 #
 #  USE_OPT += -DREV2_RADIO_WAR -DRADIO_POLL_FREQ=1000
 
+# Enable joypad buttons. This should be turned on for production builds.
+# It's off for now because the Freescale/NXP Freedom KW019032 reference
+# board has the pins wired up in such a way that if we enable the joypad
+# interrupts, we'll get stuck forever thinking the buttons are being
+# pressed. Only the real badge has the right joypad buttons anyway.
+
+#  USE_OPT+= -DENABLE_JOYPAD
+
+# Enable tilt sensor. Also only present on production board.
+
+#  USE_OPT+= -DENABLE_TILT_SENSOR
+
 endif
 
 # C specific options here (added to USE_OPT).
