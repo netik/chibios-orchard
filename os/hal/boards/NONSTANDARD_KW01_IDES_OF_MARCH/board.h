@@ -133,7 +133,7 @@
 /* Rotation/tilt switch */
 
 #define TILT_SENSOR_PORT	GPIOD
-#define TILT_SEMSOR_PIN		6
+#define TILT_SENSOR_PIN		6
 
 /* DAC audio */
 
