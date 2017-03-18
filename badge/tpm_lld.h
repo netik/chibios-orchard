@@ -33,6 +33,10 @@
 #ifndef _TPM_H_
 #define _TPM_H_
 
+#define KINETIS_TPM0_IRQ_VECTOR		Vector84
+#define KINETIS_TPM1_IRQ_VECTOR		Vector88
+#define KINETIS_TPM2_IRQ_VECTOR		Vector8C
+
 /*
  * We use:
  * TPM2 channel 0, which is wired to pin PTB2
@@ -86,7 +90,7 @@ typedef struct pwm_note {
 
 #define TPM_THREAD_PRIO	70
 
-extern void pwmInit (void);
+extern void pwmStart (void);
 
 extern void pwmToneStart (uint8_t);
 extern void pwmToneStop (void);

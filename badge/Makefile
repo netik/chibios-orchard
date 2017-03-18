@@ -8,6 +8,17 @@ ifeq ($(USE_OPT),)
   USE_OPT = -Os -ggdb -fomit-frame-pointer -falign-functions=16 -nostdlib
   USE_OPT += -DBIG_ENDIAN=0 -DLITTLE_ENDIAN=1 -Dasm=__asm__
   USE_OPT += -ansi # -pedantic
+
+# The following is a workaround for a broken rev2 prototype board where
+# the radio DIO0 pin was not soldered correctly. This prevents us from
+# getting RX interrupts from the radio. Enabling the below option hijacks
+# one of the TPM timers so that we can use it to poll the radio instead.
+# The polling frequency controls how many times per second we'll poll
+# for traffic. This does not need to be enabled for any fully functional
+# badges.
+#
+#  USE_OPT += -DREV2_RADIO_WAR -DRADIO_POLL_FREQ=1000
+
 endif
 
 # C specific options here (added to USE_OPT).

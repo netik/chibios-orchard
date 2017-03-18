@@ -101,6 +101,19 @@ static PWM_NOTE * pTune;
 static uint8_t play;
 static thread_t * pThread;
 
+#ifdef REV2_RADIO_WAR
+#include "radio_lld.h"
+
+volatile int warcnt  =0;
+OSAL_IRQ_HANDLER(KINETIS_TPM0_IRQ_VECTOR)
+{
+	TPM0->STATUS = 0xFF;
+	warcnt++;
+	radioInterrupt (NULL, 0);
+	return;
+}
+#endif
+
 /******************************************************************************
 *
 * pwmThread - background tone generator thread
@@ -176,7 +189,7 @@ THD_FUNCTION(pwmThread, arg)
 
 /******************************************************************************
 *
-* pwmInit - initialize the PWM module and thrad
+* pwmStart - initialize the PWM module and thrad
 *
 * This function intializes the TPM hardware and starts the music player
 * thread. We enable clock gating for TPM2 and set its clock source to
@@ -192,7 +205,7 @@ THD_FUNCTION(pwmThread, arg)
 */
  
 void
-pwmInit (void)
+pwmStart (void)
 {
 	int i;
 	uint32_t psc;
@@ -234,6 +247,20 @@ pwmInit (void)
 	 */
 
 	TPM2->C[TPM2_CHANNEL].SC = TPM_CnSC_MSB | TPM_CnSC_ELSB;
+
+#ifdef REV2_RADIO_WAR
+	/* Turn on TPM0 and make it poll the radio. */
+	SIM->SCGC6 |= SIM_SCGC6_TPM0;
+	TPM0->SC = i;
+	TPM0->C[TPM2_CHANNEL].SC = TPM_CnSC_MSB | TPM_CnSC_ELSB;
+	nvicEnableVector (TPM0_IRQn, 5);
+	TPM0->SC &= ~(TPM_SC_CMOD_LPTPM_CLK | TPM_SC_CMOD_LPTPM_EXTCLK);
+	TPM0->MOD = TPM_FREQ / RADIO_POLL_FREQ;
+	TPM0->CNT = 0;
+	TPM0->C[TPM2_CHANNEL].V = (TPM_FREQ / RADIO_POLL_FREQ) / 2;
+	TPM0->C[TPM2_CHANNEL].SC |= TPM_CnSC_CHIE;
+	TPM0->SC |= TPM_SC_CMOD_LPTPM_CLK;
+#endif
 
 	/* Create PWM thread */
 

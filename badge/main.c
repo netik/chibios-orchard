@@ -277,7 +277,7 @@ int main(void)
 #endif
   dacStart (&DAC1);
   dmaStart ();
-  pwmInit();
+  pwmStart ();
   spiStart(&SPID1, &spi1_config);
   orchardEventsStart();
   radioStart(&SPID1);
