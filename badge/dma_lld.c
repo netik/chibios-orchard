@@ -175,7 +175,7 @@ OSAL_IRQ_HANDLER(KINETIS_DMA2_IRQ_VECTOR)
 * Channel1: SPI1 RX, 8-bit transfers, destination increment
 * Channel2: SPI1 TX, 16-bit transfers, source increment
 *
-* The NVIC is also programmed to enable the interrupts corresponding each
+* The NVIC is also programmed to enable the interrupts corresponding to each
 * channel.
 *
 * RETURNS: N/A
@@ -341,8 +341,8 @@ dmaRecv8 (const void * dst, uint32_t len)
 	 * must be guarded with syslock/sysunlock. We must ensure
 	 * the interrupt service routine doesn't fire until
 	 * osalThreadSuspendS() has saved a reference to the
-	 * current thread to the dmaThread1 pointer, but we have
-	 * to call osalThreadSuspendS()  after initiating the DMA
+	 * current thread to the dmaThread1 pointer, but we also have
+	 * to call osalThreadSuspendS() after initiating the DMA
 	 * transfer. There is a chance the DMA completion interrupt
 	 * might trigger before dmaThread1 is updated, in which
 	 * case the interrupt service routine will fail to wake
