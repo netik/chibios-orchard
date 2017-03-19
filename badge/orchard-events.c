@@ -8,6 +8,8 @@
 
 #include "sound.h"
 
+#include <string.h>
+
 extern void * stream;
 
 event_source_t rf_pkt_rdy;
@@ -39,6 +41,8 @@ joyIntrHandle (eventid_t id)
 	uint8_t pad;
 
 	(void)id;
+
+	memset (&joyEvent, 0, sizeof(joyEvent));
 
 	pad = palReadPad (BUTTON_ENTER_PORT, BUTTON_ENTER_PIN);
 
