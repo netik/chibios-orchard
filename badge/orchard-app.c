@@ -27,6 +27,9 @@ orchard_app_instance instance;
 /* graphics event handle */
 static OrchardAppEvent ugfx_evt;
 
+/* Joypad event handle */
+OrchardAppKeyEvent joyEvent;
+
 /* orchard event sources */
 event_source_t orchard_app_terminated;
 event_source_t orchard_app_terminate;
@@ -34,6 +37,8 @@ event_source_t timer_expired;
 event_source_t ui_completed;
 event_source_t orchard_app_gfx;
 event_source_t orchard_app_radio;
+event_source_t orchard_app_key;
+
 
 /* Enemy ping/pong handling ------------------------------------------------*/
 
@@ -196,6 +201,19 @@ static void radio_event(eventid_t id) {
   return;
 }
 
+static void key_event(eventid_t id) {
+  OrchardAppEvent evt;
+
+  (void) id;
+
+  if (instance.context != NULL) {
+    evt.type = keyEvent;
+    evt.key = joyEvent;
+    instance.app->event (instance.context, &evt);
+  }
+
+  return;
+}
 static void ui_complete_cleanup(eventid_t id) {
   (void)id;
   OrchardAppEvent evt;
@@ -343,12 +361,13 @@ static THD_FUNCTION(orchard_app_thread, arg) {
   instance->uicontext = NULL;
   instance->ui_result = 0;
 
-  evtTableInit(orchard_app_events, 5);
+  evtTableInit(orchard_app_events, 6);
   evtTableHook(orchard_app_events, ui_completed, ui_complete_cleanup);
   evtTableHook(orchard_app_events, orchard_app_terminate, terminate);
   evtTableHook(orchard_app_events, timer_expired, timer_event);
   evtTableHook(orchard_app_events, orchard_app_gfx, ugfx_event);
   evtTableHook(orchard_app_events, orchard_app_radio, radio_event);
+  evtTableHook(orchard_app_events, orchard_app_key, key_event);
 
   // if APP is null, the system will crash here. 
   if (instance->app->init)
@@ -402,6 +421,7 @@ static THD_FUNCTION(orchard_app_thread, arg) {
   evtTableUnhook(orchard_app_events, ui_completed, ui_complete_cleanup);
   evtTableUnhook(orchard_app_events, orchard_app_gfx, ugfx_event);
   evtTableUnhook(orchard_app_events, orchard_app_radio, radio_event);
+  evtTableUnhook(orchard_app_events, orchard_app_key, key_event);
  
   orchard_pkt_busy = 0;
 
@@ -424,6 +444,7 @@ void orchardAppInit(void) {
   chEvtObjectInit(&ui_completed);
   chEvtObjectInit(&orchard_app_gfx);
   chEvtObjectInit(&orchard_app_radio);
+  chEvtObjectInit(&orchard_app_key);
   chVTReset(&instance.timer);
 
   // set up our ping timer

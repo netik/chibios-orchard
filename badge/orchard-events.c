@@ -17,6 +17,9 @@ event_source_t joy_rdy;
 
 uint8_t joyState = 0xFF;
 
+extern OrchardAppKeyEvent joyEvent;
+extern event_source_t orchard_app_key;
+
 static void
 joyInterrupt (EXTDriver *extp, expchannel_t channel)
 {
@@ -44,13 +47,16 @@ joyIntrHandle (eventid_t id)
 	if (pad ^ (joyState & JOY_ENTER)) {
 		joyState &= ~JOY_ENTER;
 		joyState |= pad;
+		joyEvent.code = keySelect;
 		if (pad) {
-			playDoh ();
+			joyEvent.flags = keyRelease;
 			chprintf (stream, "Enter released!\r\n", pad);
 		} else {
-			playWoohoo ();
+			joyEvent.flags = keyPress;
 			chprintf (stream, "Enter pressed!\r\n", pad);
 		}
+		chEvtBroadcast (&orchard_app_key);
+		return;
 	}
 
 	pad = palReadPad (BUTTON_UP_PORT, BUTTON_UP_PIN);
@@ -60,13 +66,16 @@ joyIntrHandle (eventid_t id)
 	if (pad ^ (joyState & JOY_UP)) {
 		joyState &= ~JOY_UP;
 		joyState |= pad;
+		joyEvent.code = keyUp;
 		if (pad) {
-			playDoh ();
+			joyEvent.flags = keyRelease;
 			chprintf (stream, "Up released!\r\n", pad);
 		} else {
-			playWoohoo ();
+			joyEvent.flags = keyPress;
 			chprintf (stream, "Up pressed!\r\n", pad);
 		}
+		chEvtBroadcast (&orchard_app_key);
+		return;
 	}
 
 	pad = palReadPad (BUTTON_DOWN_PORT, BUTTON_DOWN_PIN);
@@ -74,15 +83,18 @@ joyIntrHandle (eventid_t id)
 	pad <<= JOY_DOWN_SHIFT;
 
 	if (pad ^ (joyState & JOY_DOWN)) {
-		if (pad) {
-			playDoh ();
-			chprintf (stream, "Down released!\r\n", pad);
-		} else {
-			playWoohoo ();
-			chprintf (stream, "Down pressed!\r\n", pad);
-		}
 		joyState &= ~JOY_DOWN;
 		joyState |= pad;
+		joyEvent.code = keyDown;
+		if (pad) {
+			joyEvent.flags = keyRelease;
+			chprintf (stream, "Down released!\r\n", pad);
+		} else {
+			joyEvent.flags = keyPress;
+			chprintf (stream, "Down pressed!\r\n", pad);
+		}
+		chEvtBroadcast (&orchard_app_key);
+		return;
 	}
 
 	pad = palReadPad (BUTTON_LEFT_PORT, BUTTON_LEFT_PIN);
@@ -92,13 +104,16 @@ joyIntrHandle (eventid_t id)
 	if (pad ^ (joyState & JOY_LEFT)) {
 		joyState &= ~JOY_LEFT;
 		joyState |= pad;
+		joyEvent.code = keyLeft;
 		if (pad) {
-			playDoh ();
+			joyEvent.flags = keyRelease;
 			chprintf (stream, "Left released!\r\n", pad);
 		} else {
-			playWoohoo ();
+			joyEvent.flags = keyPress;
 			chprintf (stream, "Left pressed!\r\n", pad);
 		}
+		chEvtBroadcast (&orchard_app_key);
+		return;
 	}
 
 	pad = palReadPad (BUTTON_RIGHT_PORT, BUTTON_RIGHT_PIN);
@@ -108,15 +123,19 @@ joyIntrHandle (eventid_t id)
 	if (pad ^ (joyState & JOY_RIGHT)) {
 		joyState &= ~JOY_RIGHT;
 		joyState |= pad;
+		joyEvent.code = keyRight;
 		if (pad) {
-			playDoh ();
+			joyEvent.flags = keyRelease;
 			chprintf (stream, "Right released!\r\n", pad);
 		} else {
-			playWoohoo ();
+			joyEvent.flags = keyPress;
 			chprintf (stream, "Right pressed!\r\n", pad);
 		}
+		chEvtBroadcast (&orchard_app_key);
+		return;
 	}
 
+#ifdef ENABLE_TILT_SENSOR
 	pad = palReadPad (TILT_SENSOR_PORT, TILT_SENSOR_PIN);
 
 	pad <<= JOY_TILT_SHIFT;
@@ -132,6 +151,7 @@ joyIntrHandle (eventid_t id)
 			chprintf (stream, "Upside down!\r\n", pad);
 		}
 	}
+#endif
 
 	return;
 }

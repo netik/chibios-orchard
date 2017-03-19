@@ -82,22 +82,22 @@ typedef enum _OrchardAppEventType {
   uiEvent,
   radioEvent,
   touchEvent,
-  ugfxEvent
+  ugfxEvent,
 } OrchardAppEventType;
 
 /* ------- */
 
 typedef enum _OrchardAppEventKeyFlag {
-  keyUp = 0,
-  keyDown = 1,
+  keyPress = 0,
+  keyRelease = 1,
 } OrchardAppEventKeyFlag;
 
 typedef enum _OrchardAppEventKeyCode {
-  keyLeft = 0x80,
-  keyRight = 0x81,
-  keySelect = 0x82,
-  keyCW = 0x83,
-  keyCCW = 0x84,
+  keyUp = 0x80,
+  keyDown = 0x81,
+  keyLeft = 0x82,
+  keyRight = 0x83,
+  keySelect = 0x84,
 } OrchardAppEventKeyCode;
 
 typedef struct _OrchardUiEvent {
@@ -116,8 +116,8 @@ typedef enum _OrchardUiEventFlags {
 } OrchardUiEventFlags;
 
 typedef struct _OrchardAppKeyEvent {
-  uint8_t   code;
-  uint8_t   flags;
+  OrchardAppEventKeyCode code;
+  OrchardAppEventKeyFlag flags;
 } OrchardAppKeyEvent;
 
 typedef struct _OrchardAppUgfxEvent {
