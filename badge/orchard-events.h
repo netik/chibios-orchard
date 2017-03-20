@@ -98,6 +98,7 @@ typedef enum _OrchardAppEventKeyCode {
   keyLeft = 0x82,
   keyRight = 0x83,
   keySelect = 0x84,
+  keyTilt = 0x85,
 } OrchardAppEventKeyCode;
 
 typedef struct _OrchardUiEvent {
@@ -171,7 +172,12 @@ typedef struct _OrchardAppEvent {
 
 /* Joypad events */
 
-extern uint8_t joyState;
+typedef struct _joyInfo {
+  GPIO_TypeDef * port;
+  uint8_t pin;
+  uint8_t bit;
+  OrchardAppEventKeyCode code;
+} joyInfo;
 
 #define JOY_ENTER	0x01
 #define JOY_UP		0x02

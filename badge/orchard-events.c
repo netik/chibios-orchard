@@ -4,6 +4,7 @@
 #include "radio_lld.h"
 #include "orchard.h"
 #include "orchard-events.h"
+#include "orchard-app.h"
 #include "chprintf.h"
 
 #include "sound.h"
@@ -13,14 +14,8 @@
 extern void * stream;
 
 event_source_t rf_pkt_rdy;
-event_source_t joy_rdy;
-
-/* Default state is all buttons pressed. */
-
-uint8_t joyState = 0xFF;
-
-extern OrchardAppKeyEvent joyEvent;
 extern event_source_t orchard_app_key;
+extern orchard_app_instance instance;  
 
 static void
 joyInterrupt (EXTDriver *extp, expchannel_t channel)
@@ -29,135 +24,11 @@ joyInterrupt (EXTDriver *extp, expchannel_t channel)
 	(void)channel;
 
 	chSysLockFromISR ();
-	chEvtBroadcastI (&joy_rdy);
+	if (instance.app != NULL)
+		chEvtBroadcastI (&orchard_app_key);
 	chSysUnlockFromISR ();
 
         return;
-}
-
-static void
-joyIntrHandle (eventid_t id)
-{
-	uint8_t pad;
-
-	(void)id;
-
-	memset (&joyEvent, 0, sizeof(joyEvent));
-
-	pad = palReadPad (BUTTON_ENTER_PORT, BUTTON_ENTER_PIN);
-
-	pad <<= JOY_ENTER_SHIFT;
-
-	if (pad ^ (joyState & JOY_ENTER)) {
-		joyState &= ~JOY_ENTER;
-		joyState |= pad;
-		joyEvent.code = keySelect;
-		if (pad) {
-			joyEvent.flags = keyRelease;
-			chprintf (stream, "Enter released!\r\n", pad);
-		} else {
-			joyEvent.flags = keyPress;
-			chprintf (stream, "Enter pressed!\r\n", pad);
-		}
-		chEvtBroadcast (&orchard_app_key);
-		return;
-	}
-
-	pad = palReadPad (BUTTON_UP_PORT, BUTTON_UP_PIN);
-
-	pad <<= JOY_UP_SHIFT;
-
-	if (pad ^ (joyState & JOY_UP)) {
-		joyState &= ~JOY_UP;
-		joyState |= pad;
-		joyEvent.code = keyUp;
-		if (pad) {
-			joyEvent.flags = keyRelease;
-			chprintf (stream, "Up released!\r\n", pad);
-		} else {
-			joyEvent.flags = keyPress;
-			chprintf (stream, "Up pressed!\r\n", pad);
-		}
-		chEvtBroadcast (&orchard_app_key);
-		return;
-	}
-
-	pad = palReadPad (BUTTON_DOWN_PORT, BUTTON_DOWN_PIN);
-
-	pad <<= JOY_DOWN_SHIFT;
-
-	if (pad ^ (joyState & JOY_DOWN)) {
-		joyState &= ~JOY_DOWN;
-		joyState |= pad;
-		joyEvent.code = keyDown;
-		if (pad) {
-			joyEvent.flags = keyRelease;
-			chprintf (stream, "Down released!\r\n", pad);
-		} else {
-			joyEvent.flags = keyPress;
-			chprintf (stream, "Down pressed!\r\n", pad);
-		}
-		chEvtBroadcast (&orchard_app_key);
-		return;
-	}
-
-	pad = palReadPad (BUTTON_LEFT_PORT, BUTTON_LEFT_PIN);
-
-	pad <<= JOY_LEFT_SHIFT;
-
-	if (pad ^ (joyState & JOY_LEFT)) {
-		joyState &= ~JOY_LEFT;
-		joyState |= pad;
-		joyEvent.code = keyLeft;
-		if (pad) {
-			joyEvent.flags = keyRelease;
-			chprintf (stream, "Left released!\r\n", pad);
-		} else {
-			joyEvent.flags = keyPress;
-			chprintf (stream, "Left pressed!\r\n", pad);
-		}
-		chEvtBroadcast (&orchard_app_key);
-		return;
-	}
-
-	pad = palReadPad (BUTTON_RIGHT_PORT, BUTTON_RIGHT_PIN);
-
-	pad <<= JOY_RIGHT_SHIFT;
-
-	if (pad ^ (joyState & JOY_RIGHT)) {
-		joyState &= ~JOY_RIGHT;
-		joyState |= pad;
-		joyEvent.code = keyRight;
-		if (pad) {
-			joyEvent.flags = keyRelease;
-			chprintf (stream, "Right released!\r\n", pad);
-		} else {
-			joyEvent.flags = keyPress;
-			chprintf (stream, "Right pressed!\r\n", pad);
-		}
-		chEvtBroadcast (&orchard_app_key);
-		return;
-	}
-
-#ifdef ENABLE_TILT_SENSOR
-	pad = palReadPad (TILT_SENSOR_PORT, TILT_SENSOR_PIN);
-
-	pad <<= JOY_TILT_SHIFT;
-
-	if (pad ^ (joyState & JOY_TILT)) {
-		joyState &= ~JOY_TILT;
-		joyState |= pad;
-		if (pad) {
-			playDoh ();
-			chprintf (stream, "Rightside up!\r\n", pad);
-		} else {
-			playWoohoo ();
-			chprintf (stream, "Upside down!\r\n", pad);
-		}
-	}
-#endif
-
-	return;
 }
 
 /*
@@ -187,9 +58,6 @@ static const EXTConfig ext_config = {
 void orchardEventsStart(void) {
 
   chEvtObjectInit(&rf_pkt_rdy);
-  chEvtObjectInit(&joy_rdy);
 
   extStart(&EXTD1, &ext_config);
-
-  evtTableHook (orchard_events, joy_rdy, joyIntrHandle);
 }

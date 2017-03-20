@@ -28,7 +28,7 @@ orchard_app_instance instance;
 static OrchardAppEvent ugfx_evt;
 
 /* Joypad event handle */
-OrchardAppKeyEvent joyEvent;
+static OrchardAppKeyEvent joyEvent;
 
 /* orchard event sources */
 event_source_t orchard_app_terminated;
@@ -39,6 +39,18 @@ event_source_t orchard_app_gfx;
 event_source_t orchard_app_radio;
 event_source_t orchard_app_key;
 
+/* Default state is all buttons pressed. */
+
+uint8_t joyState = 0xFF;
+
+static const joyInfo joyTbl[6] = {
+  { BUTTON_ENTER_PORT, BUTTON_ENTER_PIN, JOY_ENTER, keySelect },
+  { BUTTON_UP_PORT, BUTTON_UP_PIN, JOY_UP, keyUp },
+  { BUTTON_DOWN_PORT, BUTTON_DOWN_PIN, JOY_DOWN, keyDown },
+  { BUTTON_LEFT_PORT, BUTTON_LEFT_PIN, JOY_LEFT, keyLeft },
+  { BUTTON_RIGHT_PORT, BUTTON_RIGHT_PIN, JOY_RIGHT, keyRight },
+  { TILT_SENSOR_PORT, TILT_SENSOR_PIN, JOY_TILT, keyTilt }
+};
 
 /* Enemy ping/pong handling ------------------------------------------------*/
 
@@ -201,16 +213,57 @@ static void radio_event(eventid_t id) {
   return;
 }
 
-static void key_event(eventid_t id) {
+static uint8_t
+joyHandle (uint8_t s) {
   OrchardAppEvent evt;
+  uint8_t pad;
+
+  pad = palReadPad (joyTbl[s].port, joyTbl[s].pin);
+
+  pad <<= s;
+
+  if (pad ^ (joyState & joyTbl[s].bit)) {
+    joyState &= ~joyTbl[s].bit;
+    joyState |= pad;
+    joyEvent.code = joyTbl[s].code;
+    if (pad)
+      joyEvent.flags = keyRelease;
+    else
+      joyEvent.flags = keyPress;
+  
+    if (instance.context != NULL) {
+      evt.type = keyEvent;
+      evt.key = joyEvent;
+      instance.app->event (instance.context, &evt);
+    }
+    return (1);
+  }
+
+  return (0);
+}
+
+static void key_event(eventid_t id) {
 
   (void) id;
 
-  if (instance.context != NULL) {
-    evt.type = keyEvent;
-    evt.key = joyEvent;
-    instance.app->event (instance.context, &evt);
-  }
+  if (joyHandle (JOY_ENTER_SHIFT))
+    return;
+
+#ifdef ENABLE_JOYPAD
+  if (joyHandle (JOY_UP_SHIFT))
+    return;
+  if (joyHandle (JOY_DOWN_SHIFT))
+    return;
+  if (joyHandle (JOY_LEFT_SHIFT))
+    return;
+  if (joyHandle (JOY_RIGHT_SHIFT))
+    return;
+#endif
+
+#ifdef ENABLE_TILT_SENSOR
+  if (joyHandle (JOY_TILT_SHIFT))
+    return;
+#endif
 
   return;
 }
