@@ -39,11 +39,14 @@
  * than others.
  *
  * Best performance is achieved when using full speed SPI clock and an SD
- * card of class 10 or better. As of this writing, we limit the SPI clock
- * to one half its normal rate because our early prototype hardware using
- * the MCU Friend display/SD slot/touch modules using standard SD cards
- * was not fast enough to handle the maximum rate. This should be changed
- * for production hardware.
+ * card of class 4 or better. As of this writing, we run the SPI clock
+ * at full speed using the micro SD card port on the East Rising display
+ * module. Early prototype hardware using the MCU Friend display modules
+ * and standard size SD cards was not fast enough to handle the maximum
+ * rate and the clock was limited to half speed to compensate. Currently
+ * we implement DMA with the SPI controller. This, in conjunction with
+ * the full 12MHz SPI clock rate gives us sufficient I/O bandwidth even
+ * with class 4 cards.
  *
  * We use a video frame resolution of 128x96 pixels and a frame rate of 8
  * frames per second. The 128x96 resulution is upscaled on the fly to the
@@ -55,7 +58,7 @@
  *
  * - We always draw each pixel twice
  * - Every other pixel is drawn three times
- * - We also always draw every scan line twice
+ * - We also always draw every scanline twice
  * - Every other scanline is drawn three times
  *
  * This results in a cadence of 1:2, 1:3, 1:2, 1:3, etc... which yields
@@ -102,10 +105,14 @@
  *
  * If the SD card is too slow, things will still work, but there will be
  * pauses between the audio samples, which will make things sound choppy
- * or warbly. To compensate for this, if we detect that we are processing
- * samples faster than we can load new ones, we reduce the interval timer
+ * or warbly. To compensate for this, an optional feature is available
+ * which allows us to detect if we are processing samples faster than
+ * we can load new ones, and if so we reduce the interval timer
  * frequency until we hit a rate that we can sustain. Hopefully this
  * condition should not arise very often with the production hardware.
+ * With the currently available SD card I/O bandwidth, we no don't have
+ * any problems keeping up, so this feature is disabled by default to
+ * conserve code size.
  */
 
 #include "ch.h"
