@@ -74,6 +74,10 @@
 #include "ffconf.h"
 #include "ff.h"
 
+#include "orchard-app.h"
+
+extern orchard_app_instance instance;  
+
 DACDriver DAC1;
 
 static THD_WORKING_AREA(waDacThread, 512);
@@ -157,6 +161,16 @@ THD_FUNCTION(dacThread, arg)
 		}
  
 		if (config->sound_enabled == 0)
+			continue;
+
+		/*
+		 * If the video app is running, then it's already using
+		 * the DAC, and we shouldn't try to use it again here
+		 * because can't play from two sources at once.
+		 */
+ 	
+		if (dacbuf != NULL ||
+		    instance.app == orchardAppByName("Play videos"))
 			continue;
 
 		if (f_open (&f, fname, FA_READ) != FR_OK)
