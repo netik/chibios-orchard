@@ -74,10 +74,6 @@
 #include "ffconf.h"
 #include "ff.h"
 
-#include "orchard-app.h"
-
-extern orchard_app_instance instance;  
-
 DACDriver DAC1;
 
 static THD_WORKING_AREA(waDacThread, 512);
@@ -169,8 +165,7 @@ THD_FUNCTION(dacThread, arg)
 		 * because can't play from two sources at once.
 		 */
  	
-		if (dacbuf != NULL ||
-		    instance.app == orchardAppByName("Play videos"))
+		if (dacBuf != NULL)
 			continue;
 
 		if (f_open (&f, fname, FA_READ) != FR_OK)
@@ -184,6 +179,8 @@ THD_FUNCTION(dacThread, arg)
 		p = dacBuf;
 		if (f_read (&f, p, DAC_BYTES, &br) != FR_OK) {
 			f_close (&f);
+			chHeapFree (dacBuf);
+			dacBuf = NULL;
 			continue;
 		}
 
@@ -238,6 +235,7 @@ THD_FUNCTION(dacThread, arg)
 			play = 0;
 		}
 		chHeapFree (dacBuf);
+		dacBuf = NULL;
 		f_close (&f);
 		pitDisable (&PIT1, 1);
 	}
