@@ -449,6 +449,7 @@ videoWinPlay (char * fname, int x, int y)
 	geventDetachSource (&gl, NULL);
 	chHeapFree (buf);
 	chHeapFree (dacBuf);
+	dacBuf = NULL;
 	f_close (&f);
 
 	/* Re-initialize the DAC's PIT frequency, in case we changed it. */
