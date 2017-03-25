@@ -25,11 +25,11 @@ ifeq ($(USE_OPT),)
 # interrupts, we'll get stuck forever thinking the buttons are being
 # pressed. Only the real badge has the right joypad buttons anyway.
 
-#  USE_OPT+= -DENABLE_JOYPAD
+#USE_OPT += -DENABLE_JOYPAD
 
 # Enable tilt sensor. Also only present on production board.
 
-#  USE_OPT+= -DENABLE_TILT_SENSOR
+#USE_OPT+= -DENABLE_TILT_SENSOR
 
 endif
 
@@ -159,6 +159,7 @@ CSRC = main.c \
        app-launcher.c \
        app-name.c \
        app-fight.c \
+       app-choosetype.c \
        app-unlock.c \
        app-notify.c \
        app-update.c \

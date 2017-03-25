@@ -36,6 +36,8 @@ Matthew (graphics,art)\r\n\r\n"
 
 // app
 #define IMG_UNLOCKBG      "unlockbg.rgb"
+#define IMG_CHOOSETYPE    "choose.rgb"
+#define IMG_ARROW_DN_50   "ar50dn.rgb"
 
 // guard
 #define IMG_GATTH1        "gatth1.rgb"
