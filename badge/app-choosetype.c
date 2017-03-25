@@ -26,6 +26,8 @@ typedef struct _CtHandles {
   GHandle ghButton1;
   GHandle ghButton2;
   GHandle ghButton3;
+  GHandle ghOK;
+  GHandle ghCancel;
   
   // Fonts
   font_t font_jupiterpro_36;
@@ -113,6 +115,16 @@ static uint32_t ct_init(OrchardAppContext *context)
   
   return (0);
 }
+
+
+static void ct_draw_approval(OrchardAppContext *context) {
+  /* remove the old buttons */
+  /* paint the approval screen with character */
+
+  /* draw yes no buttons */
+
+}
+
 
 static void ct_start(OrchardAppContext *context)
 {
