@@ -142,7 +142,7 @@ static void ct_draw_confirm(OrchardAppContext *context) {
   switch(selected) {
   case 1:
     strcat(tmp, "Senator?");
-    strcpy(tmp2, "+2 AGL, +1 MGT, 2X VS CAESAR");
+    strcpy(tmp2, "+3 AGL, +1 MGT, 2X VS CAESAR");
     break;
   case 2:
     strcat(tmp, "Gladiatrix?");
