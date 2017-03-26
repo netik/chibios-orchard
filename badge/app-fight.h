@@ -75,36 +75,6 @@ typedef struct _FightHandles {
   GHandle ghLevelUpMight;
 } FightHandles;
 
-// WidgetStyle: RedButton, the only button we really use
-const GWidgetStyle RedButtonStyle = {
-  HTML2COLOR(0xff0000),              // background
-  HTML2COLOR(0xff6666),              // focus
-
-  // Enabled color set
-  {
-    HTML2COLOR(0xffffff),         // text
-    HTML2COLOR(0x800000),         // edge
-    HTML2COLOR(0xff0000),         // fill
-    HTML2COLOR(0x008000),         // progress (inactive area)
-  },
-
-  // Disabled color set
-  {
-    HTML2COLOR(0x808080),         // text
-    HTML2COLOR(0x404040),         // edge
-    HTML2COLOR(0x404040),         // fill
-    HTML2COLOR(0x004000),         // progress (active area)
-  },
-
-  // Pressed color set
-  {
-    HTML2COLOR(0xFFFFFF),         // text
-    HTML2COLOR(0x800000),         // edge
-    HTML2COLOR(0xff6a71),         // fill
-    HTML2COLOR(0x008000),         // progress (active area)
-  }
-};
-
 // the game state machine
 
 #ifdef DEBUG_FIGHT_STATE

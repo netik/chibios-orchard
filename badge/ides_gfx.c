@@ -8,6 +8,37 @@
 #include "led.h"
 #include "string.h"
 
+// WidgetStyle: RedButton, the only button we really use
+const GWidgetStyle RedButtonStyle = {
+  HTML2COLOR(0xff0000),              // background
+  HTML2COLOR(0xff6666),              // focus
+
+  // Enabled color set
+  {
+    HTML2COLOR(0xffffff),         // text
+    HTML2COLOR(0x800000),         // edge
+    HTML2COLOR(0xff0000),         // fill
+    HTML2COLOR(0x008000),         // progress (inactive area)
+  },
+
+  // Disabled color set
+  {
+    HTML2COLOR(0x808080),         // text
+    HTML2COLOR(0x404040),         // edge
+    HTML2COLOR(0x404040),         // fill
+    HTML2COLOR(0x004000),         // progress (active area)
+  },
+
+  // Pressed color set
+  {
+    HTML2COLOR(0xFFFFFF),         // text
+    HTML2COLOR(0x800000),         // edge
+    HTML2COLOR(0xff6a71),         // fill
+    HTML2COLOR(0x008000),         // progress (active area)
+  }
+};
+
+
 extern void handle_progress(void);
 
 void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, int32_t maxval, int32_t currentval, uint8_t use_leds, uint8_t reverse) {
@@ -58,7 +89,7 @@ void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, int32_
 
 char *getAvatarImage(int ptype, char *imgtype, uint8_t frameno, uint8_t reverse) {
   static char fname[13];
-  const char classlist[] = "gscxb";
+  const char classlist[] = "gsxcb";
 
   /* return an image based on the desired character class, image type,
    * and frame number. It is up to the caller to supply the correct
@@ -67,8 +98,8 @@ char *getAvatarImage(int ptype, char *imgtype, uint8_t frameno, uint8_t reverse)
    * 
    * 0 = guard
    * 1 = senator
-   * 2 = caesar
-   * 3 = gladatrix
+   * 2 = gladatrix
+   * 3 = caesar
    * 4 = bender (shh...)
    *
    * getAvatarImage(0,'deth',1) == gdeth1.rgb
