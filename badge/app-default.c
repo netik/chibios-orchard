@@ -57,34 +57,35 @@ static void draw_badge_buttons(DefaultHandles * p) {
   p->ghExitButton = gwinButtonCreate(NULL, &wi);
 }
 
-static void redraw_badge(int8_t drawchar) {
+static void redraw_badge(void) {
   // draw the entire background badge image. Shown when the screen is idle. 
   font_t fontLG, fontSM, fontXS;
   const userconfig *config = getConfig();
 
-  if (drawchar) {
-    // our image draws just a bit underneath the stats data. If we
-    // draw the character during the HP update, it will blink and we
-    // don't want that.
-
-    if (config->hp < (maxhp(config->unlocks,config->level) * .15)) {
+  // our image draws just a bit underneath the stats data. If we
+  // draw the character during the HP update, it will blink and we
+  // don't want that.
+  if (config->hp < (maxhp(config->unlocks,config->level) * .25)) {
+    putImageFile(getAvatarImage(config->p_type, "deth", 2, false),
+                 POS_PLAYER1_X, POS_PLAYER1_Y);
+  } else 
+    if (config->hp < (maxhp(config->unlocks,config->level) * .50)) {
       // show the whoop'd ass graphic if you're less than 15% 
-      putImageFile(getAvatarImage(config->p_type, "deth", 2, false),
-                   POS_PLAYER1_X, POS_PLAYER1_Y);
-    } else { 
-      putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
+      putImageFile(getAvatarImage(config->p_type, "deth", 1, false),
                    POS_PLAYER1_X, POS_PLAYER1_Y);
     }
-    
+    else
+      putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
+                   POS_PLAYER1_X, POS_PLAYER1_Y);
+  
     putImageFile(IMG_GROUND_BTNS, 0, POS_FLOOR_Y);
-  }
 
   fontXS = gdispOpenFont (FONT_XS);
   fontLG = gdispOpenFont (FONT_LG);
   fontSM = gdispOpenFont (FONT_FIXED);
 
   uint16_t ypos = 0; // cursor, so if we move or add things we don't have to rethink this
-  uint16_t lmargin = 130; // cursor, so if we move or add things we don't have to rethink this
+  uint16_t lmargin = 141; // cursor, so if we move or add things we don't have to rethink this
   gdispDrawStringBox (0,
 		      ypos,
 		      gdispGetWidth(),
@@ -107,14 +108,14 @@ static void redraw_badge(int8_t drawchar) {
 
   /* XP */
   ypos = ypos + gdispGetFontMetric(fontSM, fontHeight) + 4;
-  gdispDrawThickLine(135, ypos, 320, ypos, Red, 2, FALSE);
-  gdispDrawThickLine(135, ypos+21, 320, ypos+21, Red, 2, FALSE);
+  gdispDrawThickLine(141, ypos, 320, ypos, Red, 2, FALSE);
+  gdispDrawThickLine(141, ypos+21, 320, ypos+21, Red, 2, FALSE);
   
   chsnprintf(tmp, sizeof(tmp), "HP");
   chsnprintf(tmp2, sizeof(tmp2), "%d", config->hp);
 
   /* hit point bar */
-  gdispDrawStringBox (140,
+  gdispDrawStringBox (142,
 		      ypos+6,
 		      30,
 		      gdispGetFontMetric(fontXS, fontHeight),
@@ -137,7 +138,7 @@ static void redraw_badge(int8_t drawchar) {
   /* end hp bar */
   ypos = ypos + 30;
 
-  /* XP/GLD */
+  /* XP/WON */
   chsnprintf(tmp2, sizeof(tmp2), "%3d", config->xp);
   gdispDrawStringBox (lmargin,
 		      ypos,
@@ -145,28 +146,28 @@ static void redraw_badge(int8_t drawchar) {
 		      gdispGetFontMetric(fontSM, fontHeight),
 		      "XP",
 		      fontSM, Yellow, justifyLeft);
-  gdispDrawStringBox (lmargin + 35,
+  gdispDrawStringBox (lmargin + 40,
 		      ypos,
-                      50,
+                      45,
 		      gdispGetFontMetric(fontSM, fontHeight),
 		      tmp2,
 		      fontSM, White, justifyRight);
 
-  chsnprintf(tmp2, sizeof(tmp2), "%3d", config->gold);
+  chsnprintf(tmp2, sizeof(tmp2), "%3d", config->won);
   gdispDrawStringBox (lmargin + 94,
 		      ypos,
 		      45,
 		      gdispGetFontMetric(fontSM, fontHeight),
-		      "GLD",
+		      "WON",
 		      fontSM, Yellow, justifyLeft);
-  gdispDrawStringBox (lmargin + 94 + 40,
+  gdispDrawStringBox (lmargin + 94 + 35,
 		      ypos,
-                      50,
+                      45,
 		      gdispGetFontMetric(fontSM, fontHeight),
 		      tmp2,
 		      fontSM, White, justifyRight);
 
-  /* AGL / LUCK */
+  /* AGL / LOST */
   ypos = ypos + gdispGetFontMetric(fontSM, fontHeight) + 2;
   chsnprintf(tmp2, sizeof(tmp2), "%3d", config->agl);
   gdispDrawStringBox (lmargin,
@@ -182,14 +183,14 @@ static void redraw_badge(int8_t drawchar) {
 		      tmp2,
 		      fontSM, White, justifyRight);
 
-  chsnprintf(tmp2, sizeof(tmp2), "%3d", config->luck);
+  chsnprintf(tmp2, sizeof(tmp2), "%3d", config->lost);
   gdispDrawStringBox (lmargin + 94,
 		      ypos,
 		      60,
 		      gdispGetFontMetric(fontSM, fontHeight),
-		      "LUCK",
+		      "LOST",
 		      fontSM, Yellow, justifyLeft);
-  gdispDrawStringBox (lmargin + 94 + 45,
+  gdispDrawStringBox (lmargin + 94 + 35,
 		      ypos,
                       45,
 		      gdispGetFontMetric(fontSM, fontHeight),
@@ -217,6 +218,7 @@ static void redraw_badge(int8_t drawchar) {
 		      tmp2,
 		      fontSM, White, justifyRight);
 
+  
   /* EFF supporter, +10% Defense and Logo */
   if (config->unlocks & UL_PLUSDEF) 
       putImageFile(IMG_EFFLOGO, 270, ypos+4);
@@ -245,7 +247,7 @@ static void default_start(OrchardAppContext *context) {
   
   gdispClear(Black);
 
-  redraw_badge(true);
+  redraw_badge();
   draw_badge_buttons(p);
   
   geventListenerInit(&p->glBadge);
@@ -318,9 +320,9 @@ static void default_event(OrchardAppContext *context,
         if (config->hp >= maxhp(config->unlocks, config->level)) {
           config->hp = maxhp(config->unlocks, config->level);
           configSave(config);
-          redraw_badge(true);
+          redraw_badge();
         } else {
-          redraw_badge(false);
+          redraw_badge();
         }
     }
   }
