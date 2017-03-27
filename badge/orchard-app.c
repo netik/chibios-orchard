@@ -504,6 +504,7 @@ void orchardAppInit(void) {
   chVTReset(&ping_timer);
   //  evtTableHook(orchard_events, radio_page, handle_radio_page);
   evtTableHook(orchard_events, ping_timeout, execute_ping);
+
   chVTSet(&ping_timer,
     MS2ST(PING_MIN_INTERVAL + rand() % PING_RAND_INTERVAL), run_ping, NULL);
 

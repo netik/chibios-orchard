@@ -1,7 +1,11 @@
 /*
  * app-choosetype.c
  * 
- * Allow the user to choose their player type
+ * Allow the user to choose their player type. Run once during setup.
+ * 
+ * If you update the starting stats for a character, those changes
+ * must be reflected in the event handler for this code, as well as
+ * the messaging on the confirmation screen.
  *
  * J. Adams 3/24/2017 
  */
@@ -14,8 +18,6 @@
 #include "images.h"
 #include "sound.h"
 #include "dac_lld.h"
-
-#define ALERT_DELAY 2500   // how long alerts stay on the screen.
 
 // handles
 typedef struct _CtHandles {
@@ -146,11 +148,11 @@ static void ct_draw_confirm(OrchardAppContext *context) {
     break;
   case 2:
     strcat(tmp, "Gladiatrix?");
-    strcpy(tmp2, "+1 Might, +1 Agility");
+    strcpy(tmp2, "+2 Might, +2 Agility");
     break;
   default: /* 0 */
     strcat(tmp, "Guard?");
-    strcpy(tmp2, "+1 Might, +0 Agility");
+    strcpy(tmp2, "+3 Might, +1 Agility");
   }
   
   gdispDrawStringBox (0,
@@ -175,7 +177,7 @@ static void ct_draw_confirm(OrchardAppContext *context) {
   wi.g.width = 150;
   wi.g.height = 30;
   wi.text = "CANCEL";
-  p->ghOK = gwinButtonCreate(0, &wi);
+  p->ghCancel = gwinButtonCreate(0, &wi);
   
   gwinSetDefaultStyle(&RedButtonStyle, FALSE);
   gwinWidgetClearInit(&wi);
@@ -185,7 +187,7 @@ static void ct_draw_confirm(OrchardAppContext *context) {
   wi.g.width = 150;
   wi.g.height = 30;
   wi.text = "CONFIRM";
-  p->ghCancel = gwinButtonCreate(0, &wi);
+  p->ghOK = gwinButtonCreate(0, &wi);
 
   gwinSetDefaultStyle(&BlackWidgetStyle, FALSE);
 }
@@ -253,55 +255,114 @@ static void ct_event(OrchardAppContext *context,
 
     return;
   }
-  
+
+  /* Joypad control */
+  if (ct_state == 0) { 
+    if (event->type == keyEvent) {
+      if ( (event->key.code == keyRight) &&
+         (event->key.flags == keyPress) )  {
+        dacPlay("click.raw");
+        selected++;
+        if (selected > 2) { selected = 0; };
+        ct_drawarrow();
+        return;
+      }
+      
+      if ( (event->key.code == keyLeft) &&
+           (event->key.flags == keyPress) )  {
+        dacPlay("click.raw");
+        selected--;
+        if (selected > 254) { selected = 2; };
+        ct_drawarrow();
+        return;
+      }
+    }
+    if ( (event->key.code == keySelect) &&
+         (event->key.flags == keyPress) )  {
+      dacPlay("fight/select.raw");
+      ct_draw_confirm(context);
+      ct_state = 1;
+      return;
+    }
+  } else {
+    /* To avoid UGFX madness, we're going to make it very simple.
+     * in state 2 things are a bit different. 
+     *
+     * LEFT is cancel / go back 
+     * RIGHT or ENTER acts as confirm
+     */
+    if ( (event->key.code == keyLeft) &&
+         (event->key.flags == keyPress) )  {
+      dacPlay("click.raw");
+      ct_remove_confirm(context);
+      ct_state = 0;
+      init_ct_ui(p);
+      
+    }
+
+    if ( (( event->key.code == keyRight) || (event->key.code == keySelect) ) && 
+         (event->key.flags == keyPress) )  {
+      dacPlay("fight/drop.raw");
+    }
+    
+  }
+
+  /* End joypad controls */
   if (event->type == ugfxEvent) {
     pe = event->ugfx.pEvent;
     last_ui_time = chVTGetSystemTime();
     
     if (pe->type == GEVENT_GWIN_BUTTON) {
-        dacPlay("click.raw");
-        if (ct_state == 0) { 
-          if ( ((GEventGWinButton*)pe)->gwin == p->ghButton1) {
-            selected = 0;
-            ar_visible = 1;
-            ct_drawarrow();
-            ct_draw_confirm(context);
-            ct_state = 1;
-            return;
-          }
-          
-          if ( ((GEventGWinButton*)pe)->gwin == p->ghButton2) {
-            selected = 1;
-            ar_visible = 1;
-            ct_drawarrow();
-            ct_draw_confirm(context);
-            ct_state = 1;
-            return;
-          }
-          
-          if ( ((GEventGWinButton*)pe)->gwin == p->ghButton3) {
-            selected = 2;
-            ar_visible = 1;
-            ct_drawarrow();
-            ct_draw_confirm(context);
-            ct_state = 1;
-            return;
-          }
+      if (ct_state == 0) { 
+        
+        if ( ((GEventGWinButton*)pe)->gwin == p->ghButton1) {
+          dacPlay("fight/select.raw");
+          selected = 0;
+          ar_visible = 1;
+          ct_drawarrow();
+          ct_draw_confirm(context);
+          ct_state = 1;
+          return;
         }
-
-        if (ct_state == 1) { 
-          if ( ((GEventGWinButton*)pe)->gwin == p->ghOK) {
-            ct_remove_confirm(context);
-            ct_state = 0;
-            init_ct_ui(p);
-            /* TODO: save it */
+        
+        if ( ((GEventGWinButton*)pe)->gwin == p->ghButton2) {
+          dacPlay("fight/select.raw");
+          selected = 1;
+          ar_visible = 1;
+          ct_drawarrow();
+          ct_draw_confirm(context);
+          ct_state = 1;
+          return;
           }
-          if ( ((GEventGWinButton*)pe)->gwin == p->ghCancel) {
-            ct_remove_confirm(context);
-            ct_state = 0;
-            init_ct_ui(p);
+        
+        if ( ((GEventGWinButton*)pe)->gwin == p->ghButton3) {
+          dacPlay("fight/select.raw");
+          selected = 2;
+          ar_visible = 1;
+          ct_drawarrow();
+          ct_draw_confirm(context);
+          ct_state = 1;
+          return;
           }
+      }
+      
+      if (ct_state == 1) { 
+        if ( ((GEventGWinButton*)pe)->gwin == p->ghOK) {
+          dacPlay("fight/drop.raw");
+          ct_remove_confirm(context);
+          ct_state = 0;
+          init_ct_ui(p);
+          /* TODO: save it */
+          return;
         }
+        if ( ((GEventGWinButton*)pe)->gwin == p->ghCancel) {
+          dacPlay("click.raw");
+          ct_remove_confirm(context);
+          ct_state = 0;
+          init_ct_ui(p);
+          return;
+        }
+      }
     }
   }
 }
