@@ -19,6 +19,8 @@
 #include "sound.h"
 #include "dac_lld.h"
 
+#define ALERT_DELAY 2500
+
 // handles
 typedef struct _CtHandles {
   // GListener
@@ -40,8 +42,11 @@ typedef struct _CtHandles {
 
 static uint32_t last_ui_time = 0;
 static uint8_t selected = 0;
-static uint8_t ct_state = 0;  /* 0 = Select character page, 1 = OK/Cancel page */
-static uint8_t ar_visible = 1;
+static uint8_t ct_state = 0;   /* 0 = Select character page, 1 = OK/Cancel page */
+static uint8_t ar_visible = 1; /* used for animation state, either blinking arrow or character anim. */
+
+/* prototypes */
+static void ct_save(OrchardAppContext *context);
 
 static void init_ct_ui(CtHandles *p) {
 
@@ -130,8 +135,11 @@ static void ct_draw_confirm(OrchardAppContext *context) {
   p = context->priv;
 
   gwinDestroy(p->ghButton1);
+  p->ghButton1 = NULL;
   gwinDestroy(p->ghButton2);
+  p->ghButton2 = NULL;
   gwinDestroy(p->ghButton3);
+  p->ghButton3 = NULL;
 
   /* put him in the middle */
   gdispFillArea(0,0,320,210,Black);
@@ -227,11 +235,60 @@ static void ct_remove_confirm(OrchardAppContext *context) {
   CtHandles * p;
   p = context->priv;
 
-  if (p->ghOK)
+  if (p->ghOK) {
     gwinDestroy(p->ghOK);
+    p->ghOK = NULL;
+  }
 
-  if (p->ghCancel)
+  if (p->ghCancel) { 
     gwinDestroy(p->ghCancel);
+    p->ghCancel = NULL;
+  }
+}
+
+static void ct_save(OrchardAppContext *context) {
+  /* store the final selection to flash.*/
+  userconfig *config = getConfig();
+  uint16_t middle = (gdispGetHeight() / 2);
+  char msg[40];
+  CtHandles * p;
+
+  p = context->priv;
+
+  config->p_type = selected;
+  
+  switch(selected) {
+  case 2: /* gladiatrix, balanced */
+    config->agl = 2;
+    config->might = 2;
+    strcpy(msg, "HAIL, GLADIATRIX.");
+    break;
+  case 1: /* senator, defensive */
+    config->agl = 3;
+    config->might = 1;
+    strcpy(msg, "HAIL, SENATOR.");
+    break;
+  default: /* 0: guard, strong attack */
+    config->agl = 1;
+    config->might = 3;
+    strcpy(msg, "HAIL, PRAETORIAN GUARD.");
+    break;
+  }
+
+  gdispDrawThickLine(0,middle - 20, 320, middle -20, Red, 2, FALSE);
+  gdispDrawThickLine(0,middle + 20, 320, middle +20, Red, 2, FALSE);
+  gdispFillArea( 0, middle - 20, 320, 40, Black );
+
+  gdispDrawStringBox (0,
+		      (gdispGetHeight() / 2) - (gdispGetFontMetric(p->font_manteka_20, fontHeight) / 2),
+		      gdispGetWidth(),
+		      gdispGetFontMetric(p->font_manteka_20, fontHeight),
+		      msg,
+		      p->font_manteka_20, Red, justifyCenter);
+
+  configSave(config);
+
+  chThdSleepMilliseconds(ALERT_DELAY);
 }
 
 static void ct_event(OrchardAppContext *context,
@@ -239,20 +296,27 @@ static void ct_event(OrchardAppContext *context,
 {
   GEvent * pe;
   CtHandles * p;
-  userconfig *config = getConfig();
   
   p = context->priv;
 
   if (event->type == timerEvent) {
-    /*
-      // idle tiemout 
-      if( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) {
-        orchardAppRun(orchardAppByName("Badge"));
-      }
-    */
-    if (ct_state == 0) 
-      ct_drawarrow();
+    /* blink the arrow */
+    if (ct_state == 0) ct_drawarrow();
 
+    /* animate the character */
+    if (ct_state == 1) {
+      if (ar_visible) {
+        putImageFile(getAvatarImage(selected, "idla", 1, false),
+                     110, POS_PLAYER1_Y);
+      } else {
+        putImageFile(getAvatarImage(selected, "atth", 1, false),
+                     110, POS_PLAYER1_Y);
+      }
+
+      ar_visible = !ar_visible;
+        
+    }
+    
     return;
   }
 
@@ -303,6 +367,11 @@ static void ct_event(OrchardAppContext *context,
     if ( (( event->key.code == keyRight) || (event->key.code == keySelect) ) && 
          (event->key.flags == keyPress) )  {
       dacPlay("fight/drop.raw");
+      ct_remove_confirm(context);
+      ct_state = 0;
+      ct_save(context);
+      orchardAppRun(orchardAppByName("Badge"));
+      return;
     }
     
   }
@@ -351,8 +420,8 @@ static void ct_event(OrchardAppContext *context,
           dacPlay("fight/drop.raw");
           ct_remove_confirm(context);
           ct_state = 0;
-          init_ct_ui(p);
-          /* TODO: save it */
+          ct_save(context);
+          orchardAppRun(orchardAppByName("Badge"));
           return;
         }
         if ( ((GEventGWinButton*)pe)->gwin == p->ghCancel) {

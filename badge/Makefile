@@ -7,7 +7,7 @@
 ifeq ($(USE_OPT),)
   USE_OPT = -Os -ggdb -fomit-frame-pointer -falign-functions=16 -nostdlib
   USE_OPT += -DBIG_ENDIAN=0 -DLITTLE_ENDIAN=1 -Dasm=__asm__
-  USE_OPT += -ansi # -pedantic
+  USE_OPT += -ansi  # -pedantic
 
 # The following is a workaround for a broken rev2 prototype board where
 # the radio DIO0 pin was not soldered correctly. This prevents us from
