@@ -265,6 +265,21 @@ static void default_event(OrchardAppContext *context,
   
   p = context->priv;
 
+  if (event->type == keyEvent) {
+    // Enter to fight
+    if ( (event->key.code == keySelect) &&
+         (event->key.flags == keyPress) )  {
+      orchardAppRun(orchardAppByName("Fight"));
+      return;
+    }
+    // Left to go back to the launcher
+    if ( (event->key.code == keyLeft) &&
+         (event->key.flags == keyPress) )  {
+	orchardAppExit();
+	return;
+    }
+  }
+  
   if (event->type == ugfxEvent) {
     pe = event->ugfx.pEvent;
 
