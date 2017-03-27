@@ -6,6 +6,7 @@
 #include "orchard.h"
 #include "orchard-app.h"
 #include "fontlist.h"
+#include "dac_lld.h"
 
 #include "userconfig.h"
 
@@ -235,40 +236,76 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
   struct launcher_list *list = (struct launcher_list *)context->priv;
   
   if( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) {
+    // automatic timeout to the badge screen
     orchardAppRun(orchardAppByName("Badge"));
+    return;
   }
-  else
-    if (event->type == ugfxEvent) {
-      pe = event->ugfx.pEvent;
-      
-      switch(pe->type) {
-      case GEVENT_GWIN_BUTTON:
-	if (((GEventGWinButton*)pe)->gwin == list->ghButton1) {
-	  last_ui_time = chVTGetSystemTime();
-	  list->selected--;
-	  
-	  if (list->selected >= list->total)
-	    list->selected = 0;
-	}
-	
-	if (((GEventGWinButton*)pe)->gwin == list->ghButton2) {
-	  last_ui_time = chVTGetSystemTime();
-	  list->selected++;
-	  if (list->selected >= list->total)
-	    list->selected = list->total-1;
-	}
-	
-	if (((GEventGWinButton*)pe)->gwin == list->ghButton3) {
-	  orchardAppRun(list->items[list->selected].entry);
-	  return;
-	}
-	
-	redraw_list(list);
-	break;
-      default:
-	break;
-      }
+
+  if (event->type == keyEvent) {
+    if ( (event->key.code == keyUp) &&
+         (event->key.flags == keyPress) )  {
+      dacPlay("click.raw");
+      last_ui_time = chVTGetSystemTime();
+      list->selected--;
     }
+    if ( (event->key.code == keyDown) &&
+         (event->key.flags == keyPress) )  {
+      dacPlay("click.raw");
+      last_ui_time = chVTGetSystemTime();
+      list->selected++;
+    }
+    if ( (event->key.code == keySelect) &&
+         (event->key.flags == keyPress) )  {
+      dacPlay("click.raw");
+      orchardAppRun(list->items[list->selected].entry);
+      return;
+    }
+    // wraparound
+    if (list->selected >= list->total)
+      list->selected = 0;
+    
+    if (list->selected >= list->total)
+      list->selected = list->total-1;
+    
+    redraw_list(list);
+  }
+  
+  if (event->type == ugfxEvent) {
+    pe = event->ugfx.pEvent;
+    
+    switch(pe->type) {
+    case GEVENT_GWIN_BUTTON:
+      if (((GEventGWinButton*)pe)->gwin == list->ghButton1) {
+        dacPlay("click.raw");
+        last_ui_time = chVTGetSystemTime();
+        list->selected--;
+      }
+      
+      if (((GEventGWinButton*)pe)->gwin == list->ghButton2) {
+        dacPlay("click.raw");
+        last_ui_time = chVTGetSystemTime();
+        list->selected++;
+      }
+      
+      if (((GEventGWinButton*)pe)->gwin == list->ghButton3) {
+        dacPlay("click.raw");
+        orchardAppRun(list->items[list->selected].entry);
+        return;
+      }
+
+      // wraparound
+      if (list->selected >= list->total)
+        list->selected = 0;
+      
+      if (list->selected >= list->total)
+        list->selected = list->total-1;
+      
+      redraw_list(list);
+      break;
+    default:
+      break;
+    }
+  }
   
   return;
 }
