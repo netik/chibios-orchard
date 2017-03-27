@@ -88,7 +88,11 @@ static void name_event(OrchardAppContext *context,
 		    (event->ui.flags == uiOK)) {
 			keyboardUi->exit (context);
 			configSave (config);
-			orchardAppExit ();
+                        if (config->p_type == p_notset) {
+                          orchardAppRun(orchardAppByName("Choosetype"));
+                        } else { 
+                          orchardAppExit ();
+                        }
 		}
 	}
 

@@ -219,6 +219,13 @@ static void launcher_start(OrchardAppContext *context) {
   // forcibly run the name app if our name is blank. Sorry. 
   if (strlen(config->name) == 0) { 
     orchardAppRun(orchardAppByName("Set your name"));
+    return;
+  }
+
+  // if you don't have a type set, force that too.
+  if (config->p_type == 0) { 
+    orchardAppRun(orchardAppByName("Choosetype"));
+    return;
   }
   return;
 }

@@ -16,7 +16,8 @@
 #include "userconfig.h"
 #include "datetime.h"
 
-// we will heal the player at N hp per this interval
+/* we will heal the player at N hp per this interval or 2X HP if
+   UL_PLUSDEF has been activated */
 #define HEAL_INTERVAL_US 1000000
 #define HEAL_AMT 5
 

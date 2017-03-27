@@ -11,12 +11,13 @@
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0
-#define CONFIG_VERSION    99
+#define CONFIG_VERSION    13
 #define CONFIG_NAME_MAXLEN 10
 
 /* can we display these on top LEDs */
 
 typedef enum _player_type {
+  p_notset,
   p_guard,
   p_senator,
   p_casear,

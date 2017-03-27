@@ -55,6 +55,7 @@ static void init_ct_ui(CtHandles *p) {
 
   /* background */
   putImageFile(IMG_CHOOSETYPE, 0, 0);
+  dacLoopPlay("fight/loop1.raw", DAC_PLAY_LOOP);
 
   // create button widget: ghButton1
   wi.g.show = TRUE;
@@ -286,6 +287,9 @@ static void ct_save(OrchardAppContext *context) {
 		      msg,
 		      p->font_manteka_20, Red, justifyCenter);
 
+  // fly, be free!
+  config->in_combat = 0;
+  
   configSave(config);
 
   chThdSleepMilliseconds(ALERT_DELAY);
@@ -468,4 +472,4 @@ static void ct_exit(OrchardAppContext *context) {
   context->priv = NULL;
 }  
 
-orchard_app("Choosetype", 0, ct_init, ct_start, ct_event, ct_exit);
+orchard_app("Choosetype", TRUE, ct_init, ct_start, ct_event, ct_exit);

@@ -172,6 +172,7 @@ static void state_approval_demand_enter(void) {
   GWidgetInit wi;
   FightHandles *p = instance.context->priv;
   char tmp[40];
+  userconfig *config = getConfig();
   int xpos, ypos;
 
   gdispClear(Black);
@@ -254,7 +255,9 @@ static void state_approval_demand_enter(void) {
   started_it = 0;
   dacStop();
   playAttacked();
-  
+
+  config->lastcombat = chVTGetSystemTime();
+  configSave(config);
 }
 
 static void state_approval_demand_exit(void) {
@@ -1098,9 +1101,10 @@ static uint8_t nextEnemy() {
     if (ce > MAX_ENEMIES-1) {
       ce = 0;
     }
-  } while ( (enemies[ce] == NULL) && (distance < MAX_ENEMIES) );
+  } while ( ( (enemies[ce] == NULL) || (enemies[ce]->in_combat == 1)) &&
+            (distance < MAX_ENEMIES));
 		   
-  if (enemies[ce] != NULL) {
+  if (enemies[ce] != NULL) { 
     current_enemy_idx = ce;
     return TRUE;
   } else {
@@ -1125,7 +1129,11 @@ static uint8_t prevEnemy() {
     if (ce < 0) {
       ce = MAX_ENEMIES-1;
     }
-  } while ( (enemies[ce] == NULL) && (distance < MAX_ENEMIES) );
+  } while ( (
+             (enemies[ce] == NULL) || (enemies[ce]->in_combat == 1)
+             ) &&
+             (distance < MAX_ENEMIES)
+            );
 		   
   if (enemies[ce] != NULL) {
     current_enemy_idx = ce;
@@ -1529,6 +1537,8 @@ static void fight_event(OrchardAppContext *context,
         started_it = 1;
         memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(user));
         config->in_combat = true;
+        config->lastcombat = chVTGetSystemTime();
+        configSave(config);
 
         // We're going to preemptively call this before changing state
         // so the screen doesn't go black while we wait for an ACK.
@@ -1580,6 +1590,7 @@ static void fight_event(OrchardAppContext *context,
       }
       if ( ((GEventGWinButton*)pe)->gwin == p->ghAccept) {
         config->in_combat = true;
+        configSave(config);
         dacPlay("fight/excellnt.raw");
         next_fight_state = VS_SCREEN;
         sendGamePacket(OP_STARTBATTLE_ACK);
@@ -1636,7 +1647,8 @@ static void fight_exit(OrchardAppContext *context) {
   context->priv = NULL;
 
   config->in_combat = 0;
-
+  configSave(config);
+  
   gdispCloseFont(fontLG);
   gdispCloseFont(fontSM);
   gdispCloseFont(fontFF);

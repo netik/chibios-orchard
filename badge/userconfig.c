@@ -107,14 +107,14 @@ static void init_config(userconfig *config) {
   config->led_shift = 4;
   config->sound_enabled = 1;
 
-  config->p_type = p_guard;  
+  config->p_type = p_notset;  
   memset(config->name, 0, CONFIG_NAME_MAXLEN);
 
   config->won = 0;
   config->lost = 0;
 
   config->lastcombat = 0; // how long since combat started
-  config->in_combat = 0;
+  config->in_combat = 1;  // we are incombat until type is set. 
   
   /* stats, dunno if we will use */
   config->xp = 0;
@@ -156,10 +156,13 @@ void configStart(void) {
     configSave(&config_cache);
   } else {
     chprintf(stream, "Config OK!\r\n");
-    if (config_cache.in_combat != 0) { 
-      chprintf(stream, "You were stuck in combat. Fixed.\r\n");
-      config_cache.in_combat = 0;
-      configSave(&config_cache);
+    if (config_cache.in_combat != 0) {
+      if (config_cache.p_type > 0) {
+        // we will only release this when type is set
+        chprintf(stream, "You were stuck in combat. Fixed.\r\n");
+        config_cache.in_combat = 0;
+        configSave(&config_cache);
+      }
     }
   }
 
