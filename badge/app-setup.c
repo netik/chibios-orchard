@@ -16,28 +16,30 @@
 
 // GHandles
 typedef struct _SetupHandles {
-	GHandle ghCheckSound;
-	GHandle ghLabel1;
-	GHandle ghLabelPattern;
-	GHandle ghButtonPatDn;
-	GHandle ghButtonPatUp;
-	GHandle ghLabel4;
-	GHandle ghLabelDim;
-	GHandle ghButtonDimUp;
-	GHandle ghButtonDimDn;
-	GHandle ghButtonOK;
-	GHandle ghButtonCancel;
-	GListener glSetup;
+  GHandle ghCheckSound;
+  GHandle ghLabel1;
+  GHandle ghLabelPattern;
+  GHandle ghButtonPatDn;
+  GHandle ghButtonPatUp;
+  GHandle ghLabel4;
+  GHandle ghLabelDim;
+  GHandle ghButtonDimUp;
+  GHandle ghButtonDimDn;
+  GHandle ghButtonOK;
+  GHandle ghButtonCancel;
+  GListener glSetup;
 } SetupHandles;
 
 static uint32_t last_ui_time = 0;
 extern struct FXENTRY fxlist[];
 
+static font_t fontSM;
+static font_t fontXS;
+
 static void draw_setup_buttons(SetupHandles * p) {
   userconfig *config = getConfig();
   GWidgetInit wi;
-  font_t fontSM = gdispOpenFont (FONT_SM);
-  char tmp[3];
+  char tmp[40];
   
   gwinSetDefaultFont(fontSM);
 
@@ -163,6 +165,16 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.g.height = 40;
   wi.text = "Cancel";
   p->ghButtonCancel = gwinButtonCreate(0, &wi);
+
+  // show network id
+  chsnprintf(tmp,sizeof(tmp), "Net ID: %08x", config->netid);
+  gdispDrawStringBox (0,
+		      174,
+		      gdispGetWidth(),
+		      gdispGetFontMetric(fontXS, fontHeight),
+		      tmp,
+		      fontXS, Purple, justifyCenter);
+    
 }
 
 static uint32_t setup_init(OrchardAppContext *context) {
@@ -172,6 +184,9 @@ static uint32_t setup_init(OrchardAppContext *context) {
 
 static void setup_start(OrchardAppContext *context) {
   SetupHandles * p;
+
+  fontSM = gdispOpenFont (FONT_SM);
+  fontXS = gdispOpenFont (FONT_XS);
 
   gdispClear (Black);
 
@@ -186,6 +201,7 @@ static void setup_start(OrchardAppContext *context) {
   geventListenerInit(&p->glSetup);
   gwinAttachListener(&p->glSetup);
   geventRegisterCallback (&p->glSetup, orchardAppUgfxCallback, &p->glSetup);
+
 }
 
 static void setup_event(OrchardAppContext *context,
@@ -281,7 +297,10 @@ static void setup_exit(OrchardAppContext *context) {
   gwinDestroy(p->ghButtonDimDn);
   gwinDestroy(p->ghButtonOK);
   gwinDestroy(p->ghButtonCancel);
-  
+
+  gdispCloseFont(fontXS);
+  gdispCloseFont(fontSM);
+    
   geventDetachSource (&p->glSetup, NULL);
   geventRegisterCallback (&p->glSetup, NULL, NULL);
 
