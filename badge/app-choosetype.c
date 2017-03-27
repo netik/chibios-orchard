@@ -146,7 +146,7 @@ static void ct_draw_confirm(OrchardAppContext *context) {
   gdispFillArea(0,0,320,210,Black);
   
   /* draw yes no buttons and the avatar */
-  putImageFile(getAvatarImage(selected, "idla", 1, false),
+  putImageFile(getAvatarImage(selected+1, "idla", 1, false),
                110, POS_PLAYER1_Y);
 
   strcpy(tmp, "Play as ");
@@ -256,7 +256,6 @@ static void ct_save(OrchardAppContext *context) {
 
   p = context->priv;
 
-  config->p_type = selected;
   
   switch(selected) {
   case 2: /* gladiatrix, balanced */
@@ -289,6 +288,7 @@ static void ct_save(OrchardAppContext *context) {
 
   // fly, be free!
   config->in_combat = 0;
+  config->p_type = selected + 1;
   
   configSave(config);
 
@@ -310,10 +310,10 @@ static void ct_event(OrchardAppContext *context,
     /* animate the character */
     if (ct_state == 1) {
       if (ar_visible) {
-        putImageFile(getAvatarImage(selected, "idla", 1, false),
+        putImageFile(getAvatarImage(selected+1, "idla", 1, false),
                      110, POS_PLAYER1_Y);
       } else {
-        putImageFile(getAvatarImage(selected, "atth", 1, false),
+        putImageFile(getAvatarImage(selected+1, "atth", 1, false),
                      110, POS_PLAYER1_Y);
       }
 

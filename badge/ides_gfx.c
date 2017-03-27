@@ -89,18 +89,19 @@ void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, int32_
 
 char *getAvatarImage(int ptype, char *imgtype, uint8_t frameno, uint8_t reverse) {
   static char fname[13];
-  const char classlist[] = "gsxcb";
+  const char classlist[] = "_gsxcb";
 
   /* return an image based on the desired character class, image type,
    * and frame number. It is up to the caller to supply the correct
    * player type. Unexpected results will occur if the player type is
    * greater than 2!
    * 
-   * 0 = guard
-   * 1 = senator
-   * 2 = gladatrix
-   * 3 = caesar
-   * 4 = bender (shh...)
+   * 0 = notset
+   * 1 = guard
+   * 2 = senator
+   * 3 = gladatrix
+   * 4 = caesar
+   * 5 = bender (shh...)
    *
    * getAvatarImage(0,'deth',1) == gdeth1.rgb
    * getAvatarImage(2,'attm',1) == cattm1.rgb
