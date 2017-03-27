@@ -51,6 +51,57 @@ static uint16_t fontsm_height;
 static uint16_t fontlg_height;
 extern struct FXENTRY fxlist[];
 
+
+static uint16_t calc_xp_gain(uint8_t won) {
+  userconfig *config = getConfig();
+  float factor = 1;
+
+  int8_t leveldelta;
+
+  leveldelta = current_enemy.level - config->level; 
+  // range:
+  //
+  //  >=  3 = 2x XP     RED
+  //  >=  2 = 1.50x XP  ORG
+  //  >=  1 = 1.25x XP  ORG/YEL
+  //  ==  0 = 1x XP     GREEN
+  //  <= -1 = .75x XP   GREY
+  //  <= -2 = .25x XP   GREY
+  //  <= -3 = 0 XP      GREY
+  
+  // you killed someone harder than you
+  if (leveldelta >= 3)
+    factor = 2;
+  else
+    if (leveldelta >= 2)
+      factor = 1.50;
+    else
+      if (leveldelta >= 1)
+        factor = 1.25;
+
+  // you killed someone weaker than you
+  if (leveldelta <= -3)
+    factor = 0;
+  else
+    if (leveldelta <= -2)
+      factor = .25;
+    else
+      if (leveldelta == -1)
+        factor = .75;
+
+  if (won) {
+    /*
+     * XP is calculated as follows
+     * 
+     * XP = (Base XP) * (1 - (Char Level - Mob Level)/ZD )
+     */
+    return (80 + ((config->level-1) * 16)) * factor;
+  } else {
+    /* Death does not factor in the multiplier */
+    return (10 + ((config->level-1) * 16));
+  }
+}
+
 static void changeState(fight_state nextstate) {
   // call previous state exit
   // so long as we are updating state, no one else gets in.
@@ -365,8 +416,35 @@ static void screen_select_draw(int8_t initial) {
   // setting initial to TRUE will cause a repaint of the entire
   // scene. We set this to FALSE on next/previous moves to improve
   // redraw performance
+  userconfig *config = getConfig();
   user **enemies = enemiesGet();
+  color_t levelcolor;
 
+  // calculate mod/con color, WoW Style
+  int leveldelta = enemies[current_enemy_idx]->level - config->level;
+
+  levelcolor = Lime;
+
+  // harder than you 
+  if (leveldelta >= 3)
+    levelcolor = Red;
+  else
+    if (leveldelta == 2)
+      levelcolor = Orange;
+    else
+      if (leveldelta == 1)
+        levelcolor = Yellow;
+
+  // weaker than you
+  if (leveldelta <= -3)
+    levelcolor = Grey;
+  else
+    if (leveldelta == -2)
+      levelcolor = Green;
+    else
+      if (leveldelta == -1)  
+        levelcolor = Lime;
+  
   if (initial == TRUE) { 
     gdispClear(Black);
     putImageFile(IMG_GROUND_BCK, 0, POS_FLOOR_Y);
@@ -408,7 +486,7 @@ static void screen_select_draw(int8_t initial) {
 		      gdispGetWidth() - xpos,
 		      gdispGetFontMetric(fontFF, fontHeight),
 		      enemies[current_enemy_idx]->name,
-		      fontFF, Yellow, justifyLeft);
+		      fontFF, levelcolor, justifyLeft);
 
   // level
   ypos = ypos + 25;
@@ -777,7 +855,7 @@ static void state_show_results_enter() {
     putImageFile(getAvatarImage(current_enemy.p_type, "deth", 2, false),
                  POS_PLAYER2_X, POS_PLAYER2_Y);
     chThdSleepMilliseconds(250);
-    chsnprintf(tmp, sizeof(tmp), "VICTORY!  (+%dXP)", XPWINFUNC);      
+    chsnprintf(tmp, sizeof(tmp), "VICTORY!  (+%dXP)", calc_xp_gain(TRUE));
     screen_alert_draw(false, tmp);
 
     if (roundno == 1) {
@@ -796,7 +874,7 @@ static void state_show_results_enter() {
     }
     
     // reward XP and exit 
-    config->xp += XPWINFUNC;
+    config->xp += calc_xp_gain(TRUE);
     config->won++;
     configSave(config);
     
@@ -813,7 +891,7 @@ static void state_show_results_enter() {
       putImageFile(getAvatarImage(config->p_type, "deth", 2, false),
                    POS_PLAYER1_X, POS_PLAYER1_Y);
       chThdSleepMilliseconds(250);
-      chsnprintf(tmp, sizeof(tmp), "YOU WERE DEFEATED (+%dXP)", XPLOSSFUNC);      
+      chsnprintf(tmp, sizeof(tmp), "YOU WERE DEFEATED (+%dXP)", calc_xp_gain(FALSE));
       screen_alert_draw(false, tmp);
 
       // are you lame? I think you are. 
@@ -832,7 +910,7 @@ static void state_show_results_enter() {
         }
       }
       // reward (some) XP and exit 
-      config->xp += XPLOSSFUNC;
+      config->xp += calc_xp_gain(FALSE);
       config->lost++;
       configSave(config);
       
@@ -1521,7 +1599,7 @@ static void fight_event(OrchardAppContext *context,
       last_ui_time = chVTGetSystemTime();
 
       if ( ((GEventGWinButton*)pe)->gwin == p->ghExitButton) { 
-        chprintf(stream, "FIGHT: e switch app\r\n");
+        chprintf(stream, "FIGHT: exitapp\r\n");
         orchardAppRun(orchardAppByName("Badge"));
         return;
       }

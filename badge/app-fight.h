@@ -54,10 +54,6 @@
 #define OP_ACK              0xf0   /* Network: I got your message with sequence # acknum */
 #define OP_RST              0xff   /* Network: I don't understand this message. Client should reset */
 
-/* rewards for winning or losing */
-#define XPWINFUNC  (80 + ((config->level-1) * 16))
-#define XPLOSSFUNC (10 + ((config->level-1) * 16))
-
 typedef struct _FightHandles {
   GListener glFight;
   GHandle ghExitButton;
@@ -182,6 +178,8 @@ static void state_levelup_exit(void);
 
 static void radio_event_do(KW01_PKT * pkt);
 static void draw_idle_players(void);
+
+static uint16_t calc_xp_gain(uint8_t);
 
 /* the function state table, a list of pointers to functions to run the game */
 state_funcs fight_funcs[] = { { // none
