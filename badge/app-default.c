@@ -85,8 +85,8 @@ static void redraw_badge(void) {
   fontLG = gdispOpenFont (FONT_LG);
   fontSM = gdispOpenFont (FONT_FIXED);
 
-  uint16_t ypos = 0; // cursor, so if we move or add things we don't have to rethink this
-  uint16_t lmargin = 141; // cursor, so if we move or add things we don't have to rethink this
+  uint16_t ypos = 0; 
+  uint16_t lmargin = 141;
   gdispDrawStringBox (0,
 		      ypos,
 		      gdispGetWidth(),

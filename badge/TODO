@@ -4,8 +4,8 @@
 1b. ... and make up down left right enter send events. 
 
 2. Game protocol and Game - IN PROGRESS
-2b. Game: Restrict players if xp or level too high
-2c. Game: Provide means to earn XP if no other players around 
+2b. Game: Restrict players if xp or level too high DONE
+2c. Game: Provide means to earn XP if no other players around DONE
 
 2f.  Tie screen?
 
@@ -26,7 +26,7 @@
      chat msg ....
           Terminal shout
 
-     setup/config from terminal ( sound on/off at a minimum )
+     setup/config from terminal ( sound on/off at a minimum ) DONE
      DND: do not disturb -- disable chat, sounds, etc.
      Disable fight entirely
    

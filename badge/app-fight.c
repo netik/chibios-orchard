@@ -1585,6 +1585,74 @@ static void fight_event(OrchardAppContext *context,
 
   }
 
+  if (event->type == keyEvent) {
+    switch(current_fight_state) { 
+    case ENEMY_SELECT: 
+      if ( (event->key.code == keyRight) &&
+           (event->key.flags == keyPress) )  {
+        if (nextEnemy()) {
+          screen_select_draw(FALSE);
+        }
+        return;
+      }
+      if ( (event->key.code == keyLeft) &&
+           (event->key.flags == keyPress) )  {
+        if (prevEnemy()) {
+          screen_select_draw(FALSE);
+        }
+        return;
+      }
+      if ( (event->key.code == keySelect) &&
+           (event->key.flags == keyPress) )  {
+        // we are attacking.
+        // TODO: this code duplicates the button based start code. DRY IT UP
+        dacPlay("fight/select.raw");
+        started_it = 1;
+        memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(user));
+        config->in_combat = true;
+        config->lastcombat = chVTGetSystemTime();
+        configSave(config);
+
+        // We're going to preemptively call this before changing state
+        // so the screen doesn't go black while we wait for an ACK.
+        next_fight_state = APPROVAL_WAIT;
+        screen_alert_draw(true, "Connecting...");
+        sendGamePacket(OP_STARTBATTLE);
+        return;
+      }
+    case MOVE_SELECT:
+      // TODO: cleanup -This code duplicates code from the button
+      // handler, but just a couple lines per button.
+      if ((ourattack & ATTACK_MASK) == 0) {
+        if ( (event->key.code == keyDown) &&
+             (event->key.flags == keyPress) )  {
+          ourattack &= ~ATTACK_MASK;
+          ourattack |= ATTACK_LOW;
+          sendAttack();
+        }
+        if ( (event->key.code == keyRight) &&
+             (event->key.flags == keyPress) )  {
+          ourattack &= ~ATTACK_MASK;
+          ourattack |= ATTACK_MID;
+          sendAttack();
+        }
+        if ( (event->key.code == keyUp) &&
+           (event->key.flags == keyPress) )  {
+          ourattack &= ~ATTACK_MASK;
+          ourattack |= ATTACK_HI;
+          sendAttack();
+        }
+      } else {
+        // can't move.
+        chprintf(stream, "rejecting key event -- already went\r\n");
+        playNope();
+      }
+      break;
+    default:
+      break;
+    }
+  }
+  
   // handle UGFX events.
   if (event->type == ugfxEvent) {
     pe = event->ugfx.pEvent;
