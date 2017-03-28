@@ -1622,6 +1622,7 @@ static void fight_event(OrchardAppContext *context,
         sendGamePacket(OP_STARTBATTLE);
         return;
       }
+      break;
     case MOVE_SELECT:
       // TODO: cleanup -This code duplicates code from the button
       // handler, but just a couple lines per button.
