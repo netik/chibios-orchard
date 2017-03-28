@@ -139,6 +139,7 @@ CSRC = main.c \
        strtoul.c \
        strstr.c \
        strcmp.c \
+       dec2romanstr.c \
        datetime.c \
        strcasecmp.c \
        userconfig.c \

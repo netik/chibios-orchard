@@ -15,6 +15,7 @@
 
 #include "userconfig.h"
 #include "datetime.h"
+#include "dec2romanstr.h"
 
 /* we will heal the player at N hp per this interval or 2X HP if
    UL_PLUSDEF has been activated */
@@ -95,7 +96,7 @@ static void redraw_badge(void) {
 
   char tmp[20];
   char tmp2[40];
-  chsnprintf(tmp, sizeof(tmp), "LEVEL %d", config->level);
+  chsnprintf(tmp, sizeof(tmp), "LEVEL %s", dec2romanstr(config->level));
   
   /* Level */
   ypos = ypos + gdispGetFontMetric(fontLG, fontHeight);

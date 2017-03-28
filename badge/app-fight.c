@@ -14,12 +14,13 @@
 #include "ides_gfx.h"
 #include "fontlist.h"
 #include "sound.h"
+#include "dac_lld.h"
 
 #include "userconfig.h"
 #include "unlocks.h"
 #include "app-fight.h"
 
-#include "dac_lld.h"
+#include "dec2romanstr.h"
 
 /* Globals */
 static int32_t countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value. 
@@ -248,7 +249,7 @@ static void state_approval_demand_enter(void) {
 		      current_enemy.name,
 		      fontLG, Yellow, justifyLeft);
   ypos=ypos+50;
-  chsnprintf(tmp, sizeof(tmp), "LEVEL %d", current_enemy.level);
+  chsnprintf(tmp, sizeof(tmp), "LEVEL %s", dec2romanstr(current_enemy.level));
 
   gdispDrawStringBox (xpos,
 		      ypos,
@@ -490,7 +491,7 @@ static void screen_select_draw(int8_t initial) {
 
   // level
   ypos = ypos + 25;
-  chsnprintf(tmp, sizeof(tmp), "LEVEL %d", enemies[current_enemy_idx]->level);
+  chsnprintf(tmp, sizeof(tmp), "LEVEL %s", dec2romanstr(enemies[current_enemy_idx]->level));
   gdispDrawStringBox (xpos,
 		      ypos,
 		      gdispGetWidth() - xpos,
@@ -1230,7 +1231,7 @@ static void state_levelup_enter(void) {
   userconfig *config = getConfig();
   char tmp[34];
 
-  chsnprintf(tmp, sizeof(tmp), "LEVEL %d", config->level+1);
+  chsnprintf(tmp, sizeof(tmp), "LEVEL %s", dec2romanstr(config->level+1));
   gdispClear(Black);
 
   putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
