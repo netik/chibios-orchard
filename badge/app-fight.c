@@ -1586,6 +1586,8 @@ static void fight_event(OrchardAppContext *context,
   }
 
   if (event->type == keyEvent) {
+    last_ui_time = chVTGetSystemTime();
+    
     switch(current_fight_state) { 
     case ENEMY_SELECT: 
       if ( (event->key.code == keyRight) &&
