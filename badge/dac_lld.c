@@ -231,7 +231,6 @@ THD_FUNCTION(dacThread, arg)
 		dacmax = 0;
 		dacbuf = NULL;
 		if (play && dacloop == DAC_PLAY_ONCE) {
-			fname = NULL;
 			play = 0;
 		}
 		chHeapFree (dacBuf);
