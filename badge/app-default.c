@@ -69,18 +69,19 @@ static void redraw_badge(void) {
   if (config->hp < (maxhp(config->unlocks,config->level) * .25)) {
     putImageFile(getAvatarImage(config->p_type, "deth", 2, false),
                  POS_PLAYER1_X, POS_PLAYER1_Y);
-  } else 
+  } else { 
     if (config->hp < (maxhp(config->unlocks,config->level) * .50)) {
       // show the whoop'd ass graphic if you're less than 15% 
       putImageFile(getAvatarImage(config->p_type, "deth", 1, false),
                    POS_PLAYER1_X, POS_PLAYER1_Y);
-    }
-    else
+    } else {
       putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
                    POS_PLAYER1_X, POS_PLAYER1_Y);
-  
-    putImageFile(IMG_GROUND_BTNS, 0, POS_FLOOR_Y);
+    }
+  }
 
+  putImageFile(IMG_GROUND_BTNS, 0, POS_FLOOR_Y);
+      
   fontXS = gdispOpenFont (FONT_XS);
   fontLG = gdispOpenFont (FONT_LG);
   fontSM = gdispOpenFont (FONT_FIXED);
