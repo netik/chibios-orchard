@@ -366,9 +366,12 @@ static void state_move_select_enter() {
   // that we're just going to get file-not-found. oh well, add more
   // later!
   roundno++;
-  chsnprintf(tmp, sizeof(tmp), "fight/round%d.raw", roundno);
-  dacPlay(tmp);
-  chThdSleepMilliseconds(1000);
+  if (roundno < 5) { 
+    chsnprintf(tmp, sizeof(tmp), "fight/round%d.raw", roundno);
+    dacPlay(tmp);
+    chThdSleepMilliseconds(1000);
+  }
+
   dacPlay("fight/fight.raw");
   chThdSleepMilliseconds(1000);
 

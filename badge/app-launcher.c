@@ -266,8 +266,10 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
     
     if (list->selected >= list->total)
       list->selected = list->total-1;
-    
-    redraw_list(list);
+
+    if (event->key.flags == keyPress) {
+      redraw_list(list);
+    }
   }
   
   if (event->type == ugfxEvent) {
