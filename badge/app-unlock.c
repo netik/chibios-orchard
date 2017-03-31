@@ -95,6 +95,8 @@ static char *unlock_desc[] = { "+10% DEF",
 
 static uint32_t last_ui_time = 0;
 static uint8_t code[5];
+static int8_t focused = 0;
+
 static void updatecode(OrchardAppContext *, uint8_t, int8_t);
 static void unlock_result(UnlockHandles *, char *);
 
@@ -209,6 +211,10 @@ static void init_unlock_ui(UnlockHandles *p) {
   p->ghUnlock = gwinButtonCreate(0, &wi);
   gwinSetFont(p->ghUnlock, p->font_manteka_20);
   gwinRedraw(p->ghUnlock);
+
+  // reset focus
+  focused = 0;
+  gwinSetFocus(p->ghNum1);
 }
 
 
@@ -305,14 +311,56 @@ static void updatecode(OrchardAppContext *context, uint8_t position, int8_t dire
   gwinSetText(wi, tmp, TRUE);
 }
 
+static uint8_t validate_code(OrchardAppContext *context, userconfig *config) { 
+  /* check for valid code */
+  uint8_t i;
+  char tmp[40];
+  UnlockHandles *p = context->priv;
+  
+  for (i=0; i < MAX_ULCODES; i++) {
+    
+    if ((unlock_codes[i][0] == code[0]) &&
+        (unlock_codes[i][1] == ((code[1] << 4) + code[2])) &&
+        (unlock_codes[i][2] == ((code[3] << 4) + code[4]))) {
+      // set bit
+      config->unlocks |= (1 << i);
+      
+      // if it's the luck upgrade, we set luck directly.
+      if (i == 3) {
+        config->luck = 40;
+      }
+      
+      // save to config
+      configSave(config);
+      
+      strcpy(tmp, unlock_desc[i]);
+      strcat(tmp, " unlocked!");
+      unlock_result(p, tmp);
+      
+      // TODO: Set all LEDs white, blink.
+      // if it's the bender upgrade, we become bender.
+      if (i == 9) {
+        config->p_type = p_bender;
+        dacPlay("biteass.raw");
+      } else {
+        // default sound
+        dacPlay("fight/leveiup.raw");
+      }
+      
+      chThdSleepMilliseconds(ALERT_DELAY);
+      orchardAppRun(orchardAppByName("Badge"));
+      return true;
+    }
+  }
+  return false;
+}
+
 
 static void unlock_event(OrchardAppContext *context,
                        const OrchardAppEvent *event)
 {
   GEvent * pe;
   UnlockHandles * p;
-  uint8_t i;
-  char tmp[40];
   userconfig *config = getConfig();
   
   p = context->priv;
@@ -336,52 +384,18 @@ static void unlock_event(OrchardAppContext *context,
       }
       
       if ( ((GEventGWinButton*)pe)->gwin == p->ghUnlock) {
-        /* check for valid code */
-        for (i=0; i < MAX_ULCODES; i++) {
-
-          if ((unlock_codes[i][0] == code[0]) &&
-              (unlock_codes[i][1] == ((code[1] << 4) + code[2])) &&
-              (unlock_codes[i][2] == ((code[3] << 4) + code[4]))) {
-            // set bit
-            config->unlocks |= (1 << i);
-
-            // if it's the luck upgrade, we set luck directly.
-            if (i == 3) {
-              config->luck = 40;
-            }
-            
-            
-            // save to config
-            configSave(config);
-
-            strcpy(tmp, unlock_desc[i]);
-            strcat(tmp, " unlocked!");
-            unlock_result(p, tmp);
-
-            // TODO: Set all LEDs white, blink.
-            // if it's the bender upgrade, we become bender.
-            if (i == 9) {
-              config->p_type = p_bender;
-              dacPlay("biteass.raw");
-            } else {
-              // default sound
-              dacPlay("fight/leveiup.raw");
-            }
-              
-            chThdSleepMilliseconds(ALERT_DELAY);
-            orchardAppRun(orchardAppByName("Badge"));
-            return;
-          }
+        if (validate_code(context, config)) {
+          return;
+        } else {
+          unlock_result(p, "unlock failed.");
+          dacPlay("fight/pathtic.raw");
+          
+          // TODO: Playhardfail, set all lights red. 
+          chThdSleepMilliseconds(ALERT_DELAY);
+          orchardAppRun(orchardAppByName("Badge"));
+          orchardAppExit();
+          return;
         }
-
-        unlock_result(p, "unlock failed.");
-        dacPlay("fight/pathtic.raw");
-            
-        // TODO: Playhardfail, set all lights red. 
-        chThdSleepMilliseconds(ALERT_DELAY);
-        orchardAppRun(orchardAppByName("Badge"));
-        orchardAppExit();
-        return;
       }
       
       /* tapping the number advances the value */
@@ -399,9 +413,68 @@ static void unlock_event(OrchardAppContext *context,
 
       if ( ((GEventGWinButton*)pe)->gwin == p->ghNum5)
         updatecode(context,4,1);
+    }
+  
+  }
 
-      /* TODO: support buttons */
+  // keyboard support
+  if (event->type == keyEvent) { 
+    last_ui_time = chVTGetSystemTime();
+    if ( (event->key.code == keyUp) &&
+         (event->key.flags == keyPress) ) {
+      updatecode(context,focused,1);
+    }
+    if ( (event->key.code == keyDown) &&
+         (event->key.flags == keyPress) ) {
+      updatecode(context,focused,-1);
+    }
+    if ( (event->key.code == keyLeft) &&
+         (event->key.flags == keyPress) ) {
+      focused--;
+      if (focused < 0) focused = 4;
+    }
+    if ( (event->key.code == keyRight) &&
+         (event->key.flags == keyPress) ) {
+      focused++;
+      if (focused > 4) focused = 0;
+    }
 
+    // set focus 
+    gwinSetFocus(NULL);
+    switch(focused) {
+    case 0:
+      gwinSetFocus(p->ghNum1);
+      break;
+    case 1:
+      gwinSetFocus(p->ghNum2);
+      break;
+    case 2:
+      gwinSetFocus(p->ghNum3);
+      break;
+    case 3:
+      gwinSetFocus(p->ghNum4);
+      break;
+    case 4:
+      gwinSetFocus(p->ghNum5);
+      break;
+    default:
+      break;
+    }
+    
+    if ( (event->key.code == keySelect) &&
+         (event->key.flags == keyPress) ) {
+      if (validate_code(context, config)) {
+        return;
+      } else {
+        unlock_result(p, "unlock failed.");
+        dacPlay("fight/pathtic.raw");
+        
+        // TODO: Playhardfail, set all lights red. 
+        chThdSleepMilliseconds(ALERT_DELAY);
+        orchardAppRun(orchardAppByName("Badge"));
+        orchardAppExit();
+        return;
+      }
     }
   }
 }

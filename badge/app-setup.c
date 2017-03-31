@@ -13,6 +13,7 @@
 #include "userconfig.h"
 #include "gfx.h"
 
+#include "ides_gfx.h"
 
 // GHandles
 typedef struct _SetupHandles {
@@ -22,7 +23,6 @@ typedef struct _SetupHandles {
   GHandle ghButtonPatDn;
   GHandle ghButtonPatUp;
   GHandle ghLabel4;
-  GHandle ghLabelDim;
   GHandle ghButtonDimUp;
   GHandle ghButtonDimDn;
   GHandle ghButtonOK;
@@ -122,16 +122,8 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.text = "LED Brightness";
   p->ghLabel4 = gwinLabelCreate(0, &wi);
 
-  // Create label widget: ghLabelDim
-  gwinWidgetClearInit(&wi);
-  wi.g.show = TRUE;
-  wi.g.x = 10;
-  wi.g.y = 90;
-  wi.g.width = 80;
-  wi.g.height = 20;
-  chsnprintf(tmp, sizeof(tmp), "%d", ( 8 - config->led_shift ));
-  wi.text = tmp;
-  p->ghLabelDim = gwinLabelCreate(0, &wi);
+  // dimmer bar 
+  drawProgressBar(10,100,180,10, 8, (8-config->led_shift), false, false);
 
   // create button widget: ghButtonDimUp
   gwinWidgetClearInit(&wi);
@@ -207,7 +199,6 @@ static void setup_event(OrchardAppContext *context,
 	const OrchardAppEvent *event) {
   GEvent * pe;
   userconfig *config = getConfig();
-  char tmp[3];
   SetupHandles * p;
 
   p = context->priv;
@@ -269,8 +260,7 @@ static void setup_event(OrchardAppContext *context,
       }
       
       // update ui
-      chsnprintf(tmp, sizeof(tmp), "%d",(  8 - config->led_shift ) );
-      gwinSetText(p->ghLabelDim, tmp, TRUE);
+      drawProgressBar(10,100,180,10, 8, (8-config->led_shift), false, false);
       gwinSetText(p->ghLabelPattern, fxlist[config->led_pattern].name, TRUE);
 
       break;
@@ -290,7 +280,6 @@ static void setup_exit(OrchardAppContext *context) {
   gwinDestroy(p->ghButtonPatDn);
   gwinDestroy(p->ghButtonPatUp);
   gwinDestroy(p->ghLabel4);
-  gwinDestroy(p->ghLabelDim);
   gwinDestroy(p->ghButtonDimUp);
   gwinDestroy(p->ghButtonDimDn);
   gwinDestroy(p->ghButtonOK);
