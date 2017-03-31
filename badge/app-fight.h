@@ -16,7 +16,7 @@
 #define DEFAULT_WAIT_TIME MS2ST(10000) // how long we wait for the user to respond. MUST BE IN SYSTEM TICKS. 
 #define MAX_ACKWAIT MS2ST(1000)         // if no ACK in 500MS, resend the last packet. MUST BE IN SYSTEM TICKS. 
 #define MAX_HOLDOFF 100                // we introduce a small delay if we are resending (contention protocol). MUST BE IN mS
-#define MAX_RETRIES 4                  // if we do that 3 times, abort. 
+#define MAX_RETRIES 4                  // if we do that 3 times, abort.
 #define MOVE_WAIT_TIME MS2ST(60000)    // Max game time. MUST BE IN SYSTEM TICKS. If you do nothing, the game ends.
 #define ALERT_DELAY 1500               // how long alerts (screen_alert) stay on the screen.
 
@@ -26,6 +26,9 @@
 #define PROGRESS_BAR_W 200
 #define PROGRESS_BAR_H 10
 
+// the maximum level you can reach
+// if you change this you have to update userconfig.c
+#define LEVEL_CAP      10
 
 /* MSB of attackbitmap represents the attack */
 #define ATTACK_MASK     0x38

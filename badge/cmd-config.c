@@ -269,7 +269,7 @@ static void cmd_config_led_all(BaseSequentialStream *chp, int argc, char *argv[]
   int16_t r,g,b;
   userconfig *config = getConfig();
 
-  if (argc != 4) {
+  if (argc != 5) {
     chprintf(chp, "Not enough arguments.\r\n");
     return;
   }

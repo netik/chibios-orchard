@@ -5,7 +5,6 @@
 #include "math.h"
 
 #define LEDS_COUNT 12
-#define LEDS_TOP_INDEX 8
 
 #define sign(x) (( x > 0 ) - ( x < 0 ))
 
@@ -57,6 +56,6 @@ struct FXENTRY {
   void (*function)(void);
 };
 
-#define LED_PATTERN_COUNT 11 // starting from 1, not 0! 
+#define LED_PATTERN_COUNT 15 // starting from 1, not 0! 
 
 #endif /* __LED_H__ */

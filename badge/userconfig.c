@@ -65,31 +65,6 @@ void configSave(userconfig *newConfig) {
   osalMutexUnlock(&config_mutex);
 }
 
-#ifdef RANDOM_DICE
-static int four_d_six(void) {
-  /* this seems stupid, for a computer. */
-  int a[5];
-  int tot = 0;
-  int lowest = 4;
-  a[4] = 6;
-  
-  for (int i=0; i<4; i++)  {
-    a[i] = randomint(6);
-    if (a[i] < a[lowest]) { lowest = i; };
-  }
-  
-  for (int i=0; i<4; i++)  {
-    if (i != lowest) { tot = tot + a[i]; } 
-  }
- 
-  return tot;
-}
-
-int randomint(int max) {
-  return rand() % max;
-}
-#endif
-
 static void init_config(userconfig *config) {
   /* please keep these in the same order as userconfig.h
    * so it's easier to maintain.  */

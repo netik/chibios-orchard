@@ -898,7 +898,7 @@ static void state_show_results_enter() {
       chsnprintf(tmp, sizeof(tmp), "YOU WERE DEFEATED (+%dXP)", calc_xp_gain(FALSE));
       screen_alert_draw(false, tmp);
 
-      // are you lame? I think you are. 
+      // Insult the user if they lose in the 1st round.
       if (roundno == 1) {
         chThdSleepMilliseconds(1500);
         switch(rand() % 3 + 1) {
@@ -925,7 +925,7 @@ static void state_show_results_enter() {
 
   if (config->hp == 0 || current_enemy.hp == 0) {
     // check for level UP
-    if ((config->level != calc_level(config->xp)) && (config->level != 10)) {
+    if ((config->level != calc_level(config->xp)) && (config->level != LEVEL_CAP)) {
       // actual level up will be performed in-state
       changeState(LEVELUP);
       return;

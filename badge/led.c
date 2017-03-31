@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "ch.h"
 #include "hal.h"
 #include "pwm.h"
@@ -5,7 +7,6 @@
 #include "gfx.h"
 
 #include "chprintf.h"
-#include "stdlib.h"
 #include "orchard-ui.h"
 
 #include "userconfig.h"
@@ -13,9 +14,12 @@
 #include <string.h>
 #include <math.h>
 #include <shell.h>
+#include "fastled.h"
 
 /* these keep track of the animation position and are used selectively
    by the algorithms */
+#define MAX_INT_VALUE 65535
+
 static int16_t fx_index = 0;           // fx index 
 static int16_t fx_position = 0;        // fx position counter
 static float   led_progress = 0;       // last progress setting
@@ -32,7 +36,6 @@ static struct led_config {
 } led_config;
 
 /* animation prototypes */
-static void anim_color_bounce_fade(void);
 static void anim_dot(void);
 static void anim_larsen(void);
 static void anim_police_all(void);
@@ -43,41 +46,79 @@ static void anim_solid_color(void);
 static void anim_triangle(void);
 static void anim_one_hue_pulse(void);
 static void anim_all_same(void);
+static void anim_fire2012(void);
+static void anim_dualbounce(void);
+static void anim_violets(void);
+static void anim_wave(void);
+static void anim_violetwave(void); // sorry, my favorite color is purple sooo... 
 
-// stock colors
-const RgbColor roygbiv[7] = { {255, 0, 0},
-			      {255, 80, 0},
-			      {255, 255, 0},
-			      {0, 255, 0},
-			      {65, 65, 190},
-			      {0, 0, 100},
-			      {0, 0, 120} };
 static uint8_t ledExitRequest = 0;
 static uint8_t ledsOff = 0;
 
 extern void ledUpdate(uint8_t *fb, uint32_t len);
 static void ledSetRGB(void *ptr, int x, uint8_t r, uint8_t g, uint8_t b);
 
-
 /* Update FX_COUNT in led.h if you make changes here */
 const struct FXENTRY fxlist[] = {
-  {"ColorBounce", anim_color_bounce_fade},
-  {"Dot (White)", anim_dot},
-  {"Larsen Scanner", anim_larsen},
-  {"Police (Solid)", anim_police_all},
-  {"Police (Dots)", anim_police_dots},
-  {"Rainbow Fade", anim_rainbow_fade},
-  {"Rainbow Loop", anim_rainbow_loop},
-  {"Green Spiral", anim_solid_color},
-  {"Yellow Triangle", anim_triangle},
-  {"Random Hue Pulse", anim_one_hue_pulse},
-  {"All Solid", anim_all_same}
+  { "Dot (White)", anim_dot},
+  { "Larsen Scanner", anim_larsen},
+  { "Police (Solid)", anim_police_all},
+  { "Police (Dots)", anim_police_dots},
+  { "Rainbow Fade", anim_rainbow_fade},
+  { "Rainbow Loop", anim_rainbow_loop},
+  { "Green Spiral", anim_solid_color},
+  { "Yellow Ramp", anim_triangle},
+  { "Violets", anim_violets},
+  { "Random Hue Pulse", anim_one_hue_pulse},
+  { "Fire", anim_fire2012 },
+  { "Double Bounce", anim_dualbounce },
+  { "Wave", anim_wave },
+  { "Violet Wave", anim_violetwave },
+  { "All Solid", anim_all_same}
 };
 
+// stock colors
+const RgbColor roygbiv[7] = { {0xff, 0, 0},
+                              {0xff, 0xa5, 0},
+                              {0xff, 0xff, 0},
+                              {0, 0xff, 0},
+                              {0, 0, 0xff},
+                              {0x4B, 0x00, 0x82},
+                              {0xee, 0x82, 0xee}};
 void ledClear(void);
 
-/* Maclaurin series of sin(x), weak approximation */
-#define msin(x) (x - ((x^3)/factorial(3)) + ((x^5)/factorial(5)) - ((x^7)/factorial(7)) + ((x^9)/factorial(9)))
+/// Fast 16-bit approximation of sin(x). This approximation never varies more than
+/// 0.69% from the floating point value you'd get by doing
+///
+///     float s = sin(x) * 32767.0;
+///
+/// @param theta input angle from 0-65535
+/// @returns sin of theta, value between -32767 to 32767.
+static int16_t msin( uint16_t theta )
+{
+      static const uint16_t base[] =
+        { 0, 6393, 12539, 18204, 23170, 27245, 30273, 32137 };
+          static const uint8_t slope[] =
+            { 49, 48, 44, 38, 31, 23, 14, 4 };
+
+          uint16_t offset = (theta & 0x3FFF) >> 3; // 0..2047
+          if( theta & 0x4000 ) offset = 2047 - offset;
+
+          uint8_t section = offset / 256; // 0..7
+          uint16_t b   = base[section];
+          uint8_t  m   = slope[section];
+
+          uint8_t secoffset8 = (uint8_t)(offset) / 2;
+
+          uint16_t mx = m * secoffset8;
+          int16_t  y  = mx + b;
+
+          if( theta & 0x8000 ) y = -y;
+
+          return y;
+}
+
+
 
 uint16_t factorial(uint16_t n)
 {
@@ -89,6 +130,41 @@ uint16_t factorial(uint16_t n)
 
   return result;
 }
+
+// These are a variety of functions shamelessly ported from fastled.
+static inline uint8_t qadd8 ( uint8_t i, uint8_t j) { 
+  unsigned int t = i + j;
+  // 8 bit "saturating" addition
+  if( t > 255) t = 255;
+  return t;
+}
+
+static inline uint8_t qsub8(uint8_t i, uint8_t j) {
+  int t = i - j;
+  // 8 bit floor-restricted subtraction
+  if( t < 0) t = 0;
+  return t;
+}
+
+// scale one value into a smaller range
+static inline uint8_t scale8( uint8_t i, fract8 scale)
+{
+  return (((uint16_t)i) * (1+(uint16_t)(scale))) >> 8;
+}
+
+// scale one value into a smaller range
+static inline uint8_t scale8_video( uint8_t i, fract8 scale)
+{
+  uint8_t j = (((int)i * (int)scale) >> 8) + ((i&&scale)?1:0);
+  return j;
+}
+// map function from arduino
+
+long map(long x, long in_min, long in_max, long out_min, long out_max)
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+// ---- end fastled stuff ----
 
 void ledSetBrightness(uint8_t bval) {
   led_brightshift = bval;
@@ -102,7 +178,6 @@ void ledSetFunction(void *func) {
 void ledSetProgress(float p) {
   led_progress = p;
 }
-
 
 void handle_progress(void) {
   uint8_t i,c;
@@ -155,37 +230,20 @@ void leds_test(void) {
 
 /* utility functions */
 // FIND INDEX OF ANTIPODAL (OPPOSITE) LED
+#define LEDS_TOP_INDEX 6
 static int antipodal_index(int i) {
   int iN = i + LEDS_TOP_INDEX;
   if (i >= LEDS_TOP_INDEX) {iN = ( i + LEDS_TOP_INDEX ) % led_config.max_pixels; }
   return iN;
+
 }
 
-// FIND ADJACENT INDEX CLOCKWISE
-static int adjacent_cw(int i) {
-  int r;
-  if (i < led_config.max_pixels - 1) {r = i + 1;}
-  else {r = 0;}
-  return r;
-}
-
-
-// FIND ADJACENT INDEX COUNTER-CLOCKWISE
-static int adjacent_ccw(int i) {
-  int r;
-  if (i > 0) {r = i - 1;}
-  else {r = led_config.max_pixels - 1;}
-  return r;
-}
-
-
-static void HSVtoRGB(int hue, int sat, int val, int colors[3]) {
+static void HSVtoRGB(int hue, int sat, int val, uint8_t colors[3]) {
   // hue: 0-359, sat: 0-255, val (lightness): 0-255
   int r = 0;
   int b = 0;
   int g = 0;
   int base = 0;
-  
 
   if (sat == 0) { // Achromatic color (gray).
     colors[0]=val;
@@ -270,13 +328,116 @@ void ledStart(uint32_t leds, uint8_t *o_fb)
 
 static void ledSetRGB(void *ptr, int x, uint8_t r, uint8_t g, uint8_t b) {
   uint8_t *buf = ((uint8_t *)ptr) + (3 * x);
+
+  // note color reordering, ws2812b's are g,r,b not r,g,b. 
   buf[0] = g >> led_brightshift;
   buf[1] = r >> led_brightshift;
   buf[2] = b >> led_brightshift;
 }
 
+static void ledAddHSV(void *ptr, int x, int h, uint8_t s, uint8_t v) {
+  uint8_t *buf = ((uint8_t *)ptr) + (3 * x);
+
+  uint8_t color[3];
+
+  HSVtoRGB(h,s,v,color);
+  // note color reordering, ws2812b's are g,r,b not r,g,b. 
+  buf[0] = qadd8(buf[0], color[1]) >> led_brightshift;
+  buf[1] = qadd8(buf[1], color[0]) >> led_brightshift;
+  buf[2] = qadd8(buf[2], color[2]) >> led_brightshift;
+}
+
+
+//Anti-aliasing code care of Mark Kriegsman Google+: https://plus.google.com/112916219338292742137/posts/2VYNQgD38Pw
+void drawFractionalBar(int pos16, int width, int hue, bool wrap)
+{
+  uint8_t i = pos16 / 16; // convert from pos to raw pixel number
+
+  uint8_t frac = pos16 & 0x0F; // extract the 'factional' part of the position
+  uint8_t firstpixelbrightness = 255 - (frac * 16);
+  uint8_t lastpixelbrightness = 255 - firstpixelbrightness;
+
+  uint8_t bright;
+  
+  for (int n = 0; n <= width; n++) {
+    if (n == 0) {
+      // first pixel in the bar
+      bright = firstpixelbrightness;
+    }
+    else if (n == width) {
+      // last pixel in the bar
+      bright = lastpixelbrightness;
+    }
+    else {
+      // middle pixels
+      bright = 255;
+    }
+
+    ledAddHSV(led_config.fb, i, hue, 255, bright);
+
+    i++;
+    if (i == LEDS_COUNT)
+      {
+        if (wrap == 1) {
+          i = 0; // wrap around
+        }
+        else{
+          return;
+        }
+      }
+  }
+}
+
+static void Bounce(uint16_t animationFrame, int hue)
+{
+  uint16_t pos16;
+  if (animationFrame < (MAX_INT_VALUE / 2))
+    {
+      pos16 = animationFrame * 2;
+    } else {
+    pos16 = MAX_INT_VALUE - ((animationFrame - (MAX_INT_VALUE/2))*2);
+  }
+
+  int position = map(pos16, 0, MAX_INT_VALUE, 0, ((LEDS_COUNT) * 16));
+  drawFractionalBar(position, 3, hue,0);
+}
+
+static void anim_dualbounce(void) {
+  // https://gist.github.com/hsiboy/f9ef711418b40e259b06
+
+  ledClear();
+  Bounce(fx_position, 0); 
+  Bounce(fx_position + (MAX_INT_VALUE/2), 15);
+  fx_position += 500; 
+}
+
+static void Wave(uint16_t animationFrame, int hue) {
+  // https://gist.github.com/hsiboy/f9ef711418b40e259b06
+  ledClear();
+
+  uint16_t value;
+
+  for(uint8_t i=0;i<LEDS_COUNT;i++)
+    {
+      value=(msin(animationFrame+((MAX_INT_VALUE/LEDS_COUNT)*i)) + (MAX_INT_VALUE/2))/256;
+      if (value > 0) { 
+        ledAddHSV(led_config.fb, i, hue, 255, value);
+      }
+    }
+}
+
+static void anim_wave(void) {
+  Wave(fx_position, 330);
+  Wave(fx_position + (MAX_INT_VALUE/2), 142);
+  fx_position += 1000; 
+}
+
+static void anim_violetwave(void) {
+  Wave(fx_position, 264);
+  fx_position += 2000; 
+}
+
 static void anim_triangle(void) {
-  // TODO: Make it breathe. 
   // pulsating triangle, ramp up
   int16_t N3 = led_config.max_pixels/4;
   fx_index++;
@@ -291,6 +452,36 @@ static void anim_triangle(void) {
 
   fx_position++;
   if (fx_position > N3) { fx_position = 0; }
+}
+
+static void anim_violets(void) {
+  uint8_t acolor[3];
+
+  // breathing violet colors with sparkle ponies
+  if (fx_direction) { 
+    fx_position++;
+  } else {
+    fx_position--;
+  }
+  
+  if (fx_position < 10)  {
+    fx_position = 10;
+    fx_direction = 1;
+  }
+
+  if (fx_position > 128) {
+    fx_position = 128; 
+    fx_direction = 0; 
+  }
+  
+  for(int i = 0; i < led_config.max_pixels; i++ ) {
+    HSVtoRGB(274, 200 ,fx_position, acolor);
+    ledSetRGB(led_config.fb, i, acolor[0], acolor[1], acolor[2]);
+  }
+
+  // sparkles 
+  if (fx_position % 5 == 0) 
+    ledSetRGB(led_config.fb, random8(0, led_config.max_pixels), 0xf0, 0xf0, 0xf0);
 }
 
 static void anim_one_hue_pulse(void) { //-PULSE BRIGHTNESS ON ALL LEDS TO ONE COLOR
@@ -309,7 +500,7 @@ static void anim_one_hue_pulse(void) { //-PULSE BRIGHTNESS ON ALL LEDS TO ONE CO
     if (fx_position <= 1) {fx_direction = 0;}
   }
   
-  int acolor[3];
+  uint8_t acolor[3];
   HSVtoRGB(fx_index, 255, fx_position, acolor);
 
   for(int i = 0 ; i < led_config.max_pixels; i++ ) {
@@ -321,7 +512,7 @@ static void anim_rainbow_fade(void) {
     //-FADE ALL LEDS THROUGH HSV RAINBOW
     fx_position++;
     if (fx_position >= 359) { fx_position = 0; }
-    int thisColor[3];
+    uint8_t thisColor[3];
 
     HSVtoRGB(fx_position, 255, 255, thisColor);
 
@@ -333,7 +524,7 @@ static void anim_rainbow_fade(void) {
 static void anim_rainbow_loop(void) { //-LOOP HSV RAINBOW
   fx_position++;
   fx_index = fx_index + 10;
-  int icolor[3];
+  uint8_t icolor[3];
 
   if (fx_position >= led_config.max_pixels) {fx_position = 0;}
   if (fx_index >= 359) {fx_index = 0;}
@@ -360,12 +551,11 @@ static void anim_police_dots(void) {
   int idexR = fx_position;
   int idexB = antipodal_index(idexR);
   for(int i = 0; i < led_config.max_pixels; i++ ) {
-    if (i == idexR) { ledSetRGB(led_config.fb, i, 255, 0, 0); }
-    else if (i == idexB) { ledSetRGB(led_config.fb, i, 0, 0, 255 ); }
+    if (i == idexR) { ledSetRGB(led_config.fb, i, 255, 255, 0); }
+    else if (i == idexB) { ledSetRGB(led_config.fb, i, 225, 0, 255 ); }
     else  { ledSetRGB(led_config.fb, i, 0, 0, 0 ); }
   }
 }
-
 
 
 static void anim_dot(void) { // single dim white dot, one direction
@@ -436,46 +626,107 @@ static void anim_solid_color(void) {
   if (fx_position > 360) fx_position = 0;
 }
 
-static void anim_color_bounce_fade(void) {
-    //-BOUNCE COLOR (SIMPLE MULTI-LED FADE)
-    // jna: a bit too close to the larsen scanner, maybe get rid of this?
-    if (fx_direction == 0) {
-      fx_position = fx_position + 1;
-      if (fx_position >= led_config.max_pixels) {
-	fx_direction = 1;
-	fx_position = fx_position - 1;
-      }
-    }
-    if (fx_direction == 1) {
-      fx_position = fx_position - 1;
-      if (fx_position < 0) {
-	fx_direction = 0;
-      }
-    }
-    int iL1 = adjacent_cw(fx_position);
-    int iL2 = adjacent_cw(iL1);
-    int iL3 = adjacent_cw(iL2);
-    int iR1 = adjacent_ccw(fx_position);
-    int iR2 = adjacent_ccw(iR1);
-    int iR3 = adjacent_ccw(iR2);
 
-    for(int i = 0; i < led_config.max_pixels; i++ ) {
-      if (i == fx_position) {ledSetRGB(led_config.fb, i, 255, 0, 0);}
-      else if (i == iL1) {ledSetRGB(led_config.fb, i, 100, 0, 0);}
-      else if (i == iL2) {ledSetRGB(led_config.fb, i, 50, 0, 0);}
-      else if (i == iL3) {ledSetRGB(led_config.fb, i, 10, 0, 0);}
-      else if (i == iR1) {ledSetRGB(led_config.fb, i, 100, 0, 0);}
-      else if (i == iR2) {ledSetRGB(led_config.fb, i, 50, 0, 0);}
-      else if (i == iR3) {ledSetRGB(led_config.fb, i, 10, 0, 0);}
-      else { ledSetRGB(led_config.fb, i, 0, 0, 0); }
+// Fire2012 by Mark Kriegsman, July 2012
+// as part of "Five Elements" shown here: http://youtu.be/knWiGsmgycY
+// COOLING: How much does the air cool as it rises?
+// Less cooling = taller flames.  More cooling = shorter flames.
+// Default 55, suggested range 20-100
+#define ANIM_FIRE_COOLING  30
+
+// SPARKING: What chance (out of 255) is there that a new spark will be lit?
+// Higher chance = more roaring fire.  Lower chance = more flickery fire.
+// Default 120, suggested range 50-200.
+#define ANIM_FIRE_SPARKING 120
+
+// CRGB HeatColor( uint8_t temperature)
+// [to be included in the forthcoming FastLED v2.1]
+//
+// Approximates a 'black body radiation' spectrum for
+// a given 'heat' level.  This is useful for animations of 'fire'.
+// Heat is specified as an arbitrary scale from 0 (cool) to 255 (hot).
+// This is NOT a chromatically correct 'black body radiation'
+// spectrum, but it's surprisingly close, and it's extremely fast and small.
+//
+// On AVR/Arduino, this typically takes around 70 bytes of program memory,
+// versus 768 bytes for a full 256-entry RGB lookup table.
+
+CRGB HeatColor( uint8_t temperature)
+{
+  CRGB heatcolor;
+
+  // Scale 'heat' down from 0-255 to 0-191,
+  // which can then be easily divided into three
+  // equal 'thirds' of 64 units each.
+  uint8_t t192 = scale8_video( temperature, 192);
+
+  // calculate a value that ramps up from
+  // zero to 255 in each 'third' of the scale.
+  uint8_t heatramp = t192 & 0x3F; // 0..63
+  heatramp <<= 2; // scale up to 0..252
+
+  // now figure out which third of the spectrum we're in:
+  if( t192 & 0x80) {
+    // we're in the hottest third
+    heatcolor.r = 255; // full red
+    heatcolor.g = 255; // full green
+    heatcolor.b = heatramp; // ramp up blue
+
+  } else if( t192 & 0x40 ) {
+    // we're in the middle third
+    heatcolor.r = 255; // full red
+    heatcolor.g = heatramp; // ramp up green
+    heatcolor.b = 0; // no blue
+
+  } else {
+    // we're in the coolest third
+    heatcolor.r = heatramp; // ramp up red
+    heatcolor.g = 0; // no green
+    heatcolor.b = 0; // no blue
+  }
+
+  return heatcolor;
+}
+
+static void anim_fire2012(void) 
+{
+  // Array of temperature readings at each simulation cell
+  static uint8_t heat[LEDS_COUNT];
+  int i,k,y,j;
+
+  // Step 1.  Cool down every cell a little
+  for( i = 0; i < LEDS_COUNT; i++) {
+    heat[i] = qsub8( heat[i],  random8(0, ((ANIM_FIRE_COOLING * 10) / LEDS_COUNT) + 2));
+  }
+
+  // Step 2.  Heat from each cell drifts 'up' and diffuses a little
+  for( k = LEDS_COUNT; k > 2; k--) {
+    heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2] ) / 3;
+  }
+
+  // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
+  if( random8(0,255) < ANIM_FIRE_SPARKING ) {
+    y = random8(0,7);
+    heat[y] = qadd8( heat[y], random8(160,255) );
+  }
+
+  // Step 4.  Map from heat cells to LED colors
+  for( j = 0; j < LEDS_COUNT; j++) {
+    CRGB h = HeatColor( heat[j]);
+    ledSetRGB(led_config.fb, j, h.r, h.g, h.b);
   }
 }
 
 static void anim_all_same(void) {
   userconfig *config = getConfig();
 
+  uint8_t colors[3];
+
+  // temp hack to play with colors
+  HSVtoRGB(config->led_r, config->led_g, config->led_b, colors);
   for(int i = 0 ; i < led_config.max_pixels; i++ ) {
-    ledSetRGB(led_config.fb, i, config->led_r, config->led_g, config->led_b);
+    //    ledSetRGB(led_config.fb, i, config->led_r, config->led_g, config->led_b);
+    ledSetRGB(led_config.fb, i, colors[0], colors[1], colors[2]);
   }
 }
 
