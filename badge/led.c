@@ -62,8 +62,8 @@ static void ledSetRGB(void *ptr, int x, uint8_t r, uint8_t g, uint8_t b);
 const struct FXENTRY fxlist[] = {
   { "Dot (White)", anim_dot},
   { "Larsen Scanner", anim_larsen},
-  { "Police (Solid)", anim_police_all},
-  { "Police (Dots)", anim_police_dots},
+  { "Spot the Fed", anim_police_all},
+  { "Mardi Gras", anim_police_dots},
   { "Rainbow Fade", anim_rainbow_fade},
   { "Rainbow Loop", anim_rainbow_loop},
   { "Green Spiral", anim_solid_color},

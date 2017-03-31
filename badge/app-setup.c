@@ -83,10 +83,9 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.g.show = TRUE;
   wi.g.x = 10;
   wi.g.y = 30;
-  wi.g.width = 80;
+  wi.g.width = 190;
   wi.g.height = 20;
-  chsnprintf(tmp, sizeof(tmp), "%d", config->led_pattern+1);
-  wi.text = tmp;
+  wi.text = fxlist[config->led_pattern].name;
   wi.customParam = 0;
   p->ghLabelPattern = gwinLabelCreate(0, &wi);
 
@@ -272,8 +271,7 @@ static void setup_event(OrchardAppContext *context,
       // update ui
       chsnprintf(tmp, sizeof(tmp), "%d",(  8 - config->led_shift ) );
       gwinSetText(p->ghLabelDim, tmp, TRUE);
-      chsnprintf(tmp, sizeof(tmp), "%d", config->led_pattern + 1);
-      gwinSetText(p->ghLabelPattern, tmp, TRUE);
+      gwinSetText(p->ghLabelPattern, fxlist[config->led_pattern].name, TRUE);
 
       break;
     }
