@@ -86,7 +86,6 @@ static void name_event(OrchardAppContext *context,
 	if (event->type == uiEvent) {
 		if ((event->ui.code == uiComplete) &&
 		    (event->ui.flags == uiOK)) {
-			keyboardUi->exit (context);
 			configSave (config);
                         if (config->p_type == p_notset) {
                           orchardAppRun(orchardAppByName("Choosetype"));
@@ -101,10 +100,15 @@ static void name_event(OrchardAppContext *context,
 
 static void name_exit(OrchardAppContext *context)
 {
-    	chHeapFree (context->instance->uicontext->itemlist);
-    	chHeapFree (context->instance->uicontext);
+  const OrchardUi * keyboardUi;
+  
+  keyboardUi = context->instance->ui;
+  keyboardUi->exit (context);
 
-	return;
+  chHeapFree (context->instance->uicontext->itemlist);
+  chHeapFree (context->instance->uicontext);
+  
+  return;
 }
 
 orchard_app("Set your name", 0, name_init, name_start, name_event, name_exit);
