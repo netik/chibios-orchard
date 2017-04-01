@@ -329,7 +329,6 @@ static void ct_event(OrchardAppContext *context,
     if (event->type == keyEvent) {
       if ( (event->key.code == keyRight) &&
          (event->key.flags == keyPress) )  {
-        dacPlay("click.raw");
         selected++;
         if (selected > 2) { selected = 0; };
         ct_drawarrow();
@@ -338,7 +337,6 @@ static void ct_event(OrchardAppContext *context,
       
       if ( (event->key.code == keyLeft) &&
            (event->key.flags == keyPress) )  {
-        dacPlay("click.raw");
         selected--;
         if (selected > 254) { selected = 2; };
         ct_drawarrow();
@@ -361,7 +359,6 @@ static void ct_event(OrchardAppContext *context,
      */
     if ( (event->key.code == keyLeft) &&
          (event->key.flags == keyPress) )  {
-      dacPlay("click.raw");
       ct_remove_confirm(context);
       ct_state = 0;
       init_ct_ui(p);
@@ -429,7 +426,6 @@ static void ct_event(OrchardAppContext *context,
           return;
         }
         if ( ((GEventGWinButton*)pe)->gwin == p->ghCancel) {
-          dacPlay("click.raw");
           ct_remove_confirm(context);
           ct_state = 0;
           init_ct_ui(p);

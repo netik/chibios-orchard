@@ -452,12 +452,16 @@ videoWinPlay (char * fname, int x, int y)
 	dacBuf = NULL;
 	f_close (&f);
 
-	/* Re-initialize the DAC's PIT frequency, in case we changed it. */
 
 	pitDisable (&PIT1, 1);
 	dacSamplesPlay (NULL, 0);
+
+#ifdef VIDEO_AUTO_RATE_ADJUST
+	/* Re-initialize the DAC's PIT frequency, in case we changed it. */
+
 	CSR_WRITE_4(&PIT1, PIT_LDVAL1,
 	    KINETIS_BUSCLK_FREQUENCY / DAC_SAMPLERATE);
+#endif
 
 	return;
 }

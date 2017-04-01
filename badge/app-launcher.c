@@ -244,19 +244,16 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
   if (event->type == keyEvent) {
     if ( (event->key.code == keyUp) &&
          (event->key.flags == keyPress) )  {
-      dacPlay("click.raw");
       last_ui_time = chVTGetSystemTime();
       list->selected--;
     }
     if ( (event->key.code == keyDown) &&
          (event->key.flags == keyPress) )  {
-      dacPlay("click.raw");
       last_ui_time = chVTGetSystemTime();
       list->selected++;
     }
     if ( (event->key.code == keySelect) &&
          (event->key.flags == keyPress) )  {
-      dacPlay("click.raw");
       orchardAppRun(list->items[list->selected].entry);
       return;
     }
@@ -278,19 +275,16 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
     switch(pe->type) {
     case GEVENT_GWIN_BUTTON:
       if (((GEventGWinButton*)pe)->gwin == list->ghButton1) {
-        dacPlay("click.raw");
         last_ui_time = chVTGetSystemTime();
         list->selected--;
       }
       
       if (((GEventGWinButton*)pe)->gwin == list->ghButton2) {
-        dacPlay("click.raw");
         last_ui_time = chVTGetSystemTime();
         list->selected++;
       }
       
       if (((GEventGWinButton*)pe)->gwin == list->ghButton3) {
-        dacPlay("click.raw");
         orchardAppRun(list->items[list->selected].entry);
         return;
       }

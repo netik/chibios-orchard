@@ -10,6 +10,7 @@
 #include "orchard-app.h"
 #include "orchard-ui.h"
 #include "led.h"
+#include "dac_lld.h"
 #include "radio_lld.h"
 
 #include "shell.h" // for enemy testing function
@@ -41,7 +42,7 @@ event_source_t orchard_app_key;
 
 /* Default state is all buttons pressed. */
 
-uint8_t joyState = 0xFF;
+static uint8_t joyState = 0xFF;
 
 static const joyInfo joyTbl[6] = {
   { BUTTON_ENTER_PORT, BUTTON_ENTER_PIN, JOY_ENTER, keySelect },
@@ -168,6 +169,8 @@ static void ugfx_event(eventid_t id) {
 
   (void) id;
 
+  dacPlay ("click.raw");
+  dacWait ();
   instance.app->event (instance.context, &ugfx_evt);
   geventEventComplete (ugfx_evt.ugfx.pListener);
 
@@ -234,6 +237,10 @@ joyHandle (uint8_t s) {
     if (instance.context != NULL) {
       evt.type = keyEvent;
       evt.key = joyEvent;
+      if (joyEvent.code != keyTilt && joyEvent.flags == keyPress) {
+          dacPlay("click.raw");
+          dacWait ();
+      }
       instance.app->event (instance.context, &evt);
     }
     return (1);

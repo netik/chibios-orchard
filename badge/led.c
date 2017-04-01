@@ -691,7 +691,7 @@ CRGB HeatColor( uint8_t temperature)
 static void anim_fire2012(void) 
 {
   // Array of temperature readings at each simulation cell
-  static uint8_t heat[LEDS_COUNT];
+  uint8_t heat[LEDS_COUNT];
   int i,k,y,j;
 
   // Step 1.  Cool down every cell a little
@@ -700,7 +700,7 @@ static void anim_fire2012(void)
   }
 
   // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-  for( k = LEDS_COUNT; k > 2; k--) {
+  for( k = (LEDS_COUNT - 1); k > 2; k--) {
     heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2] ) / 3;
   }
 
