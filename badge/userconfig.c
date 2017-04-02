@@ -82,6 +82,8 @@ static void init_config(userconfig *config) {
   config->led_shift = 4;
   config->sound_enabled = 1;
 
+  config->touch_data_present = 0;
+
   config->p_type = p_notset;  
   memset(config->name, 0, CONFIG_NAME_MAXLEN);
 

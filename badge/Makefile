@@ -17,7 +17,7 @@ ifeq ($(USE_OPT),)
 # for traffic. This does not need to be enabled for any fully functional
 # badges.
 #
-#  USE_OPT += -DREV2_RADIO_WAR -DRADIO_POLL_FREQ=1000
+# USE_OPT += -DREV2_RADIO_WAR -DRADIO_POLL_FREQ=1000
 
 # Enable joypad buttons. This should be turned on for production builds.
 # It's off for now because the Freescale/NXP Freedom KW019032 reference
@@ -25,11 +25,11 @@ ifeq ($(USE_OPT),)
 # interrupts, we'll get stuck forever thinking the buttons are being
 # pressed. Only the real badge has the right joypad buttons anyway.
 
-USE_OPT += -DENABLE_JOYPAD
+# USE_OPT += -DENABLE_JOYPAD
 
 # Enable tilt sensor. Also only present on production board.
 
-#USE_OPT+= -DENABLE_TILT_SENSOR
+# USE_OPT+= -DENABLE_TILT_SENSOR
 
 endif
 
@@ -158,6 +158,7 @@ CSRC = main.c \
        cmd-peer.c \
        cmd-unix.c \
        app-launcher.c \
+       app-calibrate.c \
        app-name.c \
        app-fight.c \
        app-choosetype.c \

@@ -19,7 +19,7 @@
 #include <stdlib.h>
 
 // user for the default drawing routine
-#define LST_SCROLLWIDTH		16	// the border from the scroll buttons to the frame
+#define LST_SCROLLWIDTH		32	// the border from the scroll buttons to the frame
 #define LST_ARROW_SZ		10	// arrow side length
 #define LST_HORIZ_PAD		5	// extra horizontal padding for text
 #define LST_VERT_PAD		2	// extra vertical padding for text

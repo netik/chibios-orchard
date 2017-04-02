@@ -10,6 +10,7 @@
  * @brief   GINPUT mouse/touch code.
  */
 #include "../../gfx.h"
+#include <string.h>
 
 #if GFX_USE_GINPUT && GINPUT_NEED_MOUSE
 

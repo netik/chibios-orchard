@@ -11,6 +11,8 @@
 #include "xpt2046_lld.h"
 #include "xpt2046_reg.h"
 
+#include "userconfig.h"
+
 #include <string.h>
 
 #define EASTRISING
@@ -28,22 +30,31 @@ static const float calibrationData[] = {
 
 #ifdef EASTRISING
 static const float calibrationData[] = {
-	0.06682,		// ax
-	0.00092,		// bx
-	-19.87325,		// cx
-	0.00074,		// ay
-	0.09192,		// by
-	-22.00080		// cy
+	0.07054,		// ax
+	0.00002,		// bx
+	-25.11961,		// cx
+	0.00008,		// ay
+	0.09286,		// by
+	-28.38819		// cy
 };
 #endif
  
 bool_t LoadMouseCalibration(unsigned instance, void *data, size_t sz)
 {
+	const userconfig * config;
+
 	(void)data;
+
+	config = getConfig();
+
 	if (sz != sizeof(calibrationData) || instance != 0) {
 		return FALSE;
 	}
-	memcpy (data, (void*)&calibrationData, sz);
+
+	if (config->touch_data_present)
+		memcpy (data, (void*)&config->touch_data, sz);
+	else
+		memcpy (data, (void*)&calibrationData, sz);
 
 	return (TRUE);
 }
@@ -58,7 +69,7 @@ bool_t LoadMouseCalibration(unsigned instance, void *data, size_t sz)
 #define GMOUSE_MCU_Z_MIN		0	/* The minimum Z reading */
 #define GMOUSE_MCU_Z_MAX		4096	/* The maximum Z reading */
 
-#define GMOUSE_MCU_Z_TOUCHON		500	/*
+#define GMOUSE_MCU_Z_TOUCHON		300	/*
 						 * Values between this and
 						 * Z_MAX are definitely pressed
 						 */
