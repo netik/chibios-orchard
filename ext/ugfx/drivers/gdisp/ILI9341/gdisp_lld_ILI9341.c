@@ -253,26 +253,30 @@ LLDSPEC bool_t gdisp_lld_init(GDisplay *g) {
 #if GDISP_HARDWARE_STREAM_WRITE
 	LLDSPEC	void gdisp_lld_write_start(GDisplay *g) {
 		acquire_bus(g);
-		set_viewport(g);
-		write_index(g, 0x2C);
+		/*
+		 * If the x and y coordinates are the special
+		 * values -1/-1, then leave the viewport settings
+		 * as they are. This is a special mode for the
+		 * video player driver, which constantly streams
+		 * data to the same viewport coordinates. The only
+		 * thing it needs is the special mode and mutual
+		 * exclusion handling so that it shares the SPI
+		 * bus properly with the SD card and touch controller
+		 * drivers.
+		 */
+
+		if (g->p.x != -1 && g->p.y != -1) {
+			set_viewport(g);
+			write_index(g, 0x2C);
+		}
+
 		/*
 		 * Switch the SPI controller to do 16-bit transfers
 		 * and set the graphics controller for data mode.
 		 * Make sure the FIFO drains completely before
 		 * switching into 16-bit mode.
 		 */
-		while ((SPI1->S & SPIx_S_SPTEF) == 0)
-			;
-	        SPI1->C2 |= SPIx_C2_SPMODE;
-	}
-	LLDSPEC	void gdisp_lld_write_start_ex(GDisplay *g) {
-		acquire_bus(g);
-		/*
-		 * Switch the SPI controller to do 16-bit transfers
-		 * and set the graphics controller for data mode.
-		 * Make sure the FIFO drains completely before
-		 * switching into 16-bit mode.
-		 */
+
 		while ((SPI1->S & SPIx_S_SPTEF) == 0)
 			;
 	        SPI1->C2 |= SPIx_C2_SPMODE;
