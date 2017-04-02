@@ -226,7 +226,6 @@ radioReceive (RADIODriver * radio)
 		ph = &radio->kw01_handlers[i];
 		if (ph->kw01_handler != NULL &&
 		    ph->kw01_prot == pkt->kw01_hdr.kw01_prot) {
-		radio->kw01_default_handler.kw01_handler (pkt);
 			ph->kw01_handler (pkt);
 			return(0);
 		}
