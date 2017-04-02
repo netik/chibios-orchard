@@ -391,7 +391,7 @@ radioFrequencySet (RADIODriver * radio, uint32_t freq)
 	double val;
 	uint32_t regval;
 
-	if (freq < 430000000 || freq > 920000000)
+	if (freq < 430000000 || freq > 1050000000)
 		return (-1);
 
 	val = KW01_FREQ(freq);
@@ -604,7 +604,7 @@ radioStart (SPIDriver * sp)
 	/* Select variable length packet mode */
 
 	radioWrite (radio, KW01_DATMOD, KW01_DATAMODE_PACKET |
-		    KW01_MODULATION_FSK | KW01_MODSHAPE_GFBT03);
+	    KW01_MODULATION_FSK | KW01_MODSHAPE_GFBT03);
 
 	/*
 	 * Enable whitening and CRC insertion/checking,
@@ -612,11 +612,11 @@ radioStart (SPIDriver * sp)
 	 */
 
 	radioWrite (radio, KW01_PKTCONF1, KW01_FORMAT_VARIABLE |
-		    KW01_DCFREE_WHITENING | KW01_PKTCONF1_CRCON |
+	    KW01_DCFREE_WHITENING | KW01_PKTCONF1_CRCON |
 #ifdef KW01_RADIO_HWFILTER
-		    KW01_AFILT_UCASTBCAST);
+	    KW01_AFILT_UCASTBCAST);
 #else
-		    KW01_AFILT_NONE);
+	    KW01_AFILT_NONE);
 #endif
 
 	radio->kw01_flags = 0;
@@ -628,11 +628,11 @@ radioStart (SPIDriver * sp)
 	radioWrite (radio, KW01_DIOMAP1, 0x40);
 
 	radioWrite (radio, KW01_PREAMBLEMSB, 0);
-	radioWrite (radio, KW01_PREAMBLELSB, 0xF);
+	radioWrite (radio, KW01_PREAMBLELSB, 3);
 
 	/* Select frequency, deviation and bitrate */
 
-	radioFrequencySet (radio, 902500000);
+	radioFrequencySet (radio, 921575000);
 	radioDeviationSet (radio, 170000);
 	radioBitrateSet (radio, 50000);
 
@@ -678,7 +678,7 @@ radioStart (SPIDriver * sp)
 	version = radioRead (radio, KW01_VERSION);
 
 	chprintf (stream, "Radio chip version: %d Mask version: %d\r\n",
-		  KW01_CHIPREV(version), KW01_MASKREV(version));
+	    KW01_CHIPREV(version), KW01_MASKREV(version));
 	chprintf (stream, "Radio channel: %dHz ", radioFrequencyGet (radio));
 	chprintf (stream, "Deviation: +/- %dKHz ", radioDeviationGet (radio));
 	chprintf (stream, "Bitrate: %dbps\r\n", radioBitrateGet (radio));
