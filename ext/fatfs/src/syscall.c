@@ -9,7 +9,7 @@
 
 #if _FS_REENTRANT
 
-static __attribute__((section("fsdata"))) mutex_t fs_mutex;
+static mutex_t fs_mutex __attribute__((section(".fsdata")));
 
 /*------------------------------------------------------------------------*/
 /* Create a Synchronization Object                                        */

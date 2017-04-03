@@ -101,7 +101,7 @@ typedef struct fatfsList {
 
 // optimize these later on. Use an array to have multiple FatFS
 static bool_t fatfs_mounted = FALSE;
-static __attribute__((section("fsdata"))) FATFS fatfs_fs;
+static __attribute__((section(".fsdata"))) FATFS fatfs_fs;
 
 static BYTE fatfs_flags2mode(GFILE* f)
 {
