@@ -173,6 +173,7 @@ SECTIONS
         PROVIDE(_data = .);
         _textdata_start = LOADADDR(.data);
         _data_start = .;
+	*(.fsdata)
         *(.data)
         *(.data.*)
         *(.ramtext)
