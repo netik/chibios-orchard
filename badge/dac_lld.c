@@ -144,7 +144,7 @@ THD_FUNCTION(dacThread, arg)
 	uint16_t * p;
 	userconfig *config;
 	thread_t * th;
-	char * file;
+	char * file = NULL;
 
         (void)arg;
 
