@@ -25,6 +25,10 @@ videomerge: videomerge.c
 
 # This rule will build the mirrored and standard images only if the
 # jpgs have changed. Rebuilding them all the time was time consuming.
+rgb/%.rgb : jpg/font/led/%.jpg 
+	./convert_to_rgb.sh $<
+	mv $(subst rgb/,jpg/font/led/,$(@)) rgb/font/led
+
 rgb/%.rgb : jpg/%.jpg 
 	convert -flop $< $(subst .jpg,r.jpg,$(subst jpg/,jpg/mirrored/,$<))
 	./convert_to_rgb.sh $<
@@ -50,13 +54,14 @@ clean_images:
 	$(shell rm tif/mirrored/*)
 	$(shell	rm rgb/*)
 
-images: rgbhdr $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard jpg/*.jpg tif/*.tif)))))
+images: rgbhdr $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard jpg/*.jpg jpg/font/led/*.jpg tif/*.tif)))))
 
 sounds: snd16to12 $(addprefix dac/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/fight*.mp3))))) $(addprefix dac/fight/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/fight/*.mp3)))))
 
 sdcard: images midi sounds
-	@cp rgb/*.rgb sdcard
 	@if [ ! -d "sdcard" ]; then mkdir sdcard; fi
+	@cp rgb/*.rgb sdcard
+	@cp rgb/font/led/*.rgb sdcard/font/led
 	@find midi -name \*.bin -exec cp {} sdcard \;
 	@cp ../updater/updater.bin sdcard
 	@cp ../badge/build/badge.bin sdcard
@@ -86,8 +91,8 @@ osxsdfw:	sdcard
 	@sync
 
 cleansd:
-	@if [ -d "sdcard" ]; then rm -rf sdcard; fi; mkdir sdcard
-	@if [ -d "rgb" ]; then rm -rf rgb; fi; mkdir rgb
+	@if [ -d "sdcard" ]; then rm -rf sdcard; fi; mkdir sdcard; mkdir sdcard/font; mkdir sdcard/font/led
+	@if [ -d "rgb" ]; then rm -rf rgb; fi; mkdir rgb; mkdir rgb/font; mkdir rgb/font/led
 	touch rgb/"THIS FOLDER IS AUTOMATICALLY GENERATED"
 
 clean: clean_images
