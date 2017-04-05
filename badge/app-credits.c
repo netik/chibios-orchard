@@ -36,15 +36,16 @@
 #include "scroll_lld.h"
 #include "dac_lld.h"
 
-static uint32_t credits_init(OrchardAppContext *context)
+static uint32_t
+credits_init(OrchardAppContext *context)
 {
 	(void)context;
 
 	return (0);
 }
 
-static
-void credits_start(OrchardAppContext *context)
+static void
+credits_start(OrchardAppContext *context)
 {
 	(void)context;
 
@@ -52,12 +53,13 @@ void credits_start(OrchardAppContext *context)
 
 	scrollAreaSet (0, 0);
 	scrollImage ("credits.rgb");
-	scrollCount (0);
 
 	chThdSleepMilliseconds (800);
 
-	dacPlay (NULL);
 	gdispClear (Black);
+	scrollCount (0);
+
+	dacPlay (NULL);
 
 	orchardAppExit ();
 
