@@ -70,24 +70,28 @@ static void init_ct_ui(CtHandles *p) {
   gwinRedraw(p->ghButton1);
 
   // create button widget: ghButton1
-  wi.g.show = TRUE;
   wi.g.x = 107;
   wi.g.y = 45;
+#ifdef notdef
+  wi.g.show = TRUE;
   wi.g.width = 106;
   wi.g.height = 195;
   wi.customDraw = noRender;
   wi.customParam = 0;
+#endif
   p->ghButton2 = gwinButtonCreate(0, &wi);
   gwinRedraw(p->ghButton2);
 
   // create button widget: ghButton3
-  wi.g.show = TRUE;
   wi.g.x = 213;
   wi.g.y = 40;
+#ifdef notdef
+  wi.g.show = TRUE;
   wi.g.width = 107;
   wi.g.height = 195;
   wi.customDraw = noRender;
   wi.customParam = 0;
+#endif
   p->ghButton3 = gwinButtonCreate(0, &wi);
   gwinRedraw(p->ghButton3);
 

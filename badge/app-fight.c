@@ -289,12 +289,14 @@ static void state_approval_demand_enter(void) {
   
   gwinSetDefaultStyle(&RedButtonStyle, FALSE);
 
+  wi.g.x = 190;
+#ifdef notdef
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
-  wi.g.x = 190;
   wi.g.y = POS_FLOOR_Y-10;
   wi.g.width = 100;
   wi.g.height = gdispGetFontMetric(fontFF, fontHeight) + 2;
+#endif
   wi.text = "FIGHT!";
   p->ghAccept = gwinButtonCreate(0, &wi);
 
@@ -1094,27 +1096,31 @@ static void draw_attack_buttons(void) {
   p->ghAttackHi = gwinButtonCreate(0, &wi);
   
   // create button widget: ghAttackMid
-  wi.g.show = TRUE;
   wi.g.x = 180;
   wi.g.y = 110;
+  wi.text = "5";
+#ifdef notdef
+  wi.g.show = TRUE;
   wi.g.width = 140;
   wi.g.height = 56;
-  wi.text = "5";
   wi.customDraw = noRender;
   wi.customParam = 0;
   wi.customStyle = 0;
+#endif
   p->ghAttackMid = gwinButtonCreate(0, &wi);
   
   // create button widget: ghAttackLow
-  wi.g.show = TRUE;
   wi.g.x = 180;
   wi.g.y = 160;
+  wi.text = "6";
+#ifdef notdef
+  wi.g.show = TRUE;
   wi.g.width = 140;
   wi.g.height = 56;
-  wi.text = "6";
   wi.customDraw = noRender;
   wi.customParam = 0;
   wi.customStyle = 0;
+#endif
   p->ghAttackLow = gwinButtonCreate(0, &wi);
 }
   
@@ -1136,13 +1142,15 @@ static void draw_select_buttons(void) {
 
   // Right
   gwinWidgetClearInit(&wi);
-  wi.g.show = TRUE;
   wi.g.x = 290;
+#ifdef notdef
+  wi.g.show = TRUE;
   wi.g.y = 20;
   wi.g.width = 30;
   wi.g.height = 180;
   wi.text = "";
   wi.customDraw = gwinButtonDraw_ArrowRight;
+#endif
   p->ghNextEnemy = gwinButtonCreate(0, &wi);
 
   // Fight
@@ -1296,11 +1304,13 @@ static void state_levelup_enter(void) {
   
   gwinSetDefaultStyle(&RedButtonStyle, FALSE);
   gwinWidgetClearInit(&wi);
-  wi.g.show = TRUE;
   wi.g.x = 170;
+#ifdef notdef
+  wi.g.show = TRUE;
   wi.g.y = 210;
   wi.g.width = 150;
   wi.g.height = 30;
+#endif
   wi.text = "MIGHT +1";
   p->ghLevelUpMight = gwinButtonCreate(0, &wi);
   // note: actual level upgrade occurs at button-push in fightEvent
@@ -1632,19 +1642,16 @@ static void fight_event(OrchardAppContext *context,
       if ((ourattack & ATTACK_MASK) == 0) {
         if ( (event->key.code == keyDown) &&
              (event->key.flags == keyPress) )  {
-          ourattack &= ~ATTACK_MASK;
           ourattack |= ATTACK_LOW;
           sendAttack();
         }
         if ( (event->key.code == keyRight) &&
              (event->key.flags == keyPress) )  {
-          ourattack &= ~ATTACK_MASK;
           ourattack |= ATTACK_MID;
           sendAttack();
         }
         if ( (event->key.code == keyUp) &&
            (event->key.flags == keyPress) )  {
-          ourattack &= ~ATTACK_MASK;
           ourattack |= ATTACK_HI;
           sendAttack();
         }
@@ -1759,17 +1766,14 @@ static void fight_event(OrchardAppContext *context,
       
       if ((ourattack & ATTACK_MASK) == 0) {
         if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackLow) {
-          ourattack &= ~ATTACK_MASK;
           ourattack |= ATTACK_LOW;
           sendAttack();
         }
         if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackMid) {
-          ourattack &= ~ATTACK_MASK;
           ourattack |= ATTACK_MID;
           sendAttack();
         }
         if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackHi) {
-          ourattack &= ~ATTACK_MASK;
           ourattack |= ATTACK_HI;
           sendAttack();
         }
