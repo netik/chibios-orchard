@@ -85,7 +85,7 @@ scrollCount (int lines)
 }
 
 int
-scrollImage (char * file)
+scrollImage (char * file, int delay)
 {
 	int i;
 	FIL f;
@@ -126,7 +126,7 @@ scrollImage (char * file)
 		me = (GEventMouse *)geventEventWait(&gl, 0);
 		if (me != NULL && me->type == GEVENT_TOUCH)
 			break;
-		chThdSleepMilliseconds (15);
+		chThdSleepMilliseconds (delay);
 	}
 
 	geventDetachSource (&gl, NULL);

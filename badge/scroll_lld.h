@@ -35,6 +35,6 @@
 
 extern void scrollCount (int);
 extern void scrollAreaSet (uint16_t, uint16_t);
-extern int scrollImage (char *);
+extern int scrollImage (char *, int);
 
 #endif /* _SCROLL_LLD_H_ */
