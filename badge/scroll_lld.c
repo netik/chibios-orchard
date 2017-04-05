@@ -115,6 +115,7 @@ scrollImage (char * file, int delay)
 	w = hdr->gdi_width_hi << 8 | hdr->gdi_width_lo;
 
 	o = gdispGetOrientation();
+	me = NULL;
 
 	for (i = 0; i < h; i++) {
 		f_read (&f, buf, sizeof(pixel_t) * w, &br);
