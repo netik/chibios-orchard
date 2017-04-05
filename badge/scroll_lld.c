@@ -41,6 +41,8 @@
 #define ILI9341_VSDEF	0x33
 #define ILI9341_VSADD	0x37
 
+static int scroll_pos;
+
 typedef struct gdisp_image {
         uint8_t                 gdi_id1;
         uint8_t                 gdi_id2;
@@ -65,6 +67,8 @@ scrollAreaSet (uint16_t TFA, uint16_t BFA)
 	write_data (NULL, (uint8_t)BFA);
 	release_bus (NULL);
 
+	scroll_pos = gdispGetWidth() - 1;
+
 	return;
 }
 
@@ -84,7 +88,6 @@ int
 scrollImage (char * file)
 {
 	int i;
-	int pos;
 	FIL f;
  	UINT br;
 	GDISP_IMAGE * hdr;
@@ -111,15 +114,15 @@ scrollImage (char * file)
 
 	o = gdispGetOrientation();
 
-	pos = gdispGetWidth() - 1;
 	for (i = 0; i < h; i++) {
 		f_read (&f, buf, sizeof(pixel_t) * gdispGetHeight (), &br);
-		gdispBlitAreaEx (pos, 0, 1, gdispGetHeight (), 0, 0, 1, buf);
-		pos++;
-		if (pos == gdispGetWidth ())
-			pos = 0;
+		gdispBlitAreaEx (scroll_pos, 0, 1,
+		    gdispGetHeight (), 0, 0, 1, buf);
+		scroll_pos++;
+		if (scroll_pos == gdispGetWidth ())
+			scroll_pos = 0;
 		scrollCount (o == GDISP_ROTATE_90 ?
-			(gdispGetWidth() - 1) - pos : pos);
+			(gdispGetWidth() - 1) - scroll_pos : scroll_pos);
 		me = (GEventMouse *)geventEventWait(&gl, 0);
 		if (me != NULL && me->type == GEVENT_TOUCH)
 			break;
@@ -130,6 +133,9 @@ scrollImage (char * file)
 
 	chHeapFree (buf);
 	f_close (&f);
+
+	if (me != NULL && me->type == GEVENT_TOUCH)
+		return (-1);
 
 	return (0);
 }
