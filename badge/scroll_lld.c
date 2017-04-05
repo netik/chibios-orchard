@@ -92,6 +92,7 @@ scrollImage (char * file, int delay)
  	UINT br;
 	GDISP_IMAGE * hdr;
 	uint16_t h;
+	uint16_t w;
 	pixel_t * buf;
 	orientation_t o;
 	GEventMouse * me;
@@ -111,13 +112,14 @@ scrollImage (char * file, int delay)
 	hdr = (GDISP_IMAGE *)buf;
 	f_read (&f, hdr, sizeof(GDISP_IMAGE), &br);
 	h = hdr->gdi_height_hi << 8 | hdr->gdi_height_lo;
+	w = hdr->gdi_width_hi << 8 | hdr->gdi_width_lo;
 
 	o = gdispGetOrientation();
 
 	for (i = 0; i < h; i++) {
-		f_read (&f, buf, sizeof(pixel_t) * gdispGetHeight (), &br);
-		gdispBlitAreaEx (scroll_pos, 0, 1,
-		    gdispGetHeight (), 0, 0, 1, buf);
+		f_read (&f, buf, sizeof(pixel_t) * w, &br);
+		gdispBlitAreaEx (scroll_pos, (gdispGetHeight () - w) / 2, 1,
+		    w, 0, 0, 1, buf);
 		scroll_pos++;
 		if (scroll_pos == gdispGetWidth ())
 			scroll_pos = 0;
