@@ -776,7 +776,7 @@ radioAcquire (RADIODriver * radio)
 
 /******************************************************************************
 *
-* radioRelesse - release access to the radio's SPI interface
+* radioRelease - release access to the radio's SPI interface
 *
 * This relinquishes access to the radio's SPI interface. This must be done
 * at the completion of every SPI read/write transaction.
