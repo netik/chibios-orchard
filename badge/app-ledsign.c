@@ -35,9 +35,9 @@
 
 #include "scroll_lld.h"
 
-#include <string.h>
+#include "userconfig.h"
 
-#define LEDSIGN_MAXLEN 64
+#include <string.h>
 
 static uint32_t
 ledsign_init(OrchardAppContext *context)
@@ -51,17 +51,17 @@ static void
 ledsign_start(OrchardAppContext *context)
 {
 	OrchardUiContext * keyboardUiContext;
+	userconfig * config;
 
-	context->priv = chHeapAlloc (NULL, LEDSIGN_MAXLEN);
-	memset (context->priv, 0, LEDSIGN_MAXLEN);
+	config = getConfig();
 
 	keyboardUiContext = chHeapAlloc(NULL, sizeof(OrchardUiContext));
 	keyboardUiContext->itemlist = (const char **)chHeapAlloc(NULL,
 		sizeof(char *) * 2);
 	keyboardUiContext->itemlist[0] =
 		"Type a message,\npress ENTER when done.";
-	keyboardUiContext->itemlist[1] = context->priv;
-	keyboardUiContext->total = LEDSIGN_MAXLEN - 1;
+	keyboardUiContext->itemlist[1] = config->led_string;
+	keyboardUiContext->total = CONFIG_LEDSIGN_MAXLEN - 1;
 
 	context->instance->ui = getUiByName("keyboard");
 	context->instance->uicontext = keyboardUiContext;
@@ -76,6 +76,7 @@ ledsign_event(OrchardAppContext *context, const OrchardAppEvent *event)
 	uint8_t i;
 	const OrchardUi * keyboardUi;
 	OrchardUiContext * keyboardUiContext;
+	userconfig * config;
 	const char * str;
 	char fname[48];
 	int sts;
@@ -91,6 +92,8 @@ ledsign_event(OrchardAppContext *context, const OrchardAppEvent *event)
 		    event->ui.flags == uiOK) {
 			keyboardUi->exit (context);
 			gdispClear (Black);
+			config = getConfig();
+			configSave (config);
 			orchardAppExit ();
 		}
 	}
@@ -118,7 +121,6 @@ ledsign_event(OrchardAppContext *context, const OrchardAppEvent *event)
 static void
 ledsign_exit(OrchardAppContext *context)
 {
-	chHeapFree (context->priv);
 	chHeapFree (context->instance->uicontext->itemlist);
 	chHeapFree (context->instance->uicontext);
   
