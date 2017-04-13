@@ -92,7 +92,7 @@ static void draw_setup_buttons(SetupHandles * p) {
   // create button widget: ghButtonPatDn
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
-  wi.g.x = 200;
+  wi.g.x = 270;
   wi.g.y = 10;
   wi.g.width = 50;
   wi.g.height = 40;
@@ -103,7 +103,7 @@ static void draw_setup_buttons(SetupHandles * p) {
   // create button widget: ghButtonPatUp
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
-  wi.g.x = 270;
+  wi.g.x = 200;
   wi.g.y = 10;
   wi.g.width = 50;
   wi.g.height = 40;
@@ -128,23 +128,23 @@ static void draw_setup_buttons(SetupHandles * p) {
   // create button widget: ghButtonDimUp
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
-  wi.g.x = 200;
-  wi.g.y = 70;
-  wi.g.width = 50;
-  wi.g.height = 40;
-  wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowUp;
-  p->ghButtonDimUp = gwinButtonCreate(0, &wi);
-
-  // create button widget: ghButtonDimDn
-  gwinWidgetClearInit(&wi);
-  wi.g.show = TRUE;
   wi.g.x = 270;
   wi.g.y = 70;
   wi.g.width = 50;
   wi.g.height = 40;
   wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowDown;
+  wi.customDraw = gwinButtonDraw_ArrowRight;
+  p->ghButtonDimUp = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghButtonDimDn
+  gwinWidgetClearInit(&wi);
+  wi.g.show = TRUE;
+  wi.g.x = 200;
+  wi.g.y = 70;
+  wi.g.width = 50;
+  wi.g.height = 40;
+  wi.text = "";
+  wi.customDraw = gwinButtonDraw_ArrowLeft;
   p->ghButtonDimDn = gwinButtonCreate(0, &wi);
 
   // create button widget: ghButtonCancel
@@ -207,20 +207,51 @@ static void setup_event(OrchardAppContext *context,
       orchardAppRun(orchardAppByName("Badge"));
     }
     return;
-  } else if (event->type == ugfxEvent) {
+  }
+
+  if (event->type == keyEvent) {
+    last_ui_time = chVTGetSystemTime();
+    if ( (event->key.code == keyLeft) &&
+         (event->key.flags == keyPress) )  {
+      config->led_shift++;
+      if (config->led_shift > 7) config->led_shift = 0;
+      ledSetBrightness(config->led_shift);
+    }
+    if ( (event->key.code == keyRight) &&
+         (event->key.flags == keyPress) )  {
+      	config->led_shift--;
+        if (config->led_shift == 255) config->led_shift = 7;
+        ledSetBrightness(config->led_shift);
+    }
+    if ( (event->key.code == keyUp) &&
+         (event->key.flags == keyPress) )  {
+      config->led_pattern--;
+      ledResetPattern();
+      if (config->led_pattern == 255) config->led_pattern = LED_PATTERN_COUNT - 1;
+      ledSetFunction(fxlist[config->led_pattern].function);
+    }
+    if ( (event->key.code == keyDown) &&
+         (event->key.flags == keyPress) )  {
+      config->led_pattern++;
+      ledResetPattern();
+      if (config->led_pattern >= LED_PATTERN_COUNT) config->led_pattern = 0;
+      ledSetFunction(fxlist[config->led_pattern].function);
+    }
+  }
+
+  if (event->type == ugfxEvent) {
     pe = event->ugfx.pEvent;
+    last_ui_time = chVTGetSystemTime();
     
     switch(pe->type) {
       
     case GEVENT_GWIN_CHECKBOX:
       if (((GEventGWinCheckbox*)pe)->gwin == p->ghCheckSound) {
-	last_ui_time = chVTGetSystemTime();
 	// The state of our checkbox has changed
 	config->sound_enabled = ((GEventGWinCheckbox*)pe)->isChecked;
       }
       break;
     case GEVENT_GWIN_BUTTON:
-      last_ui_time = chVTGetSystemTime();
       if (((GEventGWinButton*)pe)->gwin == p->ghButtonCancel) {
 	orchardAppExit();
 	return;
@@ -256,17 +287,14 @@ static void setup_event(OrchardAppContext *context,
 	ledResetPattern();
 	if (config->led_pattern == 255) config->led_pattern = LED_PATTERN_COUNT - 1;
         ledSetFunction(fxlist[config->led_pattern].function);
-
       }
-      
-      // update ui
-      drawProgressBar(10,100,180,10, 8, (8-config->led_shift), false, false);
-      gwinSetText(p->ghLabelPattern, fxlist[config->led_pattern].name, TRUE);
-
       break;
     }
-    return;
   }
+  // update ui
+  drawProgressBar(10,100,180,10, 8, (8-config->led_shift), false, false);
+  gwinSetText(p->ghLabelPattern, fxlist[config->led_pattern].name, TRUE);
+  return;
 }
 
 static void setup_exit(OrchardAppContext *context) {

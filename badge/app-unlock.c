@@ -273,7 +273,7 @@ static void unlock_start(OrchardAppContext *context)
   for (i=0;i<5;i++) {
     code[i] = 0;
   }
-
+  ledSetFunction(leds_show_unlocks);
   orchardAppTimer(context, 1000, true);  
 }
 
@@ -362,7 +362,6 @@ static uint8_t validate_code(OrchardAppContext *context, userconfig *config) {
       configSave(config);
       
       chThdSleepMilliseconds(ALERT_DELAY);
-      ledSetFunction(NULL);
       orchardAppRun(orchardAppByName("Badge"));
       return true;
     }
@@ -406,7 +405,6 @@ static void unlock_event(OrchardAppContext *context,
           unlock_result(p, "unlock failed.");
           dacPlay("fight/pathtic.raw");
           chThdSleepMilliseconds(ALERT_DELAY);
-          ledSetFunction(NULL);
           orchardAppRun(orchardAppByName("Badge"));
           return;
         }
@@ -484,7 +482,6 @@ static void unlock_event(OrchardAppContext *context,
         unlock_result(p, "unlock failed.");
         dacPlay("fight/pathtic.raw");
         chThdSleepMilliseconds(ALERT_DELAY);
-        ledSetFunction(NULL);
         orchardAppRun(orchardAppByName("Badge"));
         return;
       }
@@ -515,6 +512,8 @@ static void unlock_exit(OrchardAppContext *context) {
 
   chHeapFree (context->priv);
   context->priv = NULL;
+
+  ledSetFunction(NULL);
 
 }  
 

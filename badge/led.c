@@ -239,6 +239,37 @@ void leds_all_strobe(void) {
   fx_position++;
 }
 
+void leds_show_unlocks(void) {
+  /* show the unlock status as a set of binary lights */
+  int i;
+  ledClear();
+  userconfig *config = getConfig();
+
+  if (fx_index > 250) {
+    fx_index = 250;
+    fx_direction = 0;
+  }
+
+  if (fx_index < 50) { 
+    fx_index = 50;
+    fx_direction = 1;
+  }
+  if (fx_direction == 1) { 
+    fx_index += 5;
+  } else {
+    fx_index -= 5;
+  }
+
+  for(i=0; i < LEDS_COUNT; i++)  {
+    if (config->unlocks & (1 << i)) { 
+      ledSetRGB(led_config.fb, i, fx_index,0,fx_index);
+    } else { 
+      ledSetRGB(led_config.fb, i, 0, 0, 0xff);
+    }
+  }
+}
+
+
 void leds_test(void) {
   /* walks through R, G, B to test LEDs. */
   int i;

@@ -49,6 +49,7 @@ void ledSetProgress(float p);
 void leds_test(void);
 void leds_all_strobered(void);
 void leds_all_strobe(void);
+void leds_show_unlocks(void);
 
 const char *effectsCurName(void);
 
