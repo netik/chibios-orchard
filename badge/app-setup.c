@@ -18,6 +18,7 @@
 // GHandles
 typedef struct _SetupHandles {
   GHandle ghCheckSound;
+  GHandle ghCheckAirplane;
   GHandle ghLabel1;
   GHandle ghLabelPattern;
   GHandle ghButtonPatDn;
@@ -27,6 +28,7 @@ typedef struct _SetupHandles {
   GHandle ghButtonDimDn;
   GHandle ghButtonOK;
   GHandle ghButtonCancel;
+  GHandle ghButtonCalibrate;
   GListener glSetup;
 } SetupHandles;
 
@@ -44,16 +46,28 @@ static void draw_setup_buttons(SetupHandles * p) {
   gwinSetDefaultFont(fontSM);
 
   gwinWidgetClearInit(&wi);
+
   // create checkbox widget: ghCheckSound
   wi.g.show = TRUE;
   wi.g.x = 10;
   wi.g.y = 140;
   wi.g.width = 200;
   wi.g.height = 20;
-  wi.text = " Enable Sounds";
+  wi.text = " Sounds";
   wi.customDraw = gwinCheckboxDraw_CheckOnLeft;
   p->ghCheckSound = gwinCheckboxCreate(0, &wi);
   gwinCheckboxCheck(p->ghCheckSound, config->sound_enabled);
+
+  // create checkbox widget: ghCheckAirplane
+  wi.g.show = TRUE;
+  wi.g.x = 10;
+  wi.g.y = 160;
+  wi.g.width = 200;
+  wi.g.height = 20;
+  wi.text = " Airplane Mode";
+  wi.customDraw = gwinCheckboxDraw_CheckOnLeft;
+  p->ghCheckAirplaned = gwinCheckboxCreate(0, &wi);
+  gwinCheckboxCheck(p->ghCheckAirplane, config->airplane_mode);
 
   // Create label widget: ghLabel1
   gwinWidgetClearInit(&wi);
@@ -64,19 +78,6 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.g.height = 20;
   wi.text = "LED Pattern";
   p->ghLabel1 = gwinLabelCreate(0, &wi);
-
-  // create button widget: ghButtonOK
-  gwinWidgetClearInit(&wi);
-  wi.g.show = TRUE;
-  wi.g.x = 170;
-  wi.g.y = 190;
-  wi.g.width = 140;
-  wi.g.height = 40;
-  wi.text = "OK";
-  wi.customDraw = gwinButtonDraw_Normal;
-  wi.customParam = 0;
-  wi.customStyle = 0;
-  p->ghButtonOK = gwinButtonCreate(0, &wi);
 
   // Create label widget: ghLabelPattern
   gwinWidgetClearInit(&wi);
@@ -150,17 +151,40 @@ static void draw_setup_buttons(SetupHandles * p) {
   // create button widget: ghButtonCancel
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
-  wi.g.x = 10;
-  wi.g.y = 190;
+  wi.g.x = 170;
+  wi.g.y = 140;
   wi.g.width = 140;
-  wi.g.height = 40;
+  wi.g.height = 20;
+  wi.text = "Calibrate TS";
+  p->ghButtonCalibrate = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghButtonCancel
+  gwinWidgetClearInit(&wi);
+  wi.g.show = TRUE;
+  wi.g.x = 10;
+  wi.g.y = 210;
+  wi.g.width = 140;
+  wi.g.height = 20;
   wi.text = "Cancel";
   p->ghButtonCancel = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghButtonOK
+  gwinWidgetClearInit(&wi);
+  wi.g.show = TRUE;
+  wi.g.x = 170;
+  wi.g.y = 210;
+  wi.g.width = 140;
+  wi.g.height = 20;
+  wi.text = "OK";
+  wi.customDraw = gwinButtonDraw_Normal;
+  wi.customParam = 0;
+  wi.customStyle = 0;
+  p->ghButtonOK = gwinButtonCreate(0, &wi);
 
   // show network id
   chsnprintf(tmp,sizeof(tmp), "Net ID: %08x", config->netid);
   gdispDrawStringBox (0,
-		      174,
+		      194,
 		      gdispGetWidth(),
 		      gdispGetFontMetric(fontXS, fontHeight),
 		      tmp,
@@ -312,7 +336,8 @@ static void setup_exit(OrchardAppContext *context) {
   gwinDestroy(p->ghButtonDimDn);
   gwinDestroy(p->ghButtonOK);
   gwinDestroy(p->ghButtonCancel);
-
+  gwinDestroy(p->ghButtonCalibrate);
+  
   gdispCloseFont(fontXS);
   gdispCloseFont(fontSM);
     

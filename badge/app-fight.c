@@ -1302,12 +1302,10 @@ static void state_levelup_enter(void) {
   gwinSetDefaultStyle(&RedButtonStyle, FALSE);
   gwinWidgetClearInit(&wi);
   wi.g.x = 170;
-#ifdef notdef
   wi.g.show = TRUE;
   wi.g.y = 210;
   wi.g.width = 150;
   wi.g.height = 30;
-#endif
   wi.text = "MIGHT +1";
   p->ghLevelUpMight = gwinButtonCreate(0, &wi);
   // note: actual level upgrade occurs at button-push in fightEvent
