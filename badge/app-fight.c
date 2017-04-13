@@ -229,7 +229,7 @@ static void state_approval_demand_enter(void) {
 
   gdispClear(Black);
 
-  putImageFile(getAvatarImage(current_enemy.p_type, "idla", 1, true),
+  putImageFile(getAvatarImage(current_enemy.current_type, "idla", 1, true),
                               POS_PLAYER2_X, POS_PLAYER2_Y - 20);
 
   gdispDrawStringBox (0,
@@ -345,10 +345,10 @@ static void state_move_select_enter() {
 
   updatehp();
 
-  putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
+  putImageFile(getAvatarImage(config->current_type, "idla", 1, false),
                POS_PLAYER1_X, POS_PLAYER1_Y);
   
-  putImageFile(getAvatarImage(current_enemy.p_type, "idla", 1, true),
+  putImageFile(getAvatarImage(current_enemy.current_type, "idla", 1, true),
                POS_PLAYER2_X, POS_PLAYER2_Y);
 
   gdispDrawStringBox (0,
@@ -457,7 +457,7 @@ static void screen_select_draw(int8_t initial) {
     gdispFillArea(31,22,260,POS_FLOOR_Y-22,Black);
   }
   
-  putImageFile(getAvatarImage(enemies[current_enemy_idx]->p_type, "idla", 1, false),
+  putImageFile(getAvatarImage(enemies[current_enemy_idx]->current_type, "idla", 1, false),
                POS_PCENTER_X, POS_PCENTER_Y);
   
   uint16_t xpos = 0; // cursor, so if we move or add things we don't have to rethink this  
@@ -554,9 +554,9 @@ static void draw_idle_players() {
 
   gdispClear(Black);
 
-  putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
+  putImageFile(getAvatarImage(config->current_type, "idla", 1, false),
                POS_PLAYER1_X, POS_PLAYER1_Y);
-  putImageFile(getAvatarImage(current_enemy.p_type, "idla", 1, true),
+  putImageFile(getAvatarImage(current_enemy.current_type, "idla", 1, true),
                POS_PLAYER2_X, POS_PLAYER2_Y);
  
   gdispDrawStringBox (0,
@@ -608,14 +608,14 @@ static void state_vs_screen_enter() {
   dacPlay("fight/vs.raw");
   
   for (uint8_t i=0; i < 3; i++) {
-    putImageFile(getAvatarImage(config->p_type, "atth", 1, false),
+    putImageFile(getAvatarImage(config->current_type, "atth", 1, false),
                  POS_PLAYER1_X, POS_PLAYER1_Y);
-    putImageFile(getAvatarImage(current_enemy.p_type, "atth", 1, true),
+    putImageFile(getAvatarImage(current_enemy.current_type, "atth", 1, true),
                  POS_PLAYER2_X, POS_PLAYER2_Y);
     chThdSleepMilliseconds(200);
-    putImageFile(getAvatarImage(config->p_type, "atth", 2, false),
+    putImageFile(getAvatarImage(config->current_type, "atth", 2, false),
                  POS_PLAYER1_X, POS_PLAYER1_Y);
-    putImageFile(getAvatarImage(current_enemy.p_type, "atth", 2, true),
+    putImageFile(getAvatarImage(current_enemy.current_type, "atth", 2, true),
                  POS_PLAYER2_X, POS_PLAYER2_Y);
     chThdSleepMilliseconds(200);
   }
@@ -799,16 +799,16 @@ static void state_show_results_enter() {
 #endif
   // 45 down. 
   // 140 | -40- | 140
-  putImageFile(getAvatarImage(config->p_type, attackfn1, 1, false),
+  putImageFile(getAvatarImage(config->current_type, attackfn1, 1, false),
                POS_PLAYER1_X, POS_PLAYER1_Y);
   
-  putImageFile(getAvatarImage(current_enemy.p_type, attackfn2, 1, true),
+  putImageFile(getAvatarImage(current_enemy.current_type, attackfn2, 1, true),
                POS_PLAYER2_X, POS_PLAYER2_Y);
   chThdSleepMilliseconds(250);
-  putImageFile(getAvatarImage(config->p_type, attackfn1, 2, false),
+  putImageFile(getAvatarImage(config->current_type, attackfn1, 2, false),
                POS_PLAYER1_X, POS_PLAYER1_Y);
   
-  putImageFile(getAvatarImage(current_enemy.p_type, attackfn2, 2, true),
+  putImageFile(getAvatarImage(current_enemy.current_type, attackfn2, 2, true),
                POS_PLAYER2_X, POS_PLAYER2_Y);
   
   if (theirattack & ATTACK_ISCRIT) { p1color = Purple; }
@@ -831,10 +831,10 @@ static void state_show_results_enter() {
   gdispDrawStringBox (textx,text_p1_y,50,50,ourdmg_s,fontFF,Black,justifyLeft);
   gdispDrawStringBox (textx+60,text_p2_y,50,50,theirdmg_s,fontFF,Black,justifyRight);
   
-  putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
+  putImageFile(getAvatarImage(config->current_type, "idla", 1, false),
                POS_PLAYER1_X, POS_PLAYER1_Y);
   
-  putImageFile(getAvatarImage(current_enemy.p_type, "idla", 1, true),
+  putImageFile(getAvatarImage(current_enemy.current_type, "idla", 1, true),
                POS_PLAYER2_X, POS_PLAYER2_Y);
   
   chThdSleepMilliseconds(100);
@@ -853,10 +853,10 @@ static void state_show_results_enter() {
   if (current_enemy.hp == 0) {
     changeState(ENEMY_DEAD);
     dacPlay("fight/drop.raw");
-    putImageFile(getAvatarImage(current_enemy.p_type, "deth", 1, false),
+    putImageFile(getAvatarImage(current_enemy.current_type, "deth", 1, false),
                  POS_PLAYER2_X, POS_PLAYER2_Y);
     chThdSleepMilliseconds(250);
-    putImageFile(getAvatarImage(current_enemy.p_type, "deth", 2, false),
+    putImageFile(getAvatarImage(current_enemy.current_type, "deth", 2, false),
                  POS_PLAYER2_X, POS_PLAYER2_Y);
     chThdSleepMilliseconds(250);
     chsnprintf(tmp, sizeof(tmp), "VICTORY!  (+%dXP)", calc_xp_gain(TRUE));
@@ -889,10 +889,10 @@ static void state_show_results_enter() {
       /* if you are dead, then you will do the same */
       dacPlay("fight/defrmix.raw");
 
-      putImageFile(getAvatarImage(config->p_type, "deth", 1, false),
+      putImageFile(getAvatarImage(config->current_type, "deth", 1, false),
                    POS_PLAYER1_X, POS_PLAYER1_Y);
       chThdSleepMilliseconds(250);
-      putImageFile(getAvatarImage(config->p_type, "deth", 2, false),
+      putImageFile(getAvatarImage(config->current_type, "deth", 2, false),
                    POS_PLAYER1_X, POS_PLAYER1_Y);
       chThdSleepMilliseconds(250);
       chsnprintf(tmp, sizeof(tmp), "YOU WERE DEFEATED (+%dXP)", calc_xp_gain(FALSE));
@@ -1049,7 +1049,7 @@ static void sendAttack(void) {
   }
   
   if (ourattack & ATTACK_LOW) {
-    //    putImageFile(getAvatarImage(config->p_type, "attl", 1, false),
+    //    putImageFile(getAvatarImage(config->current_type, "attl", 1, false),
     //               POS_PLAYER1_X, POS_PLAYER1_Y);
     putImageFile("ar50.rgb",
                  160,
@@ -1237,7 +1237,7 @@ static void state_levelup_enter(void) {
   chsnprintf(tmp, sizeof(tmp), "LEVEL %s", dec2romanstr(config->level+1));
   gdispClear(Black);
 
-  putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
+  putImageFile(getAvatarImage(config->current_type, "idla", 1, false),
                0,0);
 
   gdispDrawStringBox (0,
@@ -1437,6 +1437,7 @@ static void state_approval_wait_enter(void) {
                       "Waiting for enemy to accept!",
                       fontSM, White, justifyCenter);
 
+  dacPlay("fight/loop1.raw");
 }
 
 static void sendACK(user *inbound) {
@@ -1520,7 +1521,7 @@ static void sendGamePacket(uint8_t opcode) {
   
   packet.hp = config->hp;
   packet.level = config->level;
-  packet.p_type = config->p_type;
+  packet.current_type = config->current_type;
 
   packet.won = config->won;
   packet.lost = config->lost;
@@ -2083,7 +2084,6 @@ static uint32_t fight_init(OrchardAppContext *context) {
       config->in_combat = 0;
       configSave(config);
     }
-    
   }
 
   // we don't want any stack space added to us. 

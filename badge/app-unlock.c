@@ -330,9 +330,6 @@ static uint8_t validate_code(OrchardAppContext *context, userconfig *config) {
         config->luck = 40;
       }
       
-      // save to config
-      configSave(config);
-      
       strcpy(tmp, unlock_desc[i]);
       strcat(tmp, " unlocked!");
       unlock_result(p, tmp);
@@ -340,12 +337,15 @@ static uint8_t validate_code(OrchardAppContext *context, userconfig *config) {
       // TODO: Set all LEDs white, blink.
       // if it's the bender upgrade, we become bender.
       if (i == 9) {
-        config->p_type = p_bender;
+        config->current_type = p_bender;
         dacPlay("biteass.raw");
       } else {
         // default sound
         dacPlay("fight/leveiup.raw");
       }
+
+      // save to config
+      configSave(config);
       
       chThdSleepMilliseconds(ALERT_DELAY);
       orchardAppRun(orchardAppByName("Badge"));

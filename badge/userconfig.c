@@ -78,11 +78,13 @@ static void init_config(userconfig *config) {
   /* packets would be huge. */
   config->netid = SIM->UIDML ^ SIM->UIDL;
   config->unlocks = 0;
-  config->led_pattern = 8;
+  config->led_pattern = 11;
   config->led_shift = 4;
   config->sound_enabled = 1;
 
-  config->p_type = p_notset;  
+  config->current_type = p_notset; // what your current class is (caesear, bender, etc, specials...)
+  config->p_type = p_notset;       // your permanent class, cannot be changed. 
+  
   memset(config->name, 0, CONFIG_NAME_MAXLEN);
 
   config->won = 0;
@@ -131,6 +133,8 @@ void configStart(void) {
     configSave(&config_cache);
   } else {
     chprintf(stream, "Config OK!\r\n");
+    memcpy(&config_cache, config, sizeof(userconfig));
+                                                        
     if (config_cache.in_combat != 0) {
       if (config_cache.p_type > 0) {
         // we will only release this when type is set
@@ -139,9 +143,14 @@ void configStart(void) {
         configSave(&config_cache);
       }
     }
+    
+    if (config->p_type != config->current_type) {
+      // reset class on fight
+      chprintf(stream, "Class reset to %d.\r\n", config_cache.p_type);
+      config_cache.current_type = config_cache.p_type;
+      configSave(&config_cache);
+    }
   }
-
-  memcpy(&config_cache, config, sizeof(userconfig));
 
   return;  
 }

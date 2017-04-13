@@ -104,6 +104,7 @@ void cmd_peersim(BaseSequentialStream *chp, int argc, char *argv[]) {
       char tmp[15];
       enemies[i] = (user *) chHeapAlloc(NULL, sizeof(user));
       // enemies[i]->ttl will be filled in by the recipient.
+      enemies[i]->current_type = p_guard;
       enemies[i]->p_type = p_guard;
       enemies[i]->netid = i; // fake 
       enemies[i]->ttl = 10;
