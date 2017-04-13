@@ -1142,14 +1142,7 @@ static void draw_select_buttons(void) {
   // Right
   gwinWidgetClearInit(&wi);
   wi.g.x = 290;
-#ifdef notdef
-  wi.g.show = TRUE;
-  wi.g.y = 20;
-  wi.g.width = 30;
-  wi.g.height = 180;
-  wi.text = "";
   wi.customDraw = gwinButtonDraw_ArrowRight;
-#endif
   p->ghNextEnemy = gwinButtonCreate(0, &wi);
 
   // Fight
