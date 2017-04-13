@@ -125,6 +125,7 @@ static void execute_ping(eventid_t id) {
   strncpy(upkt.name, config->name, CONFIG_NAME_MAXLEN);
 
   // copy the user data into the packet for transmission
+  upkt.current_type = config->current_type;
   upkt.p_type    = config->p_type;
   upkt.in_combat = config->in_combat;
   upkt.hp        = config->hp;
@@ -148,6 +149,7 @@ static void execute_ping(eventid_t id) {
     enemy_cleanup();
   }
   cleanup_state = !cleanup_state;
+  
 }
 
 void orchardAppUgfxCallback (void * arg, GEvent * pe)

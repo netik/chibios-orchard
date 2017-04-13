@@ -293,6 +293,7 @@ static void ct_save(OrchardAppContext *context) {
   // fly, be free!
   config->in_combat = 0;
   config->p_type = selected + 1;
+  config->current_type = selected + 1;
   
   configSave(config);
 

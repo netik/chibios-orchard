@@ -44,7 +44,7 @@ static void cmd_config_show(BaseSequentialStream *chp, int argc, char *argv[])
     chprintf(chp, "%02d/%02d/%02d %02d:%02d:%02d\r\n", 1970+dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second);
   }
   
-  chprintf(chp, "name       %s (type: %d)\r\n", config->name, config->p_type);
+  chprintf(chp, "name       %s (class now:%d / perm:%d)\r\n", config->name, config->current_type, config->p_type);
   chprintf(chp, "signature  0x%08x\r\n", config->signature);
   chprintf(chp, "version    %d\r\n", config->version);
   chprintf(chp, "netid      0x%08x\r\n", config->netid);
@@ -105,9 +105,14 @@ static void cmd_config_set(BaseSequentialStream *chp, int argc, char *argv[]) {
   }
 
   // remove these before launch!!
-  if (!strcasecmp(argv[1], "type")) {
+  if (!strcasecmp(argv[1], "ctype")) {
+    config->current_type = strtoul (argv[2], NULL, 0);
+    chprintf(chp, "current class set to %d.\r\n", config->current_type);
+    return;
+  }
+  if (!strcasecmp(argv[1], "ptype")) {
     config->p_type = strtoul (argv[2], NULL, 0);
-    chprintf(chp, "Type set to %d.\r\n", config->p_type);
+    chprintf(chp, "perm class set to %d.\r\n", config->p_type);
     return;
   }
   if (!strcasecmp(argv[1], "level")) {

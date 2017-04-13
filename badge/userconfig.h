@@ -11,7 +11,7 @@
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0
-#define CONFIG_VERSION    15
+#define CONFIG_VERSION    99
 #define CONFIG_NAME_MAXLEN 10
 
 #define CONFIG_LEDSIGN_MAXLEN	128
@@ -58,6 +58,7 @@ typedef struct userconfig {
   char led_string[CONFIG_LEDSIGN_MAXLEN];
 
   /* game */
+  player_type current_type;
   player_type p_type;
   char name[CONFIG_NAME_MAXLEN];
   
@@ -101,6 +102,7 @@ typedef struct _userpkt {
   /* Player Payload */
   char name[CONFIG_NAME_MAXLEN + 1];  /* 16 */
   player_type p_type;     /* 1 */
+  player_type current_type;     /* 1 */
   uint8_t in_combat;      /* 1 */
   uint16_t unlocks;       /* 2 */
   int16_t hp;             /* 2 */
