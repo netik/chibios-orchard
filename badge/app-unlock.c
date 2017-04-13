@@ -71,17 +71,17 @@ typedef struct _UnlockHandles {
 
 #define MAX_ULCODES 10
 
-/* codes, packed as bits */
-static uint8_t unlock_codes[MAX_ULCODES][3] = { { 0x01, 0xde, 0xf1 }, // 0
-                                                { 0x0d, 0xef, 0xad }, // 1
-                                                { 0x0a, 0x7a, 0xa7 }, // 2
-                                                { 0x07, 0x70, 0x07 }, // 3
-                                                { 0x0a, 0xed, 0x17 }, // 4
-                                                { 0x00, 0x1a, 0xc0 }, // 5
-                                                { 0x0b, 0xae, 0xac }, // 6
-                                                { 0x0d, 0xe0, 0x1a }, // 7
-                                                { 0x09, 0x00, 0x46 }, // 8
-                                                { 0x0b, 0xbb, 0xbb }  // 9
+/* codes, packed as bits. Note only last five bits are used, MSB of 1st byte is always zero */
+static uint8_t unlock_codes[MAX_ULCODES][3] = { { 0x01, 0xde, 0xf1 }, // 0 +10% DEF
+                                                { 0x0d, 0xef, 0xad }, // 1 +10% HP
+                                                { 0x0a, 0x7a, 0xa7 }, // 2 +1 MIGHT
+                                                { 0x07, 0x70, 0x07 }, // 3 +20% LUCK
+                                                { 0x0a, 0xed, 0x17 }, // 4 FASTER HEAL
+                                                { 0x00, 0x1a, 0xc0 }, // 5 MOAR LEDs
+                                                { 0x0b, 0xae, 0xac }, // 6 CAESAR
+                                                { 0x0d, 0xe0, 0x1a }, // 7 SENATOR
+                                                { 0x09, 0x00, 0x46 }, // 8 TIMELORD
+                                                { 0x0b, 0xbb, 0xbb }  // 9 BENDER
 };
 static char *unlock_desc[] = { "+10% DEF",
                                "+10% HP",

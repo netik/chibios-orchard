@@ -24,6 +24,9 @@
    UL_PLUSDEF has been activated */
 #define HEAL_INTERVAL_US 1000000      /* 1 second */
 
+/* how long to reach full heal */
+#define HEAL_TIME        25           /* seconds */
+
 /* we we will attempt to find a new caesar every these many seconds */
 #define CS_ELECT_INT     MS2ST(30000) /* 30 sec */
 #define MAX_CAESAR_TIME  3600000000   /* 1 hour */
@@ -405,10 +408,10 @@ static void default_event(OrchardAppContext *context,
 
     /* Heal the player -- 60 seconds to heal, or 30 seconds if you have the buff */
     if (config->hp < maxhp(config->unlocks, config->level)) { 
-      config->hp = config->hp + ( maxhp(config->unlocks, config->level) / 60 );
+      config->hp = config->hp + ( maxhp(config->unlocks, config->level) / HEAL_TIME );
       if (config->unlocks & UL_HEAL) {
         // 2x heal if unlocked
-        config->hp = config->hp + ( maxhp(config->unlocks, config->level) / 60 ); 
+        config->hp = config->hp + ( maxhp(config->unlocks, config->level) / HEAL_TIME ); 
       }
       
       // if we are now fully healed, save that, and prevent
