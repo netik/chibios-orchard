@@ -83,6 +83,24 @@ static void run_ping(void *arg) {
   chSysUnlockFromISR(); 
 }
 
+uint8_t nearby_caesar(void) {
+  uint8_t result = FALSE; 
+  uint8_t i;
+  
+  osalMutexLock(&enemies_mutex);
+  for( i = 0; i < MAX_ENEMIES; i++ ) {
+    if( enemies[i] == NULL )
+      continue;
+    if (enemies[i]->current_type == p_caesar) { 
+      result = TRUE;
+    }
+  }
+  osalMutexUnlock(&enemies_mutex);
+
+  return result;
+};
+
+
 void enemy_cleanup(void) {
   /* Called periodically to decrement credits and de-alloc enemies
    * we haven't seen in a while 

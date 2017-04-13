@@ -5,6 +5,9 @@
 #include "chprintf.h"
 
 #include "orchard-app.h"
+#include "orchard-events.h"
+
+#include "rand.h"
 #include "led.h"
 #include "orchard-ui.h"
 #include "images.h"
@@ -40,12 +43,10 @@ typedef struct _DefaultHandles {
 } DefaultHandles;
 
 
-const OrchardAppKeyCode konami[] = { keyUp, keyUp, keyDown, 
+const OrchardAppEventKeyCode konami[] = { keyUp, keyUp, keyDown, 
                                      keyDown, keyLeft, keyRight,
                                      keyLeft, keyRight, keySelect };
 extern uint8_t shout_ok;
-extern user *enemies[MAX_ENEMIES];
-extern mutex_t enemies_mutex;
 
 static void draw_badge_buttons(DefaultHandles * p) {
   GWidgetInit wi;
@@ -278,7 +279,7 @@ static void default_start(OrchardAppContext *context) {
   geventRegisterCallback (&p->glBadge, orchardAppUgfxCallback, &p->glBadge);
 }
 
-static inline storeKey(OrchardAppContext *context, OrchardAppKeyCode key) { 
+static inline void storeKey(OrchardAppContext *context, OrchardAppEventKeyCode key) { 
   /* remember the last pushed keys to enable the konami code */
   DefaultHandles * p;
   p = context->priv;
@@ -290,7 +291,7 @@ static inline storeKey(OrchardAppContext *context, OrchardAppKeyCode key) {
   p->last_pushed[KEY_HISTORY-1] = key;
 };
 
-static inline testKonami(OrchardAppContext *context) { 
+static inline uint8_t testKonami(OrchardAppContext *context) { 
   DefaultHandles * p;
   p = context->priv;
 
@@ -301,22 +302,6 @@ static inline testKonami(OrchardAppContext *context) {
   return true;
 }
 
-static uint8_t nearby_caesar(void) {
-  uint8_t result = FALSE; 
-
-  osalMutexLock(&enemies_mutex);
-  for( i = 0; i < MAX_ENEMIES; i++ ) {
-    if( enemies[i] == NULL )
-      continue;
-    if (enemies[i].ptype == p_caesar) { 
-      result = TRUE;
-    }
-  }
-  osalMutexUnlock(&enemies_mutex);
-
-  return result;
-};
-
 static void default_event(OrchardAppContext *context,
 	const OrchardAppEvent *event) {
   DefaultHandles * p;
@@ -324,13 +309,12 @@ static void default_event(OrchardAppContext *context,
   userconfig *config = getConfig();
   tmElements_t dt;
   char tmp[40];
-  uint8_t i;
 
   p = context->priv;
 
   if (event->type == keyEvent) {
     if (event->key.flags == keyPress)
-      storeKey(event->key.code);
+      storeKey(context, event->key.code);
 
     /* hitting enter goes into fight, unless konami has been entered,
        then we send you to the unlock screen! */
@@ -404,12 +388,12 @@ static void default_event(OrchardAppContext *context,
       last_caesar_check = chVTGetSystemTime();
 
       if ( (config->level >= 3) && 
-           (config->ptype != p_caesar) && 
+           (config->current_type != p_caesar) && 
            (nearby_caesar() == FALSE))  {
         
         if (rand() % 6 == 1) {
           /* become Caesar for an hour */
-          caesar_expires_at = chVTGetSystemTime + MS2T(3600000);
+          caesar_expires_at = chVTGetSystemTime() + MS2ST(3600000);
           /* Set myself to Caesar */
           
         }

@@ -52,6 +52,7 @@ extern void orchardAppTimer(const OrchardAppContext *context,
 extern void orchardAppUgfxCallback (void * arg, GEvent * pe);
 extern void orchardAppRadioCallback (KW01_PKT * pkt);
 
+uint8_t nearby_caesar(void);
 void enemiesSort(void);
 void enemiesLock(void);
 void enemiesUnlock(void);
