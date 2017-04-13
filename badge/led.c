@@ -171,8 +171,16 @@ void ledSetBrightness(uint8_t bval) {
 }
 
 void ledSetFunction(void *func) {
+  /* Sets the current LED function. Use NULL to reset the LEDs to
+   * the configured pattern. */
+  userconfig *config = getConfig();
+
   ledClear();
-  led_current_func = func;
+  if (func == NULL) {
+    led_current_func = fxlist[config->led_pattern].function;
+  } else {
+    led_current_func = func;
+  }
 }
 
 void ledSetProgress(float p) {
@@ -199,6 +207,36 @@ void handle_progress(void) {
     ledSetRGB(led_config.fb, i, roygbiv[c].r, roygbiv[c].g, roygbiv[c].b);
   }
 					     
+}
+
+void leds_all_strobered(void) {
+  int i;
+  ledClear();
+  for(i=0; i < LEDS_COUNT; i++)  {
+    if (fx_position % 2 == 0) {
+      if (i % 2 == 0) { 
+        ledSetRGB(led_config.fb, i, 0xff,0, 0);
+      } 
+    } else {
+      if (i % 2 != 0) { 
+        ledSetRGB(led_config.fb, i, 0xff,0, 0);
+      } 
+    }
+  }
+  fx_position++;
+}
+
+void leds_all_strobe(void) {
+  int i;
+  for(i=0; i < LEDS_COUNT; i++)  {
+    if (fx_position % 2 == 0) { 
+      ledSetRGB(led_config.fb, i, 0x00, 0x00, 0x00);
+    } else { 
+      ledSetRGB(led_config.fb, i, 0xff, 0xff, 0xff);
+    }
+  }
+
+  fx_position++;
 }
 
 void leds_test(void) {

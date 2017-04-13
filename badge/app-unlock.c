@@ -14,6 +14,7 @@
 #include "images.h"
 #include "sound.h"
 #include "dac_lld.h"
+#include "led.h"
 
 #define ALERT_DELAY 2500   // how long alerts stay on the screen.
 
@@ -250,7 +251,7 @@ static void unlock_start(OrchardAppContext *context)
 
   // aha, you found us!
   dacPlay("fight/leveiup.raw");
-
+  dacWait ();
   /* background */
   putImageFile(IMG_UNLOCKBG, 0, 0);
 
@@ -346,8 +347,8 @@ static uint8_t validate_code(OrchardAppContext *context, userconfig *config) {
       strcpy(tmp, unlock_desc[i]);
       strcat(tmp, " unlocked!");
       unlock_result(p, tmp);
-      
-      // TODO: Set all LEDs white, blink.
+        
+      ledSetFunction(leds_all_strobe);
       // if it's the bender upgrade, we become bender.
       if (i == 9) {
         config->current_type = p_bender;
@@ -361,6 +362,7 @@ static uint8_t validate_code(OrchardAppContext *context, userconfig *config) {
       configSave(config);
       
       chThdSleepMilliseconds(ALERT_DELAY);
+      ledSetFunction(NULL);
       orchardAppRun(orchardAppByName("Badge"));
       return true;
     }
@@ -392,7 +394,7 @@ static void unlock_event(OrchardAppContext *context,
     
     if (pe->type == GEVENT_GWIN_BUTTON) {
       if ( ((GEventGWinButton*)pe)->gwin == p->ghBack) {
-        orchardAppExit();
+        orchardAppRun(orchardAppByName("Badge"));
         return;
       }
       
@@ -400,13 +402,12 @@ static void unlock_event(OrchardAppContext *context,
         if (validate_code(context, config)) {
           return;
         } else {
+          ledSetFunction(leds_all_strobered);
           unlock_result(p, "unlock failed.");
           dacPlay("fight/pathtic.raw");
-          
-          // TODO: Playhardfail, set all lights red. 
           chThdSleepMilliseconds(ALERT_DELAY);
+          ledSetFunction(NULL);
           orchardAppRun(orchardAppByName("Badge"));
-          orchardAppExit();
           return;
         }
       }
@@ -479,13 +480,12 @@ static void unlock_event(OrchardAppContext *context,
       if (validate_code(context, config)) {
         return;
       } else {
+        ledSetFunction(leds_all_strobered);
         unlock_result(p, "unlock failed.");
         dacPlay("fight/pathtic.raw");
-        
-        // TODO: Playhardfail, set all lights red. 
         chThdSleepMilliseconds(ALERT_DELAY);
+        ledSetFunction(NULL);
         orchardAppRun(orchardAppByName("Badge"));
-        orchardAppExit();
         return;
       }
     }

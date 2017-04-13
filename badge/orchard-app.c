@@ -68,8 +68,14 @@ static user *enemies[MAX_ENEMIES]; // array of pointers to enemy structures
 
 static uint8_t ui_override = 0;
 
+/* app based globals */
 uint8_t shout_received;
 uint8_t shout_ok;
+
+/* this is shared between app-badge and app-unlock */
+/* engaging a temporary class change like bender or caesear will set
+   it, and it will be cleared on reset */
+uint32_t class_reset_at = 0; 
 
 static KW01_PKT orchard_pkt;
 uint8_t orchard_pkt_busy;
@@ -86,7 +92,7 @@ static void run_ping(void *arg) {
 uint8_t nearby_caesar(void) {
   uint8_t result = FALSE; 
   uint8_t i;
-  
+  /* returns true if any caesars are nearby */
   osalMutexLock(&enemies_mutex);
   for( i = 0; i < MAX_ENEMIES; i++ ) {
     if( enemies[i] == NULL )
