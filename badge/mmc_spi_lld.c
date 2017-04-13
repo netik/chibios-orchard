@@ -18,10 +18,6 @@
  * Chip select is currently set to port B, pin 0. This is wired to
  * the blue segment of the tri-color LED on the Freescale KW019032 board,
  * which means we can use it to indicate disk activity.
- *
- * SPI channel 2 is set to default to a baud rate divisor of 2, which
- * yields a clock speed of 24MHz. This seems to the maximum clock rate
- * an SD card in SPI mode can sustain.
  */
 
 /*

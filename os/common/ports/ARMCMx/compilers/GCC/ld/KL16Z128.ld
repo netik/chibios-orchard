@@ -185,6 +185,7 @@ SECTIONS
     {
         . = ALIGN(4);
         _bss_start = .;
+	*(.fsdata)
         *(.bss)
         *(.bss.*)
         *(COMMON)

@@ -84,7 +84,9 @@ static void init_config(userconfig *config) {
 
   config->current_type = p_notset; // what your current class is (caesear, bender, etc, specials...)
   config->p_type = p_notset;       // your permanent class, cannot be changed. 
-  
+  config->touch_data_present = 0;
+
+  memset(config->led_string, 0, CONFIG_LEDSIGN_MAXLEN);
   memset(config->name, 0, CONFIG_NAME_MAXLEN);
 
   config->won = 0;

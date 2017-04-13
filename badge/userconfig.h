@@ -14,6 +14,8 @@
 #define CONFIG_VERSION    99
 #define CONFIG_NAME_MAXLEN 10
 
+#define CONFIG_LEDSIGN_MAXLEN	128
+
 /* can we display these on top LEDs */
 
 typedef enum _player_type {
@@ -46,7 +48,15 @@ typedef struct userconfig {
 
   uint8_t led_shift;
   uint8_t sound_enabled;
-  
+ 
+  /* touchpad calibration data */
+  uint8_t touch_data_present;
+  float touch_data[6];
+
+  /* saved LED sign string */
+
+  char led_string[CONFIG_LEDSIGN_MAXLEN];
+
   /* game */
   player_type current_type;
   player_type p_type;

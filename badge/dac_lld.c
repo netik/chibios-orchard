@@ -144,6 +144,7 @@ THD_FUNCTION(dacThread, arg)
 	uint16_t * p;
 	userconfig *config;
 	thread_t * th;
+	char * file = NULL;
 
         (void)arg;
 
@@ -153,6 +154,7 @@ THD_FUNCTION(dacThread, arg)
 	while (1) {
 		if (play == 0) {
 			th = chMsgWait ();
+			file = fname;
 			chMsgRelease (th, MSG_OK);
 		}
  
@@ -168,7 +170,7 @@ THD_FUNCTION(dacThread, arg)
 		if (dacBuf != NULL)
 			continue;
 
-		if (f_open (&f, fname, FA_READ) != FR_OK)
+		if (f_open (&f, file, FA_READ) != FR_OK)
 			continue;
 
 		dacBuf = chHeapAlloc (NULL,
@@ -230,7 +232,8 @@ THD_FUNCTION(dacThread, arg)
 		dacpos = 0;
 		dacmax = 0;
 		dacbuf = NULL;
-		if (play && dacloop == DAC_PLAY_ONCE) {
+		if (br == 0 && dacloop == DAC_PLAY_ONCE) {
+			file = NULL;
 			play = 0;
 		}
 		chHeapFree (dacBuf);

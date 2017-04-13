@@ -164,11 +164,13 @@ static void keyboard_start (OrchardAppContext *context)
 		context->instance->uicontext->itemlist[0]);
 
 	/* Draw the keyboard widget */
+	wi.g.y = gdispGetHeight() / 2;
+#ifdef notdef
 	wi.g.show = FALSE;
 	wi.g.x = 0;
-	wi.g.y = gdispGetHeight() / 2;
 	wi.g.width = gdispGetWidth();
 	wi.g.height = gdispGetHeight() / 2;
+#endif
 	p->ghKeyboard = gwinKeyboardCreate (0, &wi);
 	gwinSetStyle (p->ghKeyboard, &WhiteWidgetStyle);
 	gwinShow (p->ghKeyboard);

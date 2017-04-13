@@ -522,8 +522,8 @@ typedef struct {
 #if _VOLUMES < 1 || _VOLUMES > 9
 #error Wrong _VOLUMES setting
 #endif
-static FATFS *FatFs[_VOLUMES];	/* Pointer to the file system objects (logical drives) */
-static WORD Fsid;				/* File system mount ID */
+static __attribute__((section(".fsdata"))) FATFS *FatFs[_VOLUMES];	/* Pointer to the file system objects (logical drives) */
+static __attribute__((section(".fsdata"))) WORD Fsid;				/* File system mount ID */
 
 #if _FS_RPATH != 0 && _VOLUMES >= 2
 static BYTE CurrVol;			/* Current drive */

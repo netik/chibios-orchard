@@ -4,13 +4,13 @@
 
 #include <string.h>
 
+static const int del[] = {1000,900,500,400,100,90,50,40,10,9,5,4,1};
+static const char * sym[] = { "M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I" };
+
 char *dec2romanstr(unsigned int num) {
   static char res[16] = "\0";
   res[0] = '\0';
   
-  int del[] = {1000,900,500,400,100,90,50,40,10,9,5,4,1};
-  char * sym[] = { "M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I" };
-
   int i = 0;
   while (num){
     while (num/del[i]){

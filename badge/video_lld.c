@@ -133,8 +133,6 @@
 
 #include "src/gdisp/gdisp_driver.h"
 
-extern LLDSPEC void gdisp_lld_write_start_ex(GDisplay *g);
-
 /* Enable this if SD card I/O is too slow. */
 
 #undef VIDEO_AUTO_RATE_ADJUST
@@ -316,6 +314,19 @@ videoWinPlay (char * fname, int x, int y)
 	gdisp_lld_write_start (GDISP);
 	gdisp_lld_write_stop (GDISP);
 
+	/*
+	 * Now that we've programmed the viewport, we set the X/Y
+	 * coordinates to special values that tell the
+	 * gdisp_lld_write_start function to skip programming
+	 * the viewport area again. This saves us from calling
+	 * the set_viewport() function for every scanline, which
+	 * would be redundant: we're always just drawing data to
+	 * the same window until the video compltes.
+	 */
+
+	GDISP->p.x = -1;
+	GDISP->p.y = -1;
+
 	buf = chHeapAlloc (NULL, VID_BUFSZ + VID_EXTRA);
 
 	dacPlay (NULL);
@@ -410,21 +421,26 @@ videoWinPlay (char * fname, int x, int y)
 		 * same 128x96 pixel format in which it was encoded,
 		 * we can just DMA the pixels directly to the screen.
 		 *
-		 * Note: gdisp_lld_write_start_ex() is a custom version
-		 * of gdisp_lld_write_start() that doesn't update the
-		 * drawing area. We don't need to do that since all our
-		 * frames will go to the same place. This means we
-		 * only need to initialize it once. Sadly, we still need
-		 * to call the start/stop routines every time we go
-		 * to draw to the screen because the sceen and SD card
-		 * are on the same SPI channel. For performance, we
-		 * program the SPI controller to use 16-bit mode when
-		 * talking to to the screen, but we use 8-bit mode when
-		 * talking to the SD card. We need to use the start/stop
-		 * function to switch the modes.
+		 * Note that when we call gdisp_lld_write_start() here,
+		 * it does not reset the viewport because we previously
+		 * programmed the display X/Y coordinates to -1 before
+		 * we began playing the video. This tells the start
+		 * routine to skip the set_viewport() ste. We don't need
+		 * it because the display chip will automatically wrap
+		 * back to the start of the viewport once we finish drawing
+		 * a frame. This means we only need to initialize the
+		 * viewport once.
+		 *
+		 * Sadly, we still need to call the start/stop routines
+		 * every time we draw to the screen because the sceen,
+		 * SD card and touch controller are all on the same SPI
+		 * channel. For performance, we program the SPI controller
+		 * to use 16-bit mode when talking to to the screen, but we
+		 * use 8-bit mode fo everything else. So we need the
+		 * start/stop functions to switch the modes.
 		 */
 
-		gdisp_lld_write_start_ex (GDISP);
+		gdisp_lld_write_start (GDISP);
 
 		if (x == 0 && y == 0) {
 			draw_lines (buf, j & 1);
@@ -452,12 +468,16 @@ videoWinPlay (char * fname, int x, int y)
 	dacBuf = NULL;
 	f_close (&f);
 
-	/* Re-initialize the DAC's PIT frequency, in case we changed it. */
 
 	pitDisable (&PIT1, 1);
 	dacSamplesPlay (NULL, 0);
+
+#ifdef VIDEO_AUTO_RATE_ADJUST
+	/* Re-initialize the DAC's PIT frequency, in case we changed it. */
+
 	CSR_WRITE_4(&PIT1, PIT_LDVAL1,
 	    KINETIS_BUSCLK_FREQUENCY / DAC_SAMPLERATE);
+#endif
 
 	return;
 }

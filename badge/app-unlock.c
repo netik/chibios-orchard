@@ -148,8 +148,9 @@ static void init_unlock_ui(UnlockHandles *p) {
   gwinRedraw(p->ghNum2);
 
   // create button widget: ghNum3
-  wi.g.show = TRUE;
   wi.g.x = 140;
+#ifdef notdef
+  wi.g.show = TRUE;
   wi.g.y = 40;
   wi.g.width = 40;
   wi.g.height = 40;
@@ -157,13 +158,15 @@ static void init_unlock_ui(UnlockHandles *p) {
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
   wi.customStyle = &ivory;
+#endif
   p->ghNum3 = gwinButtonCreate(0, &wi);
   gwinSetFont(p->ghNum3, p->font_jupiterpro_36);
   gwinRedraw(p->ghNum3);
 
   // create button widget: ghNum4
-  wi.g.show = TRUE;
   wi.g.x = 190;
+#ifdef notdef
+  wi.g.show = TRUE;
   wi.g.y = 40;
   wi.g.width = 40;
   wi.g.height = 40;
@@ -171,13 +174,15 @@ static void init_unlock_ui(UnlockHandles *p) {
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
   wi.customStyle = &ivory;
+#endif
   p->ghNum4 = gwinButtonCreate(0, &wi);
   gwinSetFont(p->ghNum4, p->font_jupiterpro_36);
   gwinRedraw(p->ghNum4);
 
   // create button widget: ghNum5
-  wi.g.show = TRUE;
   wi.g.x = 240;
+#ifdef notdef
+  wi.g.show = TRUE;
   wi.g.y = 40;
   wi.g.width = 40;
   wi.g.height = 40;
@@ -185,29 +190,34 @@ static void init_unlock_ui(UnlockHandles *p) {
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
   wi.customStyle = &ivory;
+#endif
   p->ghNum5 = gwinButtonCreate(0, &wi);
   gwinSetFont(p->ghNum5,  p->font_jupiterpro_36);
   gwinRedraw(p->ghNum5);
   
   // create button widget: ghBack
+#ifdef notdef
   wi.g.show = TRUE;
+  wi.customStyle = &ivory;
+#endif
   wi.g.x = 10;
   wi.g.y = 100;
   wi.g.width = 110;
   wi.g.height = 30;
   wi.text = "<-";
-  wi.customStyle = &ivory;
   p->ghBack = gwinButtonCreate(0, &wi);
 
   // create button widget: ghUnlock
-  wi.g.show = TRUE;
   wi.g.x = 200;
   wi.g.y = 100;
+#ifdef notdef
+  wi.g.show = TRUE;
   wi.g.width = 110;
   wi.g.height = 30;
+  wi.customStyle = &ivory;
+#endif
   wi.text = "UNLOCK";
   wi.customDraw = 0;
-  wi.customStyle = &ivory;
   p->ghUnlock = gwinButtonCreate(0, &wi);
   gwinSetFont(p->ghUnlock, p->font_manteka_20);
   gwinRedraw(p->ghUnlock);

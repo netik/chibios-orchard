@@ -133,7 +133,7 @@ video_event(OrchardAppContext *context, const OrchardAppEvent *event)
 	    event->ui.flags == uiOK) {
 		/*
 		 * If this is the list ui exiting, it means we chose a
-		 * video to play. Now switch to the keyboard ui.
+		 * video to play, or else the user selected exit.
 		 */
 
  		ui->exit (context);

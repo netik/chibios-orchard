@@ -46,14 +46,16 @@ static void draw_badge_buttons(DefaultHandles * p) {
 
   p->ghFightButton = gwinButtonCreate(NULL, &wi);
 
+#ifdef notdef
   gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
   wi.g.width = 60;
   wi.g.height = 60;
   wi.g.y = totalheight - 60;
-  wi.g.x = gdispGetWidth() - 60;
   wi.text = "";
   wi.customDraw = noRender;
+#endif
+  wi.g.x = gdispGetWidth() - 60;
 
   p->ghExitButton = gwinButtonCreate(NULL, &wi);
 }

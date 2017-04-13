@@ -10,6 +10,7 @@
  * @brief   GINPUT mouse/touch code.
  */
 #include "../../gfx.h"
+#include <string.h>
 
 #if GFX_USE_GINPUT && GINPUT_NEED_MOUSE
 
@@ -800,7 +801,7 @@ bool_t ginputGetMouseStatus(unsigned instance, GEventMouse *pe) {
         if (!(gmvmt(m)->d.flags & GMOUSE_VFLG_CALIBRATE))
         	return 0;
 
-		return CalibrateMouse(m);
+	return CalibrateMouse(m);
 	}
 #endif
 
