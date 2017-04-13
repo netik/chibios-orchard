@@ -23,7 +23,7 @@ typedef enum _player_type {
   p_guard,
   p_senator,
   p_gladiatrix,
-  p_casear,
+  p_caesar,
   p_bender
 } player_type;
 

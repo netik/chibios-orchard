@@ -52,7 +52,6 @@ static uint16_t fontsm_height;
 static uint16_t fontlg_height;
 extern struct FXENTRY fxlist[];
 
-
 static uint16_t calc_xp_gain(uint8_t won) {
   userconfig *config = getConfig();
   float factor = 1;

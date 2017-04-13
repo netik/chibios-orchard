@@ -19,16 +19,33 @@
 
 /* we will heal the player at N hp per this interval or 2X HP if
    UL_PLUSDEF has been activated */
-#define HEAL_INTERVAL_US 1000000
-#define HEAL_AMT 5
+#define HEAL_INTERVAL_US 1000000      /* 1 second */
+
+/* we we will attempt to find a new caesar every these many seconds */
+#define CS_ELECT_INT     MS2ST(30000) /* 30 sec */
+#define MAX_CAESAR_TIME  3600000000   /* 1 hour */
+
+/* remember these many last key-pushes */
+#define KEY_HISTORY 8
+
+static uint32_t last_caesar_check = 0;
+static uint32_t caesar_expires_at = 0;
 
 typedef struct _DefaultHandles {
   GHandle ghFightButton;
   GHandle ghExitButton;
   GListener glBadge;
+  /* ^ ^ v v < > < > ent will fire the unlocks screen */
+  OrchardAppEventKeyCode last_pushed[KEY_HISTORY];
 } DefaultHandles;
 
+
+const OrchardAppKeyCode konami[] = { keyUp, keyUp, keyDown, 
+                                     keyDown, keyLeft, keyRight,
+                                     keyLeft, keyRight, keySelect };
 extern uint8_t shout_ok;
+extern user *enemies[MAX_ENEMIES];
+extern mutex_t enemies_mutex;
 
 static void draw_badge_buttons(DefaultHandles * p) {
   GWidgetInit wi;
@@ -237,6 +254,7 @@ static uint32_t default_init(OrchardAppContext *context) {
   (void)context;
 
   shout_ok = 1;
+
   orchardAppTimer(context, HEAL_INTERVAL_US, true);
   
   return 0;
@@ -246,9 +264,10 @@ static void default_start(OrchardAppContext *context) {
   DefaultHandles * p;
 
   p = chHeapAlloc (NULL, sizeof(DefaultHandles));
-
   context->priv = p;
-  
+
+  last_caesar_check = chVTGetSystemTime();
+
   gdispClear(Black);
 
   redraw_badge();
@@ -259,6 +278,45 @@ static void default_start(OrchardAppContext *context) {
   geventRegisterCallback (&p->glBadge, orchardAppUgfxCallback, &p->glBadge);
 }
 
+static inline storeKey(OrchardAppContext *context, OrchardAppKeyCode key) { 
+  /* remember the last pushed keys to enable the konami code */
+  DefaultHandles * p;
+  p = context->priv;
+
+  for (int i=1; i < KEY_HISTORY; i++) {
+    p->last_pushed[i-1] = p->last_pushed[i];
+  }
+  
+  p->last_pushed[KEY_HISTORY-1] = key;
+};
+
+static inline testKonami(OrchardAppContext *context) { 
+  DefaultHandles * p;
+  p = context->priv;
+
+  for (int i=0; i < KEY_HISTORY; i++) {
+    if (p->last_pushed[i] != konami[i]) 
+      return false;
+  }
+  return true;
+}
+
+static uint8_t nearby_caesar(void) {
+  uint8_t result = FALSE; 
+
+  osalMutexLock(&enemies_mutex);
+  for( i = 0; i < MAX_ENEMIES; i++ ) {
+    if( enemies[i] == NULL )
+      continue;
+    if (enemies[i].ptype == p_caesar) { 
+      result = TRUE;
+    }
+  }
+  osalMutexUnlock(&enemies_mutex);
+
+  return result;
+};
+
 static void default_event(OrchardAppContext *context,
 	const OrchardAppEvent *event) {
   DefaultHandles * p;
@@ -266,22 +324,27 @@ static void default_event(OrchardAppContext *context,
   userconfig *config = getConfig();
   tmElements_t dt;
   char tmp[40];
-  
+  uint8_t i;
+
   p = context->priv;
 
   if (event->type == keyEvent) {
-    // Enter to fight
+    if (event->key.flags == keyPress)
+      storeKey(event->key.code);
+
+    /* hitting enter goes into fight, unless konami has been entered,
+       then we send you to the unlock screen! */
     if ( (event->key.code == keySelect) &&
          (event->key.flags == keyPress) )  {
-      orchardAppRun(orchardAppByName("Fight"));
+
+      if (testKonami(context)) { 
+        orchardAppRun(orchardAppByName("Unlocks"));
+      } else {
+        orchardAppRun(orchardAppByName("Fight"));
+      }
       return;
     }
-    // Left to go back to the launcher
-    if ( (event->key.code == keyLeft) &&
-         (event->key.flags == keyPress) )  {
-	orchardAppExit();
-	return;
-    }
+
   }
   
   if (event->type == ugfxEvent) {
@@ -291,12 +354,12 @@ static void default_event(OrchardAppContext *context,
     case GEVENT_GWIN_BUTTON:
       if (((GEventGWinButton*)pe)->gwin == p->ghFightButton) {
         orchardAppRun(orchardAppByName("Fight"));
-	return;
+        return;
       }
 
       if (((GEventGWinButton*)pe)->gwin == p->ghExitButton) {
-	orchardAppExit();
-	return;
+        orchardAppExit();
+        return;
       }
 
       break;
@@ -326,23 +389,53 @@ static void default_event(OrchardAppContext *context,
                           fontXS, Grey, justifyLeft);
 
     }
-    
-    if (config->hp < maxhp(config->unlocks, config->level)) { 
-        config->hp = config->hp + HEAL_AMT;
-        if (config->unlocks & UL_HEAL) {
-          // 2x heal if unlocked
-          config->hp = config->hp + HEAL_AMT;
-        }
 
-        // if we are now fully healed, save that, and prevent
-        // overflow.
-        if (config->hp >= maxhp(config->unlocks, config->level)) {
-          config->hp = maxhp(config->unlocks, config->level);
-          configSave(config);
-          redraw_badge();
-        } else {
-          redraw_badge();
+    /* Caesar Election
+     * ---------------
+     * every 60 seconds...
+     * If there are no nearby Caesars... 
+     * ... and I am not caesar already ... 
+     * and my level is >= 3 
+     * and I can roll 1d10 and we get 1 to 3, then 
+     * we become caesar
+    */
+
+    if ( (chVTGetSystemTime() - last_caesar_check) > CS_ELECT_INT ) { 
+      last_caesar_check = chVTGetSystemTime();
+
+      if ( (config->level >= 3) && 
+           (config->ptype != p_caesar) && 
+           (nearby_caesar() == FALSE))  {
+        
+        if (rand() % 6 == 1) {
+          /* become Caesar for an hour */
+          caesar_expires_at = chVTGetSystemTime + MS2T(3600000);
+          /* Set myself to Caesar */
+          
         }
+      }
+    }
+
+    /* is it time to revert the player? */
+    /* if so, revert the player */
+
+    /* Heal the player -- 60 seconds to heal, or 30 seconds if you have the buff */
+    if (config->hp < maxhp(config->unlocks, config->level)) { 
+      config->hp = config->hp + ( maxhp(config->unlocks, config->level) / 60 );
+      if (config->unlocks & UL_HEAL) {
+        // 2x heal if unlocked
+        config->hp = config->hp + ( maxhp(config->unlocks, config->level) / 60 ); 
+      }
+      
+      // if we are now fully healed, save that, and prevent
+      // overflow.
+      if (config->hp >= maxhp(config->unlocks, config->level)) {
+        config->hp = maxhp(config->unlocks, config->level);
+        configSave(config);
+        redraw_badge();
+      } else {
+        redraw_badge();
+      }
     }
   }
 }
