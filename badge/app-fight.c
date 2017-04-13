@@ -1141,7 +1141,12 @@ static void draw_select_buttons(void) {
 
   // Right
   gwinWidgetClearInit(&wi);
+  wi.g.show = TRUE;
   wi.g.x = 290;
+  wi.g.y = 20;
+  wi.g.width = 30;
+  wi.g.height = 180;
+  wi.text = "";
   wi.customDraw = gwinButtonDraw_ArrowRight;
   p->ghNextEnemy = gwinButtonCreate(0, &wi);
 
