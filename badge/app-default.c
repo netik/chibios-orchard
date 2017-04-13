@@ -29,7 +29,7 @@
 #define MAX_CAESAR_TIME  3600000000   /* 1 hour */
 
 /* remember these many last key-pushes */
-#define KEY_HISTORY 8
+#define KEY_HISTORY 9
 
 static uint32_t last_caesar_check = 0;
 static uint32_t caesar_expires_at = 0;

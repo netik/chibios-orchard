@@ -61,6 +61,7 @@ sounds: snd16to12 $(addprefix dac/, $(notdir  $(addsuffix .raw, $(basename $(wil
 sdcard: images midi sounds
 	@if [ ! -d "sdcard" ]; then mkdir sdcard; fi
 	@cp rgb/*.rgb sdcard
+	@if [ ! -d "sdcard/font/led" ]; then mkdir -p sdcard/font/led; fi
 	@cp rgb/font/led/*.rgb sdcard/font/led
 	@find midi -name \*.bin -exec cp {} sdcard \;
 	@cp ../updater/updater.bin sdcard

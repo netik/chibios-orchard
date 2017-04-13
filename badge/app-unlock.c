@@ -244,9 +244,12 @@ static void unlock_start(OrchardAppContext *context)
 {
   UnlockHandles *p;
   uint8_t i;
-  
+
   // clear the screen
   gdispClear (Black);
+
+  // aha, you found us!
+  dacPlay("fight/leveiup.raw");
 
   /* background */
   putImageFile(IMG_UNLOCKBG, 0, 0);

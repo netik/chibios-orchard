@@ -25,7 +25,7 @@ ifeq ($(USE_OPT),)
 # interrupts, we'll get stuck forever thinking the buttons are being
 # pressed. Only the real badge has the right joypad buttons anyway.
 
-# USE_OPT += -DENABLE_JOYPAD
+USE_OPT += -DENABLE_JOYPAD
 
 # Enable tilt sensor. Also only present on production board.
 
