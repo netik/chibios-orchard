@@ -16,8 +16,6 @@
 #include "dac_lld.h"
 #include "led.h"
 
-#define ALERT_DELAY 2500   // how long alerts stay on the screen.
-
 // WidgetStyle: Ivory
 const GWidgetStyle ivory = {
   HTML2COLOR(0xffefbe),              // background

@@ -54,32 +54,25 @@ static uint32_t shout_init (OrchardAppContext *context)
 static void shout_start (OrchardAppContext *context)
 {
 	OrchardUiContext * keyboardUiContext;
+        context->instance->uicontext = NULL;
 	char * p;
-        userconfig *config = getConfig();
-
-        if (config->airplane_mode) {
-          screen_alert_draw(true, "TURN OFF AIRPLANE MODE!");
-          chThdSleepMilliseconds(ALERT_DELAY);
-          orchardAppRun(orchardAppByName("Badge"));
-          return;
+        if (airplane_mode_check() == false) { 
+          p = chHeapAlloc (NULL, KW01_PKT_PAYLOADLEN);
+          memset (p, 0, KW01_PKT_PAYLOADLEN);
+          keyboardUiContext = chHeapAlloc(NULL, sizeof(OrchardUiContext));
+          keyboardUiContext->itemlist = (const char **)chHeapAlloc(NULL,
+                                                                   sizeof(char *) * 2);
+          keyboardUiContext->itemlist[0] =
+            "Shout something,\npress ENTER when done";
+          keyboardUiContext->itemlist[1] = p;
+          keyboardUiContext->total = KW01_PKT_PAYLOADLEN - 1;
+          
+          context->instance->ui = getUiByName ("keyboard");
+          context->instance->uicontext = keyboardUiContext;
+          
+          context->instance->ui->start (context);
         }
-
-	p = chHeapAlloc (NULL, KW01_PKT_PAYLOADLEN);
-
-	memset (p, 0, KW01_PKT_PAYLOADLEN);
-
-        keyboardUiContext = chHeapAlloc(NULL, sizeof(OrchardUiContext));
-	keyboardUiContext->itemlist = (const char **)chHeapAlloc(NULL,
-		sizeof(char *) * 2);
-	keyboardUiContext->itemlist[0] =
-                "Shout something,\npress ENTER when done";
-	keyboardUiContext->itemlist[1] = p;
-	keyboardUiContext->total = KW01_PKT_PAYLOADLEN - 1;
-
-	context->instance->ui = getUiByName ("keyboard");
-	context->instance->uicontext = keyboardUiContext;
-        context->instance->ui->start (context);
-
+        
 	return;
 }
 
@@ -139,10 +132,12 @@ static void shout_event (OrchardAppContext *context,
 
 static void shout_exit (OrchardAppContext *context)
 {
-	chHeapFree (context->instance->uicontext->itemlist);
-	chHeapFree (context->instance->uicontext);
+  if (context->instance->uicontext) { 
+    chHeapFree (context->instance->uicontext->itemlist);
+    chHeapFree (context->instance->uicontext);
+  }
 
-	return;
+  return;
 }
 
 orchard_app("Radio shout", 0, shout_init, shout_start, shout_event, shout_exit);

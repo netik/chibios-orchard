@@ -8,6 +8,7 @@
 #include "led.h"
 #include "string.h"
 #include "fontlist.h"
+#include "ides_gfx.h"
 
 // WidgetStyle: RedButton, the only button we really use
 const GWidgetStyle RedButtonStyle = {
@@ -164,3 +165,15 @@ void screen_alert_draw(uint8_t clear, char *msg) {
   gdispCloseFont(fontFF);
 }
 
+uint8_t airplane_mode_check(void) {
+  userconfig *config = getConfig();
+
+  if (config->airplane_mode) {
+    screen_alert_draw(true, "TURN OFF AIRPLANE MODE!");
+    chThdSleepMilliseconds(ALERT_DELAY);
+    orchardAppRun(orchardAppByName("Badge"));
+    return true;
+  } else {
+    return false;
+  }
+}
