@@ -297,6 +297,10 @@ static void setup_event(OrchardAppContext *context,
 	// The state of our checkbox has changed
 	config->sound_enabled = ((GEventGWinCheckbox*)pe)->isChecked;
       }
+      if (((GEventGWinCheckbox*)pe)->gwin == p->ghCheckAirplane) {
+	// The state of our checkbox has changed
+	config->airplane_mode = ((GEventGWinCheckbox*)pe)->isChecked;
+      }
       break;
     case GEVENT_GWIN_BUTTON:
       if (((GEventGWinButton*)pe)->gwin == p->ghButtonOK) {

@@ -7,6 +7,7 @@
 #include "orchard-app.h"
 #include "led.h"
 #include "string.h"
+#include "fontlist.h"
 
 // WidgetStyle: RedButton, the only button we really use
 const GWidgetStyle RedButtonStyle = {
@@ -140,4 +141,26 @@ void blinkText (coord_t x, coord_t y,coord_t cx, coord_t cy, char *text, font_t 
   }
 }
 
+void screen_alert_draw(uint8_t clear, char *msg) {
+  uint16_t middle = (gdispGetHeight() / 2);
+  font_t fontFF = gdispOpenFont (FONT_FIXED);
+  
+  if (clear) {
+    gdispClear(Black);
+  } else {
+    // just black out the drawing area. 
+    gdispFillArea( 0, middle - 20, 320, 40, Black );
+  }
+  
+  gdispDrawThickLine(0,middle - 20, 320, middle -20, Red, 2, FALSE);
+  gdispDrawThickLine(0,middle + 20, 320, middle +20, Red, 2, FALSE);
+    
+  gdispDrawStringBox (0,
+		      (gdispGetHeight() / 2) - (gdispGetFontMetric(fontFF, fontHeight) / 2),
+		      gdispGetWidth(),
+		      gdispGetFontMetric(fontFF, fontHeight),
+		      msg,
+		      fontFF, Red, justifyCenter);
+  gdispCloseFont(fontFF);
+}
 

@@ -18,7 +18,6 @@
 #define MAX_HOLDOFF 100                // we introduce a small delay if we are resending (contention protocol). MUST BE IN mS
 #define MAX_RETRIES 4                  // if we do that 3 times, abort.
 #define MOVE_WAIT_TIME MS2ST(60000)    // Max game time. MUST BE IN SYSTEM TICKS. If you do nothing, the game ends.
-#define ALERT_DELAY 1500               // how long alerts (screen_alert) stay on the screen.
 
 // where the progres bar goes 
 #define PROGRESS_BAR_X 60

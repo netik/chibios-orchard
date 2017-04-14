@@ -35,6 +35,7 @@
 #include "radio_lld.h"
 #include "fontlist.h"
 #include "sound.h"
+#include "ides_gfx.h"
 
 #include <string.h>
 
@@ -54,6 +55,14 @@ static void shout_start (OrchardAppContext *context)
 {
 	OrchardUiContext * keyboardUiContext;
 	char * p;
+        userconfig *config = getConfig();
+
+        if (config->airplane_mode) {
+          screen_alert_draw(true, "TURN OFF AIRPLANE MODE!");
+          chThdSleepMilliseconds(ALERT_DELAY);
+          orchardAppRun(orchardAppByName("Badge"));
+          return;
+        }
 
 	p = chHeapAlloc (NULL, KW01_PKT_PAYLOADLEN);
 

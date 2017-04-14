@@ -19,8 +19,6 @@
 #include "sound.h"
 #include "dac_lld.h"
 
-#define ALERT_DELAY 2500
-
 // handles
 typedef struct _CtHandles {
   // GListener
@@ -297,7 +295,7 @@ static void ct_save(OrchardAppContext *context) {
   
   configSave(config);
 
-  chThdSleepMilliseconds(ALERT_DELAY);
+  chThdSleepMilliseconds(2500);
 }
 
 static void ct_event(OrchardAppContext *context,

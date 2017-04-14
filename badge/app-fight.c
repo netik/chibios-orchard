@@ -130,27 +130,6 @@ static void changeState(fight_state nextstate) {
 
 }
 
-static void screen_alert_draw(uint8_t clear, char *msg) {
-  uint16_t middle = (gdispGetHeight() / 2);
-
-  if (clear) {
-    gdispClear(Black);
-  } else {
-    // just black out the drawing area. 
-    gdispFillArea( 0, middle - 20, 320, 40, Black );
-  }
-  
-  gdispDrawThickLine(0,middle - 20, 320, middle -20, Red, 2, FALSE);
-  gdispDrawThickLine(0,middle + 20, 320, middle +20, Red, 2, FALSE);
-    
-  gdispDrawStringBox (0,
-		      (gdispGetHeight() / 2) - (gdispGetFontMetric(fontFF, fontHeight) / 2),
-		      gdispGetWidth(),
-		      gdispGetFontMetric(fontFF, fontHeight),
-		      msg,
-		      fontFF, Red, justifyCenter);
-}
-
 //--------------------- state funcs
 static void state_idle_enter(void) {
   userconfig *config = getConfig();
@@ -1390,10 +1369,18 @@ static void updatehp(void)  {
 static void fight_start(OrchardAppContext *context) {
   FightHandles *p = context->priv;
   user **enemies = enemiesGet();
-
+  userconfig *config = getConfig();
+  
   p = chHeapAlloc (NULL, sizeof(FightHandles));
   memset(p, 0, sizeof(FightHandles));
   context->priv = p;
+
+  if (config->airplane_mode) {
+    screen_alert_draw(true, "TURN OFF AIRPLANE MODE!");
+    chThdSleepMilliseconds(ALERT_DELAY);
+    orchardAppRun(orchardAppByName("Badge"));
+    return;
+  }
 
   last_ui_time = chVTGetSystemTime();
   orchardAppTimer(context, FRAME_INTERVAL_US, true);
@@ -1401,7 +1388,7 @@ static void fight_start(OrchardAppContext *context) {
   geventListenerInit(&p->glFight);
   gwinAttachListener(&p->glFight);
   geventRegisterCallback (&p->glFight, orchardAppUgfxCallback, &p->glFight);
-
+  
   // are we entering a fight?
   chprintf(stream, "FIGHT: entering with enemy %08x state %d\r\n", current_enemy.netid, current_fight_state);
   last_tick_time = chVTGetSystemTime();

@@ -136,6 +136,11 @@ static void execute_ping(eventid_t id) {
 
   config = getConfig();
 
+  if (config->airplane_mode) {
+    /* we do not send pings in airplane mode */
+    return;
+  }
+  
   /* time to send a ping. */
   /* build packet */
 
