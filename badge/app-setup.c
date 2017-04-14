@@ -14,6 +14,7 @@
 #include "gfx.h"
 
 #include "ides_gfx.h"
+#include "unlocks.h"
 
 // GHandles
 typedef struct _SetupHandles {
@@ -169,7 +170,7 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.g.y = 110;
   wi.g.width = 110;
   wi.g.height = 36;
-  wi.text = "Cal Touch";
+  wi.text = "Touch Cal";
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
   wi.customStyle = 0;
@@ -247,15 +248,25 @@ static void setup_event(OrchardAppContext *context,
   GEvent * pe;
   userconfig *config = getConfig();
   SetupHandles * p;
-
+  uint8_t max_led_patterns;
+  
   p = context->priv;
+
+  if ( config->unlocks & UL_LEDS ) { 
+    max_led_patterns = LED_PATTERNS_FULL;
+  } else {
+    max_led_patterns = LED_PATTERNS_LIMITED;
+  }
+       
+  
+  /* handle events */
   if (event->type == timerEvent) {
     if( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) {
       orchardAppRun(orchardAppByName("Badge"));
     }
     return;
   }
-
+  
   if (event->type == keyEvent) {
     last_ui_time = chVTGetSystemTime();
     if ( (event->key.code == keyLeft) &&
@@ -274,14 +285,14 @@ static void setup_event(OrchardAppContext *context,
          (event->key.flags == keyPress) )  {
       config->led_pattern--;
       ledResetPattern();
-      if (config->led_pattern == 255) config->led_pattern = LED_PATTERN_COUNT - 1;
+      if (config->led_pattern == 255) config->led_pattern = max_led_patterns - 1;
       ledSetFunction(fxlist[config->led_pattern].function);
     }
     if ( (event->key.code == keyDown) &&
          (event->key.flags == keyPress) )  {
       config->led_pattern++;
       ledResetPattern();
-      if (config->led_pattern >= LED_PATTERN_COUNT) config->led_pattern = 0;
+      if (config->led_pattern >= max_led_patterns) config->led_pattern = 0;
       ledSetFunction(fxlist[config->led_pattern].function);
     }
   }
@@ -336,14 +347,14 @@ static void setup_event(OrchardAppContext *context,
       if (((GEventGWinButton*)pe)->gwin == p->ghButtonPatDn) {
 	config->led_pattern++;
 	ledResetPattern();
-	if (config->led_pattern >= LED_PATTERN_COUNT) config->led_pattern = 0;
+	if (config->led_pattern >= max_led_patterns) config->led_pattern = 0;
         ledSetFunction(fxlist[config->led_pattern].function);
       }
       
       if (((GEventGWinButton*)pe)->gwin == p->ghButtonPatUp) {
 	config->led_pattern--;
 	ledResetPattern();
-	if (config->led_pattern == 255) config->led_pattern = LED_PATTERN_COUNT - 1;
+	if (config->led_pattern == 255) config->led_pattern = max_led_patterns - 1;
         ledSetFunction(fxlist[config->led_pattern].function);
       }
       break;

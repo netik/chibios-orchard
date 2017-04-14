@@ -59,18 +59,18 @@ static void ledSetRGB(void *ptr, int x, uint8_t r, uint8_t g, uint8_t b);
 
 /* Update FX_COUNT in led.h if you make changes here */
 const struct FXENTRY fxlist[] = {
+  { "Double Bounce", anim_dualbounce },
   { "Dot (White)", anim_dot},
   { "Larsen Scanner", anim_larsen},
-  { "Spot the Fed", anim_police_all},
-  { "Mardi Gras", anim_police_dots},
   { "Rainbow Fade", anim_rainbow_fade},
   { "Rainbow Loop", anim_rainbow_loop},
   { "Green Spiral", anim_solid_color},
   { "Yellow Ramp", anim_triangle},
-  { "Violets", anim_violets},
   { "Random Hue Pulse", anim_one_hue_pulse},
-  { "Double Bounce", anim_dualbounce },
   { "Wave", anim_wave },
+  { "Mardi Gras", anim_police_dots},
+  { "Spot the Fed", anim_police_all},
+  { "Violets", anim_violets},
   { "Violet Wave", anim_violetwave },
   { "All Solid", anim_all_same}
 };

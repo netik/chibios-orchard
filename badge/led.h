@@ -6,6 +6,10 @@
 
 #define LEDS_COUNT 12
 
+/* starting from 1, not 0!  */
+#define LED_PATTERNS_LIMITED 10 // most but not all patterns
+#define LED_PATTERNS_FULL    14 // all if unlocked.
+
 #define sign(x) (( x > 0 ) - ( x < 0 ))
 
 typedef struct Color Color;
@@ -58,7 +62,5 @@ struct FXENTRY {
   char *name;
   void (*function)(void);
 };
-
-#define LED_PATTERN_COUNT 14 // starting from 1, not 0! 
 
 #endif /* __LED_H__ */

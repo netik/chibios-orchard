@@ -14,6 +14,8 @@
 #include "orchard-app.h"
 #include "userconfig.h"
 
+#include "unlocks.h"
+
 /* prototypes */
 static void cmd_config_show(BaseSequentialStream *chp, int argc, char *argv[]);
 static void cmd_config_set(BaseSequentialStream *chp, int argc, char *argv[]);
@@ -250,14 +252,21 @@ static void cmd_config_led_run(BaseSequentialStream *chp, int argc, char *argv[]
 
   uint8_t pattern;
   userconfig *config = getConfig();
-    
+  uint8_t max_led_patterns;
+
+  if ( config->unlocks & UL_LEDS ) { 
+    max_led_patterns = LED_PATTERNS_FULL;
+  } else {
+    max_led_patterns = LED_PATTERNS_LIMITED;
+  }
+  
   if (argc != 3) {
     chprintf(chp, "No pattern specified\r\n");
     return;
   }
 
   pattern = strtoul(argv[2], NULL, 0);
-  if ((pattern < 1) || (pattern > LED_PATTERN_COUNT)) {
+  if ((pattern < 1) || (pattern > max_led_patterns)) {
     chprintf(chp, "Invaild pattern #!\r\n");
     return;
   }
@@ -295,7 +304,7 @@ static void cmd_config_led_all(BaseSequentialStream *chp, int argc, char *argv[]
   config->led_r = r;
   config->led_g = g;
   config->led_b = b;
-  config->led_pattern = LED_PATTERN_COUNT - 1;
+  config->led_pattern = LED_PATTERNS_FULL - 1;
 
   // the last pattern is always the 'ALL' state. 
   ledResetPattern();
@@ -327,10 +336,24 @@ static void cmd_config_led_dim(BaseSequentialStream *chp, int argc, char *argv[]
 }
 
 static void cmd_config_led_list(BaseSequentialStream *chp) {
-  chprintf(chp, "\r\nAvailable LED Patterns\r\n");
+  uint8_t max_led_patterns;
+  userconfig *config = getConfig();
 
-  for (int i=0; i < LED_PATTERN_COUNT; i++) {
+  chprintf(chp, "\r\nAvailable LED Patterns\r\n");
+  
+  if ( config->unlocks & UL_LEDS ) { 
+    max_led_patterns = LED_PATTERNS_FULL;
+  } else {
+    max_led_patterns = LED_PATTERNS_LIMITED;
+  }
+
+
+  for (int i=0; i < max_led_patterns; i++) {
     chprintf(chp, "%2d) %s\r\n", i+1, fxlist[i].name);
+  }
+
+  if ( (config->unlocks & UL_LEDS) == 0) { 
+    chprintf(chp, "More can be unlocked!\r\n");
   }
 }
 

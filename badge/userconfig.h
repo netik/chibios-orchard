@@ -11,7 +11,7 @@
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0
-#define CONFIG_VERSION    11
+#define CONFIG_VERSION    12
 #define CONFIG_NAME_MAXLEN 10
 
 #define CONFIG_LEDSIGN_MAXLEN	128
