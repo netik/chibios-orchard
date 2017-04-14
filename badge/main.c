@@ -452,7 +452,7 @@ int main(void)
 
   /* Promote sponsors */
   putImageFile("sponsor.rgb", 0, 0);
-  chThdSleepMilliseconds (4000);
+  chThdSleepMilliseconds (5000);
 #endif
   
   /* run apps */
