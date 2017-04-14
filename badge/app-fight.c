@@ -937,28 +937,28 @@ static void clearstatus(void) {
 
 
 static uint8_t calc_level(uint16_t xp) {
-  if(xp >= 7600) {
+  if(xp >= 6480) {
     return 10;
   }
-  if(xp >= 6480) {
+  if(xp >= 5440) {
     return 9;
   }
-  if(xp >= 5440) {
+  if(xp >= 4480) {
     return 8;
   }
-  if(xp >= 4480) {
+  if(xp >= 3600) {
     return 7;
   }
-  if(xp >= 3600) {
+  if(xp >= 2800) {
     return 6;
   }
-  if(xp >= 2800) {
+  if(xp >= 2080) {
     return 5;
   }
   if(xp >= 1440) {
     return 4;
   }
-  if(xp >= 800) {
+  if(xp >= 880) {
     return 3;
   }
   if(xp >= 400) {
