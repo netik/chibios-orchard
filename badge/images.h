@@ -25,7 +25,6 @@ Matthew (graphics,art)\r\n\r\n"
 // Remember! Filenames must be in old school dos format (8x3)
 //                         12345678.123
 #define IMG_SPLASH        "SPQR.RGB"
-#define IMG_EFFLOGO       "efflogo.rgb"
 
 #define IMG_GROUND        "ground.rgb" // ground 
 #define IMG_GROUND_BTNS   "grbutt.rgb" // ground with no buttons
@@ -39,44 +38,8 @@ Matthew (graphics,art)\r\n\r\n"
 #define IMG_CHOOSETYPE    "choose.rgb"
 #define IMG_ARROW_DN_50   "ar50dn.rgb"
 
-// guard
-#define IMG_GATTH1        "gatth1.rgb"
-#define IMG_GATTH1R       "gatth1r.rgb"
-#define IMG_GATTL1        "gattl1.rgb"
-#define IMG_GATTL1R       "gattl1r.rgb"
-#define IMG_GATTM1        "gattm1.rgb"
-#define IMG_GATTM1R       "gattm1r.rgb"
-#define IMG_GCRCH1        "gcrch1.rgb"
-#define IMG_GCRCH1R       "gcrch1r.rgb"
-#define IMG_GIDLA1        "gidla1.rgb"
-#define IMG_GIDLA1R       "gidla1r.rgb"
-
-#define IMG_GUARD_IDLE_L  IMG_GIDLA1
-#define IMG_GUARD_IDLE_R  IMG_GIDLA1R
-
-// senator
-#define IMG_SATTH1        "satth1.rgb"
-#define IMG_SATTH1R       "sstth1r.rgb"
-#define IMG_SATTL1        "sattl1.rgb"
-#define IMG_SATTL1R       "sattl1r.rgb"
-#define IMG_SATTM1        "sattm1.rgb"
-#define IMG_SATTM1R       "sattm1r.rgb"
-#define IMG_SCRCH1        "scrch1.rgb"
-#define IMG_SCRCH1R       "scrch1r.rgb"
-#define IMG_SIDLA1        "sidla1.rgb"
-#define IMG_SIDLA1R       "sidla1r.rgb"
-
-// casear
-#define IMG_CATTH1        "catth1.rgb"
-#define IMG_CATTH1R       "catth1r.rgb"
-#define IMG_CATTL1        "cattl1.rgb"
-#define IMG_CATTL1R       "cattl1r.rgb"
-#define IMG_CATTM1        "cattm1.rgb"
-#define IMG_CATTM1R       "cattm1r.rgb"
-#define IMG_CCRCH1        "ccrch1.rgb"
-#define IMG_CCRCH1R       "ccrch1r.rgb"
-#define IMG_CIDLA1        "cidla1.rgb"
-#define IMG_CIDLA1R       "cidla1r.rgb"
+#define IMG_PLANE         "plane.rgb"
+#define IMG_EFFLOGO       "efflogo.rgb"
 
 #define IMG_SPLASH_DISPLAY_TIME          5000 // longer if music playing
 #define IMG_SPLASH_NO_SOUND_DISPLAY_TIME 1000

@@ -246,7 +246,10 @@ static void redraw_badge(void) {
   
   /* EFF supporter, +10% Defense and Logo */
   if (config->unlocks & UL_PLUSDEF) 
-      putImageFile(IMG_EFFLOGO, 270, ypos+4);
+    putImageFile(IMG_EFFLOGO, 270, ypos+4);
+
+  if (config->airplane_mode)
+    putImageFile(IMG_PLANE, 0, 0);
 
   gdispCloseFont (fontXS);
   gdispCloseFont (fontLG);
