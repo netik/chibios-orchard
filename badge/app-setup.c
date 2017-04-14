@@ -295,6 +295,11 @@ static void setup_event(OrchardAppContext *context,
       if (config->led_pattern >= max_led_patterns) config->led_pattern = 0;
       ledSetFunction(fxlist[config->led_pattern].function);
     }
+    if ( (event->key.code == keySelect) &&
+         (event->key.flags == keyPress) )  {
+      configSave(config);
+      orchardAppExit();
+    }
   }
 
   if (event->type == ugfxEvent) {
