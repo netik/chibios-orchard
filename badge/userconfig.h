@@ -11,7 +11,7 @@
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0
-#define CONFIG_VERSION    99
+#define CONFIG_VERSION    11
 #define CONFIG_NAME_MAXLEN 10
 
 #define CONFIG_LEDSIGN_MAXLEN	128
@@ -48,13 +48,13 @@ typedef struct userconfig {
 
   uint8_t led_shift;
   uint8_t sound_enabled;
- 
+  uint8_t airplane_mode;
+  
   /* touchpad calibration data */
   uint8_t touch_data_present;
   float touch_data[6];
 
   /* saved LED sign string */
-
   char led_string[CONFIG_LEDSIGN_MAXLEN];
 
   /* game */

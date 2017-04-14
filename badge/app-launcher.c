@@ -257,16 +257,6 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
       orchardAppRun(list->items[list->selected].entry);
       return;
     }
-    // wraparound
-    if (list->selected >= list->total)
-      list->selected = 0;
-    
-    if (list->selected >= list->total)
-      list->selected = list->total-1;
-
-    if (event->key.flags == keyPress) {
-      redraw_list(list);
-    }
   }
   
   if (event->type == ugfxEvent) {
@@ -288,19 +278,20 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
         orchardAppRun(list->items[list->selected].entry);
         return;
       }
-
-      // wraparound
-      if (list->selected >= list->total)
-        list->selected = 0;
-      
-      if (list->selected >= list->total)
-        list->selected = list->total-1;
-      
-      redraw_list(list);
       break;
     default:
       break;
     }
+  }
+  // wraparound
+  if (list->selected > 255) // underflow
+    list->selected = list->total-1;
+  
+  if (list->selected >= list->total)
+    list->selected = 0;
+  
+  if (event->type == ugfxEvent || event->type == keyEvent) {
+    redraw_list(list);
   }
   
   return;

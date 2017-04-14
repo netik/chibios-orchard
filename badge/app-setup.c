@@ -24,11 +24,12 @@ typedef struct _SetupHandles {
   GHandle ghButtonPatDn;
   GHandle ghButtonPatUp;
   GHandle ghLabel4;
+  GHandle ghLabelStatus;
   GHandle ghButtonDimUp;
   GHandle ghButtonDimDn;
   GHandle ghButtonOK;
-  GHandle ghButtonCancel;
   GHandle ghButtonCalibrate;
+  GHandle ghButtonSetName;
   GListener glSetup;
 } SetupHandles;
 
@@ -44,152 +45,174 @@ static void draw_setup_buttons(SetupHandles * p) {
   char tmp[40];
   
   gwinSetDefaultFont(fontSM);
-
   gwinWidgetClearInit(&wi);
 
   // create checkbox widget: ghCheckSound
   wi.g.show = TRUE;
   wi.g.x = 10;
-  wi.g.y = 140;
-  wi.g.width = 200;
+  wi.g.y = 120;
+  wi.g.width = 180;
   wi.g.height = 20;
-  wi.text = " Sounds";
+  wi.text = "Sounds ON";
   wi.customDraw = gwinCheckboxDraw_CheckOnLeft;
+  wi.customParam = 0;
+  wi.customStyle = 0;
   p->ghCheckSound = gwinCheckboxCreate(0, &wi);
   gwinCheckboxCheck(p->ghCheckSound, config->sound_enabled);
 
   // create checkbox widget: ghCheckAirplane
   wi.g.show = TRUE;
   wi.g.x = 10;
-  wi.g.y = 160;
-  wi.g.width = 200;
+  wi.g.y = 150;
+  wi.g.width = 180;
   wi.g.height = 20;
-  wi.text = " Airplane Mode";
+  wi.text = "Airplane Mode";
   wi.customDraw = gwinCheckboxDraw_CheckOnLeft;
-  p->ghCheckAirplaned = gwinCheckboxCreate(0, &wi);
+  wi.customParam = 0;
+  wi.customStyle = 0;
+  p->ghCheckAirplane = gwinCheckboxCreate(0, &wi);
   gwinCheckboxCheck(p->ghCheckAirplane, config->airplane_mode);
 
+  // create button widget: ghButtonPatDn
+  wi.g.show = TRUE;
+  wi.g.x = 260;
+  wi.g.y = 10;
+  wi.g.width = 50;
+  wi.g.height = 40;
+  wi.text = "->";
+  wi.customDraw = gwinButtonDraw_Normal;
+  wi.customParam = 0;
+  wi.customStyle = 0;
+  p->ghButtonPatDn = gwinButtonCreate(0, &wi);
+
   // Create label widget: ghLabel1
-  gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
   wi.g.x = 10;
   wi.g.y = 10;
   wi.g.width = 180;
   wi.g.height = 20;
   wi.text = "LED Pattern";
+  wi.customDraw = gwinLabelDrawJustifiedLeft;
+  wi.customParam = 0;
+  wi.customStyle = 0;
   p->ghLabel1 = gwinLabelCreate(0, &wi);
+  gwinLabelSetBorder(p->ghLabel1, FALSE);
 
   // Create label widget: ghLabelPattern
-  gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
   wi.g.x = 10;
   wi.g.y = 30;
   wi.g.width = 190;
   wi.g.height = 20;
-  wi.text = fxlist[config->led_pattern].name;
-  wi.customParam = 0;
-  p->ghLabelPattern = gwinLabelCreate(0, &wi);
-
-  // create button widget: ghButtonPatDn
-  gwinWidgetClearInit(&wi);
-  wi.g.show = TRUE;
-  wi.g.x = 270;
-  wi.g.y = 10;
-  wi.g.width = 50;
-  wi.g.height = 40;
   wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowUp;
-  p->ghButtonPatDn = gwinButtonCreate(0, &wi);
+  wi.customDraw = gwinLabelDrawJustifiedLeft;
+  wi.customParam = 0;
+  wi.customStyle = 0;
+  p->ghLabelPattern = gwinLabelCreate(0, &wi);
+  gwinLabelSetBorder(p->ghLabelPattern, FALSE);
 
   // create button widget: ghButtonPatUp
-  gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
   wi.g.x = 200;
   wi.g.y = 10;
   wi.g.width = 50;
   wi.g.height = 40;
-  wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowDown;
+  wi.text = "<-";
+  wi.customDraw = gwinButtonDraw_Normal;
+  wi.customParam = 0;
+  wi.customStyle = 0;
   p->ghButtonPatUp = gwinButtonCreate(0, &wi);
 
-
   // Create label widget: ghLabel4
-  gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
   wi.g.x = 10;
-  wi.g.y = 70;
+  wi.g.y = 60;
   wi.g.width = 180;
   wi.g.height = 20;
   wi.text = "LED Brightness";
+  wi.customDraw = gwinLabelDrawJustifiedLeft;
+  wi.customParam = 0;
+  wi.customStyle = 0;
   p->ghLabel4 = gwinLabelCreate(0, &wi);
+  gwinLabelSetBorder(p->ghLabel4, FALSE);
 
   // dimmer bar 
-  drawProgressBar(10,100,180,10, 8, (8-config->led_shift), false, false);
-
-  // create button widget: ghButtonDimUp
-  gwinWidgetClearInit(&wi);
-  wi.g.show = TRUE;
-  wi.g.x = 270;
-  wi.g.y = 70;
-  wi.g.width = 50;
-  wi.g.height = 40;
-  wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowRight;
-  p->ghButtonDimUp = gwinButtonCreate(0, &wi);
+  drawProgressBar(10,80,180,20, 8, (8-config->led_shift), false, false);
 
   // create button widget: ghButtonDimDn
-  gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
   wi.g.x = 200;
-  wi.g.y = 70;
+  wi.g.y = 60;
   wi.g.width = 50;
   wi.g.height = 40;
-  wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowLeft;
+  wi.text = "<-";
+  wi.customDraw = gwinButtonDraw_Normal;
+  wi.customParam = 0;
+  wi.customStyle = 0;
   p->ghButtonDimDn = gwinButtonCreate(0, &wi);
 
-  // create button widget: ghButtonCancel
-  gwinWidgetClearInit(&wi);
+  // create button widget: ghButtonDimUp
   wi.g.show = TRUE;
-  wi.g.x = 170;
-  wi.g.y = 140;
-  wi.g.width = 140;
-  wi.g.height = 20;
-  wi.text = "Calibrate TS";
+  wi.g.x = 260;
+  wi.g.y = 60;
+  wi.g.width = 50;
+  wi.g.height = 40;
+  wi.text = "->";
+  wi.customDraw = gwinButtonDraw_Normal;
+  wi.customParam = 0;
+  wi.customStyle = 0;
+  p->ghButtonDimUp = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghButtonCalibrate
+  wi.g.show = TRUE;
+  wi.g.x = 200;
+  wi.g.y = 110;
+  wi.g.width = 110;
+  wi.g.height = 36;
+  wi.text = "Cal Touch";
+  wi.customDraw = gwinButtonDraw_Normal;
+  wi.customParam = 0;
+  wi.customStyle = 0;
   p->ghButtonCalibrate = gwinButtonCreate(0, &wi);
 
-  // create button widget: ghButtonCancel
-  gwinWidgetClearInit(&wi);
+  // create button widget: ghButtonSetName
   wi.g.show = TRUE;
-  wi.g.x = 10;
-  wi.g.y = 210;
-  wi.g.width = 140;
-  wi.g.height = 20;
-  wi.text = "Cancel";
-  p->ghButtonCancel = gwinButtonCreate(0, &wi);
-
+  wi.g.x = 200;
+  wi.g.y = 150;
+  wi.g.width = 110;
+  wi.g.height = 36;
+  wi.text = "Set Name";
+  wi.customDraw = gwinButtonDraw_Normal;
+  wi.customParam = 0;
+  wi.customStyle = 0;
+  p->ghButtonSetName = gwinButtonCreate(0, &wi);
+  
   // create button widget: ghButtonOK
-  gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
-  wi.g.x = 170;
-  wi.g.y = 210;
-  wi.g.width = 140;
-  wi.g.height = 20;
-  wi.text = "OK";
+  wi.g.x = 200;
+  wi.g.y = 190;
+  wi.g.width = 110;
+  wi.g.height = 36;
+  wi.text = "Save";
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
   wi.customStyle = 0;
   p->ghButtonOK = gwinButtonCreate(0, &wi);
 
-  // show network id
+  // Create label widget: ghLabelStatus (network id)
   chsnprintf(tmp,sizeof(tmp), "Net ID: %08x", config->netid);
-  gdispDrawStringBox (0,
-		      194,
-		      gdispGetWidth(),
-		      gdispGetFontMetric(fontXS, fontHeight),
-		      tmp,
-		      fontXS, Purple, justifyCenter);
-    
+  wi.g.show = TRUE;
+  wi.g.x = 10;
+  wi.g.y = 200;
+  wi.g.width = 180;
+  wi.g.height = 20;
+  wi.text = tmp;
+  wi.customDraw = gwinLabelDrawJustifiedLeft;
+  wi.customParam = 0;
+  wi.customStyle = 0;
+  p->ghLabelStatus = gwinLabelCreate(0, &wi);
+  gwinLabelSetBorder(p->ghLabelStatus, FALSE);
+  
 }
 
 static uint32_t setup_init(OrchardAppContext *context) {
@@ -276,14 +299,21 @@ static void setup_event(OrchardAppContext *context,
       }
       break;
     case GEVENT_GWIN_BUTTON:
-      if (((GEventGWinButton*)pe)->gwin == p->ghButtonCancel) {
-	orchardAppExit();
-	return;
-      }
-      
       if (((GEventGWinButton*)pe)->gwin == p->ghButtonOK) {
           configSave(config);
           orchardAppExit();
+          return;
+      }
+      
+      if (((GEventGWinButton*)pe)->gwin == p->ghButtonCalibrate) {
+          configSave(config);
+          orchardAppRun(orchardAppByName("CalibrateTS"));
+          return;
+      }
+
+      if (((GEventGWinButton*)pe)->gwin == p->ghButtonSetName) {
+          configSave(config);
+          orchardAppRun(orchardAppByName("Set your name"));
           return;
       }
       
@@ -316,7 +346,7 @@ static void setup_event(OrchardAppContext *context,
     }
   }
   // update ui
-  drawProgressBar(10,100,180,10, 8, (8-config->led_shift), false, false);
+  drawProgressBar(10,80,180,20, 8, (8-config->led_shift), false, false);
   gwinSetText(p->ghLabelPattern, fxlist[config->led_pattern].name, TRUE);
   return;
 }
@@ -327,16 +357,18 @@ static void setup_exit(OrchardAppContext *context) {
   p = context->priv;
 
   gwinDestroy(p->ghCheckSound);
+  gwinDestroy(p->ghCheckAirplane);
   gwinDestroy(p->ghLabel1);
   gwinDestroy(p->ghLabelPattern);
   gwinDestroy(p->ghButtonPatDn);
   gwinDestroy(p->ghButtonPatUp);
   gwinDestroy(p->ghLabel4);
+  gwinDestroy(p->ghLabelStatus);
   gwinDestroy(p->ghButtonDimUp);
   gwinDestroy(p->ghButtonDimDn);
   gwinDestroy(p->ghButtonOK);
-  gwinDestroy(p->ghButtonCancel);
   gwinDestroy(p->ghButtonCalibrate);
+  gwinDestroy(p->ghButtonSetName);
   
   gdispCloseFont(fontXS);
   gdispCloseFont(fontSM);

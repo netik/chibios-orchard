@@ -111,4 +111,4 @@ static void name_exit(OrchardAppContext *context)
   return;
 }
 
-orchard_app("Set your name", 0, name_init, name_start, name_event, name_exit);
+orchard_app("Set your name", TRUE, name_init, name_start, name_event, name_exit);

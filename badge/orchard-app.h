@@ -61,7 +61,7 @@ user *enemyAdd(user *u);
 user **enemiesGet(void);
 
 #define MAX_ENEMIES  16   // max # of enemies to track
-#define UI_IDLE_TIME MS2ST(8000) // after 8 seconds, abort to main
+#define UI_IDLE_TIME MS2ST(10000) // after 8 seconds, abort to main
 
 typedef struct _OrchardAppContext {
   struct orchard_app_instance *instance;

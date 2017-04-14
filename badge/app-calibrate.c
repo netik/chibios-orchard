@@ -63,5 +63,5 @@ calibrate_exit (OrchardAppContext *context)
 	return;
 }
 
-orchard_app("Calibrate Touch Screen", 0,
+orchard_app("CalibrateTS", TRUE,
     calibrate_init, calibrate_start, calibrate_event, calibrate_exit);

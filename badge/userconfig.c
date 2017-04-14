@@ -81,7 +81,8 @@ static void init_config(userconfig *config) {
   config->led_pattern = 11;
   config->led_shift = 4;
   config->sound_enabled = 1;
-
+  config->airplane_mode = 0;
+  
   config->current_type = p_notset; // what your current class is (caesear, bender, etc, specials...)
   config->p_type = p_notset;       // your permanent class, cannot be changed. 
   config->touch_data_present = 0;
