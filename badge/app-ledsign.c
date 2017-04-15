@@ -79,7 +79,7 @@ ledsign_event(OrchardAppContext *context, const OrchardAppEvent *event)
 	userconfig * config;
 	const char * str;
 	char fname[48];
-	int sts;
+	int sts = 1;
 
 	keyboardUi = context->instance->ui;
 	keyboardUiContext = context->instance->uicontext;
