@@ -8,6 +8,7 @@
 #include "unlocks.h"
 #include "userconfig.h"
 #include "orchard-shell.h"
+
 #include <string.h>
 
 /* We implement a naive real-time clock protocol like NTP but
@@ -119,11 +120,19 @@ static void init_config(userconfig *config) {
 
 void configStart(void) {
   const userconfig *config;
+  uint8_t wipeconfig = false;
   osalMutexObjectInit(&config_mutex);
   
   config = (const userconfig *) CONFIG_FLASH_ADDR;
+
+  /* if the user is holding down UP and LEFT, then we will wipe the configuration */
+  if ((palReadPad (BUTTON_UP_PORT, BUTTON_UP_PIN) == 0) && 
+      (palReadPad (BUTTON_DOWN_PORT, BUTTON_DOWN_PIN) == 0)) {
+    chprintf(stream, "FACTORY RESET requested\r\n");
+    wipeconfig = true; 
+  }
   
-  if ( config->signature != CONFIG_SIGNATURE ) {
+  if ( (config->signature != CONFIG_SIGNATURE) || (wipeconfig)) {
     chprintf(stream, "Config not found, Initializing!\r\n");
     init_config(&config_cache);
     config = &config_cache;

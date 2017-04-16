@@ -418,7 +418,7 @@ int main(void)
    * We check to see if config is null to avoid an edge case here if
    * HALT_ON_SDFAIL is undefined and the SD card fails to start.  
    *
-   */
+o   */
   if (config == NULL) { 
     configStart ();
     config = getConfig ();
