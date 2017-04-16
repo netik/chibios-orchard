@@ -156,7 +156,7 @@ static void keyboard_start (OrchardAppContext *context)
 	wi.g.width = gdispGetWidth();
 	wi.g.height = gdispGetHeight() / 2;
 	p->ghConsole = gwinConsoleCreate (0, &wi.g);
-	gwinSetColor (p->ghConsole, Yellow);
+	gwinSetColor (p->ghConsole, White);
 	gwinSetBgColor (p->ghConsole, Black);
 	gwinShow (p->ghConsole);
 	gwinClear (p->ghConsole);

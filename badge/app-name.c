@@ -61,7 +61,7 @@ static void name_start(OrchardAppContext *context)
 	keyboardUiContext->itemlist[1] = config->name;
 	keyboardUiContext->total = CONFIG_NAME_MAXLEN;
 
-    	context->instance->ui = getUiByName("keyboard");
+  context->instance->ui = getUiByName("keyboard");
 	context->instance->uicontext = keyboardUiContext;
 	context->instance->ui->start (context);
 
