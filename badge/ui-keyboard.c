@@ -34,7 +34,7 @@
 #include "orchard-events.h"
 #include "orchard-ui.h"
 #include "sound.h"
-
+#include "ides_gfx.h" /* for DarkBlueStyle */
 #include <string.h>
 
 #include "fontlist.h"
@@ -172,7 +172,7 @@ static void keyboard_start (OrchardAppContext *context)
 	wi.g.height = gdispGetHeight() / 2;
 #endif
 	p->ghKeyboard = gwinKeyboardCreate (0, &wi);
-	gwinSetStyle (p->ghKeyboard, &WhiteWidgetStyle);
+	gwinSetStyle (p->ghKeyboard, &DarkBlueStyle);
 	gwinShow (p->ghKeyboard);
 
 	/* Wait for events */

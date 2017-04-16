@@ -4,10 +4,9 @@
 #define FONT_SM           "Jupiter_Pro_2561316"
 #define FONT_XS           "UI2"
 
-// was: fixed_10x20
+// manteka has no lowercase, which sucks. 
 #define FONT_FIXED        "manteka20"
 
-// was: UI2
 #define FONT_KEYBOARD     "fixed_10x20"
 #define FONT_TEXTENTRY    "fixed_10x20"
 
