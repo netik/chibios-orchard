@@ -398,20 +398,16 @@ static void default_event(OrchardAppContext *context,
 
     if ( (chVTGetSystemTime() - last_caesar_check) > CS_ELECT_INT ) { 
       last_caesar_check = chVTGetSystemTime();
+
       chprintf(stream, "caesar election started\r\n");
-      /*
-      if ( (config->level >= 3) && 
+      if ( (config->level >= MIN_CAESAR_LEVEL) && 
            (config->current_type != p_caesar) && 
            (nearby_caesar() == FALSE) &&
            (config->airplane_mode == FALSE) )  {
-      */
-      if (config->current_type != p_caesar) { 
-        /*        if (rand() % 10 >= 3) { */
-        if (1 == 1)  {
+        if (rand() % 100 >= CAESAR_CHANCE) { 
           chprintf(stream, "won election\r\n");
           /* become Caesar for an hour */
           char_reset_at = chVTGetSystemTime() + MAX_BUFF_TIME;
-          /* Set myself to Caesar */ 
           config->current_type = p_caesar;
           configSave(config);
           dacPlay("fight/leveiup.raw");
@@ -423,7 +419,11 @@ static void default_event(OrchardAppContext *context,
       }
     }
 
-    /* is it time to revert the player? */
+    /* is it time to revert the player? 
+     * 
+     * reverts bender, caesar after certain amount of time 
+     * reboot will also forcibly reset this. 
+     */
     if ( ( char_reset_at != 0) &&
          ( chVTGetSystemTime() >= char_reset_at ) ) {
       config->current_type = config->p_type;

@@ -16,9 +16,6 @@
 
 #define CONFIG_LEDSIGN_MAXLEN	128
 
-/* remember these many last key-pushes (app-default) */
-#define KEY_HISTORY 9
-
 /* can we display these on top LEDs */
 
 typedef enum _player_type {
