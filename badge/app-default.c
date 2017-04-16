@@ -388,23 +388,22 @@ static void default_event(OrchardAppContext *context,
 
     /* Caesar Election
      * ---------------
-     * every 60 seconds...
+     * Every 60 seconds...
      * If there are no nearby Caesars... 
      * ... and I am not caesar already ... 
-     * and my level is >= 3 
-     * and I can roll 1d10 and we get 1 to 3, then
+     * and my level is >= MIN_CAESAR_LEVEL
+     * and I can roll 1d100 and get >= CAESAR_CHANCE, then
      * we become caesar
     */
 
     if ( (chVTGetSystemTime() - last_caesar_check) > CS_ELECT_INT ) { 
       last_caesar_check = chVTGetSystemTime();
 
-      chprintf(stream, "caesar election started\r\n");
       if ( (config->level >= MIN_CAESAR_LEVEL) && 
            (config->current_type != p_caesar) && 
            (nearby_caesar() == FALSE) &&
            (config->airplane_mode == FALSE) )  {
-        if (rand() % 100 >= CAESAR_CHANCE) { 
+        if (rand() % 100 <= CAESAR_CHANCE) { 
           chprintf(stream, "won election\r\n");
           /* become Caesar for an hour */
           char_reset_at = chVTGetSystemTime() + MAX_BUFF_TIME;
