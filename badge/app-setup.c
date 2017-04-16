@@ -83,7 +83,7 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.text = "->";
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
-  wi.customStyle = &DarkBlueStyle;
+  wi.customStyle = &DarkPurpleStyle;
   p->ghButtonPatDn = gwinButtonCreate(0, &wi);
 
   // Create label widget: ghLabel1
@@ -121,7 +121,7 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.text = "<-";
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
-  wi.customStyle = &DarkBlueStyle;
+  wi.customStyle = &DarkPurpleStyle;
   p->ghButtonPatUp = gwinButtonCreate(0, &wi);
 
   // Create label widget: ghLabel4
@@ -149,7 +149,7 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.text = "<-";
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
-  wi.customStyle = &DarkBlueStyle;
+  wi.customStyle = &DarkPurpleStyle;
   p->ghButtonDimDn = gwinButtonCreate(0, &wi);
 
   // create button widget: ghButtonDimUp
@@ -161,7 +161,7 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.text = "->";
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
-  wi.customStyle = &DarkBlueStyle;
+  wi.customStyle = &DarkPurpleStyle;
   p->ghButtonDimUp = gwinButtonCreate(0, &wi);
 
   // create button widget: ghButtonCalibrate
@@ -173,7 +173,7 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.text = "Touch Cal";
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
-  wi.customStyle = &DarkBlueStyle;
+  wi.customStyle = &DarkPurpleStyle;
   p->ghButtonCalibrate = gwinButtonCreate(0, &wi);
 
   // create button widget: ghButtonSetName
@@ -185,7 +185,7 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.text = "Set Name";
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
-  wi.customStyle = &DarkBlueStyle;
+  wi.customStyle = &DarkPurpleStyle;
   p->ghButtonSetName = gwinButtonCreate(0, &wi);
   
   // create button widget: ghButtonOK
@@ -197,7 +197,7 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.text = "Save";
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
-  wi.customStyle = &DarkBlueStyle;
+  wi.customStyle = &DarkPurpleStyle;
   p->ghButtonOK = gwinButtonCreate(0, &wi);
 
   // Create label widget: ghLabelStatus (network id)

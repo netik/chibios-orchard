@@ -40,15 +40,15 @@ const GWidgetStyle RedButtonStyle = {
   }
 };
 
-const GWidgetStyle DarkBlueStyle = {
-  HTML2COLOR(0x020e4b),              // background
+const GWidgetStyle DarkPurpleStyle = {
+  HTML2COLOR(0x470b67),              // background
   HTML2COLOR(0x2ca0ff),              // focus
 
   // Enabled color set
   {
     HTML2COLOR(0xc8c8c8),         // text
-    HTML2COLOR(0x22294b),         // edge
-    HTML2COLOR(0x020e4b),         // fill
+    HTML2COLOR(0x3d2e44),         // edge
+    HTML2COLOR(0x470b67),         // fill
     HTML2COLOR(0x008000),         // progress (inactive area)
   },
 

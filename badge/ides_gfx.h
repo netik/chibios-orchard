@@ -9,7 +9,7 @@
  */
 
 extern const GWidgetStyle RedButtonStyle;
-extern const GWidgetStyle DarkBlueStyle;
+extern const GWidgetStyle DarkPurpleStyle;
 
 /* Graphics */
 extern void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, int32_t maxval, int32_t currentval, uint8_t use_leds, uint8_t reverse);

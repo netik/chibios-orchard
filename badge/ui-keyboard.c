@@ -172,7 +172,7 @@ static void keyboard_start (OrchardAppContext *context)
 	wi.g.height = gdispGetHeight() / 2;
 #endif
 	p->ghKeyboard = gwinKeyboardCreate (0, &wi);
-	gwinSetStyle (p->ghKeyboard, &DarkBlueStyle);
+	gwinSetStyle (p->ghKeyboard, &DarkPurpleStyle);
 	gwinShow (p->ghKeyboard);
 
 	/* Wait for events */
