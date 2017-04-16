@@ -125,13 +125,23 @@ void configStart(void) {
   
   config = (const userconfig *) CONFIG_FLASH_ADDR;
 
+#ifdef ENABLE_JOYPAD
   /* if the user is holding down UP and LEFT, then we will wipe the configuration */
   if ((palReadPad (BUTTON_UP_PORT, BUTTON_UP_PIN) == 0) && 
       (palReadPad (BUTTON_DOWN_PORT, BUTTON_DOWN_PIN) == 0)) {
+#else
+  /*
+   * On the Freescale/NXP reference boards, we don't have a joypad,
+   * and the UP and DOWN signals are stuck at ground, which makes
+   * us think the user always wants to reset the config. If the joypad
+   * isn't enabled, just use the enter button to request factory reset.
+   */
+  if (palReadPad (BUTTON_ENTER_PORT, BUTTON_ENTER_PIN) == 0) {
+#endif
     chprintf(stream, "FACTORY RESET requested\r\n");
     wipeconfig = true; 
   }
-  
+ 
   if ( (config->signature != CONFIG_SIGNATURE) || (wipeconfig)) {
     chprintf(stream, "Config not found, Initializing!\r\n");
     init_config(&config_cache);
