@@ -1,6 +1,6 @@
 #ifndef __IDES_GFX_H__
 #define __IDEX_GFX_H__
-#define ALERT_DELAY 1500               // how long alerts (screen_alert) stay on the screen.
+#define ALERT_DELAY 3000               // how long alerts (screen_alert) stay on the screen.
 
 /* ides_gfx.h
  *
@@ -10,6 +10,7 @@
 
 extern const GWidgetStyle RedButtonStyle;
 extern const GWidgetStyle DarkPurpleStyle;
+extern const GWidgetStyle IvoryStyle;
 
 /* Graphics */
 extern void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, int32_t maxval, int32_t currentval, uint8_t use_leds, uint8_t reverse);

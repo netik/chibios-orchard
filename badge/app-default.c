@@ -13,6 +13,8 @@
 #include "images.h"
 #include "fontlist.h"
 
+#include "ides_config.h"
+
 #include "ides_gfx.h"
 #include "unlocks.h"
 
@@ -20,27 +22,20 @@
 #include "datetime.h"
 #include "dec2romanstr.h"
 
-/* we will heal the player at N hp per this interval or 2X HP if
-   UL_PLUSDEF has been activated */
-#define HEAL_INTERVAL_US 1000000      /* 1 second */
+#include "dac_lld.h"
 
-/* how long to reach full heal */
-#define HEAL_TIME        25           /* seconds */
-
-/* we we will attempt to find a new caesar every these many seconds */
-#define CS_ELECT_INT     MS2ST(30000) /* 30 sec */
-#define MAX_CAESAR_TIME  3600000000   /* 1 hour */
-
-/* remember these many last key-pushes */
+/* remember these many last key-pushes (app-default) */
 #define KEY_HISTORY 9
 
-static uint32_t last_caesar_check = 0;
-static uint32_t caesar_expires_at = 0;
+static systime_t last_caesar_check = 0;
+extern systime_t char_reset_at;
 
 typedef struct _DefaultHandles {
   GHandle ghFightButton;
   GHandle ghExitButton;
   GListener glBadge;
+  font_t fontLG, fontSM, fontXS;
+
   /* ^ ^ v v < > < > ent will fire the unlocks screen */
   OrchardAppEventKeyCode last_pushed[KEY_HISTORY];
 } DefaultHandles;
@@ -81,9 +76,8 @@ static void draw_badge_buttons(DefaultHandles * p) {
   p->ghExitButton = gwinButtonCreate(NULL, &wi);
 }
 
-static void redraw_badge(void) {
+static void redraw_badge(DefaultHandles *p) {
   // draw the entire background badge image. Shown when the screen is idle. 
-  font_t fontLG, fontSM, fontXS;
   const userconfig *config = getConfig();
 
   // our image draws just a bit underneath the stats data. If we
@@ -104,35 +98,31 @@ static void redraw_badge(void) {
   }
 
   putImageFile(IMG_GROUND_BTNS, 0, POS_FLOOR_Y);
-      
-  fontXS = gdispOpenFont (FONT_XS);
-  fontLG = gdispOpenFont (FONT_LG);
-  fontSM = gdispOpenFont (FONT_FIXED);
 
   uint16_t ypos = 0; 
   uint16_t lmargin = 141;
   gdispDrawStringBox (0,
 		      ypos,
 		      gdispGetWidth(),
-		      gdispGetFontMetric(fontLG, fontHeight),
+		      gdispGetFontMetric(p->fontLG, fontHeight),
 		      config->name,
-		      fontLG, Yellow, justifyRight);
+		      p->fontLG, Yellow, justifyRight);
 
   char tmp[20];
   char tmp2[40];
   chsnprintf(tmp, sizeof(tmp), "LEVEL %s", dec2romanstr(config->level));
   
   /* Level */
-  ypos = ypos + gdispGetFontMetric(fontLG, fontHeight);
+  ypos = ypos + gdispGetFontMetric(p->fontLG, fontHeight);
   gdispDrawStringBox (0,
 		      ypos,
 		      gdispGetWidth(),
-		      gdispGetFontMetric(fontSM, fontHeight),
+		      gdispGetFontMetric(p->fontSM, fontHeight),
 		      tmp,
-		      fontSM, Yellow, justifyRight);
+		      p->fontSM, Yellow, justifyRight);
 
   /* XP */
-  ypos = ypos + gdispGetFontMetric(fontSM, fontHeight) + 4;
+  ypos = ypos + gdispGetFontMetric(p->fontSM, fontHeight) + 4;
   gdispDrawThickLine(141, ypos, 320, ypos, Red, 2, FALSE);
   gdispDrawThickLine(141, ypos+21, 320, ypos+21, Red, 2, FALSE);
   
@@ -143,22 +133,22 @@ static void redraw_badge(void) {
   gdispDrawStringBox (142,
 		      ypos+6,
 		      30,
-		      gdispGetFontMetric(fontXS, fontHeight),
+		      gdispGetFontMetric(p->fontXS, fontHeight),
 		      tmp,
-		      fontXS, White, justifyLeft);
+		      p->fontXS, White, justifyLeft);
 
   drawProgressBar(163,ypos+6,120,11,maxhp(config->unlocks,config->level), config->hp, 0, false);
 
   gdispFillArea( 289, ypos+6, 
-                 30,gdispGetFontMetric(fontXS, fontHeight),
+                 30,gdispGetFontMetric(p->fontXS, fontHeight),
                  Black );
                        
   gdispDrawStringBox (289,
 		      ypos+6,
                       30,
-		      gdispGetFontMetric(fontXS, fontHeight),
+		      gdispGetFontMetric(p->fontXS, fontHeight),
 		      tmp2,
-		      fontXS, White, justifyLeft);
+		      p->fontXS, White, justifyLeft);
 
   /* end hp bar */
   ypos = ypos + 30;
@@ -168,62 +158,62 @@ static void redraw_badge(void) {
   gdispDrawStringBox (lmargin,
 		      ypos,
 		      45,
-		      gdispGetFontMetric(fontSM, fontHeight),
+		      gdispGetFontMetric(p->fontSM, fontHeight),
 		      "XP",
-		      fontSM, Yellow, justifyLeft);
+		      p->fontSM, Yellow, justifyLeft);
   gdispDrawStringBox (lmargin + 40,
 		      ypos,
                       45,
-		      gdispGetFontMetric(fontSM, fontHeight),
+		      gdispGetFontMetric(p->fontSM, fontHeight),
 		      tmp2,
-		      fontSM, White, justifyRight);
+		      p->fontSM, White, justifyRight);
 
   chsnprintf(tmp2, sizeof(tmp2), "%3d", config->won);
   gdispDrawStringBox (lmargin + 94,
 		      ypos,
 		      45,
-		      gdispGetFontMetric(fontSM, fontHeight),
+		      gdispGetFontMetric(p->fontSM, fontHeight),
 		      "WON",
-		      fontSM, Yellow, justifyLeft);
+		      p->fontSM, Yellow, justifyLeft);
   gdispDrawStringBox (lmargin + 94 + 35,
 		      ypos,
                       45,
-		      gdispGetFontMetric(fontSM, fontHeight),
+		      gdispGetFontMetric(p->fontSM, fontHeight),
 		      tmp2,
-		      fontSM, White, justifyRight);
+		      p->fontSM, White, justifyRight);
 
   /* AGL / LOST */
-  ypos = ypos + gdispGetFontMetric(fontSM, fontHeight) + 2;
+  ypos = ypos + gdispGetFontMetric(p->fontSM, fontHeight) + 2;
   chsnprintf(tmp2, sizeof(tmp2), "%3d", config->agl);
   gdispDrawStringBox (lmargin,
 		      ypos,
 		      45,
-		      gdispGetFontMetric(fontSM, fontHeight),
+		      gdispGetFontMetric(p->fontSM, fontHeight),
 		      "AGL",
-		      fontSM, Yellow, justifyLeft);
+		      p->fontSM, Yellow, justifyLeft);
   gdispDrawStringBox (lmargin + 40,
 		      ypos,
                       45,
-		      gdispGetFontMetric(fontSM, fontHeight),
+		      gdispGetFontMetric(p->fontSM, fontHeight),
 		      tmp2,
-		      fontSM, White, justifyRight);
+		      p->fontSM, White, justifyRight);
 
   chsnprintf(tmp2, sizeof(tmp2), "%3d", config->lost);
   gdispDrawStringBox (lmargin + 94,
 		      ypos,
 		      60,
-		      gdispGetFontMetric(fontSM, fontHeight),
+		      gdispGetFontMetric(p->fontSM, fontHeight),
 		      "LOST",
-		      fontSM, Yellow, justifyLeft);
+		      p->fontSM, Yellow, justifyLeft);
   gdispDrawStringBox (lmargin + 94 + 35,
 		      ypos,
                       45,
-		      gdispGetFontMetric(fontSM, fontHeight),
+		      gdispGetFontMetric(p->fontSM, fontHeight),
 		      tmp2,
-		      fontSM, White, justifyRight);
+		      p->fontSM, White, justifyRight);
   
   /* MIGHT */
-  ypos = ypos + gdispGetFontMetric(fontSM, fontHeight) + 2;
+  ypos = ypos + gdispGetFontMetric(p->fontSM, fontHeight) + 2;
   if (config->unlocks & UL_PLUSMIGHT) 
     chsnprintf(tmp2, sizeof(tmp2), "%3d", config->might + 1);
   else
@@ -233,15 +223,15 @@ static void redraw_badge(void) {
   gdispDrawStringBox (lmargin,
 		      ypos,
 		      60,
-		      gdispGetFontMetric(fontSM, fontHeight),
+		      gdispGetFontMetric(p->fontSM, fontHeight),
 		      "MIGHT",
-		      fontSM, Yellow, justifyLeft);
+		      p->fontSM, Yellow, justifyLeft);
   gdispDrawStringBox (lmargin + 40,
 		      ypos,
                       45,
-		      gdispGetFontMetric(fontSM, fontHeight),
+		      gdispGetFontMetric(p->fontSM, fontHeight),
 		      tmp2,
-		      fontSM, White, justifyRight);
+		      p->fontSM, White, justifyRight);
 
   
   /* EFF supporter, +10% Defense and Logo */
@@ -250,10 +240,6 @@ static void redraw_badge(void) {
 
   if (config->airplane_mode)
     putImageFile(IMG_PLANE, 0, 0);
-
-  gdispCloseFont (fontXS);
-  gdispCloseFont (fontLG);
-  gdispCloseFont (fontSM);
 
 }
 
@@ -272,12 +258,16 @@ static void default_start(OrchardAppContext *context) {
 
   p = chHeapAlloc (NULL, sizeof(DefaultHandles));
   context->priv = p;
+      
+  p->fontXS = gdispOpenFont (FONT_XS);
+  p->fontLG = gdispOpenFont (FONT_LG);
+  p->fontSM = gdispOpenFont (FONT_FIXED);
 
   last_caesar_check = chVTGetSystemTime();
 
   gdispClear(Black);
 
-  redraw_badge();
+  redraw_badge(p);
   draw_badge_buttons(p);
   
   geventListenerInit(&p->glBadge);
@@ -360,24 +350,40 @@ static void default_event(OrchardAppContext *context,
   if (event->type == timerEvent) {
     /* draw the clock */
     if (rtc != 0) {
-      font_t fontXS;
-      fontXS = gdispOpenFont (FONT_XS);
-        
       breakTime(rtc + ST2S((chVTGetSystemTime() - rtc_set_at)), &dt);
-      chsnprintf(tmp, sizeof(tmp), "%02d:%02d:%02d\r\n", dt.Hour, dt.Minute, dt.Second);
-      gdispCloseFont(fontXS);
+      chsnprintf(tmp, sizeof(tmp), "%02d:%02d:%02d", dt.Hour, dt.Minute, dt.Second);
 
       gdispFillArea( 0,0, 
-                     60, gdispGetFontMetric(fontXS, fontHeight),
+                     60, gdispGetFontMetric(p->fontXS, fontHeight),
                      Black );
       
       gdispDrawStringBox (0,
                           0,
                           gdispGetWidth(),
-                          gdispGetFontMetric(fontXS, fontHeight),
+                          gdispGetFontMetric(p->fontXS, fontHeight),
                           tmp,
-                          fontXS, Grey, justifyLeft);
+                          p->fontXS, Grey, justifyLeft);
 
+    }
+
+    /* draw char time remaining if any */
+    if (char_reset_at != 0) {
+      systime_t delta = ST2S((char_reset_at - chVTGetSystemTime()));
+      systime_t minleft, secleft;
+      minleft = delta / 60;
+      secleft = delta - (minleft * 60);
+      chsnprintf(tmp, sizeof(tmp), "%02d:%02d", minleft, secleft);
+
+      gdispFillArea( 81,60, 
+                     60, gdispGetFontMetric(p->fontXS, fontHeight),
+                     Black );
+      
+      gdispDrawStringBox (81,
+                          60,
+                          gdispGetWidth(),
+                          gdispGetFontMetric(p->fontXS, fontHeight),
+                          tmp,
+                          p->fontXS, White, justifyLeft);
     }
 
     /* Caesar Election
@@ -386,27 +392,49 @@ static void default_event(OrchardAppContext *context,
      * If there are no nearby Caesars... 
      * ... and I am not caesar already ... 
      * and my level is >= 3 
-     * and I can roll 1d10 and we get 1 to 3, then 
+     * and I can roll 1d10 and we get 1 to 3, then
      * we become caesar
     */
 
     if ( (chVTGetSystemTime() - last_caesar_check) > CS_ELECT_INT ) { 
       last_caesar_check = chVTGetSystemTime();
-
+      chprintf(stream, "caesar election started\r\n");
+      /*
       if ( (config->level >= 3) && 
            (config->current_type != p_caesar) && 
-           (nearby_caesar() == FALSE))  {
-        
-        if (rand() % 6 == 1) {
+           (nearby_caesar() == FALSE) &&
+           (config->airplane_mode == FALSE) )  {
+      */
+      if (config->current_type != p_caesar) { 
+        /*        if (rand() % 10 >= 3) { */
+        if (1 == 1)  {
+          chprintf(stream, "won election\r\n");
           /* become Caesar for an hour */
-          caesar_expires_at = chVTGetSystemTime() + MS2ST(3600000);
-          /* Set myself to Caesar */
-          
-        }
+          char_reset_at = chVTGetSystemTime() + MAX_BUFF_TIME;
+          /* Set myself to Caesar */ 
+          config->current_type = p_caesar;
+          configSave(config);
+          dacPlay("fight/leveiup.raw");
+          screen_alert_draw(true, "YOU ARE NOW CAESAR!!");
+          chThdSleepMilliseconds(ALERT_DELAY);
+          gdispClear(Black);
+          redraw_badge(p);
+        } 
       }
     }
 
     /* is it time to revert the player? */
+    if ( ( char_reset_at != 0) &&
+         ( chVTGetSystemTime() >= char_reset_at ) ) {
+      config->current_type = config->p_type;
+      char_reset_at = 0;
+      configSave(config);
+      dacPlay("fight/leveiup.raw");
+      screen_alert_draw(true, "CHARACTER STATUS EXPIRED");
+      chThdSleepMilliseconds(ALERT_DELAY);
+      gdispClear(Black);
+      redraw_badge(p);
+    }
     /* if so, revert the player */
 
     /* Heal the player -- 60 seconds to heal, or 30 seconds if you have the buff */
@@ -422,9 +450,9 @@ static void default_event(OrchardAppContext *context,
       if (config->hp >= maxhp(config->unlocks, config->level)) {
         config->hp = maxhp(config->unlocks, config->level);
         configSave(config);
-        redraw_badge();
+        redraw_badge(p);
       } else {
-        redraw_badge();
+        redraw_badge(p);
       }
     }
   }
@@ -437,6 +465,10 @@ static void default_exit(OrchardAppContext *context) {
   p = context->priv;
   gwinDestroy (p->ghFightButton);
   gwinDestroy (p->ghExitButton);
+  gdispCloseFont (p->fontXS);
+  gdispCloseFont (p->fontLG);
+  gdispCloseFont (p->fontSM);
+
   geventDetachSource (&p->glBadge, NULL);
   geventRegisterCallback (&p->glBadge, NULL, NULL);
   chHeapFree (context->priv);

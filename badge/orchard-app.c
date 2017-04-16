@@ -75,7 +75,7 @@ uint8_t shout_ok;
 /* this is shared between app-badge and app-unlock */
 /* engaging a temporary class change like bender or caesear will set
    it, and it will be cleared on reset */
-uint32_t class_reset_at = 0; 
+systime_t char_reset_at = 0;
 
 static KW01_PKT orchard_pkt;
 uint8_t orchard_pkt_busy;

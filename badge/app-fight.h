@@ -25,10 +25,6 @@
 #define PROGRESS_BAR_W 200
 #define PROGRESS_BAR_H 10
 
-// the maximum level you can reach
-// if you change this you have to update userconfig.c
-#define LEVEL_CAP      10
-
 /* MSB of attackbitmap represents the attack */
 #define ATTACK_MASK     0x38
 #define ATTACK_ONESHOT  ( 1 << 7 ) 
@@ -95,7 +91,7 @@ const char* fight_state_name[]  = {
 #endif /* DEBUG_FIGHT_STATE */
 
 typedef enum _fight_state {
-  NONE  ,             // 0 - Not started yet. 
+  NONE  ,           // 0 - Not started yet. 
   WAITACK,          // 1 - We are waiting for an ACK to transition to next_fight_state
   IDLE,             // 2 - Our app isn't running or idle
   ENEMY_SELECT,     // 3 - Choose enemy screen
@@ -183,7 +179,11 @@ static void draw_idle_players(void);
 
 static uint16_t calc_xp_gain(uint8_t);
 
-/* the function state table, a list of pointers to functions to run the game */
+/* The function state table, a list of pointers to functions to run
+ * the game Enter always fires when entering a state, tick fires on
+ * the timer, exit is always fired on state exit for cleanups and
+ * other housekeeping.
+ */
 state_funcs fight_funcs[] = { { // none
                                  NULL,
                                  NULL,

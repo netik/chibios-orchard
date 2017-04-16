@@ -15,36 +15,9 @@
 #include "sound.h"
 #include "dac_lld.h"
 #include "led.h"
+#include "gameconfig.h"
 
-// WidgetStyle: Ivory
-const GWidgetStyle ivory = {
-  HTML2COLOR(0xffefbe),              // background
-  HTML2COLOR(0x2A8FCD),              // focus
-
-  // Enabled color set
-  {
-    HTML2COLOR(0x000000),         // text
-    HTML2COLOR(0x404040),         // edge
-    HTML2COLOR(0xffefbe),         // background
-    HTML2COLOR(0x00E000),         // progress (inactive area)
-  },
-
-  // Disabled color set
-  {
-    HTML2COLOR(0xC0C0C0),         // text
-    HTML2COLOR(0x808080),         // edge
-    HTML2COLOR(0xE0E0E0),         // fill
-    HTML2COLOR(0xC0E0C0),         // progress (active area)
-  },
-
-  // Pressed color set
-  {
-    HTML2COLOR(0x404040),         // text
-    HTML2COLOR(0x404040),         // edge
-    HTML2COLOR(0x808080),         // fill
-    HTML2COLOR(0x00E000),         // progress (active area)
-  }
-};
+extern systime_t char_reset_at;
 
 // handles
 typedef struct _UnlockHandles {
@@ -127,7 +100,7 @@ static void init_unlock_ui(UnlockHandles *p) {
   wi.text = "0";
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
-  wi.customStyle = &ivory;
+  wi.customStyle = &IvoryStyle;
   p->ghNum1 = gwinButtonCreate(0, &wi);
   gwinSetFont(p->ghNum1, p->font_jupiterpro_36);
   gwinRedraw(p->ghNum1);
@@ -141,7 +114,7 @@ static void init_unlock_ui(UnlockHandles *p) {
   wi.text = "0";
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
-  wi.customStyle = &ivory;
+  wi.customStyle = &IvoryStyle;
   p->ghNum2 = gwinButtonCreate(0, &wi);
   gwinSetFont(p->ghNum2, p->font_jupiterpro_36);
   gwinRedraw(p->ghNum2);
@@ -156,7 +129,7 @@ static void init_unlock_ui(UnlockHandles *p) {
   wi.text = "0";
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
-  wi.customStyle = &ivory;
+  wi.customStyle = &IvoryStyle;
 #endif
   p->ghNum3 = gwinButtonCreate(0, &wi);
   gwinSetFont(p->ghNum3, p->font_jupiterpro_36);
@@ -172,7 +145,7 @@ static void init_unlock_ui(UnlockHandles *p) {
   wi.text = "0";
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
-  wi.customStyle = &ivory;
+  wi.customStyle = &IvoryStyle;
 #endif
   p->ghNum4 = gwinButtonCreate(0, &wi);
   gwinSetFont(p->ghNum4, p->font_jupiterpro_36);
@@ -188,7 +161,7 @@ static void init_unlock_ui(UnlockHandles *p) {
   wi.text = "0";
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
-  wi.customStyle = &ivory;
+  wi.customStyle = &IvoryStyle;
 #endif
   p->ghNum5 = gwinButtonCreate(0, &wi);
   gwinSetFont(p->ghNum5,  p->font_jupiterpro_36);
@@ -197,7 +170,7 @@ static void init_unlock_ui(UnlockHandles *p) {
   // create button widget: ghBack
 #ifdef notdef
   wi.g.show = TRUE;
-  wi.customStyle = &ivory;
+  wi.customStyle = &IvoryStyle;
 #endif
   wi.g.x = 10;
   wi.g.y = 100;
@@ -213,7 +186,7 @@ static void init_unlock_ui(UnlockHandles *p) {
   wi.g.show = TRUE;
   wi.g.width = 110;
   wi.g.height = 30;
-  wi.customStyle = &ivory;
+  wi.customStyle = &IvoryStyle;
 #endif
   wi.text = "UNLOCK";
   wi.customDraw = 0;
@@ -350,6 +323,7 @@ static uint8_t validate_code(OrchardAppContext *context, userconfig *config) {
       // if it's the bender upgrade, we become bender.
       if (i == 9) {
         config->current_type = p_bender;
+        char_reset_at = chVTGetSystemTime() + MAX_BUFF_TIME;
         dacPlay("biteass.raw");
       } else {
         // default sound
