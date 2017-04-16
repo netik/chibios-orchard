@@ -12,6 +12,7 @@
 #include "images.h"
 
 #include "ides_gfx.h"
+#include "ides_config.h"
 #include "fontlist.h"
 #include "sound.h"
 #include "dac_lld.h"

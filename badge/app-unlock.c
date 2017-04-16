@@ -11,11 +11,11 @@
 #include "orchard-ui.h"
 #include "userconfig.h"
 #include "ides_gfx.h"
+#include "ides_config.h"
 #include "images.h"
 #include "sound.h"
 #include "dac_lld.h"
 #include "led.h"
-#include "gameconfig.h"
 
 extern systime_t char_reset_at;
 
