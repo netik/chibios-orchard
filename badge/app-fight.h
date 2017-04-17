@@ -34,6 +34,7 @@
 #define OP_IMOVED           0x08   /* My turn is done */
 #define OP_TURNOVER         0x10   /* The round is over, let's show results */
 #define OP_NEXTROUND        0x11   /* Please start the next round */
+#define OP_GRANT            0x0c   /* We are granting you a buff */
 #define OP_IMDEAD           0x0d   /* I died */
 #define OP_YOUDIE           0x0e   /* I kill you */
 #define OP_ACK              0xf0   /* Network: I got your message with sequence # acknum */
@@ -64,16 +65,17 @@ const char* fight_state_name[]  = {
   "WAITACK"  ,          // 1 - We are waiting for an ACK to transition to next_fight_state
   "IDLE"  ,             // 2 - Our app isn't running or idle
   "ENEMY_SELECT"  ,     // 3 - Choose enemy screen
-  "APPROVAL_DEMAND"  ,  // 4 - I want to fight you!
-  "APPROVAL_WAIT"  ,    // 5 - I am waiting to see if you want to fight me
-  "VS_SCREEN"  ,        // 6 - I am showing the versus screen.
-  "MOVE_SELECT"  ,      // 7 - We are picking a move.
-  "POST_MOVE"  ,        // 8 - We have picked one and are waiting on you or the clock
-  "SHOW_RESULTS"  ,     // 9 - We are showing results
-  "NEXTROUND"  ,        // 10 - reset the round
-  "PLAYER_DEAD"  ,      // 11 - I die!
-  "ENEMY_DEAD",         // 12 - You're dead.
-  "LEVELUP"             // 13 - Show the bonus screen
+  "GRANT_SCREEN"  ,     // 4 - Choose enemy screen
+  "APPROVAL_DEMAND"  ,  // 5 - I want to fight you!
+  "APPROVAL_WAIT"  ,    // 6 - I am waiting to see if you want to fight me
+  "VS_SCREEN"  ,        // 7 - I am showing the versus screen.
+  "MOVE_SELECT"  ,      // 8 - We are picking a move.
+  "POST_MOVE"  ,        // 9 - We have picked one and are waiting on you or the clock
+  "SHOW_RESULTS"  ,     // 10 - We are showing results
+  "NEXTROUND"  ,        // 11 - reset the round
+  "PLAYER_DEAD"  ,      // 12 - I die!
+  "ENEMY_DEAD",         // 13 - You're dead.
+  "LEVELUP"             // 14 - Show the bonus screen
   };
 #endif /* DEBUG_FIGHT_STATE */
 
@@ -82,16 +84,17 @@ typedef enum _fight_state {
   WAITACK,          // 1 - We are waiting for an ACK to transition to next_fight_state
   IDLE,             // 2 - Our app isn't running or idle
   ENEMY_SELECT,     // 3 - Choose enemy screen
-  APPROVAL_DEMAND,  // 4 - I want to fight you!
-  APPROVAL_WAIT,    // 5 - I am waiting to see if you want to fight me
-  VS_SCREEN,        // 6 - I am showing the versus screen.
-  MOVE_SELECT,      // 7 - We are picking a move.
-  POST_MOVE,        // 8 - We have picked one and are waiting on you or the clock
-  SHOW_RESULTS,     // 9 - We are showing results
-  NEXTROUND,        // 10 - reset the round
-  PLAYER_DEAD,      // 11 - I die!
-  ENEMY_DEAD,       // 12 - You're dead.
-  LEVELUP,          // 12 - You're dead.
+  GRANT_SCREEN,     // 4 - Grant screen
+  APPROVAL_DEMAND,  // 5 - I want to fight you!
+  APPROVAL_WAIT,    // 6 - I am waiting to see if you want to fight me
+  VS_SCREEN,        // 7 - I am showing the versus screen.
+  MOVE_SELECT,      // 8 - We are picking a move.
+  POST_MOVE,        // 9 - We have picked one and are waiting on you or the clock
+  SHOW_RESULTS,     // 10 - We are showing results
+  NEXTROUND,        // 11 - reset the round
+  PLAYER_DEAD,      // 12 - I die!
+  ENEMY_DEAD,       // 13 - You're dead.
+  LEVELUP,          // 14 - You're dead.
 } fight_state;
 
 typedef struct _state {
@@ -137,6 +140,10 @@ static void state_waitack_exit(void);
 static void state_enemy_select_enter(void);
 static void state_enemy_select_tick(void);
 static void state_enemy_select_exit(void);
+
+static void state_grant_enter(void);
+static void state_grant_tick(void);
+static void state_grant_exit(void);
 
 static void state_approval_demand_enter(void);
 static void state_approval_demand_tick(void);
@@ -189,6 +196,11 @@ state_funcs fight_funcs[] = { { // none
                                 state_enemy_select_enter,
                                 state_enemy_select_tick,
                                 state_enemy_select_exit
+                              },
+                              { // enemy select
+                                state_grant_enter,
+                                state_grant_tick,
+                                state_grant_exit
                               },
                               { // approval_demand
                                 state_approval_demand_enter,

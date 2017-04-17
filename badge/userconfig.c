@@ -126,11 +126,13 @@ void configStart(void) {
   config = (const userconfig *) CONFIG_FLASH_ADDR;
 
   /* if the user is holding down UP and LEFT, then we will wipe the configuration */
+#ifdef USE_JOYPAD
   if ((palReadPad (BUTTON_UP_PORT, BUTTON_UP_PIN) == 0) && 
       (palReadPad (BUTTON_DOWN_PORT, BUTTON_DOWN_PIN) == 0)) {
     chprintf(stream, "FACTORY RESET requested\r\n");
     wipeconfig = true; 
   }
+#endif
   
   if ( (config->signature != CONFIG_SIGNATURE) || (wipeconfig)) {
     chprintf(stream, "Config not found, Initializing!\r\n");

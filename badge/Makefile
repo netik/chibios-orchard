@@ -28,8 +28,7 @@ ifeq ($(USE_OPT),)
 USE_OPT += -DENABLE_JOYPAD
 
 # Enable tilt sensor. Also only present on production board.
-
-# USE_OPT+= -DENABLE_TILT_SENSOR
+#USE_OPT+= -DENABLE_TILT_SENSOR
 
 endif
 

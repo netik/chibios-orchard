@@ -12,5 +12,5 @@
 #define UL_LEDS         ( 1 << 5 ) // MORE LEDs      n
 #define UL_CAESAR       ( 1 << 6 ) // CAESAR         n
 #define UL_SENATOR      ( 1 << 7 ) // SENATOR        n
-#define UL_TIMELORD     ( 1 << 8 ) // TIMELORD       n
+#define UL_GOD          ( 1 << 8 ) // GOD            y
 #endif

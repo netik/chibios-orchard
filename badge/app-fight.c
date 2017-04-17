@@ -529,6 +529,27 @@ static void state_enemy_select_exit() {
   p->ghPrevEnemy = NULL;
 }
 
+static void state_grant_enter(void) {
+  gdispClear(Black);
+  putImageFile("grants.rgb", 0, 0);
+  
+  gdispDrawStringBox (0,
+		      110,
+		      gdispGetWidth(),
+		      gdispGetFontMetric(fontSM, fontHeight),
+		      current_enemy.name,
+		      fontSM, Yellow, justifyCenter);
+}
+
+static void state_grant_tick(void) {
+  if( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) {
+    orchardAppRun(orchardAppByName("Badge"));
+  }
+}
+
+static void state_grant_exit(void) {
+}
+
 static void draw_idle_players() {
   uint16_t ypos = 0; // cursor, so if we move or add things we don't have to rethink this
   userconfig *config = getConfig();
@@ -1371,6 +1392,7 @@ static void fight_start(OrchardAppContext *context) {
   FightHandles *p = context->priv;
   user **enemies = enemiesGet();
   userconfig *config = getConfig();
+  char tmp[40];
   
   p = chHeapAlloc (NULL, sizeof(FightHandles));
   memset(p, 0, sizeof(FightHandles));
@@ -1393,7 +1415,36 @@ static void fight_start(OrchardAppContext *context) {
   // are we entering a fight?
   chprintf(stream, "FIGHT: entering with enemy %08x state %d\r\n", current_enemy.netid, current_fight_state);
   last_tick_time = chVTGetSystemTime();
-    
+
+  // are we processing a grant?
+  if ( (current_enemy.netid != 0) && current_enemy.opcode == OP_GRANT) {
+    strcpy(tmp, "YOU RECEIVED ");
+    switch (current_enemy.damage) {
+    case UL_HEAL:
+      strcat(tmp,"2X HEAL!");
+      break;
+    case UL_PLUSDEF:
+      strcat(tmp,"EFF DEF.!");
+      break;
+    case UL_LUCK:
+      strcat(tmp,"+20% LUCK!");
+      break;
+    case UL_PLUSHP:
+      strcat(tmp,"+10% HP!");
+      break;
+    default:
+      strcat(tmp,"AN UNLOCK!");
+    }
+    screen_alert_draw(true, tmp);
+    /* merge the two */
+    config->unlocks |= current_enemy.damage;
+    configSave(config);
+    memset(&current_enemy, 0, sizeof(current_enemy));
+    chThdSleepMilliseconds(ALERT_DELAY);
+    orchardAppRun(orchardAppByName("Badge"));
+    return;
+  }
+  
   if (current_enemy.netid != 0 && current_fight_state != APPROVAL_DEMAND) {
     changeState(APPROVAL_DEMAND);
   }
@@ -1586,7 +1637,15 @@ static void fight_event(OrchardAppContext *context,
     last_ui_time = chVTGetSystemTime();
     
     switch(current_fight_state) { 
-    case ENEMY_SELECT: 
+    case ENEMY_SELECT:
+      if ( (event->key.code == keyUp) &&     /* shhh! tell no one */
+           (event->key.flags == keyPress) &&
+           (config->unlocks & UL_GOD) )  {
+        // remember who this is so we can issue the grant
+        memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(user));
+        changeState(GRANT_SCREEN);
+        return;
+      }
       if ( (event->key.code == keyRight) &&
            (event->key.flags == keyPress) )  {
         if (nextEnemy()) {
@@ -1643,6 +1702,49 @@ static void fight_event(OrchardAppContext *context,
         // can't move.
         chprintf(stream, "rejecting key event -- already went\r\n");
         playNope();
+      }
+      break;
+    case GRANT_SCREEN:
+      if (event->key.flags == keyPress)  {
+        switch (event->key.code) {
+          /* we're going to overload the damage value here 
+           * because we need to send a 16 bit number and don't want to 
+           * extend the structure any further 
+           */
+        case keyUp:
+          last_hit = UL_PLUSDEF;
+          sendGamePacket(OP_GRANT);
+          break;
+        case keyDown:
+          last_hit = UL_LUCK;
+          sendGamePacket(OP_GRANT);
+          break;
+        case keyLeft:
+          last_hit = UL_HEAL;
+          sendGamePacket(OP_GRANT);
+          break;
+        case keyRight:
+          last_hit = UL_PLUSHP;
+          break;
+        default:
+          last_hit = 0;
+          break;
+        }
+
+        if (last_hit != 0) { 
+          screen_alert_draw(true, "GRANT SENT");
+          dacPlay("fight/leveiup.raw");
+          chThdSleepMilliseconds(ALERT_DELAY);
+          orchardAppRun(orchardAppByName("Badge"));
+          next_fight_state = IDLE;
+          sendGamePacket(OP_GRANT);
+        } else {
+          screen_alert_draw(true, "CANCELLED");
+          dacPlay("fight/drop.raw");
+          chThdSleepMilliseconds(ALERT_DELAY);
+          next_fight_state = IDLE;
+          orchardAppRun(orchardAppByName("Badge"));
+        }
       }
       break;
     default:
@@ -1786,7 +1888,7 @@ static void fight_exit(OrchardAppContext *context) {
 
   chHeapFree (context->priv);
   context->priv = NULL;
-
+  memset(&current_enemy, 0, sizeof(current_enemy));
   config->in_combat = 0;
   configSave(config);
   
@@ -1806,7 +1908,8 @@ static void fightRadioEventHandler(KW01_PKT * pkt) {
   
   u = (user *)pkt->kw01_payload; 
 
-  if (u->opcode == OP_STARTBATTLE && config->in_combat == 0) {
+  if (( (u->opcode == OP_STARTBATTLE) || (u->opcode == OP_GRANT) ) &&
+      config->in_combat == 0) {
     /* we can accept a new fight */
     memcpy(&current_enemy, u, sizeof(user));
     ourattack = 0;
@@ -1817,7 +1920,7 @@ static void fightRadioEventHandler(KW01_PKT * pkt) {
       orchardAppRun(orchardAppByName("Fight"));
     }
   }
-  
+
   orchardAppRadioCallback (pkt);
   return;
 }

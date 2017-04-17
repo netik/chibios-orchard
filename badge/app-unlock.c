@@ -42,7 +42,8 @@ typedef struct _UnlockHandles {
 
 #define MAX_ULCODES 10
 
-/* codes, packed as bits. Note only last five bits are used, MSB of 1st byte is always zero */
+/* codes, packed as bits. Note only last five bits are used, MSB of
+   1st byte is always zero */
 static uint8_t unlock_codes[MAX_ULCODES][3] = { { 0x01, 0xde, 0xf1 }, // 0 +10% DEF
                                                 { 0x0d, 0xef, 0xad }, // 1 +10% HP
                                                 { 0x0a, 0x7a, 0xa7 }, // 2 +1 MIGHT
@@ -51,7 +52,7 @@ static uint8_t unlock_codes[MAX_ULCODES][3] = { { 0x01, 0xde, 0xf1 }, // 0 +10% 
                                                 { 0x00, 0x1a, 0xc0 }, // 5 MOAR LEDs
                                                 { 0x0b, 0xae, 0xac }, // 6 CAESAR
                                                 { 0x0d, 0xe0, 0x1a }, // 7 SENATOR
-                                                { 0x09, 0x00, 0x46 }, // 8 TIMELORD
+                                                { 0x09, 0x00, 0x46 }, // 8 GOD MODE
                                                 { 0x0b, 0xbb, 0xbb }  // 9 BENDER
 };
 static char *unlock_desc[] = { "+10% DEF",
@@ -62,7 +63,7 @@ static char *unlock_desc[] = { "+10% DEF",
                                "MOAR LEDs",
                                "U R CAESAR",
                                "U R SENATOR",
-                               "U R TIMELORD",
+                               "U R A GOD",
                                "BENDER" };
 
 static uint32_t last_ui_time = 0;
