@@ -167,6 +167,7 @@ CSRC = main.c \
        app-update.c \
        app-credits.c \
        app-ledsign.c \
+       app-spectrum.c \
        app-video.c \
        app-shout.c \
        app-chat.c \

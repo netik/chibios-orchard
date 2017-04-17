@@ -632,8 +632,8 @@ radioStart (SPIDriver * sp)
 
 	/* Select frequency, deviation and bitrate */
 
-	radioFrequencySet (radio, 921575000);
-	radioDeviationSet (radio, 170000);
+	radioFrequencySet (radio, KW01_CARRIER_FREQUENCY);
+	radioDeviationSet (radio, KW01_DEVIATION);
 	radioBitrateSet (radio, 50000);
 
 	/* Set power output mode and power level to max */

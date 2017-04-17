@@ -35,6 +35,8 @@
 
 #define KW01_DELAY 1000
 
+#define KW01_CARRIER_FREQUENCY	921575000
+#define KW01_DEVIATION		170000
 /*
  * Note:
  * We send structures over the radio for game play purposes (user
