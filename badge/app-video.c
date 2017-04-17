@@ -160,13 +160,16 @@ video_exit(OrchardAppContext *context)
 
 	p = context->priv;
 
+	if (p == NULL)
+            return;
+
 	for (i = 2; i < p->itemcnt; i++)
 		chHeapFree (p->listitems[i]);
 
 	chHeapFree (p->listitems);
 	chHeapFree (p);
 
-	context->priv= NULL;
+	context->priv = NULL;
 
 	return;
 }
