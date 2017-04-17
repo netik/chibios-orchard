@@ -198,7 +198,18 @@ int updater (void)
 		dst += br;
 	}
 
+#ifdef notdef
+	/*
+	 * This is a bit of a hack, but it reduces the size of the
+	 * updater.bin image by over 450 bytes. Strictly speaking,
+	 * we don't need to call the close function here after
+	 * we're done flashing the new firmware. We've already
+	 * read all the data from the file on the SD card, and we
+	 * don't care about the internal state of the FatFs code
+	 * since we're about to hard reset the system anyway.
+	 */
 	f_close (&f);
+#endif
 
 	/* Reboot and load the new firmware */
 
