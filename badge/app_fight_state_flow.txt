@@ -1,6 +1,7 @@
 
 Attacker (a):
-
+                         +----------> GRANT_SCREEN --> EXIT
+                         |
 NONE ---> IDLE ---> enemy_select ---> APPROVAL_WAIT
                                              |
 ________________                             | OP_STARTBATTLE (a->b) 
@@ -8,9 +9,9 @@ Victim (b):     |                            v
 ----------------+                      APPROVAL_DEMAND
                                         |         | (accepts)
 IDLE <-- OP_DECLINED (b->a) ----------<-+         |
-                                                  |  OP_STARTBATTLE_ACK (b->a)
-                                                  v
-                                               VS_SCREEN (both)
+ +                                                |  OP_STARTBATTLE_ACK (b->a)
+ |                                                v
+ +----> GRANT_RECV --> EXIT                    VS_SCREEN (both)
                                                   |  (no network traffic, ~2-3 sec after)
                                                   v
                                        +---> MOVE_SELECT (timed)
@@ -23,7 +24,7 @@ IDLE <-- OP_DECLINED (b->a) ----------<-+         |
                                        +--- SHOW_RESULTS (when both packets arrive)
                               --or--              |
                                                   v
-                                                 DIE
+                                                 DIE ---> IDLE
 
 In post move:
 
