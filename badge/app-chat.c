@@ -1,4 +1,4 @@
-/*
+/*-
  * Copyright (c) 2016
  *      Bill Paul <wpaul@windriver.com>.  All rights reserved.
  *
@@ -118,8 +118,7 @@ static uint32_t chat_init (OrchardAppContext *context)
 static void chat_start (OrchardAppContext *context)
 {
 	(void)context;
-
-        return;
+	return;
 }
 
 static void chat_event (OrchardAppContext *context,
@@ -144,35 +143,33 @@ static void chat_event (OrchardAppContext *context,
 
 	if (event->type == appEvent) {
 		if (event->app.event == appStart) {
-                                    
-                  p = chHeapAlloc(NULL, sizeof(ChatHandles));
-                  memset (p, 0, sizeof(ChatHandles));
-                  p->peers = 2;
+			p = chHeapAlloc(NULL, sizeof(ChatHandles));
+			memset (p, 0, sizeof(ChatHandles));
+			p->peers = 2;
 
-                  if (airplane_mode_check() == true) {
-                    return;
-                  }
-                  
-                  p->listitems[0] = "Scanning for users...";
-                  p->listitems[1] = "Exit";
-                  
-                  p->uiCtx.itemlist = (const char **)p->listitems;
-                  p->uiCtx.total = 1;
-                  
-                  context->instance->ui = getUiByName ("list");
-                  context->instance->uicontext = &p->uiCtx;
-                  context->instance->ui->start (context);
-                  
-                  context->priv = p;
+			if (airplane_mode_check() == true)
+				return;
+
+			p->listitems[0] = "Scanning for users...";
+			p->listitems[1] = "Exit";
+
+			p->uiCtx.itemlist = (const char **)p->listitems;
+			p->uiCtx.total = 1;
+
+			context->instance->ui = getUiByName ("list");
+			context->instance->uicontext = &p->uiCtx;
+       			context->instance->ui->start (context);
+
+			context->priv = p;
 		}
 		if (event->app.event == appTerminate) {
-                  p = context->priv;
-                  for (i = 2; i < p->peers; i++) {
-                    if (p->listitems[i] != NULL)
-                      chHeapFree (p->listitems[i]);
+			p = context->priv;
+			for (i = 2; i < p->peers; i++) {
+				if (p->listitems[i] != NULL)
+					chHeapFree (p->listitems[i]);
 			}
-                  chHeapFree (p);
-                  context->priv = NULL;
+			chHeapFree (p);
+			context->priv = NULL;
 		}
 		return;
 	}
