@@ -95,5 +95,5 @@ hackers_exit(OrchardAppContext *context)
 	return;
 }
 
-orchard_app("Hackers", 0, hackers_init, hackers_start,
+orchard_app("Hackers", NULL, 0, hackers_init, hackers_start,
     hackers_event, hackers_exit);

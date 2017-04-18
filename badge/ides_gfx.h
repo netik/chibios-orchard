@@ -10,6 +10,7 @@
 
 extern const GWidgetStyle RedButtonStyle;
 extern const GWidgetStyle DarkPurpleStyle;
+extern const GWidgetStyle DarkPurpleFilledStyle;
 extern const GWidgetStyle IvoryStyle;
 
 /* Graphics */

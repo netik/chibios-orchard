@@ -127,5 +127,5 @@ ledsign_exit(OrchardAppContext *context)
 	return;
 }
 
-orchard_app("Scrolling LED sign", 0, ledsign_init, ledsign_start,
+orchard_app("LED Sign", "sign.rgb", 0, ledsign_init, ledsign_start,
 		ledsign_event, ledsign_exit);

@@ -174,5 +174,5 @@ video_exit(OrchardAppContext *context)
 	return;
 }
 
-orchard_app("Play videos", 0, video_init, video_start,
+orchard_app("Play Videos", "video.rgb", 0, video_init, video_start,
     video_event, video_exit);

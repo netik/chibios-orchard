@@ -17,7 +17,7 @@
 /* undefine this to show sponsors and play music at startup. It is
    very time consuming to see this when doing development */
 
-#undef FAST_STARTUP
+#define FAST_STARTUP
 
 /* define this to halt on SD card Failure */
 #undef HALT_ON_SDFAIL
@@ -440,9 +440,9 @@ o   */
 
   /* Draw a banner... */
   uiStart();
-#ifndef FAST_STARTUP
   oledOrchardBanner();
 
+#ifndef FAST_STARTUP
   if (config->sound_enabled == 1) {
     playStartupSong();
     chThdSleepMilliseconds(IMG_SPLASH_DISPLAY_TIME);

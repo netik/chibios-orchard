@@ -136,7 +136,8 @@ static void ct_draw_confirm(OrchardAppContext *context) {
   char tmp2[40];
   
   p = context->priv;
-
+  gdispClear(Black);
+  
   gwinDestroy(p->ghButton1);
   p->ghButton1 = NULL;
   gwinDestroy(p->ghButton2);
@@ -471,4 +472,4 @@ static void ct_exit(OrchardAppContext *context) {
   context->priv = NULL;
 }  
 
-orchard_app("Choosetype", TRUE, ct_init, ct_start, ct_event, ct_exit);
+orchard_app("Choosetype", NULL, APP_FLAG_HIDDEN, ct_init, ct_start, ct_event, ct_exit);
