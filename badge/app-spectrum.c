@@ -16,8 +16,12 @@
 #define SPAN	10000
 #define STEP	1000000
 
-static uint32_t span;
-static uint32_t center;
+typedef struct spectrum_state {
+	uint32_t	span;
+	uint32_t	center;
+	uint8_t		airplane;
+	GListener	gl;
+} SpectrumState;
 
 static uint8_t
 rssiGet (RADIODriver * radio)
@@ -101,30 +105,32 @@ spectrum_init (OrchardAppContext *context)
 static void
 spectrum_start (OrchardAppContext *context)
 {
+	SpectrumState * state;
 	GSourceHandle gs;
-	GListener * gl;
 	userconfig * config;
 
 	dacWait ();
 
 	gdispClear (Teal);
 
-	gl = chHeapAlloc (NULL, sizeof(GListener));
-	context->priv = gl;
+	state = chHeapAlloc (NULL, sizeof(SpectrumState));
+	context->priv = state;
 
-	span = 500000;
-	center = KW01_CARRIER_FREQUENCY;
+	state->span = 500000;
+	state->center = KW01_CARRIER_FREQUENCY;
 
-	paramShow (span, center);
+	paramShow (state->span, state->center);
 
 	gs = ginputGetMouse (0);
-	geventListenerInit (gl);
-	geventAttachSource (gl, gs, GLISTEN_MOUSEMETA);
-	geventRegisterCallback (gl, orchardAppUgfxCallback, gl);
+	geventListenerInit (&state->gl);
+	geventAttachSource (&state->gl, gs, GLISTEN_MOUSEMETA);
+	geventRegisterCallback (&state->gl,
+	    orchardAppUgfxCallback, &state->gl);
 
 	orchardAppTimer (context, 1000, FALSE);
 
 	config = getConfig ();
+	state->airplane = config->airplane_mode;
 	config->airplane_mode = 1;
 
 	return;
@@ -134,25 +140,28 @@ static void
 spectrum_event (OrchardAppContext *context,
 	const OrchardAppEvent *event)
 {
+	SpectrumState * state;
 	uint8_t rssi;
 	uint32_t startFreq;
 	uint32_t stepHz;
 	int i, j;
 
+	state = context->priv;
+
 	if (event->type == keyEvent && event->key.flags == keyPress) {
 		dacWait ();
 		if (event->key.code == keyUp)
-			span += SPAN;
+			state->span += SPAN;
 		if (event->key.code == keyDown) {
-			span -= SPAN;
-			if (span == 0)
-				span = SPAN;
+			state->span -= SPAN;
+			if (state->span == 0)
+				state->span = SPAN;
 		}	
 		if (event->key.code == keyLeft)
-			center -= STEP;
+			state->center -= STEP;
 		if (event->key.code == keyRight)
-			center += STEP;
-		paramShow (span, center);
+			state->center += STEP;
+		paramShow (state->span, state->center);
 	}
 
 	if (event->type == appEvent && event->app.event == appStart)
@@ -164,8 +173,8 @@ spectrum_event (OrchardAppContext *context,
 	}
 
 	if (event->type == timerEvent) {
-		stepHz = span;
-		startFreq = center;
+		stepHz = state->span;
+		startFreq = state->center;
 		startFreq -= stepHz * (gdispGetWidth () / 2);
 		GDISP->p.y = 112;
 		GDISP->p.cx = 1;
@@ -196,21 +205,19 @@ spectrum_event (OrchardAppContext *context,
 static void
 spectrum_exit (OrchardAppContext *context)
 {
-	GListener * gl;
+	SpectrumState * state;
 	userconfig * config;
 
-	gl = context->priv;
-
-	if (gl != NULL) {
-        	geventDetachSource (gl, NULL);
-		geventRegisterCallback (gl, NULL, NULL);
-		chHeapFree (gl);
-	}
+	state = context->priv;
 
 	radioFrequencySet (&KRADIO1, KW01_CARRIER_FREQUENCY);
 
 	config = getConfig ();
-	config->airplane_mode = 0;
+	config->airplane_mode = state->airplane;
+
+       	geventDetachSource (&state->gl, NULL);
+	geventRegisterCallback (&state->gl, NULL, NULL);
+	chHeapFree (state);
 
 	return;
 }
