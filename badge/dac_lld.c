@@ -155,6 +155,7 @@ THD_FUNCTION(dacThread, arg)
 		if (play == 0) {
 			th = chMsgWait ();
 			file = fname;
+			play = 1;
 			chMsgRelease (th, MSG_OK);
 		}
  
@@ -167,11 +168,15 @@ THD_FUNCTION(dacThread, arg)
 		 * because can't play from two sources at once.
 		 */
  	
-		if (dacBuf != NULL)
+		if (dacBuf != NULL) {
+			play = 0;
 			continue;
+		}
 
-		if (f_open (&f, file, FA_READ) != FR_OK)
+		if (f_open (&f, file, FA_READ) != FR_OK) {
+			play = 0;
 			continue;
+		}
 
 		dacBuf = chHeapAlloc (NULL,
 		    (DAC_SAMPLES * sizeof(uint16_t)) * 2);
@@ -183,10 +188,10 @@ THD_FUNCTION(dacThread, arg)
 			f_close (&f);
 			chHeapFree (dacBuf);
 			dacBuf = NULL;
+			play = 0;
 			continue;
 		}
 
-		play = 1;
 		pitEnable (&PIT1, 1);
 
 		while (1) {
@@ -323,6 +328,34 @@ dacPlay (char * file)
 
 /******************************************************************************
 *
+* dacWait - wait for current audio file to finish playing
+*
+* This function can be used to test when the current audio sample file has
+* finished playing. It can be used to pause the current thread until a
+* sound effect finishes playing. Since sound effect files are read from
+* the SD card, and since the SD card and screen share the same SPI bus,
+* updating the screen while a sound effect is playing can cause the
+* sound to stutter. This can be mitigated by waiting for the effect to
+* finish playing.
+*
+* RETURNS: The number of ticks we had to wait until the playback finished.
+*/
+
+int
+dacWait (void)
+{
+	int waits = 0;
+
+	while (play != 0) {
+		chThdSleep (1);
+		waits++;
+	}
+
+	return (waits);
+}
+
+/******************************************************************************
+*
 * dacSamplesPlay - play specific sample buffer
 *
 * This function can be used to play an arbitrary buffer of samples provided
@@ -350,7 +383,7 @@ dacSamplesPlay (uint16_t * p, int cnt)
 
 /******************************************************************************
 *
-* dacWait - wait for audio sample buffer to finish playing
+* dacSamplesWait - wait for audio sample buffer to finish playing
 *
 * This function can be used to test when the current block of samples has
 * finished playing. It is used primarily by callers of dacSamplesPlay() to
@@ -364,7 +397,7 @@ dacSamplesPlay (uint16_t * p, int cnt)
 */
 
 int
-dacWait (void)
+dacSamplesWait (void)
 {
 	int waits = 0;
 

@@ -75,9 +75,10 @@ extern uint16_t * dacBuf;
 
 extern void dacStart (DACDriver *);
 extern void dacPlay (char *);
+extern int dacWait (void);
 extern void dacLoopPlay (char *, uint8_t);
 
 extern void dacSamplesPlay (uint16_t * p, int cnt);
-extern int dacWait (void);
+extern int dacSamplesWait (void);
 
 #endif /* _DAC_LLD_H_ */

@@ -366,14 +366,14 @@ videoWinPlay (char * fname, int x, int y)
 
 		if ((i & SAMPLE_INTERVAL) == SAMPLE_INTERVAL) {
 #ifdef VIDEO_AUTO_RATE_ADJUST
-			curwait = dacWait ();
+			curwait = dacSamplesWait ();
 			if (curwait == 0 && lastwait == 0)
 				skipcnt++;
 			else
 				skipcnt = 0;
 			lastwait = curwait;
 #else
-			(void) dacWait ();
+			(void) dacSamplesWait ();
 #endif
 			dacSamplesPlay (cur, SAMPLES_PER_PLAY);
 			if (cur == dacBuf)
