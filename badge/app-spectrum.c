@@ -3,14 +3,21 @@
 
 #include "radio_lld.h"
 #include "radio_reg.h"
+#include "dac_lld.h"
 
 #include "fontlist.h"
 
 #include "src/gdisp/gdisp_driver.h"
 
+#include "userconfig.h"
+
 #include <string.h>
 
-#define SPAN	500000
+#define SPAN	10000
+#define STEP	1000000
+
+static uint32_t span;
+static uint32_t center;
 
 static uint8_t
 rssiGet (RADIODriver * radio)
@@ -28,14 +35,54 @@ rssiGet (RADIODriver * radio)
 		rssi = radioRead (radio, KW01_RSSICONF);
 		if (rssi & KW01_RSSICONF_DONE)
 			break;
- 		chThdSleep (1);
         }
-        
+
 	/* Get the result. */
 
 	rssi = radioRead (radio, KW01_RSSIVAL);
 
 	return (rssi);
+}
+
+static void
+paramShow (uint32_t spanHz, uint32_t centerHz)
+{
+	font_t font;
+	char str[64];
+
+	gdispGFillArea (GDISP, 40, 0, gdispGetWidth () - 80, 80, Teal);
+
+	font = gdispOpenFont (FONT_KEYBOARD);
+
+	chsnprintf(str, sizeof(str), "Start: %dHz",
+	    centerHz - (spanHz * (320 / 2)));
+  
+	gdispDrawStringBox (0, 0, gdispGetWidth(),
+	    gdispGetFontMetric(font, fontHeight),
+	    str, font, White, justifyCenter);
+
+	chsnprintf(str, sizeof(str), "Center: %dHz", centerHz);
+  
+	gdispDrawStringBox (0, gdispGetFontMetric(font, fontHeight),
+	    gdispGetWidth(), gdispGetFontMetric(font, fontHeight),
+	    str, font, White, justifyCenter);
+
+	chsnprintf(str, sizeof(str), "End: %dHz",
+	    centerHz + (spanHz * (320 / 2)));
+  
+	gdispDrawStringBox (0, gdispGetFontMetric(font, fontHeight) * 2,
+	    gdispGetWidth(), gdispGetFontMetric(font, fontHeight),
+	    str, font, White, justifyCenter);
+
+	chsnprintf(str, sizeof(str), "Span: %dHz", spanHz);
+  
+	gdispDrawStringBox (0, gdispGetFontMetric(font, fontHeight) * 3,
+	    gdispGetWidth(), gdispGetFontMetric(font, fontHeight),
+	    str, font, White, justifyCenter);
+
+	gdispCloseFont (font);
+
+	return;
 }
 
 static uint32_t
@@ -56,38 +103,19 @@ spectrum_start (OrchardAppContext *context)
 {
 	GSourceHandle gs;
 	GListener * gl;
-	font_t font;
-	char str[64];
+	userconfig * config;
 
-	gdispClear (Black);
+	dacWait ();
 
-	font = gdispOpenFont (FONT_KEYBOARD);
-
-	chsnprintf(str, sizeof(str), "Start: %dHz",
-	    KW01_CARRIER_FREQUENCY - (SPAN * (320 / 2)));
-  
-	gdispDrawStringBox (0, 0, gdispGetWidth(),
-	    gdispGetFontMetric(font, fontHeight),
-	    str, font, White, justifyCenter);
-
-	chsnprintf(str, sizeof(str), "Center: %dHz", KW01_CARRIER_FREQUENCY);
-  
-	gdispDrawStringBox (0, gdispGetFontMetric(font, fontHeight),
-	    gdispGetWidth(), gdispGetFontMetric(font, fontHeight),
-	    str, font, White, justifyCenter);
-
-	chsnprintf(str, sizeof(str), "End: %dHz",
-	    KW01_CARRIER_FREQUENCY + (SPAN * (320 / 2)));
-  
-	gdispDrawStringBox (0, gdispGetFontMetric(font, fontHeight) * 2,
-	    gdispGetWidth(), gdispGetFontMetric(font, fontHeight),
-	    str, font, White, justifyCenter);
-
-	gdispCloseFont (font);
+	gdispClear (Teal);
 
 	gl = chHeapAlloc (NULL, sizeof(GListener));
-	memset (gl, 0, sizeof(GListener));
 	context->priv = gl;
+
+	span = 500000;
+	center = KW01_CARRIER_FREQUENCY;
+
+	paramShow (span, center);
 
 	gs = ginputGetMouse (0);
 	geventListenerInit (gl);
@@ -96,7 +124,8 @@ spectrum_start (OrchardAppContext *context)
 
 	orchardAppTimer (context, 1000, FALSE);
 
-	radioWrite (&KRADIO1, KW01_LNA, KW01_ZIN_200OHM|KW01_GAIN_G1);
+	config = getConfig ();
+	config->airplane_mode = 1;
 
 	return;
 }
@@ -110,6 +139,22 @@ spectrum_event (OrchardAppContext *context,
 	uint32_t stepHz;
 	int i, j;
 
+	if (event->type == keyEvent && event->key.flags == keyPress) {
+		dacWait ();
+		if (event->key.code == keyUp)
+			span += SPAN;
+		if (event->key.code == keyDown) {
+			span -= SPAN;
+			if (span == 0)
+				span = SPAN;
+		}	
+		if (event->key.code == keyLeft)
+			center -= STEP;
+		if (event->key.code == keyRight)
+			center += STEP;
+		paramShow (span, center);
+	}
+
 	if (event->type == appEvent && event->app.event == appStart)
 		orchardAppTimer (context, 1, TRUE);
 
@@ -119,8 +164,8 @@ spectrum_event (OrchardAppContext *context,
 	}
 
 	if (event->type == timerEvent) {
-		stepHz = SPAN;
-		startFreq = KW01_CARRIER_FREQUENCY;
+		stepHz = span;
+		startFreq = center;
 		startFreq -= stepHz * (gdispGetWidth () / 2);
 		GDISP->p.y = 112;
 		GDISP->p.cx = 1;
@@ -134,11 +179,11 @@ spectrum_event (OrchardAppContext *context,
 			gdisp_lld_write_start (GDISP);
 			for (i = 0; i < 128; i++) {
 				if (rssi == i)
-					GDISP->p.color = White;
+					GDISP->p.color = Yellow;
 				else if (rssi > i)
-					GDISP->p.color = Black;
+					GDISP->p.color = Teal;
 				else
-					GDISP->p.color = Blue;
+					GDISP->p.color = Navy;
 				gdisp_lld_write_color (GDISP);
 			}
 			gdisp_lld_write_stop (GDISP);
@@ -152,6 +197,7 @@ static void
 spectrum_exit (OrchardAppContext *context)
 {
 	GListener * gl;
+	userconfig * config;
 
 	gl = context->priv;
 
@@ -162,7 +208,9 @@ spectrum_exit (OrchardAppContext *context)
 	}
 
 	radioFrequencySet (&KRADIO1, KW01_CARRIER_FREQUENCY);
-	radioWrite (&KRADIO1, KW01_LNA, KW01_ZIN_200OHM|KW01_GAIN_AGC);
+
+	config = getConfig ();
+	config->airplane_mode = 0;
 
 	return;
 }
