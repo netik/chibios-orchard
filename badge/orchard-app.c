@@ -201,7 +201,6 @@ static void ugfx_event(eventid_t id) {
   (void) id;
 
   dacPlay ("click.raw");
-  dacWait ();
   instance.app->event (instance.context, &ugfx_evt);
   geventEventComplete (ugfx_evt.ugfx.pListener);
 
@@ -268,10 +267,8 @@ joyHandle (uint8_t s) {
     if (instance.context != NULL) {
       evt.type = keyEvent;
       evt.key = joyEvent;
-      if (joyEvent.code != keyTilt && joyEvent.flags == keyPress) {
+      if (joyEvent.code != keyTilt && joyEvent.flags == keyPress)
           dacPlay("click.raw");
-          dacWait ();
-      }
       instance.app->event (instance.context, &evt);
     }
     return (1);
@@ -455,10 +452,10 @@ static THD_FUNCTION(orchard_app_thread, arg) {
   evtTableInit(orchard_app_events, 6);
   evtTableHook(orchard_app_events, ui_completed, ui_complete_cleanup);
   evtTableHook(orchard_app_events, orchard_app_terminate, terminate);
-  evtTableHook(orchard_app_events, timer_expired, timer_event);
   evtTableHook(orchard_app_events, orchard_app_gfx, ugfx_event);
   evtTableHook(orchard_app_events, orchard_app_radio, radio_event);
   evtTableHook(orchard_app_events, orchard_app_key, key_event);
+  evtTableHook(orchard_app_events, timer_expired, timer_event);
 
   // if APP is null, the system will crash here. 
   if (instance->app->init)
