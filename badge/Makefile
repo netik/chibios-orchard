@@ -27,6 +27,9 @@ ifeq ($(USE_OPT),)
 
 USE_OPT += -DENABLE_JOYPAD
 
+# enable this to bypass startup splash page and sponsors
+#USE_OPT += -DFAST_STARTUP
+
 # Enable tilt sensor. Also only present on production board.
 #USE_OPT+= -DENABLE_TILT_SENSOR
 

@@ -7,8 +7,11 @@
 #include "orchard-app.h"
 #include "fontlist.h"
 #include "dac_lld.h"
-
+#include "ides_gfx.h"
 #include "userconfig.h"
+
+#define LAUNCHER_PERROW 3
+#define LAUNCHER_PERPAGE 6
 
 extern const OrchardApp *orchard_app_list;
 extern uint8_t shout_ok;
@@ -20,144 +23,164 @@ struct launcher_list_item {
 };
 
 struct launcher_list {
-  GHandle ghButton1;
-  GHandle ghButton2;
-  GHandle ghButton3;
-  GListener gl;
-  unsigned int selected;
+  font_t  fontLG;
+  font_t  fontXS;
+  font_t  fontFX;
+  GHandle ghTitleL;
+  GHandle ghTitleR;
+  GHandle ghButtonUp;
+  GHandle ghButtonDn;
+
   unsigned int total;
+  
+  /* app grid */
+  GHandle ghButtons[6];
+  GHandle ghLabels[6];
+  GListener gl;
+
+  unsigned int page;
+  unsigned int selected;
+
   struct launcher_list_item items[0];
 };
 
-static void draw_launcher_buttons(struct launcher_list * l) {
+static void redraw_list(struct launcher_list *list);
   
-  /* draw up down pushbuttons */
-  GWidgetInit  wi, wi2, wi3;
-  coord_t width;
-  coord_t totalheight;
-  font_t font;
+static void draw_launcher_buttons(struct launcher_list * list) {
+  GWidgetInit wi;
+  userconfig *config = getConfig();
+  volatile unsigned int i,j;
 
-  font = gdispOpenFont(FONT_LG);
-  width = gdispGetWidth();
-  totalheight = gdispGetHeight();
-  
-  // Apply some default values for GWIN
   gwinWidgetClearInit(&wi);
-  gwinWidgetClearInit(&wi2);
-  gwinWidgetClearInit(&wi3);
-  gwinSetDefaultStyle(&BlackWidgetStyle, FALSE);
-  
+   
+  // Create label widget: ghTitleL
   wi.g.show = TRUE;
-  wi2.g.show = TRUE;
-  wi3.g.show = TRUE;
+  wi.g.x = 0;
+  wi.g.y = 0;
+  wi.g.width = 160;
+  wi.g.height = 20;
+  wi.text = config->name;
+  wi.customDraw = gwinLabelDrawJustifiedLeft;
+  wi.customParam = 0;
+  wi.customStyle = &DarkPurpleStyle;
+  list->ghTitleL = gwinLabelCreate(0, &wi);
+  gwinLabelSetBorder(list->ghTitleL, FALSE);
+  gwinSetFont(list->ghTitleL, list->fontFX);
+  gwinRedraw(list->ghTitleL);
 
-  // Apply the button parameters
-  gwinSetDefaultFont(font);
-  wi.g.width = 80;
+  // Create label widget: ghTitleR
+  wi.g.show = TRUE;
+  wi.g.x = 160;
+  wi.g.y = 0;
+  wi.g.width = 160;
+  wi.g.height = 20;
+  wi.text = "00:00";
+  wi.customDraw = gwinLabelDrawJustifiedRight;
+  wi.customParam = 0;
+  wi.customStyle = &DarkPurpleStyle;
+  list->ghTitleR = gwinLabelCreate(0, &wi);
+  gwinSetFont(list->ghTitleR, list->fontFX);
+  gwinLabelSetBorder(list->ghTitleR, FALSE);
+  gwinRedraw(list->ghTitleR);
+  
+  /* draw the button grid
+   *
+   * buttons
+   * xloc: 0, 90, 180
+   * yloc: 30, 140 
+   *
+   * label
+   * xloc: 0, 90, 180
+   * yloc: 110, 220 
+   **/
+  /* Each button in the launcher grid is a transparent area that we
+     draw the image onto after the fact using redraw_list. We cannot
+     use standard ugfx button rendering here because we are severly
+     ram-constrained. we must put images and then close them as soon
+     as possible
+  */
+
+  gwinSetDefaultFont(list->fontXS);
+  
+  for (i = 0; i < 2; i++) {
+      for (j = 0; j < LAUNCHER_PERROW; j++) {
+        wi.g.show = TRUE;
+        wi.g.x = j * 90;
+        wi.g.y = 30 + (110 * i);
+        wi.g.width = 80;
+        wi.g.height = 80;
+        wi.text = "";
+        wi.customParam = 0;
+        wi.customDraw = noRender; 
+        wi.customStyle = 0;
+        list->ghButtons[(i*LAUNCHER_PERROW)+j] = gwinButtonCreate(0, &wi);
+        
+        // Create label widget: ghLabel1
+        wi.g.show = TRUE;
+        wi.g.x = j * 90;
+        wi.g.y = 110 * (i+1);
+        wi.g.width = 80;
+        wi.g.height = 20;
+        wi.text = "---";
+        wi.customDraw = gwinLabelDrawJustifiedCenter;
+        wi.customParam = 0;
+        wi.customStyle = 0;
+        list->ghLabels[(i*LAUNCHER_PERROW)+j] = gwinLabelCreate(0, &wi);
+      }
+  }
+
+  // create button widget: ghButtonUp
+  wi.g.show = TRUE;
+  wi.g.x = 270;
+  wi.g.y = 30;
+  wi.g.width = 50;
   wi.g.height = 50;
-  wi.g.y = totalheight - 50;
-  wi.g.x = 2;
   wi.text = "";
   wi.customDraw = gwinButtonDraw_ArrowUp;
-  
-  wi2.g.width = 80;
-  wi2.g.height = 50;
-  wi2.g.y = totalheight - 50;
-  wi2.g.x = (width / 2)  - 40 ;
-  wi2.text = "";
-  wi2.customDraw = gwinButtonDraw_ArrowDown;
+  wi.customParam = 0;
+  wi.customStyle = &DarkPurpleStyle;
+  list->ghButtonUp = gwinButtonCreate(0, &wi);
 
-  wi3.g.width = 80;
-  wi3.g.height = 50;
-  wi3.g.y = totalheight - 50;
-  wi3.g.x = width - 80;
-  wi3.text = "Go";
-  
-  // Create the actual button
-  l->ghButton1 = gwinButtonCreate(NULL, &wi);
-  l->ghButton2 = gwinButtonCreate(NULL, &wi2);
-  l->ghButton3 = gwinButtonCreate(NULL, &wi3);
-  gdispCloseFont(font);
-  
+  // create button widget: ghButtonDn
+  wi.g.show = TRUE;
+  wi.g.x = 270;
+  wi.g.y = 190;
+  wi.g.width = 50;
+  wi.g.height = 50;
+  wi.text = "";
+  wi.customDraw = gwinButtonDraw_ArrowDown;
+  wi.customParam = 0;
+  wi.customStyle = &DarkPurpleStyle;
+  list->ghButtonDn = gwinButtonCreate(0, &wi);
+  gwinRedraw(list->ghButtonDn);
+
+  list->selected = 0;
+  list->page = 0;
+
+  redraw_list(list);
 }
 
 static void redraw_list(struct launcher_list *list) {
-
-  char tmp[20];
-  uint8_t i;
-
-  coord_t width;
-  coord_t height;
-  coord_t totalheight;
-  coord_t header_height;
-  font_t font;
-  uint8_t visible_apps;
-  uint8_t app_modulus;
-  uint8_t max_list;
-  uint8_t drawn;
-  userconfig *config = getConfig();
-
-  chsnprintf(tmp, sizeof(tmp), "%d of %d apps", list->selected + 1, list->total);
-  //gdispFillArea(0, 0, gdispGetWidth(), gdispGetHeight() / 2, Black);
-  // draw title bar
-  font = gdispOpenFont(FONT_FIXED);
-  width = gdispGetWidth();
-  height = gdispGetFontMetric(font, fontHeight);
-  header_height = height;
-  gdispFillArea(0, 0, width, height, Red);
-
-  //  chsnprintf(tmp, sizeof(tmp), "%s", family->name);
-  gdispDrawStringBox(0, 0, width, height,
-                     tmp, font, White, justifyLeft);
-  //  chsnprintf(tmp, sizeof(tmp), "%d %d%%", ui_timeout, ggStateofCharge());
-  gdispDrawStringBox(0, 0, width, height,
-                     config->name, font, White, justifyRight);
-
-  // draw app list
-  width = gdispGetWidth();
-  height = gdispGetFontMetric(font, fontHeight);
-
-  /*
-   * When calculating the number of visible apps to show, don't forget
-   * to factor in the space at the bottom of the screen being used for
-   * the selection buttons, otherwise we might draw over them.
-   */
-
-  totalheight = gdispGetHeight() - 50;
-  visible_apps = (uint8_t) (totalheight - header_height) / height;
+  volatile unsigned int i,j;
+  volatile unsigned int actualid;
   
-  app_modulus = (uint8_t) list->selected / visible_apps;
-  
-  max_list = (app_modulus + 1) * visible_apps;
-  if( max_list > list->total )
-    max_list = list->total;
-
-  drawn = 0;  
-  for (i = app_modulus * visible_apps; i < max_list; i++) {
-    color_t draw_color = White;
-    
-    if (i == list->selected) {
-      gdispFillArea(0, header_height + (i - app_modulus * visible_apps) * height,
-		    width, height, White);
-      draw_color = Black;
-    } else {
-      gdispFillArea(0, header_height + (i - app_modulus * visible_apps) * height,
-		    width, height, Black);
-      draw_color = White;
+  /* given a page number, put down an image for each of the buttons
+     and set the label. */
+  for (i = 0; i < 2; i++) { 
+    for (j = 0; j < LAUNCHER_PERROW; j++) {
+      actualid = (list->page * LAUNCHER_PERPAGE) + (i*LAUNCHER_PERROW) + j;
+      
+      if (actualid < list->total) {
+        if (list->items[actualid].entry->icon != NULL)
+          putImageFile(list->items[actualid].entry->icon, j * 90, 30 + (110 * i));
+        
+        gwinSetText(list->ghLabels[(i*LAUNCHER_PERROW) + j], list->items[actualid].name, FALSE);
+      } else {
+        gwinSetText(list->ghLabels[(i*LAUNCHER_PERROW) + j], "", TRUE);
+        gdispFillArea(j * 90, 30 + (110 * i), 80, 80, Black );
+      }
     }
-    gdispDrawStringBox(0, header_height + (i - app_modulus * visible_apps) * height,
-                       width, height,
-                       list->items[i].name, font, draw_color, justifyCenter);
-    drawn++;
   }
-
-  /* Blank any leftover area */
-
-  gdispFillArea (0, header_height + (drawn * height),
-    gdispGetWidth(), (visible_apps - drawn) * height, Black);
-
-  gdispCloseFont(font);
-  gdispFlush();
 }
 
 static uint32_t launcher_init(OrchardAppContext *context) {
@@ -190,8 +213,10 @@ static void launcher_start(OrchardAppContext *context) {
 
   context->priv = list;
 
-  draw_launcher_buttons(list);
-
+  list->fontXS = gdispOpenFont(FONT_XS);
+  list->fontLG = gdispOpenFont(FONT_LG);
+  list->fontFX = gdispOpenFont(FONT_FIXED);
+  
   /* Rebuild the app list */
   current = orchard_app_list;
   list->total = 0;
@@ -204,10 +229,11 @@ static void launcher_start(OrchardAppContext *context) {
     current++;
   }
 
-  list->selected = 1;
+  list->selected = 0;
 
+  draw_launcher_buttons(list);
   redraw_list(list);
-
+  
   // set up our local listener
   geventListenerInit(&list->gl);
   gwinAttachListener(&list->gl);
@@ -234,6 +260,7 @@ static void launcher_start(OrchardAppContext *context) {
 void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
   GEvent * pe;
   struct launcher_list *list = (struct launcher_list *)context->priv;
+  int i;
   
   if( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) {
     // automatic timeout to the badge screen
@@ -241,6 +268,7 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
     return;
   }
 
+#ifdef notdef
   if (event->type == keyEvent) {
     if ( (event->key.code == keyUp) &&
          (event->key.flags == keyPress) )  {
@@ -258,31 +286,40 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
       return;
     }
   }
+#endif
   
   if (event->type == ugfxEvent) {
     pe = event->ugfx.pEvent;
     
     switch(pe->type) {
     case GEVENT_GWIN_BUTTON:
-      if (((GEventGWinButton*)pe)->gwin == list->ghButton1) {
-        last_ui_time = chVTGetSystemTime();
-        list->selected--;
+      last_ui_time = chVTGetSystemTime();
+      for (i = 0; i < 6; i++) {  
+        if (( ((GEventGWinButton*)pe)->gwin == list->ghButtons[i]) &&
+            ((list->page*LAUNCHER_PERPAGE)+i < list->total)) { 
+          chprintf(stream, "Running app %d.\r\n", (list->page*LAUNCHER_PERPAGE)+i);
+          orchardAppRun(list->items[(list->page*LAUNCHER_PERPAGE)+i].entry);
+          return;
+        }
       }
-      
-      if (((GEventGWinButton*)pe)->gwin == list->ghButton2) {
-        last_ui_time = chVTGetSystemTime();
-        list->selected++;
+
+      // only update the location if we're still within a valid page range
+      if (((GEventGWinButton*)pe)->gwin == list->ghButtonDn) {
+        if (((list->page + 1) * LAUNCHER_PERPAGE) < list->total) { 
+          list->page++;
+        }
       }
-      
-      if (((GEventGWinButton*)pe)->gwin == list->ghButton3) {
-        orchardAppRun(list->items[list->selected].entry);
-        return;
+      if (((GEventGWinButton*)pe)->gwin == list->ghButtonUp) {
+        if (list->page > 0) {
+          list->page--;
+        }
       }
       break;
     default:
       break;
     }
   }
+  
   // wraparound
   if (list->selected > 255) // underflow
     list->selected = list->total-1;
@@ -299,13 +336,24 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
 
 static void launcher_exit(OrchardAppContext *context) {
   struct launcher_list *list;
-
+  int i;
   list = (struct launcher_list *)context->priv;
+
+  gdispCloseFont(list->fontXS);
+  gdispCloseFont(list->fontLG);
+  gdispCloseFont(list->fontFX);
   
-  gwinDestroy (list->ghButton1);
-  gwinDestroy (list->ghButton2);
-  gwinDestroy (list->ghButton3);
-  
+  gwinDestroy(list->ghTitleL);
+  gwinDestroy(list->ghTitleR);
+  gwinDestroy(list->ghButtonUp);
+  gwinDestroy(list->ghButtonDn);
+
+  /* nuke the grid */
+  for (i=0; i< 6; i++) { 
+    gwinDestroy(list->ghButtons[i]);
+    gwinDestroy(list->ghLabels[i]);
+  }
+
   geventRegisterCallback (&list->gl, NULL, NULL);
   geventDetachSource (&list->gl, NULL);
   
@@ -320,7 +368,8 @@ static void launcher_exit(OrchardAppContext *context) {
 
 const OrchardApp _orchard_app_list_launcher
 __attribute__((used, aligned(4), section(".chibi_list_app_1_launcher"))) = {
-  "Launcher", 
+  "Launcher",
+  NULL,
   APP_FLAG_HIDDEN,
   launcher_init,
   launcher_start,
