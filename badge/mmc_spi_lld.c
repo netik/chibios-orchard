@@ -38,6 +38,8 @@
 #include "diskio.h"
 #include "mmc.h"
 
+#define MMC_FORCE_MULTIBLOCK_READ
+
 #ifndef UPDATER
 #include "dma_lld.h"
 #endif
@@ -84,13 +86,13 @@
 #define CMD58	(58)		/* READ_OCR */
 
 
-static volatile
+static volatile __attribute__((section(".fsdata")))
 DSTATUS Stat = STA_NOINIT;	/* Disk status */
 
-static volatile
+static volatile __attribute__((section(".fsdata")))
 BYTE Timer1, Timer2;	/* 100Hz decrement timer */
 
-static
+static __attribute__((section(".fsdata")))
 BYTE CardType;			/* Card type flags (b0:MMC, b1:SDv1, b2:SDv2, b3:Block addressing) */
 
 
@@ -447,7 +449,16 @@ DRESULT mmc_disk_read (
 
 	if (!(CardType & CT_BLOCK)) sector *= 512;	/* Convert to byte address if needed */
 
+#ifdef MMC_FORCE_MULTIBLOCK_READ
+	/*
+	 * Always use command 18 (multiple block read). There seem to
+	 * be some SD cards that don't perform quite as well when using
+	 * single the single block read command.
+	 */
+	cmd = CMD18;
+#else
 	cmd = count > 1 ? CMD18 : CMD17;			/*  READ_MULTIPLE_BLOCK : READ_SINGLE_BLOCK */
+#endif
 	spiAcquireBus(&SPID2);
 	SPI1->C1 &= ~SPIx_C1_SPIE;
 	pitEnable (&PIT1, 0);
@@ -456,7 +467,10 @@ DRESULT mmc_disk_read (
 			if (!rcvr_datablock(buff, 512)) break;
 			buff += 512;
 		} while (--count);
-		if (cmd == CMD18) send_cmd(CMD12, 0);	/* STOP_TRANSMISSION */
+#ifndef MMC_FORCE_MULTIBLOCK_READ
+		if (cmd == CMD18)
+#endif
+			send_cmd(CMD12, 0);	/* STOP_TRANSMISSION */
 	}
 	deselect();
 	pitDisable (&PIT1, 0);
