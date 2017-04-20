@@ -163,6 +163,8 @@ static void chat_event (OrchardAppContext *context,
 			context->priv = p;
 		}
 		if (event->app.event == appTerminate) {
+			ui = context->instance->ui;
+			ui->exit (context);
 			p = context->priv;
 			for (i = 2; i < p->peers; i++) {
 				if (p->listitems[i] != NULL)
@@ -285,7 +287,6 @@ static void chat_event (OrchardAppContext *context,
 		} else {
 			/* 0xFF means exit chat */
 			if (uiContext->total == 0xFF) {
-				ui->exit (context);
 				orchardAppExit ();
 			} else {
 				p->txbuf[uiContext->selected] = 0x0;

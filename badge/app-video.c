@@ -126,6 +126,11 @@ video_event(OrchardAppContext *context, const OrchardAppEvent *event)
 	ui = context->instance->ui;
 	uiContext = context->instance->uicontext;
 
+	if (event->type == appEvent && event->app.event == appTerminate) {
+		if (ui != NULL)
+ 			ui->exit (context);
+	}
+
 	if (event->type == ugfxEvent)
 		ui->event (context, event);
 
@@ -137,6 +142,7 @@ video_event(OrchardAppContext *context, const OrchardAppEvent *event)
 		 */
 
  		ui->exit (context);
+		context->instance->ui = NULL;
 
 		/* User chose the "EXIT" selection, bail out. */
 

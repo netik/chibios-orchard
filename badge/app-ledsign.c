@@ -94,11 +94,16 @@ ledsign_event(OrchardAppContext *context, const OrchardAppEvent *event)
 			gdispClear (Black);
 			config = getConfig();
 			configSave (config);
-			orchardAppExit ();
+			orchardAppTimer (context, 1, FALSE);
 		}
 	}
 
  	if (event->type == appEvent && event->app.event == appTerminate) {
+		if (keyboardUi != NULL)
+			keyboardUi->exit (context);
+	}
+
+        if (event->type == timerEvent) {
 		scrollAreaSet (0, 0);
 		str = keyboardUiContext->itemlist[1];
 		do {
@@ -112,7 +117,7 @@ ledsign_event(OrchardAppContext *context, const OrchardAppEvent *event)
 		} while (sts == 0);
 		gdispClear (Black);
 		scrollCount (0);
-		return;
+		orchardAppExit ();
 	}
 
 	return;
