@@ -1428,6 +1428,7 @@ static void fight_start(OrchardAppContext *context) {
       break;
     case UL_LUCK:
       strcat(tmp,"+20% LUCK!");
+      config->luck = 40;
       break;
     case UL_PLUSHP:
       strcat(tmp,"+10% HP!");
