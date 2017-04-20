@@ -89,10 +89,10 @@
 static volatile __attribute__((section(".fsdata")))
 DSTATUS Stat = STA_NOINIT;	/* Disk status */
 
-static volatile __attribute__((section(".fsdata")))
+static volatile __attribute__((section(".fsbss")))
 BYTE Timer1, Timer2;	/* 100Hz decrement timer */
 
-static __attribute__((section(".fsdata")))
+static __attribute__((section(".fsbss")))
 BYTE CardType;			/* Card type flags (b0:MMC, b1:SDv1, b2:SDv2, b3:Block addressing) */
 
 

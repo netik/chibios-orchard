@@ -173,6 +173,7 @@ SECTIONS
         PROVIDE(_data = .);
         _textdata_start = LOADADDR(.data);
         _data_start = .;
+	*(.fsdata)
         *(.data)
         *(.data.*)
         *(.ramtext)
@@ -185,7 +186,7 @@ SECTIONS
     {
         . = ALIGN(4);
         _bss_start = .;
-	*(.fsdata)
+	*(.fsbss)
         *(.bss)
         *(.bss.*)
         *(COMMON)
