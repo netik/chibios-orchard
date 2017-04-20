@@ -99,7 +99,7 @@ static void name_event(OrchardAppContext *context,
 
 static void name_exit(OrchardAppContext *context)
 {
-	onst OrchardUi * keyboardUi;
+	const OrchardUi * keyboardUi;
   
 	keyboardUi = context->instance->ui;
 	keyboardUi->exit (context);
