@@ -16,14 +16,17 @@ SECTIONS
 
   .data :
   {
+   *(.fsdata)
    *(.data)
    *(.data*)
    *(.idata)
    . = ALIGN(4);
   }
+
   bss = .;
-  .bss :
+  .bss (NOLOAD) :
   {
+   *(.fsbss)
    *(.bss)
    *(.bss*)
   }
