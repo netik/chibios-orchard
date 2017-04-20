@@ -492,4 +492,4 @@ static void unlock_exit(OrchardAppContext *context) {
 
 /* We are a hidden app, only accessible through the konami code on the
    badge screen. */
-orchard_app("Unlocks", TRUE, unlock_init, unlock_start, unlock_event, unlock_exit);
+orchard_app("Unlocks", NULL, APP_FLAG_HIDDEN, unlock_init, unlock_start, unlock_event, unlock_exit);

@@ -63,5 +63,5 @@ calibrate_exit (OrchardAppContext *context)
 	return;
 }
 
-orchard_app("CalibrateTS", APP_FLAG_HIDDEN,
+orchard_app("CalibrateTS", NULL, APP_FLAG_HIDDEN,
     calibrate_init, calibrate_start, calibrate_event, calibrate_exit);

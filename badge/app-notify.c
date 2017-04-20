@@ -124,5 +124,5 @@ static void notify_exit(OrchardAppContext *context)
 	return;
 }
 
-orchard_app("Radio notification", APP_FLAG_HIDDEN|APP_FLAG_AUTOINIT,
+orchard_app("Radio notification", NULL, APP_FLAG_HIDDEN|APP_FLAG_AUTOINIT,
 	notify_init, notify_start, notify_event, notify_exit);

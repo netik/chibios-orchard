@@ -14,11 +14,6 @@
     limitations under the License.
 */
 
-/* undefine this to show sponsors and play music at startup. It is
-   very time consuming to see this when doing development */
-
-#undef FAST_STARTUP
-
 /* define this to halt on SD card Failure */
 #undef HALT_ON_SDFAIL
 
@@ -437,10 +432,10 @@ o   */
 
   /* Initialize uGfx */
   gfxInit();
-
-  /* Draw a banner... */
   uiStart();
+  
 #ifndef FAST_STARTUP
+  /* Draw a banner... */
   oledOrchardBanner();
 
   if (config->sound_enabled == 1) {

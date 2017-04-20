@@ -478,5 +478,5 @@ static void default_exit(OrchardAppContext *context) {
   return;
 }
 
-orchard_app("Badge", 0, default_init, default_start,
+orchard_app("Badge", "badge.rgb", 0, default_init, default_start,
 	default_event, default_exit);

@@ -140,4 +140,4 @@ static void shout_exit (OrchardAppContext *context)
   return;
 }
 
-orchard_app("Radio shout", 0, shout_init, shout_start, shout_event, shout_exit);
+orchard_app("Radio Shout", "shout.rgb", 0, shout_init, shout_start, shout_event, shout_exit);
