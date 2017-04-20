@@ -190,7 +190,7 @@ radioReceive (RADIODriver * radio)
 
 	if (len > radio->kw01_maxlen ||
 	    len < sizeof (KW01_PKT_HDR)) {
-          //		palSetPad (GREEN_LED_PORT, GREEN_LED_PIN);   /* Green */
+          	palSetPad (GREEN_LED_PORT, GREEN_LED_PIN);   /* Green */
 		radioUnselect (radio);
 		return (-1);
 	}
@@ -203,7 +203,7 @@ radioReceive (RADIODriver * radio)
 
 	spiReceive (radio->kw01_spi, len, p);
 
-        //	palSetPad (GREEN_LED_PORT, GREEN_LED_PIN);   /* Green */
+        palSetPad (GREEN_LED_PORT, GREEN_LED_PIN);   /* Green */
 
 	radioUnselect (radio);
 	radioRelease (radio);
@@ -317,9 +317,9 @@ radioReset (RADIODriver * radio)
 
         /* Assert the reset pin for 1 millisecond */
 
-        //        palSetPad (RADIO_RESET_PORT, RADIO_RESET_PIN);
-        chThdSleepMilliseconds (1);
-        //        palClearPad (RADIO_RESET_PORT, RADIO_RESET_PIN);
+	palSetPad (RADIO_RESET_PORT, RADIO_RESET_PIN);
+	chThdSleepMilliseconds (1);
+	palClearPad (RADIO_RESET_PORT, RADIO_RESET_PIN);
 
  	/* Now wait for the chip to get its brains in order. */
 
@@ -1057,10 +1057,10 @@ radioSend (RADIODriver * radio, kw01_dst_t dest, kw01_proto_t prot,
 
 	radioAcquire (radio);
 
-        //	palClearPad (RED_LED_PORT, RED_LED_PIN);  /* Red */
+	palClearPad (RED_LED_PORT, RED_LED_PIN);  /* Red */
 
 	if (radioModeSet (radio, KW01_MODE_STANDBY) != 0) {
-          //		palSetPad (RED_LED_PORT, RED_LED_PIN);  /* Red */
+		palSetPad (RED_LED_PORT, RED_LED_PIN);  /* Red */
 		radioRelease (radio);
 		return (-1);
 	}
@@ -1097,7 +1097,7 @@ radioSend (RADIODriver * radio, kw01_dst_t dest, kw01_proto_t prot,
 
 	radioUnselect (radio);
 
-        //	palSetPad (RED_LED_PORT, RED_LED_PIN);  /* Red */
+	palSetPad (RED_LED_PORT, RED_LED_PIN);  /* Red */
 
 	if (radioModeSet (radio, KW01_MODE_TX) != 0) {
 		radioRelease (radio);
