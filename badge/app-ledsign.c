@@ -91,6 +91,7 @@ ledsign_event(OrchardAppContext *context, const OrchardAppEvent *event)
 		if (event->ui.code == uiComplete &&
 		    event->ui.flags == uiOK) {
 			keyboardUi->exit (context);
+			context->instance->ui = NULL;
 			gdispClear (Black);
 			config = getConfig();
 			configSave (config);
