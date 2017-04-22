@@ -57,11 +57,11 @@ static void name_start(OrchardAppContext *context)
 	keyboardUiContext->itemlist = (const char **)chHeapAlloc(NULL,
             sizeof(char *) * 2);
 	keyboardUiContext->itemlist[0] =
-		"Hail! Name your warrior!\nTap ENTER when done.";
+	    "Hail! Name your warrior!\nTap ENTER when done.";
 	keyboardUiContext->itemlist[1] = config->name;
 	keyboardUiContext->total = CONFIG_NAME_MAXLEN;
 
-  context->instance->ui = getUiByName("keyboard");
+	context->instance->ui = getUiByName("keyboard");
 	context->instance->uicontext = keyboardUiContext;
 	context->instance->ui->start (context);
 
@@ -87,11 +87,10 @@ static void name_event(OrchardAppContext *context,
 		if ((event->ui.code == uiComplete) &&
 		    (event->ui.flags == uiOK)) {
 			configSave (config);
-                        if (config->p_type == p_notset) {
-                          orchardAppRun(orchardAppByName("Choosetype"));
-                        } else { 
-                          orchardAppExit ();
-                        }
+                        if (config->p_type == p_notset)
+				orchardAppRun (orchardAppByName("Choosetype"));
+			else
+				orchardAppExit ();
 		}
 	}
 
@@ -100,15 +99,15 @@ static void name_event(OrchardAppContext *context,
 
 static void name_exit(OrchardAppContext *context)
 {
-  const OrchardUi * keyboardUi;
+	const OrchardUi * keyboardUi;
   
-  keyboardUi = context->instance->ui;
-  keyboardUi->exit (context);
+	keyboardUi = context->instance->ui;
+	keyboardUi->exit (context);
 
-  chHeapFree (context->instance->uicontext->itemlist);
-  chHeapFree (context->instance->uicontext);
+	chHeapFree (context->instance->uicontext->itemlist);
+	chHeapFree (context->instance->uicontext);
   
-  return;
+	return;
 }
 
 orchard_app("Set your name", NULL, APP_FLAG_HIDDEN, name_init, name_start, name_event, name_exit);
