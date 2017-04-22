@@ -298,7 +298,7 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
     if ( (event->key.code == keyDown) &&
          (event->key.flags == keyPress) )  {
       last_ui_time = chVTGetSystemTime();
-      if (list->selected + LAUNCHER_COLS < (list->total - 1))  { 
+      if (list->selected + LAUNCHER_COLS <= (list->total - 1))  { 
         list->selected = list->selected + LAUNCHER_COLS;
       }
     }
@@ -374,12 +374,22 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
 
       // only update the location if we're still within a valid page range
       if (((GEventGWinButton*)pe)->gwin == list->ghButtonDn) {
-        if (((list->page + 1) * LAUNCHER_PERPAGE) < list->total) { 
+        if (((list->page + 1) * LAUNCHER_PERPAGE) < list->total) {
+          // remove the box before update 
+          i = (list->selected - (list->page * LAUNCHER_PERPAGE)) / LAUNCHER_COLS;
+          j = list->selected % LAUNCHER_COLS;
+          gdispDrawBox(j * 90, 30 + (110 * i), 81, 81, Black );
+
           list->page++;
         }
       }
       if (((GEventGWinButton*)pe)->gwin == list->ghButtonUp) {
         if (list->page > 0) {
+          // remove the box before update 
+          i = (list->selected - (list->page * LAUNCHER_PERPAGE)) / LAUNCHER_COLS;
+          j = list->selected % LAUNCHER_COLS;
+          gdispDrawBox(j * 90, 30 + (110 * i), 81, 81, Black );
+
           list->page--;
         }
       }
