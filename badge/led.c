@@ -64,7 +64,7 @@ const struct FXENTRY fxlist[] = {
   { "Larsen Scanner", anim_larsen},
   { "Rainbow Fade", anim_rainbow_fade},
   { "Rainbow Loop", anim_rainbow_loop},
-  { "Green Spiral", anim_solid_color},
+  { "Green Cycle", anim_solid_color},
   { "Yellow Ramp", anim_triangle},
   { "Random Hue Pulse", anim_one_hue_pulse},
   { "Wave", anim_wave },
