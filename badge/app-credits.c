@@ -51,6 +51,7 @@ credits_start(OrchardAppContext *context)
 
 	dacPlay ("mario.raw");
 
+	gdispClear (Black);
 	scrollAreaSet (0, 0);
 	scrollImage ("credits.rgb", 15);
 

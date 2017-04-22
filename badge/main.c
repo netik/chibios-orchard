@@ -434,10 +434,11 @@ o   */
   gfxInit();
   uiStart();
   
-#ifndef FAST_STARTUP
+
   /* Draw a banner... */
   oledOrchardBanner();
 
+#ifndef FAST_STARTUP
   if (config->sound_enabled == 1) {
     playStartupSong();
     chThdSleepMilliseconds(IMG_SPLASH_DISPLAY_TIME);

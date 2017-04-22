@@ -9,9 +9,11 @@
 #include "dac_lld.h"
 #include "ides_gfx.h"
 #include "userconfig.h"
+#include "dec2romanstr.h"
 
-#define LAUNCHER_PERROW 3
-#define LAUNCHER_PERPAGE 6
+#define LAUNCHER_COLS 3
+#define LAUNCHER_ROWS 2
+#define LAUNCHER_PERPAGE (LAUNCHER_ROWS * LAUNCHER_COLS)
 
 extern const OrchardApp *orchard_app_list;
 extern uint8_t shout_ok;
@@ -49,8 +51,9 @@ static void redraw_list(struct launcher_list *list);
 static void draw_launcher_buttons(struct launcher_list * list) {
   GWidgetInit wi;
   userconfig *config = getConfig();
-  volatile unsigned int i,j;
-
+  unsigned int i,j;
+  char tmp[20];
+  
   gwinWidgetClearInit(&wi);
    
   // Create label widget: ghTitleL
@@ -68,13 +71,15 @@ static void draw_launcher_buttons(struct launcher_list * list) {
   gwinSetFont(list->ghTitleL, list->fontFX);
   gwinRedraw(list->ghTitleL);
 
+  chsnprintf(tmp, sizeof(tmp), "LEVEL %s", dec2romanstr(config->level+1));
+
   // Create label widget: ghTitleR
   wi.g.show = TRUE;
   wi.g.x = 160;
   wi.g.y = 0;
   wi.g.width = 160;
   wi.g.height = 20;
-  wi.text = "00:00";
+  wi.text = tmp;
   wi.customDraw = gwinLabelDrawJustifiedRight;
   wi.customParam = 0;
   wi.customStyle = &DarkPurpleStyle;
@@ -102,18 +107,18 @@ static void draw_launcher_buttons(struct launcher_list * list) {
 
   gwinSetDefaultFont(list->fontXS);
   
-  for (i = 0; i < 2; i++) {
-      for (j = 0; j < LAUNCHER_PERROW; j++) {
+  for (i = 0; i < LAUNCHER_ROWS; i++) {
+      for (j = 0; j < LAUNCHER_COLS; j++) {
         wi.g.show = TRUE;
-        wi.g.x = j * 90;
-        wi.g.y = 30 + (110 * i);
+        wi.g.x = j * 90+1;
+        wi.g.y = 31 + (110 * i);
         wi.g.width = 80;
         wi.g.height = 80;
         wi.text = "";
         wi.customParam = 0;
         wi.customDraw = noRender; 
         wi.customStyle = 0;
-        list->ghButtons[(i*LAUNCHER_PERROW)+j] = gwinButtonCreate(0, &wi);
+        list->ghButtons[(i*LAUNCHER_COLS)+j] = gwinButtonCreate(0, &wi);
         
         // Create label widget: ghLabel1
         wi.g.show = TRUE;
@@ -125,7 +130,7 @@ static void draw_launcher_buttons(struct launcher_list * list) {
         wi.customDraw = gwinLabelDrawJustifiedCenter;
         wi.customParam = 0;
         wi.customStyle = 0;
-        list->ghLabels[(i*LAUNCHER_PERROW)+j] = gwinLabelCreate(0, &wi);
+        list->ghLabels[(i*LAUNCHER_COLS)+j] = gwinLabelCreate(0, &wi);
       }
   }
 
@@ -161,26 +166,35 @@ static void draw_launcher_buttons(struct launcher_list * list) {
 }
 
 static void redraw_list(struct launcher_list *list) {
-  volatile unsigned int i,j;
-  volatile unsigned int actualid;
+  unsigned int i,j;
+  unsigned int actualid;
   
   /* given a page number, put down an image for each of the buttons
      and set the label. */
-  for (i = 0; i < 2; i++) { 
-    for (j = 0; j < LAUNCHER_PERROW; j++) {
-      actualid = (list->page * LAUNCHER_PERPAGE) + (i*LAUNCHER_PERROW) + j;
+  for (i = 0; i < LAUNCHER_ROWS; i++) { 
+    for (j = 0; j < LAUNCHER_COLS; j++) {
+      actualid = (list->page * LAUNCHER_PERPAGE) + (i*LAUNCHER_COLS) + j;
       
       if (actualid < list->total) {
         if (list->items[actualid].entry->icon != NULL)
           putImageFile(list->items[actualid].entry->icon, j * 90, 30 + (110 * i));
         
-        gwinSetText(list->ghLabels[(i*LAUNCHER_PERROW) + j], list->items[actualid].name, FALSE);
+        gwinSetText(list->ghLabels[(i*LAUNCHER_COLS) + j], list->items[actualid].name, FALSE);
       } else {
-        gwinSetText(list->ghLabels[(i*LAUNCHER_PERROW) + j], "", TRUE);
-        gdispFillArea(j * 90, 30 + (110 * i), 80, 80, Black );
+        gwinSetText(list->ghLabels[(i*LAUNCHER_COLS) + j], "", TRUE);
+        gdispFillArea(j * 90, 30 + (110 * i), 81, 81, Black );
       }
     }
   }
+
+  // row y
+  i = (list->selected - (list->page * LAUNCHER_PERPAGE)) / LAUNCHER_COLS;
+    
+  // col x
+  j = list->selected % LAUNCHER_COLS;
+
+  chprintf(stream, "select: i %d j %d selected %d\r\n", i, j, list->selected);
+  gdispDrawBox(j * 90, 30 + (110 * i), 81, 81, Red );
 }
 
 static uint32_t launcher_init(OrchardAppContext *context) {
@@ -260,7 +274,7 @@ static void launcher_start(OrchardAppContext *context) {
 void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
   GEvent * pe;
   struct launcher_list *list = (struct launcher_list *)context->priv;
-  int i;
+  int i,j;
   
   if( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) {
     // automatic timeout to the badge screen
@@ -268,25 +282,80 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
     return;
   }
 
-#ifdef notdef
   if (event->type == keyEvent) {
+    // row y
+    i = (list->selected - (list->page * LAUNCHER_PERPAGE)) / LAUNCHER_COLS;
+    // col x
+    j = list->selected % LAUNCHER_COLS;
+    gdispDrawBox(j * 90, 30 + (110 * i), 81, 81, Black );
+    
+    
     if ( (event->key.code == keyUp) &&
          (event->key.flags == keyPress) )  {
       last_ui_time = chVTGetSystemTime();
-      list->selected--;
+      list->selected = list->selected - LAUNCHER_COLS;
     }
     if ( (event->key.code == keyDown) &&
          (event->key.flags == keyPress) )  {
       last_ui_time = chVTGetSystemTime();
-      list->selected++;
+      if (list->selected + LAUNCHER_COLS < (list->total - 1))  { 
+        list->selected = list->selected + LAUNCHER_COLS;
+      }
     }
+    if ( (event->key.code == keyLeft) &&
+         (event->key.flags == keyPress) )  {
+      last_ui_time = chVTGetSystemTime();
+      if (list->selected > 0) { 
+        list->selected--;
+      }
+    }
+    if ( (event->key.code == keyRight) &&
+         (event->key.flags == keyPress) )  {
+      last_ui_time = chVTGetSystemTime();
+      if (list->selected < (list->total - 1)) 
+        list->selected++;
+    }
+
+    if (list->selected > 250) {
+      list->selected  = 0;
+    }
+
+    if (list->selected > list->total) {
+      list->selected = list->total;
+
+    }
+
+    if (list->selected >= ((list->page + 1) * LAUNCHER_PERPAGE))  {
+      list->page++;
+      redraw_list(list);
+      return;
+    }
+
+    if (list->page > 0) {
+      if (list->selected < (list->page * LAUNCHER_PERPAGE))  {
+        list->page--;
+        redraw_list(list);
+        return;
+      }
+    }
+    
     if ( (event->key.code == keySelect) &&
          (event->key.flags == keyPress) )  {
       orchardAppRun(list->items[list->selected].entry);
       return;
     }
+
+    // row y
+    i = (list->selected - (list->page * LAUNCHER_PERPAGE)) / LAUNCHER_COLS;
+    // col x
+    j = list->selected % LAUNCHER_COLS;
+
+    // col
+    chprintf(stream, "select: i %d j %d selected %d tot %d\r\n", i, j, list->selected, list->total);
+    gdispDrawBox(j * 90, 30 + (110 * i), 81, 81, Red);
+    return;
+    
   }
-#endif
   
   if (event->type == ugfxEvent) {
     pe = event->ugfx.pEvent;
