@@ -193,7 +193,6 @@ static void redraw_list(struct launcher_list *list) {
   // col x
   j = list->selected % LAUNCHER_COLS;
 
-  chprintf(stream, "select: i %d j %d selected %d\r\n", i, j, list->selected);
   gdispDrawBox(j * 90, 30 + (110 * i), 81, 81, Red );
 }
 
@@ -351,7 +350,6 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
     j = list->selected % LAUNCHER_COLS;
 
     // col
-    chprintf(stream, "select: i %d j %d selected %d tot %d\r\n", i, j, list->selected, list->total);
     gdispDrawBox(j * 90, 30 + (110 * i), 81, 81, Red);
     return;
     
@@ -366,7 +364,6 @@ void launcher_event(OrchardAppContext *context, const OrchardAppEvent *event) {
       for (i = 0; i < 6; i++) {  
         if (( ((GEventGWinButton*)pe)->gwin == list->ghButtons[i]) &&
             ((list->page*LAUNCHER_PERPAGE)+i < list->total)) { 
-          chprintf(stream, "Running app %d.\r\n", (list->page*LAUNCHER_PERPAGE)+i);
           orchardAppRun(list->items[(list->page*LAUNCHER_PERPAGE)+i].entry);
           return;
         }
