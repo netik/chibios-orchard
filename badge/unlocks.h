@@ -9,8 +9,10 @@
 #define UL_PLUSMIGHT    ( 1 << 2 ) // +1 MIGHT       y
 #define UL_LUCK         ( 1 << 3 ) // +20% LUCK      y
 #define UL_HEAL         ( 1 << 4 ) // 2X HEAL        y
-#define UL_LEDS         ( 1 << 5 ) // MORE LEDs      n
+#define UL_LEDS         ( 1 << 5 ) // MORE LEDs      y
 #define UL_CAESAR       ( 1 << 6 ) // CAESAR         n
 #define UL_SENATOR      ( 1 << 7 ) // SENATOR        n
-#define UL_GOD          ( 1 << 8 ) // GOD            y
+#define UL_BENDER       ( 1 << 8 ) // BENDER         y
+#define UL_GOD          ( 1 << 9 ) // GOD_MODE       y
+#define UL_PINGDUMP     ( 1 << 10 ) // NETWORK DEBUG y
 #endif

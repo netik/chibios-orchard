@@ -33,6 +33,11 @@ USE_OPT += -DENABLE_JOYPAD
 # Enable tilt sensor. Also only present on production board.
 #USE_OPT+= -DENABLE_TILT_SENSOR
 
+# enable this to enable admin and development modes. Enables all
+# configuration utilities and other goodies reserved. Should not be
+# used on production badges.
+USE_OPT += -DBLACK_BADGE
+
 endif
 
 # C specific options here (added to USE_OPT).

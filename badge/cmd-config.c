@@ -50,7 +50,7 @@ static void cmd_config_show(BaseSequentialStream *chp, int argc, char *argv[])
   chprintf(chp, "signature  0x%08x\r\n", config->signature);
   chprintf(chp, "version    %d\r\n", config->version);
   chprintf(chp, "netid      0x%08x\r\n", config->netid);
-  chprintf(chp, "unlocks    0x%02x\r\n", config->unlocks);
+  chprintf(chp, "unlocks    0x%04x\r\n", config->unlocks);
   chprintf(chp, "sound      %d\r\n", config->sound_enabled);
   chprintf(chp, "lastcombat %d\r\n", config->lastcombat);
   chprintf(chp, "incombat   %d\r\n", config->in_combat);
@@ -106,12 +106,13 @@ static void cmd_config_set(BaseSequentialStream *chp, int argc, char *argv[]) {
     return;
   }
 
-  // remove these before launch!!
   if (!strcasecmp(argv[1], "ctype")) {
     config->current_type = strtoul (argv[2], NULL, 0);
     chprintf(chp, "current class set to %d.\r\n", config->current_type);
     return;
   }
+
+#ifdef BLACK_BADGE
   if (!strcasecmp(argv[1], "ptype")) {
     config->p_type = strtoul (argv[2], NULL, 0);
     chprintf(chp, "perm class set to %d.\r\n", config->p_type);
@@ -122,6 +123,7 @@ static void cmd_config_set(BaseSequentialStream *chp, int argc, char *argv[]) {
     chprintf(chp, "level set to %d.\r\n", config->level);
     return;
   }
+
   if (!strcasecmp(argv[1], "unlocks")) {
     config->unlocks = strtoul (argv[2], NULL, 0);
     chprintf(chp, "Unlocks set to %d.\r\n", config->unlocks);
@@ -161,6 +163,7 @@ static void cmd_config_set(BaseSequentialStream *chp, int argc, char *argv[]) {
     chprintf(chp, "rtc set to %d.\r\n", rtc);
     return;
   }
+#endif
   chprintf(chp, "Invalid set command.\r\n");
 }
 
@@ -181,7 +184,7 @@ static void cmd_config(BaseSequentialStream *chp, int argc, char *argv[])
   if (argc == 0) {
     chprintf(chp, "config commands:\r\n");
     chprintf(chp, "   show           show config\r\n");
-    chprintf(chp, "   set nnn yyy    set variable nnn to yyy (vars: name, sound, type)\r\n");
+    chprintf(chp, "   set nnn yyy    set variable nnn to yyy (vars: name, sound, ctype)\r\n");
     chprintf(chp, "   led list       list animations available\r\n");
     chprintf(chp, "   led dim n      dimmer level (0-7) 0=brightest\r\n");
     chprintf(chp, "   led run n      run pattern #n\r\n");
@@ -189,8 +192,7 @@ static void cmd_config(BaseSequentialStream *chp, int argc, char *argv[])
     chprintf(chp, "   led stop       stop and blank LEDs\r\n");
     chprintf(chp, "   save           save config to flash\r\n\r\n");
 
-    chprintf(chp, "warning: if another thread updates the config, your changes could conflict!\r\n");
-    chprintf(chp, "         use with caution!\r\n");
+    chprintf(chp, "warning: there is no mutex on config changes. save quickly or get conflicts.\r\n");
     return;
   }
 
@@ -308,7 +310,6 @@ static void cmd_config_led_all(BaseSequentialStream *chp, int argc, char *argv[]
 
   // the last pattern is always the 'ALL' state. 
   ledResetPattern();
-  
 
 }
 

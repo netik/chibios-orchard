@@ -29,10 +29,6 @@ unsigned long rtc_set_at = 0;
 
 static userconfig config_cache;
 
-#ifdef RANDOM_DICE
-static int randomint(int max);
-#endif
-
 mutex_t config_mutex;
 
 int16_t maxhp(uint16_t unlocks, uint8_t level) {

@@ -16,6 +16,7 @@
 #include "sound.h"
 #include "dac_lld.h"
 #include "led.h"
+#include "unlocks.h"
 
 extern systime_t char_reset_at;
 
@@ -40,10 +41,9 @@ typedef struct _UnlockHandles {
 
 } UnlockHandles;
 
-#define MAX_ULCODES 10
-
 /* codes, packed as bits. Note only last five bits are used, MSB of
    1st byte is always zero */
+#define MAX_ULCODES 11
 static uint8_t unlock_codes[MAX_ULCODES][3] = { { 0x01, 0xde, 0xf1 }, // 0 +10% DEF
                                                 { 0x0d, 0xef, 0xad }, // 1 +10% HP
                                                 { 0x0a, 0x7a, 0xa7 }, // 2 +1 MIGHT
@@ -52,8 +52,10 @@ static uint8_t unlock_codes[MAX_ULCODES][3] = { { 0x01, 0xde, 0xf1 }, // 0 +10% 
                                                 { 0x00, 0x1a, 0xc0 }, // 5 MOAR LEDs
                                                 { 0x0b, 0xae, 0xac }, // 6 CAESAR
                                                 { 0x0d, 0xe0, 0x1a }, // 7 SENATOR
-                                                { 0x09, 0x00, 0x46 }, // 8 GOD MODE
-                                                { 0x0b, 0xbb, 0xbb }  // 9 BENDER
+                                                { 0x0b, 0xbb, 0xbb }, // 8 BENDER
+                                                { 0x06, 0x07, 0x42 }, // 9 GOD MODE (can issue grants)
+                                                { 0x0a, 0x1a, 0x1a }  // 10 PINGDUMP
+
 };
 static char *unlock_desc[] = { "+10% DEF",
                                "+10% HP",
@@ -63,8 +65,10 @@ static char *unlock_desc[] = { "+10% DEF",
                                "MOAR LEDs",
                                "U R CAESAR",
                                "U R SENATOR",
+                               "BENDER",
                                "U R A GOD",
-                               "BENDER" };
+                               "PINGDUMP"};
+
 
 static uint32_t last_ui_time = 0;
 static uint8_t code[5];
@@ -322,7 +326,7 @@ static uint8_t validate_code(OrchardAppContext *context, userconfig *config) {
         
       ledSetFunction(leds_all_strobe);
       // if it's the bender upgrade, we become bender.
-      if (i == 9) {
+      if ((1 << i) == UL_BENDER) {
         config->current_type = p_bender;
         char_reset_at = chVTGetSystemTime() + MAX_BUFF_TIME;
         dacPlay("biteass.raw");
