@@ -374,11 +374,20 @@ static void default_event(OrchardAppContext *context,
       secleft = delta - (minleft * 60);
       chsnprintf(tmp, sizeof(tmp), "%02d:%02d", minleft, secleft);
 
-      gdispFillArea( 81,60, 
+      if (config->current_type == p_caesar) {
+        strcat(tmp," CAESAR");
+      }
+
+      if (config->current_type == p_bender) {
+        strcat(tmp," BENDER");
+      }
+      
+
+      gdispFillArea( 141,60, 
                      60, gdispGetFontMetric(p->fontXS, fontHeight),
                      Black );
       
-      gdispDrawStringBox (81,
+      gdispDrawStringBox (141,
                           60,
                           gdispGetWidth(),
                           gdispGetFontMetric(p->fontXS, fontHeight),
@@ -428,8 +437,8 @@ static void default_event(OrchardAppContext *context,
       config->current_type = config->p_type;
       char_reset_at = 0;
       configSave(config);
-      dacPlay("fight/leveiup.raw");
-      screen_alert_draw(true, "CHARACTER STATUS EXPIRED");
+      dacPlay("fight/leveiup.raw");      
+      screen_alert_draw(true, "CHARACTER UPGRADE EXPIRED");
       chThdSleepMilliseconds(ALERT_DELAY);
       gdispClear(Black);
       redraw_badge(p);
