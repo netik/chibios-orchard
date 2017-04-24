@@ -30,6 +30,8 @@
 static systime_t last_caesar_check = 0;
 extern systime_t char_reset_at;
 
+static int8_t lastimg = -1;
+
 typedef struct _DefaultHandles {
   GHandle ghFightButton;
   GHandle ghExitButton;
@@ -84,16 +86,22 @@ static void redraw_badge(DefaultHandles *p) {
   // draw the character during the HP update, it will blink and we
   // don't want that.
   if (config->hp < (maxhp(config->unlocks,config->level) * .25)) {
-    putImageFile(getAvatarImage(config->current_type, "deth", 2, false),
+    if (lastimg != 2) 
+      putImageFile(getAvatarImage(config->current_type, "deth", 2, false),
                  POS_PLAYER1_X, POS_PLAYER1_Y);
+    lastimg = 2;
   } else { 
     if (config->hp < (maxhp(config->unlocks,config->level) * .50)) {
-      // show the whoop'd ass graphic if you're less than 15% 
-      putImageFile(getAvatarImage(config->current_type, "deth", 1, false),
+      // show the whoop'd ass graphic if you're less than 15%
+      if (lastimg != 1)
+        putImageFile(getAvatarImage(config->current_type, "deth", 1, false),
                    POS_PLAYER1_X, POS_PLAYER1_Y);
+      lastimg = 1;
     } else {
-      putImageFile(getAvatarImage(config->current_type, "idla", 1, false),
-                   POS_PLAYER1_X, POS_PLAYER1_Y);
+      if (lastimg != 0) 
+        putImageFile(getAvatarImage(config->current_type, "idla", 1, false),
+                     POS_PLAYER1_X, POS_PLAYER1_Y);
+      lastimg = 0;
     }
   }
 
@@ -267,6 +275,7 @@ static void default_start(OrchardAppContext *context) {
 
   gdispClear(Black);
 
+  lastimg = -1;
   redraw_badge(p);
   draw_badge_buttons(p);
   
@@ -422,6 +431,7 @@ static void default_event(OrchardAppContext *context,
           screen_alert_draw(true, "YOU ARE NOW CAESAR!!");
           chThdSleepMilliseconds(ALERT_DELAY);
           gdispClear(Black);
+          lastimg = -1;
           redraw_badge(p);
         } 
       }
@@ -441,6 +451,7 @@ static void default_event(OrchardAppContext *context,
       screen_alert_draw(true, "CHARACTER UPGRADE EXPIRED");
       chThdSleepMilliseconds(ALERT_DELAY);
       gdispClear(Black);
+      lastimg = -1;
       redraw_badge(p);
     }
     /* if so, revert the player */
