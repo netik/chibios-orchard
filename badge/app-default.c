@@ -78,13 +78,14 @@ static void draw_badge_buttons(DefaultHandles * p) {
   p->ghExitButton = gwinButtonCreate(NULL, &wi);
 }
 
-static void redraw_badge(DefaultHandles *p) {
-  // draw the entire background badge image. Shown when the screen is idle. 
-  const userconfig *config = getConfig();
-
+static void redraw_player(DefaultHandles *p) {
   // our image draws just a bit underneath the stats data. If we
   // draw the character during the HP update, it will blink and we
   // don't want that.
+  const userconfig *config = getConfig();
+  char tmp[20];
+  char tmp2[40];
+
   if (config->hp < (maxhp(config->unlocks,config->level) * .25)) {
     if (lastimg != 2) 
       putImageFile(getAvatarImage(config->current_type, "deth", 2, false),
@@ -105,10 +106,49 @@ static void redraw_badge(DefaultHandles *p) {
     }
   }
 
-  putImageFile(IMG_GROUND_BTNS, 0, POS_FLOOR_Y);
+  /* hit point bar */
+  
+  gdispDrawThickLine(141, 77, 320, 77, Red, 2, FALSE);
+  gdispDrawThickLine(141, 98, 320, 98, Red, 2, FALSE);
+  
+  chsnprintf(tmp, sizeof(tmp), "HP");
+  chsnprintf(tmp2, sizeof(tmp2), "%d", config->hp);
 
+  gdispDrawStringBox (142,
+		      83,
+		      30,
+		      gdispGetFontMetric(p->fontXS, fontHeight),
+		      tmp,
+		      p->fontXS, White, justifyLeft);
+
+  drawProgressBar(163,83,120,11,maxhp(config->unlocks,config->level), config->hp, 0, false);
+
+  gdispFillArea( 289, 83,
+                 30,gdispGetFontMetric(p->fontXS, fontHeight),
+                 Black );
+                       
+  gdispDrawStringBox (289,
+		      83,
+                      30,
+		      gdispGetFontMetric(p->fontXS, fontHeight),
+		      tmp2,
+		      p->fontXS, White, justifyLeft);
+
+
+}
+
+static void redraw_badge(DefaultHandles *p) {
+  // draw the entire background badge image. Shown when the screen is idle. 
+  const userconfig *config = getConfig();
+  char tmp[20];
+  char tmp2[40];
   uint16_t ypos = 0; 
   uint16_t lmargin = 141;
+
+  redraw_player(p);
+
+  putImageFile(IMG_GROUND_BTNS, 0, POS_FLOOR_Y);
+
   gdispDrawStringBox (0,
 		      ypos,
 		      gdispGetWidth(),
@@ -116,8 +156,6 @@ static void redraw_badge(DefaultHandles *p) {
 		      config->name,
 		      p->fontLG, Yellow, justifyRight);
 
-  char tmp[20];
-  char tmp2[40];
   chsnprintf(tmp, sizeof(tmp), "LEVEL %s", dec2romanstr(config->level));
   
   /* Level */
@@ -129,34 +167,7 @@ static void redraw_badge(DefaultHandles *p) {
 		      tmp,
 		      p->fontSM, Yellow, justifyRight);
 
-  /* XP */
   ypos = ypos + gdispGetFontMetric(p->fontSM, fontHeight) + 4;
-  gdispDrawThickLine(141, ypos, 320, ypos, Red, 2, FALSE);
-  gdispDrawThickLine(141, ypos+21, 320, ypos+21, Red, 2, FALSE);
-  
-  chsnprintf(tmp, sizeof(tmp), "HP");
-  chsnprintf(tmp2, sizeof(tmp2), "%d", config->hp);
-
-  /* hit point bar */
-  gdispDrawStringBox (142,
-		      ypos+6,
-		      30,
-		      gdispGetFontMetric(p->fontXS, fontHeight),
-		      tmp,
-		      p->fontXS, White, justifyLeft);
-
-  drawProgressBar(163,ypos+6,120,11,maxhp(config->unlocks,config->level), config->hp, 0, false);
-
-  gdispFillArea( 289, ypos+6, 
-                 30,gdispGetFontMetric(p->fontXS, fontHeight),
-                 Black );
-                       
-  gdispDrawStringBox (289,
-		      ypos+6,
-                      30,
-		      gdispGetFontMetric(p->fontXS, fontHeight),
-		      tmp2,
-		      p->fontXS, White, justifyLeft);
 
   /* end hp bar */
   ypos = ypos + 30;
@@ -469,10 +480,9 @@ static void default_event(OrchardAppContext *context,
       if (config->hp >= maxhp(config->unlocks, config->level)) {
         config->hp = maxhp(config->unlocks, config->level);
         configSave(config);
-        redraw_badge(p);
-      } else {
-        redraw_badge(p);
       }
+
+      redraw_player(p);
     }
   }
 }
