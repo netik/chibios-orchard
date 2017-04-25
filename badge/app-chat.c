@@ -225,14 +225,14 @@ static void chat_event (OrchardAppContext *context,
 		 * user to chat with. Now switch to the keyboard ui.
 		 */
 		if (ui == getUiByName ("list")) {
-			ui->exit (context);
-
 			/* User chose the "EXIT" selection, bail out. */
 
 			if (uiContext->selected == 0) {
 				orchardAppExit ();
 				return;
 			}
+
+			ui->exit (context);
 
 			/*
 			 * This is a little messy. Now that we've chosen
