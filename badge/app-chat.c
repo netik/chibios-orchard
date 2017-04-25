@@ -187,6 +187,13 @@ static void chat_event (OrchardAppContext *context,
 	uiContext = context->instance->uicontext;
 	config = getConfig();
 
+ 	if (event->type == keyEvent && event->key.flags == keyPress) {
+		if (ui == getUiByName ("keyboard")) {
+			orchardAppExit ();
+			return;
+		}
+	}
+
 	if (event->type == ugfxEvent)
 		ui->event (context, event);
 
@@ -273,7 +280,7 @@ static void chat_event (OrchardAppContext *context,
 			radioSend (&KRADIO1, p->netid, RADIO_PROTOCOL_SHOUT,
 			    strlen (p->txbuf) + 1, p->txbuf);
 
-			p->listitems[0] = "Type @ to exit";
+			p->listitems[0] = "Type @ or press button to exit";
 			memset (p->txbuf, 0, sizeof(p->txbuf));
 			p->listitems[1] = p->txbuf;
 
