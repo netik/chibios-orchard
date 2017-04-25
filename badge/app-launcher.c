@@ -71,7 +71,7 @@ static void draw_launcher_buttons(struct launcher_list * list) {
   gwinSetFont(list->ghTitleL, list->fontFX);
   gwinRedraw(list->ghTitleL);
 
-  chsnprintf(tmp, sizeof(tmp), "LEVEL %s", dec2romanstr(config->level+1));
+  chsnprintf(tmp, sizeof(tmp), "LEVEL %s", dec2romanstr(config->level));
 
   // Create label widget: ghTitleR
   wi.g.show = TRUE;
