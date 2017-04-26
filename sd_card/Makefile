@@ -70,7 +70,6 @@ sdcard: images midi sounds
 	@if [ ! -d "sdcard/fight" ]; then mkdir sdcard/fight; fi
 	@cp dac/fight/*.raw sdcard/fight
 	@cp video/*.vid sdcard
-	@mv -f sdcard/credits_mario.rgb sdcard/credits.rgb
 	@echo
 	@echo 'sdcard built!'
 	@echo
