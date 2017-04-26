@@ -187,6 +187,13 @@ static void chat_event (OrchardAppContext *context,
 	uiContext = context->instance->uicontext;
 	config = getConfig();
 
+ 	if (event->type == keyEvent && event->key.flags == keyPress) {
+		if (ui == getUiByName ("keyboard")) {
+			orchardAppExit ();
+			return;
+		}
+	}
+
 	if (event->type == ugfxEvent)
 		ui->event (context, event);
 
@@ -225,14 +232,14 @@ static void chat_event (OrchardAppContext *context,
 		 * user to chat with. Now switch to the keyboard ui.
 		 */
 		if (ui == getUiByName ("list")) {
-			ui->exit (context);
-
 			/* User chose the "EXIT" selection, bail out. */
 
 			if (uiContext->selected == 0) {
 				orchardAppExit ();
 				return;
 			}
+
+			ui->exit (context);
 
 			/*
 			 * This is a little messy. Now that we've chosen
@@ -273,7 +280,7 @@ static void chat_event (OrchardAppContext *context,
 			radioSend (&KRADIO1, p->netid, RADIO_PROTOCOL_SHOUT,
 			    strlen (p->txbuf) + 1, p->txbuf);
 
-			p->listitems[0] = "Type @ to exit";
+			p->listitems[0] = "Type @ or press button to exit";
 			memset (p->txbuf, 0, sizeof(p->txbuf));
 			p->listitems[1] = p->txbuf;
 

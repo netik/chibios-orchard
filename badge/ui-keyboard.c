@@ -75,7 +75,7 @@ static void backspace (KeyboardHandles * p)
 
 	if (cons->cx == 0) {
 		cons->cy -= h;
-		cons->cx = gdispGetWidth() - w;
+		cons->cx = gdispGetWidth() - (w * 2);
 	} else
 		cons->cx -= w;
 
