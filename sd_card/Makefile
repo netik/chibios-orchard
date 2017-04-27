@@ -5,60 +5,64 @@
 # jna@retina.net
 # 1/2017
 #
-
+# Master makefile
+#
 # This makefile will build the tools and media that will be placed on
 # the SD cards
 #
-# rgbhdr, ImageMagick, and FFMPeg are required to convert images. 
+# ImageMagick, and FFMPeg are required to convert images.
+# the Makefile in the tools/ subdir will build our required tools (rgbheader, snd
+#
+# videos will not be built by this script. We will only copy .vid
+# files to the sdcard from the video/ subdir.
 #
 
-all: rgbhdr snd16to12 videomerge
+# The tools dir contains our conversion tools and scripts
+TOOLS_DIR = tools
+.PHONY: tools_dep
 
-rgbhdr: rgbhdr.c
-	cc -o rgbhdr rgbhdr.c
+tools_dep:
+	$(MAKE) -C $(TOOLS_DIR)
 
-snd16to12: snd16to12.c
-	cc -o snd16to12 snd16to12.c -lm
+all: tools_dep images sounds video
 
-videomerge: videomerge.c
-	cc -o videomerge videomerge.c
+# These rules will build the mirrored and standard images only if the
+# jpgs have changed.
+#mv: rename jpg/font/led/font/led/20.rgb to rgb/font/led/20.rgb: No such file or directory
 
-# This rule will build the mirrored and standard images only if the
-# jpgs have changed. Rebuilding them all the time was time consuming.
-rgb/%.rgb : jpg/font/led/%.jpg 
-	./convert_to_rgb.sh $<
-	mv $(subst rgb/,jpg/font/led/,$(@)) rgb/font/led
+rgb/font/led/%.rgb : jpg/font/led/%.jpg 
+	tools/scripts/convert_to_rgb.sh $<
+	mv $(subst .jpg,.rgb,$<) $(@)
 
 rgb/%.rgb : jpg/%.jpg 
 	convert -flop $< $(subst .jpg,r.jpg,$(subst jpg/,jpg/mirrored/,$<))
-	./convert_to_rgb.sh $<
+	tools/scripts/convert_to_rgb.sh $<
 	mv $(subst rgb/,jpg/,$(@)) rgb/
-	./convert_to_rgb.sh $(subst .jpg,r.jpg,$(subst jpg/,jpg/mirrored/,$<))
+	tools/scripts/convert_to_rgb.sh $(subst .jpg,r.jpg,$(subst jpg/,jpg/mirrored/,$<))
 	mv $(subst .jpg,r.rgb,$(subst jpg/,jpg/mirrored/,$<)) rgb/
 
 rgb/%.rgb : tif/%.tif
 	convert -flop $< $(subst .tif,r.tif,$(subst tif/,tif/mirrored/,$<))
-	./convert_to_rgb.sh $<
+	tools/scripts/convert_to_rgb.sh $<
 	mv $(subst rgb/,tif/,$(@)) rgb/
-	./convert_to_rgb.sh $(subst .tif,r.tif,$(subst tif/,tif/mirrored/,$<))
+	tools/scripts/convert_to_rgb.sh $(subst .tif,r.tif,$(subst tif/,tif/mirrored/,$<))
 	mv $(subst .tif,r.rgb,$(subst tif/,tif/mirrored/,$<)) rgb/
 
 dac/%.raw: dac/%.mp3
-	./sndmp3toraw.sh $<
+	tools/scripts/sndmp3toraw.sh $<
 
 dac/fight/%.raw: dac/fight/%.mp3
-	./sndmp3toraw.sh $<
+	tools/script/sndmp3toraw.sh $<
 
-clean_images:
-	$(shell rm jpg/mirrored/*)
-	$(shell rm tif/mirrored/*)
-	$(shell	rm rgb/*)
+images: tools_dep $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard tif/*.tif))))) \
+	          $(addprefix rgb/font/led/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard jpg/font/led/*.jpg))))) \
+	          $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard jpg/*.jpg)))))
 
-images: rgbhdr $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard jpg/*.jpg jpg/font/led/*.jpg tif/*.tif)))))
+sounds: tools_dep $(addprefix dac/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/fight*.mp3))))) \
+                  $(addprefix dac/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/*.mp3))))) \
+	          $(addprefix dac/fight/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/fight/*.mp3)))))
 
-sounds: snd16to12 $(addprefix dac/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/fight*.mp3))))) $(addprefix dac/fight/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/fight/*.mp3)))))
-
-sdcard: images midi sounds
+sdcard: tools_dep images midi sounds
 	@if [ ! -d "sdcard" ]; then mkdir sdcard; fi
 	@cp rgb/*.rgb sdcard
 	@if [ ! -d "sdcard/font/led" ]; then mkdir -p sdcard/font/led; fi
@@ -83,19 +87,28 @@ osxsd:	sdcard
 	time cp -R sdcard/* /Volumes/NO\ NAME/
 	@sync
 
-# only update the binaries to save time.
+# copy only binaries and the updater to the card (reduces dev time
+# when needed)
 osxsdfw:	sdcard
 	@echo "Updating binaries on /Volumes/NO\ NAME/"
 	@cp ../updater/updater.bin /Volumes/NO\ NAME/
 	@cp sdcard/badge.bin /Volumes/NO\ NAME/
 	@sync
 
+# cleanups
+clean_images:
+	-rm -f jpg/mirrored/*
+	-rm -f tif/mirrored/*
+	-rm -f rgb/*
+
 cleansd:
 	@if [ -d "sdcard" ]; then rm -rf sdcard; fi; mkdir sdcard; mkdir sdcard/font; mkdir sdcard/font/led
 	@if [ -d "rgb" ]; then rm -rf rgb; fi; mkdir rgb; mkdir rgb/font; mkdir rgb/font/led
 	touch rgb/"THIS FOLDER IS AUTOMATICALLY GENERATED"
 
+# remove tools, sounds, images, and video
 clean: clean_images
-	rm rgbhdr
-	rm snd16to12
-	rm videomerge
+	$(MAKE) -C $(TOOLS_DIR) clean
+	-rm -f dac/*.raw
+	-rm -f dac/fight/*.raw
+
