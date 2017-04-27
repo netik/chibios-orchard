@@ -54,12 +54,14 @@ dac/%.raw: dac/%.mp3
 dac/fight/%.raw: dac/fight/%.mp3
 	tools/script/sndmp3toraw.sh $<
 
+# please stop adding non-TIF images to the collection, we want uncompressed media when possible.
 images: tools_dep $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard tif/*.tif))))) \
 	          $(addprefix rgb/font/led/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard jpg/font/led/*.jpg))))) \
 	          $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard jpg/*.jpg)))))
 
+# please stop adding MP3s to the collection, we want uncompressed audio. It's already shitty enough.
 sounds: tools_dep $(addprefix dac/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/fight*.mp3))))) \
-                  $(addprefix dac/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/*.mp3))))) \
+                  $(addprefix dac/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/*.wav))))) \
 	          $(addprefix dac/fight/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/fight/*.mp3)))))
 
 sdcard: tools_dep images midi sounds
