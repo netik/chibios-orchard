@@ -421,7 +421,7 @@ static void default_event(OrchardAppContext *context,
      * If there are no nearby Caesars... 
      * ... and I am not caesar already ... 
      * and my level is >= MIN_CAESAR_LEVEL
-     * and I can roll 1d100 and get >= CAESAR_CHANCE, then
+     * and I can roll 1d100 and get <= CAESAR_CHANCE, then
      * we become caesar
     */
 

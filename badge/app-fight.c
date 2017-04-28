@@ -1066,7 +1066,7 @@ static uint16_t calc_hit(userconfig *config, user *current_enemy) {
   basemult = (25*(exps[config->level - 1]));
 
   // base multiplier is always rand 75% to 100%
-  basemult = (rand() % basemult) + (basemult * .75);
+  basemult = (rand() % basemult) + (basemult * .50);
 
   // caesar bonus if you are a senator! 
   if ((current_enemy->current_type == p_caesar) && (config->current_type = p_senator)) { 

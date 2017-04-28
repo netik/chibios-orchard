@@ -21,7 +21,7 @@
 #define MIN_CAESAR_LEVEL 3           
 
 /* % chance of becoming caesar during election */
-#define CAESAR_CHANCE    30           
+#define CAESAR_CHANCE    15
 
 /* The max number of seconds you can assume another form (caesar, bender) */
 #define MAX_BUFF_TIME    S2ST(3600)
