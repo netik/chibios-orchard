@@ -204,11 +204,15 @@ static void radio_ping_handler(KW01_PKT *pkt) {
   if (c->unlocks & UL_PINGDUMP) { 
     chprintf(stream, "\r\nPING: {\"name\":\"%s\"," \
              "\"badgeid\":\"%08x\"," \
+             "\"ptype\":\"%d\"," \
+             "\"ctype\":\"%d\"," \
              "\"hp\":%d," \
              "\"xp\":%d," \
              "\"level\":%d,",
              u->name,
              u->netid,
+             u->current_type,
+             u->p_type,
              u->hp,
              u->xp,
              u->level);

@@ -695,8 +695,18 @@ static void state_show_results_enter() {
 
   // clear status bar, remove arrows, redraw ground
   clearstatus();
-  gdispFillArea(160, POS_PLAYER2_Y, 50,150,Black); 
+  gdispFillArea(160, POS_PLAYER2_Y, 50,150,Black);
   putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
+
+  // if they didn't go and we didn't go, abort.
+  if ((ourattack <= 0) && (theirattack <= 0)) { 
+    orchardAppTimer(instance.context, 0, false); // shut down the timer
+    screen_alert_draw(true, "NO MOVE. TIMED OUT!");
+    dacPlay("fight/select3.raw");
+    chThdSleepMilliseconds(ALERT_DELAY);
+    orchardAppRun(orchardAppByName("Badge"));
+    return;
+  }
   
   // get the right filename for the attack
   if (ourattack & ATTACK_HI) {
@@ -1041,32 +1051,37 @@ static uint16_t xp_for_level(uint8_t level) {
 }
 
 static uint16_t calc_hit(userconfig *config, user *current_enemy) {
-  uint8_t basedmg;
-  uint8_t basemult;
-
+  uint16_t basedmg;
+  uint16_t basemult;
+  
   // This code calculates base hit and luck only for transmitting to
   // other badge. Do not implement buffs here, implement them in
   // show_results.
 
-  // base multiplier is always 15-20
-  basemult = (rand() % 5) + 15;
-  //42×(A2^0.3)+(2×M2)−(3×N2)
+  // power table (x^0.3) to avoid using pow() math library
+  float exps[] = { 1.000000, 1.231144, 1.390389, 1.515717, 1.620657,
+                   1.711770, 1.792790, 1.866066, 1.933182, 1.995262  };
   
-  // base damage takes their AGL into account.
-  // egan needs to revise this, because +/- a few damage doesn't make it worth the trouble?
-  basedmg = (basemult * config->level) + config->might - current_enemy->agl;
+  // the max damage you can do
+  basemult = (25*(exps[config->level - 1]));
+
+  // base multiplier is always rand 75% to 100%
+  basemult = (rand() % basemult) + (basemult * .75);
 
   // caesar bonus if you are a senator! 
   if ((current_enemy->current_type == p_caesar) && (config->current_type = p_senator)) { 
-    basedmg = basedmg * 2;
+    basemult *= 2;
   }
+
+  // factor in agl/might
+  basedmg = basemult + (2*config->might) - (3*current_enemy->agl);
   
   // did we crit?
   if ( (int)rand() % 100 <= config->luck ) { 
     ourattack |= ATTACK_ISCRIT;
     basedmg = basedmg * 2;
   }
-  
+
   return basedmg;
   
 }
