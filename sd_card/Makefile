@@ -118,7 +118,6 @@ dirs:
 cleansd:
 	@if [ -d "sdcard" ]; then rm -rf sdcard; fi; 
 	@if [ -d "rgb" ]; then rm -rf rgb; fi; 
-	touch rgb/"THIS FOLDER IS AUTOMATICALLY GENERATED"
 
 # remove tools, sounds, images, and video
 clean: clean_images
