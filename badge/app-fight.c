@@ -887,6 +887,7 @@ static void state_show_results_enter() {
       }
     } else {
       // victory!
+      dacWait();
       dacPlay("yourv.raw");
     }
     
