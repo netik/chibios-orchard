@@ -1,8 +1,9 @@
 #ifndef __SOUND_H__
 #define __SOUND_H__
 
-extern void playTone(uint16_t freq, uint16_t duration);
+extern void playTone(uint8_t freq, uint16_t duration);
 extern void playStartupSong(void);
+extern void playConfigReset(void);
 extern void playNope(void);
 extern void playHardFail(void);
 extern void playAttacked(void);

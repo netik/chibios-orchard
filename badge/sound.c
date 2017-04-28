@@ -110,8 +110,9 @@ static const PWM_NOTE soundDefeat[] = {
   { 0, PWM_DURATION_END }
 };
 
-void playTone(uint16_t freq, uint16_t duration) {
-  pwmToneStart(freq);
+void playTone(uint8_t idx, uint16_t duration) {
+  /* note that these are indexed tones, not frequences (see pwmtonestart) */
+  pwmToneStart(idx);
   chThdSleepMilliseconds (duration);
   pwmToneStop();
 }
@@ -120,6 +121,12 @@ void playStartupSong(void) {
   /* the galaga game start sound */
   dacPlay ("galaga.raw");
 }
+
+void playConfigReset(void) {
+  /* played when you're getting attacked by another player */
+  playTone(130, 2000);
+}
+
 
 void playPacman(void) {
   dacPlay ("pacman.raw");

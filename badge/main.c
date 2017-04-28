@@ -15,7 +15,7 @@
 */
 
 /* define this to halt on SD card Failure */
-#undef HALT_ON_SDFAIL
+#define HALT_ON_SDFAIL
 
 #include <string.h>
 

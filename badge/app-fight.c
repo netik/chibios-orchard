@@ -926,7 +926,31 @@ static void state_show_results_enter() {
           dacPlay("fight/usuck.raw");
           break;
         }
+      } else {
+        // you lose, but let's be fun about it.
+        dacWait();
+        switch(current_enemy.current_type) {
+        case p_guard:
+          dacPlay("gwin.raw");
+          break;
+        case p_senator:
+          dacPlay("swin.raw");
+          break;
+        case p_caesar:
+          dacPlay("cwin.raw");
+          break;
+        case p_gladiatrix:
+          dacPlay("xwin.raw");
+          break;
+        case p_bender:
+          dacPlay("bwin.raw");
+          break;
+        case p_notset:
+          break;
+          /* bender goes here */
+        }
       }
+      
       // reward (some) XP and exit 
       config->xp += calc_xp_gain(FALSE);
       config->lost++;
@@ -1031,6 +1055,11 @@ static uint16_t calc_hit(userconfig *config, user *current_enemy) {
   // egan needs to revise this, because +/- a few damage doesn't make it worth the trouble?
   basedmg = (basemult * config->level) + config->might - current_enemy->agl;
 
+  // caesar bonus if you are a senator! 
+  if ((current_enemy->current_type == p_caesar) && (config->current_type = p_senator)) { 
+    basedmg = basedmg * 2;
+  }
+  
   // did we crit?
   if ( (int)rand() % 100 <= config->luck ) { 
     ourattack |= ATTACK_ISCRIT;

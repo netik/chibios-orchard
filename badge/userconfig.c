@@ -8,6 +8,9 @@
 #include "unlocks.h"
 #include "userconfig.h"
 #include "orchard-shell.h"
+#include "sound.h"
+#include "tpm_lld.h"
+#include "notes.h"
 
 #include <string.h>
 
@@ -135,6 +138,10 @@ void configStart(void) {
   if (palReadPad (BUTTON_ENTER_PORT, BUTTON_ENTER_PIN) == 0) {
 #endif
     chprintf(stream, "FACTORY RESET requested\r\n");
+
+    /* play a tone to tell them we're resetting */
+    playConfigReset();
+    chThdSleepMilliseconds (200);
     wipeconfig = true; 
   }
 
