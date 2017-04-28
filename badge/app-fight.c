@@ -353,7 +353,15 @@ static void state_move_select_enter() {
     chThdSleepMilliseconds(1000);
   }
 
-  dacPlay("fight/fight.raw");
+  if (current_enemy.hp < (maxhp(current_enemy.unlocks,current_enemy.level) * .2)) {
+    if (current_enemy.current_type == p_gladiatrix) { 
+      dacPlay("fight/finishf.raw");
+    } else {
+      dacPlay("fight/finishm.raw");
+    }
+  } else { 
+    dacPlay("fight/fight.raw");
+  }
   chThdSleepMilliseconds(1000);
 
   // remove choose attack message 
@@ -783,7 +791,7 @@ static void state_show_results_enter() {
     // clank!
     dacPlay("fight/clank1.raw");
   } else { 
-    dacPlay("fight/hit1.raw");
+    playHit();
   }
 
   config->hp = config->hp - last_damage;
@@ -877,6 +885,9 @@ static void state_show_results_enter() {
         dacPlay("fight/flawless.raw");
         break;
       }
+    } else {
+      // victory!
+      dacPlay("yourv.raw");
     }
     
     // reward XP and exit 

@@ -81,10 +81,6 @@ static const PWM_NOTE soundVictory[] = {
   { 0, PWM_DURATION_END }
 };
 
-static const PWM_NOTE soundDodge[] = {
-  { 0, PWM_DURATION_END }
-};
-
 static const PWM_NOTE soundHit[] = {
   { NOTE_FS4, note16 },
   { NOTE_FS3, note16 },
@@ -188,10 +184,10 @@ void playDefeat(void) {
 
 void playDodge(void) {
   /* played when you dodge an attack */
-  pwmThreadPlay (soundDodge);
+  dacPlay("fight/clank1.raw");
 }
 
 void playHit(void) {
   /* played when you're hit */
-  pwmThreadPlay (soundHit);
+  dacPlay("fight/hit1.raw");
 }
