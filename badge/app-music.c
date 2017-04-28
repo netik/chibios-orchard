@@ -169,7 +169,7 @@ columnDraw (int col, int amp, int erase)
 	return;
 }
 
-static void
+static int
 musicPlay (VideoHandles * p, char * fname)
 {
 	FIL f;
@@ -186,7 +186,7 @@ musicPlay (VideoHandles * p, char * fname)
 	dacPlay (NULL);
 
 	if (f_open (&f, fname, FA_READ) != FR_OK)
-		return;
+		return (0);
 
 	dacBuf = chHeapAlloc (NULL,
 	    (DAC_SAMPLES * sizeof(uint16_t)) * 2);
@@ -252,9 +252,13 @@ musicPlay (VideoHandles * p, char * fname)
 	f_close (&f);
 	pitDisable (&PIT1, 1);
 	chHeapFree (dacBuf);
+
 	geventDetachSource (&gl, NULL);
 
-	return;
+	if (me != NULL && me->type == GEVENT_TOUCH)
+		return (-1);
+
+	return (0);
 }
 
 static void
@@ -306,9 +310,9 @@ music_event(OrchardAppContext *context, const OrchardAppEvent *event)
 		    buf, font, Cyan, justifyCenter);
 		gdispCloseFont (font);
 
-		musicPlay (p, p->listitems[uiContext->selected + 1]);
+		if (musicPlay (p, p->listitems[uiContext->selected + 1]) != 0)
+			dacPlay ("click.raw");
 
-		dacPlay ("click.raw");
 		orchardAppExit ();
 	}
 

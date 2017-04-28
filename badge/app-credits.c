@@ -47,20 +47,23 @@ credits_init(OrchardAppContext *context)
 static void
 credits_start(OrchardAppContext *context)
 {
+	int r;
+
 	(void)context;
 
 	dacPlay ("mario.raw");
 
 	gdispClear (Black);
 	scrollAreaSet (0, 0);
-	scrollImage ("credits.rgb", 15);
+	r = scrollImage ("credits.rgb", 15);
 
 	chThdSleepMilliseconds (800);
 
 	gdispClear (Black);
 	scrollCount (0);
 
-	dacPlay (NULL);
+	if (r != 0)
+		dacPlay ("click.raw");
 
 	orchardAppExit ();
 

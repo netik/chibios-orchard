@@ -152,8 +152,8 @@ video_event(OrchardAppContext *context, const OrchardAppEvent *event)
 			return;
 		}
 
-		videoPlay (p->listitems[uiContext->selected + 1]);
-		dacPlay ("click.raw");
+		if (videoPlay (p->listitems[uiContext->selected + 1]) != 0)
+			dacPlay ("click.raw");
 		orchardAppExit ();
 	}
 
