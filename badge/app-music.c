@@ -307,6 +307,8 @@ music_event(OrchardAppContext *context, const OrchardAppEvent *event)
 		gdispCloseFont (font);
 
 		musicPlay (p, p->listitems[uiContext->selected + 1]);
+
+		dacPlay ("click.raw");
 		orchardAppExit ();
 	}
 
