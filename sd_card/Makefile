@@ -51,6 +51,9 @@ rgb/%.rgb : tif/%.tif
 dac/%.raw: dac/%.mp3
 	tools/scripts/sndmp3toraw.sh $<
 
+dac/%.raw: dac/%.wav
+	tools/scripts/sndmp3toraw.sh $<
+
 dac/fight/%.raw: dac/fight/%.mp3
 	tools/script/sndmp3toraw.sh $<
 
