@@ -260,7 +260,7 @@ draw_lines (pixel_t * buf, int extra)
 int
 videoWinPlay (char * fname, int x, int y)
 {
-	GEventMouse * me;
+	GEventMouse * me = NULL;
 	GListener gl;
 	GSourceHandle gs;
 	uint16_t * cur;
