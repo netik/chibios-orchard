@@ -3,7 +3,7 @@
 
 /* debugging - this protocol can be a real pain in the ass */
 #undef DEBUG_FIGHT_TICK        // show the clock tick events, ugfx events, and other misc events
-#undef DEBUG_FIGHT_NETWORK    // show all network (radio) traffic
+#define DEBUG_FIGHT_NETWORK    // show all network (radio) traffic
 #define DEBUG_FIGHT_STATE      // debug state changes
   
 // where the progres bar goes 

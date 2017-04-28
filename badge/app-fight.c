@@ -186,7 +186,7 @@ static void state_waitack_tick(void) {
   
   if ( (chVTGetSystemTime() - last_send_time) > MAX_ACKWAIT ) {
     if (packet.ttl > 0)  {
-      chprintf(stream, "Resending packet...\r\n");
+      chprintf(stream, "Resending packet ...\r\n");
       resendPacket();
     } else { 
       orchardAppTimer(instance.context, 0, false); // shut down the timer
@@ -1896,6 +1896,7 @@ static void fight_event(OrchardAppContext *context,
         config->in_combat = true;
         configSave(config);
         dacPlay("fight/excellnt.raw");
+        dacWait();
         next_fight_state = VS_SCREEN;
         sendGamePacket(OP_STARTBATTLE_ACK);
         return;
@@ -2141,6 +2142,20 @@ static void radio_event_do(KW01_PKT * pkt)
       changeState(VS_SCREEN);
       return;
     }
+
+    // edge case: if I am in approval wait but you are sending me an
+    // approval demand, we'll take that too.
+    if (u->opcode == OP_STARTBATTLE) {
+      if (u->netid == current_enemy.netid) {
+#ifdef DEBUG_FIGHT_STATE
+        chprintf(stream, "collision: forcing start\r\n");
+#endif
+        next_fight_state = VS_SCREEN;
+        sendGamePacket(OP_STARTBATTLE_ACK);
+        return;
+      }
+    }
+    
     break;
     
   case MOVE_SELECT:
