@@ -89,16 +89,16 @@ sdcard: dirs tools_dep images midi sounds
 
 # copy the card to the right folder on my osx box
 osxsd:	sdcard
-	@echo "Copying to /Volumes/NO\ NAME/"
-	time cp -R sdcard/* /Volumes/NO\ NAME/
+	@echo "Copying to /Volumes/SPQR_DC25/"
+	time cp -R sdcard/* /Volumes/SPQR_DC25/
 	@sync
 
 # copy only binaries and the updater to the card (reduces dev time
 # when needed)
 osxsdfw:	sdcard
-	@echo "Updating binaries on /Volumes/NO\ NAME/"
-	@cp ../updater/updater.bin /Volumes/NO\ NAME/
-	@cp sdcard/badge.bin /Volumes/NO\ NAME/
+	@echo "Updating binaries on /Volumes/SPQR_DC25"
+	@cp ../updater/updater.bin /Volumes/SPQR_DC25/
+	@cp sdcard/badge.bin /Volumes/SPQR_DC25
 	@sync
 
 # cleanups
