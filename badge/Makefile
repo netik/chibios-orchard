@@ -176,6 +176,7 @@ CSRC = main.c \
        app-ledsign.c \
        app-spectrum.c \
        app-video.c \
+       app-music.c \
        app-shout.c \
        app-chat.c \
        app-default.c \
@@ -188,6 +189,7 @@ CSRC = main.c \
        led.c \
        oled.c \
        orchard-events.c \
+       fix_fft.c \
        scroll_lld.c \
        video_lld.c \
        radio_lld.c \
