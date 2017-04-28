@@ -55,7 +55,7 @@ dac/%.raw: dac/%.wav
 	tools/scripts/sndmp3toraw.sh $<
 
 dac/fight/%.raw: dac/fight/%.mp3
-	tools/script/sndmp3toraw.sh $<
+	tools/scripts/sndmp3toraw.sh $<
 
 # please stop adding non-TIF images to the collection, we want uncompressed media when possible.
 images: tools_dep $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard tif/*.tif))))) \
