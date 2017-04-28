@@ -179,7 +179,7 @@ musicPlay (VideoHandles * p, char * fname)
 	UINT br;
 	float fl;
 	uint32_t b;
-	GEventMouse * me;
+	GEventMouse * me = NULL;
 	GSourceHandle gs;
 	GListener gl;
 
