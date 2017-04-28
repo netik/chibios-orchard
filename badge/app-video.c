@@ -33,6 +33,7 @@
 #include "orchard-app.h"
 #include "orchard-ui.h"
 #include "video_lld.h"
+#include "dac_lld.h"
 
 #include "ff.h"
 #include "ffconf.h"
@@ -151,7 +152,8 @@ video_event(OrchardAppContext *context, const OrchardAppEvent *event)
 			return;
 		}
 
-		videoPlay (p->listitems[uiContext->selected + 1]);
+		if (videoPlay (p->listitems[uiContext->selected + 1]) != 0)
+			dacPlay ("click.raw");
 		orchardAppExit ();
 	}
 

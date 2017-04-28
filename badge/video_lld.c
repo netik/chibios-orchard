@@ -254,13 +254,13 @@ draw_lines (pixel_t * buf, int extra)
 * <x> and <y> are both 0, then the vide will be upscaled to consume the
 * entire display.
 *
-* RETURNS: N/A
+* RETURNS: 0 when video finishes playing, or -1 if interrupted
 */
 
-void
+int
 videoWinPlay (char * fname, int x, int y)
 {
-	GEventMouse * me;
+	GEventMouse * me = NULL;
 	GListener gl;
 	GSourceHandle gs;
 	uint16_t * cur;
@@ -279,7 +279,7 @@ videoWinPlay (char * fname, int x, int y)
 #endif
 
 	if (f_open (&f, fname, FA_READ) != FR_OK)
-		return;
+		return (0);
 
 	/* Capture mouse up/down events */
 
@@ -479,7 +479,10 @@ videoWinPlay (char * fname, int x, int y)
 	    KINETIS_BUSCLK_FREQUENCY / DAC_SAMPLERATE);
 #endif
 
-	return;
+	if (me != NULL && me->type == GEVENT_TOUCH)
+		return (-1);
+
+	return (0);
 }
 
 /******************************************************************************
@@ -492,8 +495,7 @@ videoWinPlay (char * fname, int x, int y)
 * RETURNS: N/A
 */
 
-void videoPlay (char * fname)
+int videoPlay (char * fname)
 {
-	videoWinPlay (fname, 0, 0);
-	return;
+	return (videoWinPlay (fname, 0, 0));
 }

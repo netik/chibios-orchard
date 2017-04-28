@@ -33,6 +33,7 @@
 #include "orchard-app.h"
 #include "orchard-ui.h"
 
+#include "dac_lld.h"
 #include "scroll_lld.h"
 
 #include "userconfig.h"
@@ -118,6 +119,8 @@ ledsign_event(OrchardAppContext *context, const OrchardAppEvent *event)
 		} while (sts == 0);
 		gdispClear (Black);
 		scrollCount (0);
+		if (sts != 0)
+			dacPlay ("click.raw");
 		orchardAppExit ();
 	}
 
