@@ -24,7 +24,7 @@ TOOLS_DIR = tools
 tools_dep:
 	$(MAKE) -C $(TOOLS_DIR)
 
-all: tools_dep images sounds video
+all: dirs tools_dep images sounds video
 
 # These rules will build the mirrored and standard images only if the
 # jpgs have changed.
@@ -67,7 +67,8 @@ sounds: tools_dep $(addprefix dac/, $(notdir  $(addsuffix .raw, $(basename $(wil
                   $(addprefix dac/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/*.wav))))) \
 	          $(addprefix dac/fight/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/fight/*.mp3)))))
 
-sdcard: tools_dep images midi sounds
+
+sdcard: dirs tools_dep images midi sounds
 	@if [ ! -d "sdcard" ]; then mkdir sdcard; fi
 	@cp rgb/*.rgb sdcard
 	@if [ ! -d "sdcard/font/led" ]; then mkdir -p sdcard/font/led; fi
@@ -106,9 +107,17 @@ clean_images:
 	-rm -f tif/mirrored/*
 	-rm -f rgb/*
 
+dirs:
+	-mkdir sdcard
+	-mkdir sdcard/font
+	-mkdir sdcard/font/led
+	-mkdir rgb
+	-mkdir rgb/font
+	-mkdir rgb/font/led
+
 cleansd:
-	@if [ -d "sdcard" ]; then rm -rf sdcard; fi; mkdir sdcard; mkdir sdcard/font; mkdir sdcard/font/led
-	@if [ -d "rgb" ]; then rm -rf rgb; fi; mkdir rgb; mkdir rgb/font; mkdir rgb/font/led
+	@if [ -d "sdcard" ]; then rm -rf sdcard; fi; 
+	@if [ -d "rgb" ]; then rm -rf rgb; fi; 
 	touch rgb/"THIS FOLDER IS AUTOMATICALLY GENERATED"
 
 # remove tools, sounds, images, and video
