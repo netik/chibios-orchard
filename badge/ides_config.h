@@ -27,7 +27,7 @@
 #define MAX_BUFF_TIME    S2ST(3600)
 
 /* how long to reach full heal */
-#define HEAL_TIME        25           /* seconds */
+#define HEAL_TIME        20           /* seconds */
 
 /* We will heal the player at N hp per this interval or 2X HP if
  * UL_PLUSDEF has been activated */
