@@ -1050,6 +1050,7 @@ static uint16_t calc_hit(userconfig *config, user *current_enemy) {
 
   // base multiplier is always 15-20
   basemult = (rand() % 5) + 15;
+  //42×(A2^0.3)+(2×M2)−(3×N2)
   
   // base damage takes their AGL into account.
   // egan needs to revise this, because +/- a few damage doesn't make it worth the trouble?
