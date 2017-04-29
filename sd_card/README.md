@@ -91,6 +91,8 @@ You can also play videos using the built-in photos app.
 
 ## Icons
 
+File extension: `.rgb`
+
 For all of the icons, we used <http://game-icons.net> with the following settings:
 
 * Background color 000000
@@ -109,8 +111,8 @@ Each application registers itself using a call like these.
 
 In the make file there are a few extras: 
 
-`make osxsd` - Copy the sdcard dir to /Volumes/DC25_SPQR
-
+`make osxsd` - Copy the sdcard dir to /Volumes/SPQR_
+`make osxsdfw` - Copy just the firmware and updater to /Volumes/SPQR_DC25
 
 ## Help?
 
