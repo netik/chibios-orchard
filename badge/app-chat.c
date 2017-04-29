@@ -320,4 +320,4 @@ static void chat_exit (OrchardAppContext *context)
 }
 
 orchard_app("Radio Chat", "chat.rgb", APP_FLAG_AUTOINIT,
-	chat_init, chat_start, chat_event, chat_exit);
+	chat_init, chat_start, chat_event, chat_exit, 9999);

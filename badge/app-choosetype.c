@@ -472,4 +472,5 @@ static void ct_exit(OrchardAppContext *context) {
   context->priv = NULL;
 }  
 
-orchard_app("Choosetype", NULL, APP_FLAG_HIDDEN, ct_init, ct_start, ct_event, ct_exit);
+orchard_app("Choosetype", NULL, APP_FLAG_HIDDEN, ct_init,
+    ct_start, ct_event, ct_exit, 9999);

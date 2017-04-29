@@ -100,9 +100,9 @@ typedef struct orchard_app_instance {
 
 #define orchard_apps() (const OrchardApp *)&start[4]
 
-#define orchard_app(_name, _icon, _flags, _init, _start, _event, _exit)  \
-  const OrchardApp _orchard_app_list_##_init##_start##_event##_exit           \
-  __attribute__((used, aligned(4), section(".chibi_list_app_2_" # _event # _start # _init # _exit))) =  \
+#define orchard_app(_name, _icon, _flags, _init, _start, _event, _exit, _prio)\
+  const OrchardApp _orchard_app_list_##_init##_start##_event##_exit    \
+  __attribute__((used, aligned(4), section(".chibi_list_app_2_" # _prio # _event # _start # _init # _exit))) =  \
   { _name, _icon, _flags, _init, _start, _event, _exit }
 
 #define orchard_app_end()                                                     \

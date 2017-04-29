@@ -2254,6 +2254,4 @@ static uint32_t fight_init(OrchardAppContext *context) {
 }
 
 orchard_app("Fight", "fight.rgb", APP_FLAG_AUTOINIT,
-            fight_init, fight_start, fight_event, fight_exit);
-
-
+            fight_init, fight_start, fight_event, fight_exit, 1);
