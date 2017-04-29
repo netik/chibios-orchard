@@ -10,3 +10,6 @@ __pycache__
 *.o
 #*#
 sd_card/sdcard
+sd_card/jpg/mirrored/
+sd_card/tif/mirrored/
+sd_card/tools/bin/
