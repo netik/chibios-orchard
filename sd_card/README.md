@@ -2,11 +2,11 @@
 
 This direcory contains tools to generate the assets for the badge. 
 
-To generate everything you must have a working C Compiler (GCC), ImageMagick, Sox, and FFMPEG available on your machine.
+To generate everything you must have GNU Make, a working C Compiler (GCC), ImageMagick, Sox, and FFMPEG available on your machine.
 
 ## Building
 
-With GNU Make installed, type `make all` to generate the binary tools.
+Type `make all` to generate the binary tools.
 
 Then type `make sdcard` to generate the assets.
 
