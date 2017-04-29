@@ -81,12 +81,13 @@ static const PWM_NOTE soundVictory[] = {
   { 0, PWM_DURATION_END }
 };
 
+#ifdef notdef
 static const PWM_NOTE soundHit[] = {
   { NOTE_FS4, note16 },
   { NOTE_FS3, note16 },
   { 0, PWM_DURATION_END }
 };
-
+#endif
 
 static const PWM_NOTE soundDefeat[] = {
   { NOTE_GS4, snote16 },
