@@ -342,4 +342,4 @@ music_exit(OrchardAppContext *context)
 }
 
 orchard_app("Play Music", "mplay.rgb", 0, music_init, music_start,
-    music_event, music_exit);
+    music_event, music_exit, 9999);

@@ -222,4 +222,5 @@ spectrum_exit (OrchardAppContext *context)
 	return;
 }
 
-orchard_app("RF Spectrum", "spect.rgb", 0, spectrum_init, spectrum_start, spectrum_event, spectrum_exit);
+orchard_app("RF Spectrum", "spect.rgb", 0, spectrum_init,
+    spectrum_start, spectrum_event, spectrum_exit, 9999);

@@ -181,6 +181,7 @@ CSRC = main.c \
        app-chat.c \
        app-default.c \
        app-setup.c \
+       app-email.c \
        ides_gfx.c \
        ui-keyboard.c \
        ui-list.c \

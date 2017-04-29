@@ -191,4 +191,4 @@ void update_exit(OrchardAppContext *context)
 }
 
 orchard_app("Update FW", "update.rgb", 0, update_init, update_start,
-		update_event, update_exit);
+    update_event, update_exit, 9999);

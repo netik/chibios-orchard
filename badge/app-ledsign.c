@@ -137,4 +137,4 @@ ledsign_exit(OrchardAppContext *context)
 }
 
 orchard_app("LED Sign", "sign.rgb", 0, ledsign_init, ledsign_start,
-		ledsign_event, ledsign_exit);
+    ledsign_event, ledsign_exit, 9999);
