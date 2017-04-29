@@ -688,11 +688,13 @@ static void state_show_results_enter() {
   char ourdmg_s[10];
   char theirdmg_s[10];
   char tmp[35];
-
+  
   uint16_t textx, text_p1_y, text_p2_y;
   color_t p1color, p2color;
   userconfig *config = getConfig();
 
+  int16_t overkill_us, overkill_them;
+  
   // clear status bar, remove arrows, redraw ground
   clearstatus();
   gdispFillArea(160, POS_PLAYER2_Y, 50,150,Black);
@@ -805,10 +807,16 @@ static void state_show_results_enter() {
   }
 
   config->hp = config->hp - last_damage;
-  if (config->hp < 0) { config->hp = 0; }
+  if (config->hp < 0) {
+    overkill_us = -config->hp;
+    config->hp = 0;
+  }
 
   current_enemy.hp = current_enemy.hp - last_hit;
-  if (current_enemy.hp < 0) { current_enemy.hp = 0; }
+  if (current_enemy.hp < 0) {
+    overkill_them = -config->hp;
+    current_enemy.hp = 0;
+  }
   
   // animate the characters
   chsnprintf (ourdmg_s, sizeof(ourdmg_s), "-%d", last_damage );
@@ -847,7 +855,7 @@ static void state_show_results_enter() {
   
   updatehp();
   
-  chThdSleepMilliseconds(300);
+  chThdSleepMilliseconds(500);
   gdispDrawStringBox (textx,text_p1_y,50,50,ourdmg_s,fontFF,Black,justifyLeft);
   gdispDrawStringBox (textx+60,text_p2_y,50,50,theirdmg_s,fontFF,Black,justifyRight);
   
@@ -861,13 +869,29 @@ static void state_show_results_enter() {
   
   /* if I kill you, then I will show victory and head back to the badge screen */
 
+  // handle tie:
   if (current_enemy.hp == 0 && config->hp == 0) {
-    /* both are dead, so whomever started the fight, wins */
-    if (started_it == 1) {
-      config->hp = 1;
+    /* both are dead, so whomever has greatest overkill wins.
+     *
+     * but that's the same, then the guy who started it wins.
+     */
+
+    if (overkill_us == overkill_them) {
+      /* Oh, come on. Another tie? Give the win to the initiator */
+      if (started_it == 1) {
+        config->hp = 1;
+      } else {
+        current_enemy.hp = 1;
+      }
     } else {
-      current_enemy.hp = 1;
+      if (overkill_us > overkill_them) {
+        /* we lose */
+        current_enemy.hp = 1;
+      } else {
+        config->hp = 1;
+      }
     }
+   
   }
   
   if (current_enemy.hp == 0) {
