@@ -17,7 +17,7 @@ ifeq ($(USE_OPT),)
 # for traffic. This does not need to be enabled for any fully functional
 # badges.
 #
-# USE_OPT += -DREV2_RADIO_WAR -DRADIO_POLL_FREQ=1000
+#USE_OPT += -DREV2_RADIO_WAR -DRADIO_POLL_FREQ=1000
 
 # Enable joypad buttons. This should be turned on for production builds.
 # It's off for now because the Freescale/NXP Freedom KW019032 reference
@@ -182,6 +182,8 @@ CSRC = main.c \
        app-default.c \
        app-setup.c \
        app-email.c \
+       app-tetris.c \
+       tetris.c \
        ides_gfx.c \
        ui-keyboard.c \
        ui-list.c \
@@ -317,7 +319,7 @@ ULIBDIR =
 
 # List all user libraries here
 #ULIBS = lib/armv6-m-libgcc.a lib/libc-nano-armv6-m.a
-ULIBS = -lc_nano -lnosys -lgcc
+ULIBS = -lm -lc_nano -lnosys -lgcc
 
 #
 # End of user defines
