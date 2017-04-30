@@ -191,7 +191,7 @@ static void state_waitack_tick(void) {
     } else { 
       orchardAppTimer(instance.context, 0, false); // shut down the timer
       dacPlay("fight/select3.raw");
-      screen_alert_draw(true, "OTHER PLAYER WENT AWAY");
+      screen_alert_draw(true, "LOST CONNECTION!");
       chThdSleepMilliseconds(ALERT_DELAY);
       orchardAppRun(orchardAppByName("Badge"));
       return;
