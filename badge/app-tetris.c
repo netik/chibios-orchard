@@ -22,7 +22,12 @@ tetris_start (OrchardAppContext *context)
 {
 	(void)context;
 
+	gdispSetOrientation (0);
 	tetrisStart ();
+	gdispSetOrientation (GDISP_DEFAULT_ORIENTATION);
+
+	chThdSleepMilliseconds (1000);
+
 	orchardAppExit ();
 
 	return;
