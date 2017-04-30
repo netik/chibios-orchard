@@ -73,7 +73,7 @@ uint8_t shout_received;
 uint8_t shout_ok;
 
 /* this is shared between app-badge and app-unlock */
-/* engaging a temporary class change like bender or caesear will set
+/* engaging a temporary class change like bender or caesar will set
    it, and it will be cleared on reset */
 systime_t char_reset_at = 0;
 

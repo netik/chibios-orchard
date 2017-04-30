@@ -1093,7 +1093,7 @@ static uint16_t calc_hit(userconfig *config, user *current_enemy) {
   basemult = (rand() % basemult) + (basemult * .50);
 
   // caesar bonus if you are a senator! 
-  if ((current_enemy->current_type == p_caesar) && (config->current_type = p_senator)) { 
+  if ((current_enemy->current_type == p_caesar) && (config->current_type == p_senator)) { 
     basemult *= 2;
   }
 
