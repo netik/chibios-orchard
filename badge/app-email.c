@@ -33,6 +33,7 @@
 #include "orchard-app.h"
 #include "orchard-ui.h"
 #include "video_lld.h"
+#include "dac_lld.h"
 
 static uint32_t
 email_init(OrchardAppContext *context)
@@ -55,7 +56,8 @@ email_event(OrchardAppContext *context, const OrchardAppEvent *event)
 	(void) context;
 
 	if (event->type == appEvent && event->app.event == appTerminate) {
-		videoPlay ("rickroll.vid");
+		if (videoPlay ("rickroll.vid") != 0)
+			 dacPlay ("click.raw");
 	}
 
 	return;
