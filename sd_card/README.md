@@ -53,7 +53,11 @@ A MIDI-like note system is available in notes.h, and we have some (limited) conv
 
 Playback can then be done via these commands:
 
-`playTone(NOTE_D4, 500);` to play one note for 500mS (Calls `pwmToneStart(n);`, `chThdSleepMilliseconds (duration);` , then `pwmToneStop();`)
+`playTone(NOTE_D4, 500);` to play one note for 500mS
+*Calls
+** `pwmToneStart(n);`,
+** `chThdSleepMilliseconds (duration);`
+** `pwmToneStop();`)
 
 `pwmToneStop();` to stop the current playing tone (does not stop thread)
 
@@ -111,7 +115,7 @@ Each application registers itself using a call like these.
 
 In the make file there are a few extras: 
 
-`make osxsd` - Copy the sdcard dir to /Volumes/SPQR_
+`make osxsd` - Copy the sdcard dir to /Volumes/SPQR_DC25<br/>
 `make osxsdfw` - Copy just the firmware and updater to /Volumes/SPQR_DC25
 
 ## Help?
