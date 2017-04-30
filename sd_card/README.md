@@ -54,10 +54,14 @@ A MIDI-like note system is available in notes.h, and we have some (limited) conv
 Playback can then be done via these commands:
 
 `playTone(NOTE_D4, 500);` to play one note for 500mS
-*Calls
-** `pwmToneStart(n);`,
-** `chThdSleepMilliseconds (duration);`
-** `pwmToneStop();`)
+
+Calls:
+
+* `pwmToneStart(n);`
+* `chThdSleepMilliseconds (duration)`
+* `pwmToneStop()`
+
+Other Calls:
 
 `pwmToneStop();` to stop the current playing tone (does not stop thread)
 
