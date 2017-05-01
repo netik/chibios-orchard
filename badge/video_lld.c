@@ -95,7 +95,7 @@
  * enforced by the interval timer, the video will implicitly be forced to
  * play at the correct rate too.
  *
- * Encoding of the videe and audio is done on a host system using ffmpeg.
+ * Encoding of the video and audio is done on a host system using ffmpeg.
  * The video is extracted as individual uncompressed frames in the native
  * RGB565 pixel format supported by the ILI9341 display controller. The
  * audio is converted to 16-bit monoaural raw sample data, and then processed
