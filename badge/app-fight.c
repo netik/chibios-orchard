@@ -136,22 +136,25 @@ static void state_idle_enter(void) {
   userconfig *config = getConfig();
 
   FightHandles *p;
-
   // clean up the fight. This will fire a repaint that erases the area
   // under the button.  So, do not enter this state unless you are
   // ready to clear the screen and the fight is over.
-
+  
   p = instance.context->priv;
-
-  if (p->ghAttackHi != NULL) 
+  
+  if (p->ghAttackHi != NULL) {
     gwinDestroy (p->ghAttackHi);
-
-  if (p->ghAttackMid != NULL) 
+    p->ghAttackHi = NULL;
+  }
+  if (p->ghAttackHi != NULL) {
     gwinDestroy (p->ghAttackMid);
-
-  if (p->ghAttackLow != NULL) 
+    p->ghAttackMid = NULL;
+  }
+  if (p->ghAttackHi != NULL) {
     gwinDestroy (p->ghAttackLow);
-
+    p->ghAttackLow = NULL;
+  }
+  
   // reset params
   config->in_combat = 0;
   last_hit = -1;
@@ -310,11 +313,8 @@ static void state_nextround_enter() {
 }
 
 static void state_move_select_enter() {
-  FightHandles *p;
   userconfig *config = getConfig();
   char tmp[25];
-  
-  p = instance.context->priv;
 
   ourattack = 0;
   theirattack = 0;
@@ -339,9 +339,7 @@ static void state_move_select_enter() {
                       "Choose attack!",
                       fontSM, White, justifyCenter);
   
-  // don't redraw if we don't have to.
-  if (p->ghAttackLow == NULL) 
-    draw_attack_buttons();
+  draw_attack_buttons();
 
   // round N , fight!  note that we only have four of these, so after
   // that we're just going to get file-not-found. oh well, add more
@@ -364,13 +362,14 @@ static void state_move_select_enter() {
   }
   chThdSleepMilliseconds(1000);
 
-  // remove choose attack message 
-  gdispFillArea(0,
-		STATUS_Y+14,
-		gdispGetWidth(),
-                fontsm_height,
-		Black);
-    
+  // remove choose attack message by overprinting in black
+  gdispDrawStringBox (0,
+                      STATUS_Y+14,
+                      screen_width,
+                      fontsm_height,
+                      "Choose attack!",
+                      fontSM, Black, justifyCenter);
+  
   last_tick_time = chVTGetSystemTime();
   countdown=MOVE_WAIT_TIME;
 }
@@ -379,12 +378,24 @@ static void state_move_select_tick() {
   drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y,PROGRESS_BAR_W,PROGRESS_BAR_H,MOVE_WAIT_TIME,countdown, true, false);
 
   // animate arrows
-  gdispFillArea(160, POS_PLAYER2_Y, 50,150,Black);
-  putImageFile("ar50.rgb",
-               160,
-               POS_PLAYER2_Y + (50*animtick));
+  if (animtick < 2) { 
+    gdispFillArea(160, POS_PLAYER2_Y, 50,150,Black);
+  } else { 
+    putImageFile("ar50.rgb",
+                 160,
+                 POS_PLAYER2_Y);
+    
+    putImageFile("ar50.rgb",
+                 160,
+                 POS_PLAYER2_Y + 50);
+    
+    putImageFile("ar50.rgb",
+                 160,
+                 POS_PLAYER2_Y + 100);
+  }
+  
   animtick++;
-  if (animtick > 2) animtick = 0;
+  if (animtick > 4) animtick = 0;
   
   if (countdown <= 0) {
     // transmit my move
@@ -401,7 +412,7 @@ static void state_move_select_tick() {
 }
 
 static void state_move_select_exit() {
-
+  //  gdispFillArea(160, POS_PLAYER2_Y, 50,150,Black);
 }
 
 static void screen_select_draw(int8_t initial) {
@@ -697,7 +708,7 @@ static void state_show_results_enter() {
   
   // clear status bar, remove arrows, redraw ground
   clearstatus();
-  gdispFillArea(160, POS_PLAYER2_Y, 50,150,Black);
+  gdispFillArea(160, POS_PLAYER2_Y, 50, 150,Black);
   putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
 
   // if they didn't go and we didn't go, abort.
@@ -869,8 +880,15 @@ static void state_show_results_enter() {
   
   /* if I kill you, then I will show victory and head back to the badge screen */
 
+  /* fake a tie */
+  /*  current_enemy.hp = 0;
+  config->hp = 0;
+  overkill_us = 12;
+  overkill_them = 10;
+  */
+  
   // handle tie:
-  if (current_enemy.hp == 0 && config->hp == 0) {
+  if ((current_enemy.hp == 0) && (config->hp == 0)) {
     /* both are dead, so whomever has greatest overkill wins.
      *
      * but that's the same, then the guy who started it wins.
@@ -1023,7 +1041,7 @@ static void clearstatus(void) {
   gdispFillArea(0,
 		STATUS_Y,
 		gdispGetWidth(),
-		23,
+		fontsm_height,
 		Black);
 }
 
@@ -1321,8 +1339,22 @@ static void state_levelup_enter(void) {
   userconfig *config = getConfig();
   char tmp[34];
 
-  chsnprintf(tmp, sizeof(tmp), "LEVEL %s", dec2romanstr(config->level+1));
+  if (p->ghAttackHi != NULL) {
+    gwinDestroy (p->ghAttackHi);
+    p->ghAttackHi = NULL;
+  }
+  if (p->ghAttackHi != NULL) {
+    gwinDestroy (p->ghAttackMid);
+    p->ghAttackMid = NULL;
+  }
+  if (p->ghAttackHi != NULL) {
+    gwinDestroy (p->ghAttackLow);
+    p->ghAttackLow = NULL;
+  }
+
   gdispClear(Black);
+
+  chsnprintf(tmp, sizeof(tmp), "LEVEL %s", dec2romanstr(config->level+1));
 
   putImageFile(getAvatarImage(config->current_type, "idla", 1, false),
                0,0);
