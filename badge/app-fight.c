@@ -1952,7 +1952,10 @@ static void fight_event(OrchardAppContext *context,
       if ( ((GEventGWinButton*)pe)->gwin == p->ghLevelUpMight) {
         config->might++;
         config->level++;
-        config->hp = maxhp(config->current_type, config->unlocks, config->level); // restore hp
+
+        if (config->current_type != p_caesar)
+          config->hp = maxhp(config->current_type, config->unlocks, config->level); // restore hp
+        
         configSave(config);
         dacPlay("fight/select.raw");
         screen_alert_draw(false, "Might Upgraded!");
