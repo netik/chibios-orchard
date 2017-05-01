@@ -1,8 +1,8 @@
 # Ides of DEF CON Badge: Asset Generation
 
-This direcory contains tools to generate the assets for the badge. 
+This direcory contains tools to generate the assets for the badge. You can also use our tools to load your own audio, video, and images into the badge. 
 
-To generate everything you must have GNU Make, a working C Compiler (GCC), ImageMagick, Sox, and FFMPEG available on your machine.
+To generate everything you must have GNU Make, a working C Compiler (GCC), ImageMagick, Sox, and FFMPEG available on your machine and in your path. We assume you have a Unix-like enviroment; We are building on Mac OS X and FreeBSD. 
 
 ## Building
 
@@ -14,7 +14,7 @@ To start over again, type `make clean` and optionally to erase the sdcard direct
 
 When make finishes, you can then copy the `sdcard/` folder over to your sd card and insert it into the badge.
 
-**NOTE!**: If you remove and reinsert the SD card you must reset the entire badge (push reset!). 
+**NOTE!** If you remove and reinsert the SD card you must reset the entire badge (push reset!). 
 
 **Our code does not detect SD card removal and replacement.**
 
@@ -26,7 +26,7 @@ There are *two* audio facilities on the badge. A 12 bit DAC capable of playing m
 
 ### For the DAC:
 
-To convert audio, drop files into the dac directory and run `make sdcard`
+To convert audio, drop `.wafiles into the dac directory and run `make sdcard`
 
 Audo playback runs in a separate thread and can be accessed with the `dacPlay("filename")` call. 
 
@@ -51,21 +51,13 @@ static const PWM_NOTE soundVictory[] = {
 
 A MIDI-like note system is available in notes.h, and we have some (limited) conversion tools in `/chibios-orchard/sd_card/midi` as `midi.c` and `midi2.c` which will generate these structs.
 
-Playback can then be done via these commands:
+Playback API
 
 `playTone(NOTE_D4, 500);` to play one note for 500mS
 
-Calls:
-
-* `pwmToneStart(n);`
-* `chThdSleepMilliseconds (duration)`
-* `pwmToneStop()`
-
-Other Calls:
-
 `pwmToneStop();` to stop the current playing tone (does not stop thread)
 
-`pwmThreadPlay (soundNope);` to play `soundNope` in the background
+`pwmThreadPlay (soundVictory);` to play the notes in the `soundNope` struct in the PWM thread.
 
 `pwmThreadPlay (NULL);` to stop the background thread
 
@@ -78,7 +70,7 @@ The badge can play video at 8 frames per second with 12 bit mono audio.
 
 Video files must be converted manually. We don't have an option for auto converting them. In the tools directory, use the script `encode_video.sh` to convert video for the badge.
 
-Usage:
+**Usage**
 
 `tools/scripts/encode_video.sh yourmovie.mp4 outputdir`
 
@@ -101,13 +93,13 @@ You can also play videos using the built-in photos app.
 
 File extension: `.rgb`
 
-For all of the icons, we used <http://game-icons.net> with the following settings:
+For all of the icons, we used <http://game-icons.net> with the following color and stroke settings:
 
-* Background color 000000
-* Foreground F7C42B
-* Shadow on, 4A7CE6. X=0, Y=11
-* Stroke F3C674
-* Frame 6267E3
+* Background color #000000
+* Foreground color #F7C42B
+* Shadow on, color #4A7CE6. X=0, Y=11
+* Stroke color #F3C674
+* Frame color #6267E3
 
 Download them at 256x256 PNG, Convert the PNG to 80x80 TIF and save in the TIF directory. Icons are referenced at application setup time via the orchard_app API like so:
 
@@ -115,11 +107,12 @@ Download them at 256x256 PNG, Convert the PNG to 80x80 TIF and save in the TIF d
 
 Each application registers itself using a call like these.
 
-## Conveience methods
+## Convenience methods
 
 In the make file there are a few extras: 
 
 `make osxsd` - Copy the sdcard dir to /Volumes/SPQR_DC25<br/>
+
 `make osxsdfw` - Copy just the firmware and updater to /Volumes/SPQR_DC25
 
 ## Help?
