@@ -169,7 +169,7 @@ radioReceive (RADIODriver * radio)
 	userconfig * config;
 #endif
 
-        //	palClearPad (GREEN_LED_PORT, GREEN_LED_PIN);   /* Green */
+ 	palClearPad (GREEN_LED_PORT, GREEN_LED_PIN);   /* Green */
 
 	pkt = &radio->kw01_pkt;
 

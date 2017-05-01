@@ -255,7 +255,7 @@ static void printText(uint8_t color) {
 
 static void printPaused(void) {
   if (tetrisPaused) gdispDrawString((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+TETRIS_CELL_WIDTH, gdispGetHeight()-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)/2, "Paused!", font12, tetrisShapeColors[2]);
-  else gdispFillArea((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+TETRIS_CELL_WIDTH, gdispGetHeight()-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)/2, gdispGetStringWidth("Paused!", font12)+4,  gdispGetCharWidth('A', font12)+2, tetrisShapeColors[0]);
+  else gdispFillArea((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+TETRIS_CELL_WIDTH, gdispGetHeight()-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)/2, gdispGetStringWidth("Paused!", font12)+4,  gdispGetFontMetric (font12, fontHeight), tetrisShapeColors[0]);
 }
 
 static void printGameOver(void) {
