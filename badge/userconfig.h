@@ -130,7 +130,7 @@ typedef struct _userpkt {
 extern void configStart(void);
 extern void configSave(userconfig *);
 extern userconfig *getConfig(void);
-extern int16_t maxhp(uint16_t, uint8_t);
+extern int16_t maxhp(player_type, uint16_t, uint8_t);
 
 extern unsigned long rtc;
 extern unsigned long rtc_set_at;

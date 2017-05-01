@@ -34,7 +34,7 @@ static userconfig config_cache;
 
 mutex_t config_mutex;
 
-int16_t maxhp(uint16_t unlocks, uint8_t level) {
+int16_t maxhp(player_type ctype, uint16_t unlocks, uint8_t level) {
   // return maxHP given some unlock data and level
   uint16_t hp;
 
@@ -43,6 +43,16 @@ int16_t maxhp(uint16_t unlocks, uint8_t level) {
   if (unlocks & UL_PLUSHP) {
     hp = hp * 1.10;
   }
+
+  if (ctype == p_bender) {
+    hp = hp * 1.5;
+  }
+
+  if (ctype == p_caesar) {
+    hp = hp * 3;
+  }
+   
+  
   return hp;
 }  
 
@@ -113,7 +123,7 @@ static void init_config(userconfig *config) {
   config->led_g = rand() % 255;
   config->led_b = rand() % 255;
 
-  config->hp = maxhp(0, config->level);
+  config->hp = maxhp(p_notset, 0, config->level);
 
 }
 

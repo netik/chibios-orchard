@@ -86,13 +86,13 @@ static void redraw_player(DefaultHandles *p) {
   char tmp[20];
   char tmp2[40];
 
-  if (config->hp < (maxhp(config->unlocks,config->level) * .25)) {
+  if (config->hp < (maxhp(config->current_type, config->unlocks, config->level) * .25)) {
     if (lastimg != 2) 
       putImageFile(getAvatarImage(config->current_type, "deth", 2, false),
                  POS_PLAYER1_X, POS_PLAYER1_Y);
     lastimg = 2;
   } else { 
-    if (config->hp < (maxhp(config->unlocks,config->level) * .50)) {
+    if (config->hp < (maxhp(config->current_type, config->unlocks,config->level) * .50)) {
       // show the whoop'd ass graphic if you're less than 15%
       if (lastimg != 1)
         putImageFile(getAvatarImage(config->current_type, "deth", 1, false),
@@ -121,7 +121,7 @@ static void redraw_player(DefaultHandles *p) {
 		      tmp,
 		      p->fontXS, White, justifyLeft);
 
-  drawProgressBar(163,83,120,11,maxhp(config->unlocks,config->level), config->hp, 0, false);
+  drawProgressBar(163,83,120,11,maxhp(config->current_type, config->unlocks,config->level), config->hp, 0, false);
 
   gdispFillArea( 289, 83,
                  30,gdispGetFontMetric(p->fontXS, fontHeight),
@@ -366,7 +366,7 @@ static void default_event(OrchardAppContext *context,
     }
   }
 
-  /* player healz */
+  /* timed events (heal, caesar election, etc.) */
   if (event->type == timerEvent) {
     /* draw the clock */
     if (rtc != 0) {
@@ -401,14 +401,13 @@ static void default_event(OrchardAppContext *context,
       if (config->current_type == p_bender) {
         strcat(tmp," BENDER");
       }
-      
 
-      gdispFillArea( 141,60, 
+      gdispFillArea( 141,62, 
                      60, gdispGetFontMetric(p->fontXS, fontHeight),
                      Black );
       
       gdispDrawStringBox (141,
-                          60,
+                          62,
                           gdispGetWidth(),
                           gdispGetFontMetric(p->fontXS, fontHeight),
                           tmp,
@@ -437,6 +436,7 @@ static void default_event(OrchardAppContext *context,
           /* become Caesar for an hour */
           char_reset_at = chVTGetSystemTime() + MAX_BUFF_TIME;
           config->current_type = p_caesar;
+          config->hp = maxhp(config->current_type, config->unlocks, config->level);
           configSave(config);
           dacPlay("fight/leveiup.raw");
           screen_alert_draw(true, "YOU ARE NOW CAESAR!!");
@@ -456,8 +456,10 @@ static void default_event(OrchardAppContext *context,
     if ( ( char_reset_at != 0) &&
          ( chVTGetSystemTime() >= char_reset_at ) ) {
       config->current_type = config->p_type;
+      config->hp = maxhp(config->current_type, config->unlocks, config->level);
       char_reset_at = 0;
       configSave(config);
+
       dacPlay("fight/leveiup.raw");      
       screen_alert_draw(true, "CHARACTER UPGRADE EXPIRED");
       chThdSleepMilliseconds(ALERT_DELAY);
@@ -468,17 +470,17 @@ static void default_event(OrchardAppContext *context,
     /* if so, revert the player */
 
     /* Heal the player -- 60 seconds to heal, or 30 seconds if you have the buff */
-    if (config->hp < maxhp(config->unlocks, config->level)) { 
-      config->hp = config->hp + ( maxhp(config->unlocks, config->level) / HEAL_TIME );
+    if ((config->hp < maxhp(config->current_type, config->unlocks, config->level)) && (config->current_type != p_caesar)) { 
+      config->hp = config->hp + ( maxhp(config->current_type, config->unlocks, config->level) / HEAL_TIME );
       if (config->unlocks & UL_HEAL) {
         // 2x heal if unlocked
-        config->hp = config->hp + ( maxhp(config->unlocks, config->level) / HEAL_TIME ); 
+        config->hp = config->hp + ( maxhp(config->current_type, config->unlocks, config->level) / HEAL_TIME ); 
       }
       
       // if we are now fully healed, save that, and prevent
       // overflow.
-      if (config->hp >= maxhp(config->unlocks, config->level)) {
-        config->hp = maxhp(config->unlocks, config->level);
+      if (config->hp >= maxhp(config->current_type, config->unlocks, config->level)) {
+        config->hp = maxhp(config->current_type, config->unlocks, config->level);
         configSave(config);
       }
 

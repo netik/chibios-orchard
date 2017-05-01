@@ -53,6 +53,8 @@ static uint16_t fontsm_height;
 static uint16_t fontlg_height;
 extern struct FXENTRY fxlist[];
 
+extern systime_t char_reset_at;
+
 static uint16_t calc_xp_gain(uint8_t won) {
   userconfig *config = getConfig();
   float factor = 1;
@@ -96,6 +98,10 @@ static uint16_t calc_xp_gain(uint8_t won) {
      * 
      * XP = (Base XP) * (1 - (Char Level - Mob Level)/ZD )
      */
+    if (current_enemy.current_type == p_caesar) {
+      factor = factor + 1;
+    }
+    
     return (80 + ((config->level-1) * 16)) * factor;
   } else {
     /* Death does not factor in the multiplier */
@@ -189,7 +195,9 @@ static void state_waitack_tick(void) {
   
   if ( (chVTGetSystemTime() - last_send_time) > MAX_ACKWAIT ) {
     if (packet.ttl > 0)  {
+#ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "Resending packet ...\r\n");
+#endif
       resendPacket();
     } else { 
       orchardAppTimer(instance.context, 0, false); // shut down the timer
@@ -253,7 +261,8 @@ static void state_approval_demand_enter(void) {
 
   // hp bar
   drawProgressBar(xpos,ypos,100,10,
-                  maxhp(current_enemy.unlocks,
+                  maxhp(current_enemy.current_type,
+                        current_enemy.unlocks,
                         current_enemy.level),
                   current_enemy.hp, 0, false);
   gwinSetDefaultFont(fontFF);
@@ -351,7 +360,7 @@ static void state_move_select_enter() {
     chThdSleepMilliseconds(1000);
   }
 
-  if (current_enemy.hp < (maxhp(current_enemy.unlocks,current_enemy.level) * .2)) {
+  if (current_enemy.hp < (maxhp(current_enemy.current_type, current_enemy.unlocks,current_enemy.level) * .2)) {
     if (current_enemy.current_type == p_gladiatrix) { 
       dacPlay("fight/finishf.raw");
     } else {
@@ -514,7 +523,8 @@ static void screen_select_draw(int8_t initial) {
   ypos = ypos + gdispGetFontMetric(fontFF, fontHeight) + 5;
   
   drawProgressBar(xpos,ypos,100,10,
-                  maxhp(enemies[current_enemy_idx]->unlocks,
+                  maxhp(enemies[current_enemy_idx]->current_type,
+                        enemies[current_enemy_idx]->unlocks,
                         enemies[current_enemy_idx]->level),
                   enemies[current_enemy_idx]->hp, 0, false);
 }
@@ -603,10 +613,27 @@ static void draw_idle_players() {
 static void state_vs_screen_enter() {
   // versus screen!
   userconfig *config = getConfig();
+  char tmp[20];
   
   gdispClear(Black);
   draw_idle_players();
+  chsnprintf(tmp, sizeof(tmp), "LEVEL %s", dec2romanstr(config->level+1));
   
+  // levels
+  gdispDrawStringBox (0,
+		      STATUS_Y,
+		      screen_width,
+		      fontsm_height,
+		      tmp,
+		      fontSM, Lime, justifyLeft);
+
+  chsnprintf(tmp, sizeof(tmp), "LEVEL %s", dec2romanstr(current_enemy.level+1));
+  gdispDrawStringBox (0,
+		      STATUS_Y,
+		      screen_width,
+		      fontsm_height,
+                      tmp,
+		      fontSM, Red, justifyRight);  
   blinkText(0,
             110,
             screen_width,
@@ -825,7 +852,7 @@ static void state_show_results_enter() {
 
   current_enemy.hp = current_enemy.hp - last_hit;
   if (current_enemy.hp < 0) {
-    overkill_them = -config->hp;
+    overkill_them = -current_enemy.hp;
     current_enemy.hp = 0;
   }
   
@@ -961,7 +988,13 @@ static void state_show_results_enter() {
       putImageFile(getAvatarImage(config->current_type, "deth", 2, false),
                    POS_PLAYER1_X, POS_PLAYER1_Y);
       chThdSleepMilliseconds(250);
-      chsnprintf(tmp, sizeof(tmp), "YOU WERE DEFEATED (+%dXP)", calc_xp_gain(FALSE));
+
+      if (config->current_type == p_caesar) { 
+        chsnprintf(tmp, sizeof(tmp), "CAESAR HAS DIED. (+%dXP)", calc_xp_gain(FALSE));
+      } else { 
+        chsnprintf(tmp, sizeof(tmp), "YOU WERE DEFEATED (+%dXP)", calc_xp_gain(FALSE));
+      }
+      
       screen_alert_draw(false, tmp);
 
       // Insult the user if they lose in the 1st round.
@@ -1006,8 +1039,15 @@ static void state_show_results_enter() {
       // reward (some) XP and exit 
       config->xp += calc_xp_gain(FALSE);
       config->lost++;
+
+      // if you were caesar, put you back!
+      if (config->current_type == p_caesar) {
+        config->current_type = config->p_type;
+        config->hp = maxhp(config->p_type, config->unlocks, config->level);
+        char_reset_at = 0;
+      }
       configSave(config);
-      
+
       chThdSleepMilliseconds(ALERT_DELAY);
       chThdSleepMilliseconds(ALERT_DELAY);
     }
@@ -1386,8 +1426,8 @@ static void state_levelup_enter(void) {
   }  
 
   chsnprintf(tmp, sizeof(tmp), "MAX HP NOW %d (+%d)",
-             maxhp(config->unlocks, config->level+1),
-             maxhp(config->unlocks, config->level+1) - maxhp(config->unlocks, config->level));
+             maxhp(config->current_type, config->unlocks, config->level+1),
+             maxhp(config->current_type, config->unlocks, config->level+1) - maxhp(config->current_type, config->unlocks, config->level));
   gdispDrawStringBox (0,
 		      (fontlg_height*2) + 20,
                       320,
@@ -1462,13 +1502,13 @@ static void updatehp(void)  {
 		      fontSM, Red, justifyCenter);
   // hp bars
   drawProgressBar(35,22,100,12,
-                  maxhp(config->unlocks, config->level),
+                  maxhp(config->current_type, config->unlocks, config->level),
                   config->hp,
                   false,
                   true);
   
   drawProgressBar(185,22,100,12,
-                  maxhp(current_enemy.unlocks, current_enemy.level),
+                  maxhp(current_enemy.current_type, current_enemy.unlocks, current_enemy.level),
                   current_enemy.hp,
                   false,
                   false);
@@ -1912,7 +1952,7 @@ static void fight_event(OrchardAppContext *context,
       if ( ((GEventGWinButton*)pe)->gwin == p->ghLevelUpMight) {
         config->might++;
         config->level++;
-        config->hp = maxhp(config->unlocks, config->level); // restore hp
+        config->hp = maxhp(config->current_type, config->unlocks, config->level); // restore hp
         configSave(config);
         dacPlay("fight/select.raw");
         screen_alert_draw(false, "Might Upgraded!");
@@ -1923,7 +1963,7 @@ static void fight_event(OrchardAppContext *context,
       if ( ((GEventGWinButton*)pe)->gwin == p->ghLevelUpAgl) {
         config->agl++;
         config->level++;
-        config->hp = maxhp(config->unlocks, config->level); // restore hp
+        config->hp = maxhp(config->current_type, config->unlocks, config->level); // restore hp
         configSave(config);
 
         screen_alert_draw(false, "Agility Upgraded!");
@@ -2087,13 +2127,18 @@ static void radio_event_do(KW01_PKT * pkt)
     return;
   }
 
-  // Immediately ACK non-ACK / RST packets. We do not support retry on
-  // ACK, because we support ARQ just like TCP/IP.  without the ACK,
-  // the sender will retransmit automatically.
+  /* Immediately ACK non-ACK / RST packets. We do not support retry on
+   * ACK, because we support ARQ just like TCP/IP.  without the ACK,
+   * the sender will retransmit automatically. 
+   *
+   * We do not ACK if we are waiting for an ACK. 
+   */
+
   if (u->opcode != OP_ACK && u->opcode != OP_RST) { 
       sendACK(u);
   }
-    
+
+  /* send the ACK response */
   switch (current_fight_state) {
   case ENEMY_SELECT:
     if (u->opcode == OP_STARTBATTLE) {
@@ -2127,6 +2172,26 @@ static void radio_event_do(KW01_PKT * pkt)
       }
     }
 
+#ifdef XXX
+    if (u->opcode == OP_IMOVED) {
+      if (packet.opcode == OP_IMOVED) {
+        // we are both waiting for an IMOVED ACK. this is a collision
+        // state. break it and move on.
+#ifdef DEBUG_FIGHT_NETWORK
+        chprintf(stream, "%08x --> breaking IMOVED deadlock in wait_ack. nextstate=0x%x, currentstate=0x%x, damage=%d\r\nWe're waiting on seq %d opcode %d\r\n",
+                 u->netid,
+                 next_fight_state,
+                 current_fight_state,
+                 u->damage,
+                 packet.seq,
+                 packet.opcode);
+#endif
+        sendACK(u);
+        changeState(next_fight_state);
+      }
+    }
+#endif
+    
     if (u->opcode == OP_TURNOVER) { 
       // there's an edge case where we have sent turnover, and they have
       // sent turn over, but, we are waiting on an ACK.

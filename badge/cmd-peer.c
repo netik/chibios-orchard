@@ -111,7 +111,7 @@ void cmd_peersim(BaseSequentialStream *chp, int argc, char *argv[]) {
       enemies[i]->in_combat = 0;
       enemies[i]->level = 9;
 
-      enemies[i]->hp = maxhp(0, 9) * 0.5; // start at 50% HP to test
+      enemies[i]->hp = maxhp(p_guard, 0, 9) * 0.5; // start at 50% HP to test
 
       chsnprintf(tmp, sizeof(tmp), "test%05d",i);
       strncpy(enemies[i]->name, tmp, CONFIG_NAME_MAXLEN);
