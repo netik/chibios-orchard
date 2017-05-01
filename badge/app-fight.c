@@ -1396,7 +1396,7 @@ static void state_levelup_enter(void) {
 
   chsnprintf(tmp, sizeof(tmp), "LEVEL %s", dec2romanstr(config->level+1));
 
-  putImageFile(getAvatarImage(config->current_type, "idla", 1, false),
+  putImageFile(getAvatarImage(config->p_type, "idla", 1, false),
                0,0);
 
   gdispDrawStringBox (0,
@@ -1426,8 +1426,8 @@ static void state_levelup_enter(void) {
   }  
 
   chsnprintf(tmp, sizeof(tmp), "MAX HP NOW %d (+%d)",
-             maxhp(config->current_type, config->unlocks, config->level+1),
-             maxhp(config->current_type, config->unlocks, config->level+1) - maxhp(config->current_type, config->unlocks, config->level));
+             maxhp(config->p_type, config->unlocks, config->level+1),
+             maxhp(config->p_type, config->unlocks, config->level+1) - maxhp(config->current_type, config->unlocks, config->level));
   gdispDrawStringBox (0,
 		      (fontlg_height*2) + 20,
                       320,
