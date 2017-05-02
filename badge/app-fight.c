@@ -28,7 +28,9 @@ static int32_t countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer va
 static user current_enemy;                    // current enemy we are attacking/talking to 
 static user packet;                           // the last packet we sent, for retransmission
 
-static uint8_t started_it = 0;                  // if 1, we started the fight. 
+// if true, we started the fight. We also handle all coordination of the fight. 
+static uint8_t fightleader = false;   
+
 volatile fight_state current_fight_state = IDLE;  // current state 
 static fight_state next_fight_state = NONE;     // upon ACK, we will transition to this state. 
 static uint8_t current_enemy_idx = 0;
@@ -297,7 +299,7 @@ static void state_approval_demand_enter(void) {
   countdown=DEFAULT_WAIT_TIME;
 
   roundno = 0;
-  started_it = 0;
+  fightleader = false;
   dacStop();
   playAttacked();
 
@@ -706,7 +708,7 @@ static void state_post_move_tick() {
          ((ourattack & ATTACK_MASK) > 0)) ||
        (countdown <=0 )) {
     
-    if (turnover_sent == false) {  // only send it once.
+    if (turnover_sent == false && fightleader == true) {  // only send it once.
       next_fight_state = SHOW_RESULTS;
 #ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "we are post-move, sending turnover\r\n");
@@ -718,8 +720,14 @@ static void state_post_move_tick() {
 }
 
 static void state_show_results_enter() {
-  // There is no tick() for this state; we iterate through and run an
-  // animation and then exit this state.
+  /* This state shows animations and results for the given round.  at
+   * the end of the round, if fightmaster==true we transmit
+   * OP_NEXTROUND at the end of our animations. an ACK for this packet
+   * moves us to the next round.
+   *
+   * If we are not the fightmaster, we start a countdown in tick(), 
+   * waiting for OP_NEXTROUND to come in. 
+   */
   char c=' ';
   char attackfn1[13];
   char attackfn2[13];
@@ -923,7 +931,7 @@ static void state_show_results_enter() {
 
     if (overkill_us == overkill_them) {
       /* Oh, come on. Another tie? Give the win to the initiator */
-      if (started_it == 1) {
+      if (fightleader == true) {
         config->hp = 1;
       } else {
         current_enemy.hp = 1;
@@ -1027,12 +1035,11 @@ static void state_show_results_enter() {
         case p_gladiatrix:
           dacPlay("xwin.raw");
           break;
-        case p_bender:
+        case p_bender: /* KILL ALL HUMANS! */
           dacPlay("bwin.raw");
           break;
         case p_notset:
           break;
-          /* bender goes here */
         }
       }
       
@@ -1043,7 +1050,6 @@ static void state_show_results_enter() {
       // if you were caesar, put you back!
       if (config->current_type == p_caesar) {
         config->current_type = config->p_type;
-        config->hp = maxhp(config->p_type, config->unlocks, config->level);
         char_reset_at = 0;
       }
       configSave(config);
@@ -1066,13 +1072,28 @@ static void state_show_results_enter() {
     return;
   }
 
-  // no one is dead yet, go on! 
-  next_fight_state = NEXTROUND;
-  sendGamePacket(OP_NEXTROUND);
+  // no one is dead yet, go on!
+  if (fightleader == true) {
+    next_fight_state = NEXTROUND;
+    sendGamePacket(OP_NEXTROUND);
+  } else { 
+    /* else, we are waiting in state_show_results_tick() for a next round 
+     * packet. if we do not get on in short order, we abort.
+     */
+    last_tick_time = chVTGetSystemTime();
+    countdown = MS2ST(2000);
+  }
 }
 
-static void state_show_results_tick() { 
-}    
+static void state_show_results_tick() {
+  if (countdown <= 0) { 
+    orchardAppTimer(instance.context, 0, false); // shut down the timer
+    screen_alert_draw(true, "NO NEXTROUND PKT?");
+    dacPlay("fight/select3.raw");
+    chThdSleepMilliseconds(ALERT_DELAY);
+    orchardAppRun(orchardAppByName("Badge"));
+  }
+}
 
 //--------------------- END state funcs
 
@@ -1692,7 +1713,7 @@ static void sendRST(user *inbound) {
 static void resendPacket(void) {
   // resend the last sent packet, pausing a random amount of time to prevent collisions
   packet.ttl--; // deduct TTL
-  chThdSleepMilliseconds((rand() % MAX_HOLDOFF) + 1);
+  chThdSleepMilliseconds((rand() % HOLDOFF_MODULO) + MIN_HOLDOFF);
 
 #ifdef DEBUG_FIGHT_NETWORK
   chprintf(stream, "%ld Transmit (to=%08x): currentstate=%d, ttl=%d, seq=%d, opcode=0x%x\r\n", chVTGetSystemTime()  , current_enemy.netid, current_fight_state, packet.ttl, packet.seq, packet.opcode);
@@ -1819,7 +1840,7 @@ static void fight_event(OrchardAppContext *context,
         // we are attacking.
         // TODO: this code duplicates the button based start code. DRY IT UP
         dacPlay("fight/select.raw");
-        started_it = 1;
+        fightleader = true;
         memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(user));
         config->in_combat = true;
         config->lastcombat = chVTGetSystemTime();
@@ -1934,7 +1955,7 @@ static void fight_event(OrchardAppContext *context,
       if ( ((GEventGWinButton*)pe)->gwin == p->ghAttack) { 
         // we are attacking.
         dacPlay("fight/select.raw");
-        started_it = 1;
+        fightleader = true;
         memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(user));
         config->in_combat = true;
         config->lastcombat = chVTGetSystemTime();
@@ -2141,7 +2162,7 @@ static void radio_event_do(KW01_PKT * pkt)
       sendACK(u);
   }
 
-  /* send the ACK response */
+  /* act upon the packet */
   switch (current_fight_state) {
   case ENEMY_SELECT:
     if (u->opcode == OP_STARTBATTLE) {
@@ -2175,48 +2196,6 @@ static void radio_event_do(KW01_PKT * pkt)
       }
     }
 
-#ifdef XXX
-    if (u->opcode == OP_IMOVED) {
-      if (packet.opcode == OP_IMOVED) {
-        // we are both waiting for an IMOVED ACK. this is a collision
-        // state. break it and move on.
-#ifdef DEBUG_FIGHT_NETWORK
-        chprintf(stream, "%08x --> breaking IMOVED deadlock in wait_ack. nextstate=0x%x, currentstate=0x%x, damage=%d\r\nWe're waiting on seq %d opcode %d\r\n",
-                 u->netid,
-                 next_fight_state,
-                 current_fight_state,
-                 u->damage,
-                 packet.seq,
-                 packet.opcode);
-#endif
-        sendACK(u);
-        changeState(next_fight_state);
-      }
-    }
-#endif
-    
-    if (u->opcode == OP_TURNOVER) { 
-      // there's an edge case where we have sent turnover, and they have
-      // sent turn over, but, we are waiting on an ACK.
-      // so, act as if we got the ACK and move on.
-      // we will have already ACK'd their packet anyway. 
-#ifdef DEBUG_FIGHT_NETWORK
-      chprintf(stream, "%08x --> got turnover in wait_ack? nextstate=0x%x, currentstate=0x%x, damage=%d\r\nWe're waiting on seq %d opcode %d\r\n",
-               u->netid,
-               next_fight_state,
-               current_fight_state,
-               u->damage,
-               packet.seq,
-               packet.opcode);
-#endif /* DEBUG_FIGHT_NETWORK */
-
-      if (next_fight_state == SHOW_RESULTS) {
-        // force state change
-        changeState(SHOW_RESULTS);
-        return;
-      }
-    }
-
     if (u->opcode == OP_STARTBATTLE_ACK && next_fight_state == MOVE_SELECT) {
       // if the user hits accept _before_ the ACK has been sent by
       // their badge, we have a race condition. break the race by changing state.
@@ -2231,23 +2210,6 @@ static void radio_event_do(KW01_PKT * pkt)
 
       changeState(MOVE_SELECT);
       return;
-    }
-    
-    if (u->opcode == OP_NEXTROUND) {
-#ifdef DEBUG_FIGHT_NETWORK
-      chprintf(stream, "%08x --> got nextround in wait_ack? nextstate=0x%x, currentstate=0x%x\r\nWe're waiting on seq %d opcode %d",
-               u->netid,
-               next_fight_state,
-               current_fight_state,
-               packet.seq,
-               packet.opcode);
-#endif /* DEBUG_FIGHT_NETWORK */
-      
-      if (next_fight_state == NEXTROUND) {
-        // edge-case/packet pile up. Just advance the round and forget about the ACK. 
-        changeState(MOVE_SELECT);
-        return;
-      }
     }
     break;
   case APPROVAL_WAIT:
@@ -2327,12 +2289,13 @@ static void radio_event_do(KW01_PKT * pkt)
       if (last_damage == -1) 
         last_damage = u->damage;
     }
-    break;
 
-    if (u->opcode == OP_NEXTROUND) {
+    if ((u->opcode == OP_NEXTROUND) && (fightleader == false)) {
       changeState(NEXTROUND);
       return;
     }
+    break;
+
   default:
     // this shouldn't fire, but log it if it does.
 #ifdef DEBUG_FIGHT_STATE
@@ -2344,7 +2307,6 @@ static void radio_event_do(KW01_PKT * pkt)
              pkt->kw01_hdr.kw01_src, u->opcode, u->seq,
              current_fight_state);
 #endif
-
   }
 }
 

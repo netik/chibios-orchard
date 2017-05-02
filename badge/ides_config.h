@@ -15,7 +15,7 @@
 #define LEVEL_CAP        10
 
 /* We we will attempt to find a new caesar every these many seconds */
-#define CS_ELECT_INT     MS2ST(10000) 
+#define CS_ELECT_INT     MS2ST(60000) 
 
 /* You must be this tall to ride this ride */
 #define MIN_CAESAR_LEVEL 3           
@@ -41,7 +41,8 @@
 // caveat! the system timer is a uint32_t and can roll over! be aware!
 #define DEFAULT_WAIT_TIME MS2ST(10000) // how long we wait for the user to respond. MUST BE IN SYSTEM TICKS. 
 #define MAX_ACKWAIT MS2ST(1000)        // if no ACK in 500MS, resend the last packet. MUST BE IN SYSTEM TICKS. 
-#define MAX_HOLDOFF 100                // we introduce a small delay if we are resending (contention protocol). MUST BE IN mS
+#define HOLDOFF_MODULO 550             // rand() % HOLDOFF_MODULO + MIN_HOLDOFF = delay between retransmissions
+#define MIN_HOLDOFF 200                // we introduce a small delay if we are resending (contention protocol). MUST BE IN mS
 #define MAX_RETRIES 4                  // if we do that 3 times, abort.
 #define MOVE_WAIT_TIME MS2ST(10000)    // Max game time. MUST BE IN SYSTEM TICKS. If you do nothing, the game ends.
 #endif

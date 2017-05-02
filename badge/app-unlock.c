@@ -325,6 +325,7 @@ static uint8_t validate_code(OrchardAppContext *context, userconfig *config) {
       unlock_result(p, tmp);
         
       ledSetFunction(leds_all_strobe);
+
       // if it's the bender upgrade, we become bender.
       if ((1 << i) == UL_BENDER) {
         config->current_type = p_bender;
