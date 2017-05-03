@@ -98,7 +98,9 @@ static void list_event(OrchardAppContext *context,
 	GEvent * pe;
 	GEventGWinList * ple;
 	OrchardUiContext * ctx;
-
+#ifdef ENABLE_JOYPAD
+        int16_t selected;
+#endif
 	ctx = context->instance->uicontext;
 	p = ctx->priv;
 
@@ -109,6 +111,30 @@ static void list_event(OrchardAppContext *context,
 			    ctx->itemlist[ctx->selected], FALSE);
 		}
 	}
+
+#ifdef ENABLE_JOYPAD
+        /* handle joypad events */
+        if (event->type == keyEvent && event->key.flags == keyPress) {
+          if (event->key.code == keyDown) {
+            selected = gwinListGetSelected(p->ghList);
+            if (selected < ((GListObject *)p->ghList)->cnt) 
+              selected++;
+            gwinListSetSelected(p->ghList, selected ,TRUE);
+            gwinListViewItem(p->ghList, selected);
+          }
+          if (event->key.code == keyUp) {
+            selected = gwinListGetSelected(p->ghList);
+            if (selected > 0)
+              selected--;
+            gwinListSetSelected(p->ghList, selected ,TRUE);
+            gwinListViewItem(p->ghList, selected);
+          }
+          if (event->key.code == keySelect) {
+            ctx->selected = gwinListGetSelected(p->ghList);
+            chEvtBroadcast(&ui_completed);
+          }
+        }
+#endif
 
 	if (event->type != ugfxEvent)
 		return;

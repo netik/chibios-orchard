@@ -132,7 +132,7 @@ video_event(OrchardAppContext *context, const OrchardAppEvent *event)
  			ui->exit (context);
 	}
 
-	if (event->type == ugfxEvent)
+	if (event->type == ugfxEvent || event->type == keyEvent)
 		ui->event (context, event);
 
 	if (event->type == uiEvent && event->ui.code == uiComplete &&
