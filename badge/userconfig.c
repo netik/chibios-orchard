@@ -108,7 +108,6 @@ static void init_config(userconfig *config) {
   
   /* stats, dunno if we will use */
   config->xp = 0;
-  config->gold = 500;
   config->level = 1;
 
   config->agl = 1;

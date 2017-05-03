@@ -1681,6 +1681,7 @@ static void sendACK(user *inbound) {
            ackpacket.seq,
            inbound->opcode);
 #endif /* DEBUG_FIGHT_NETWORK */
+  chThdSleepMilliseconds((rand() % HOLDOFF_MODULO) + MIN_HOLDOFF);
   radioSend (&KRADIO1, inbound->netid, RADIO_PROTOCOL_FIGHT, sizeof(ackpacket), &ackpacket);
 }
 
@@ -1712,8 +1713,9 @@ static void sendRST(user *inbound) {
 
 static void resendPacket(void) {
   // resend the last sent packet, pausing a random amount of time to prevent collisions
+  if (packet.ttl != MAX_RETRIES+1 || fightleader == false ) 
+    chThdSleepMilliseconds((rand() % HOLDOFF_MODULO) + MIN_HOLDOFF);
   packet.ttl--; // deduct TTL
-  chThdSleepMilliseconds((rand() % HOLDOFF_MODULO) + MIN_HOLDOFF);
 
 #ifdef DEBUG_FIGHT_NETWORK
   chprintf(stream, "%ld Transmit (to=%08x): currentstate=%d, ttl=%d, seq=%d, opcode=0x%x\r\n", chVTGetSystemTime()  , current_enemy.netid, current_fight_state, packet.ttl, packet.seq, packet.opcode);
@@ -1744,7 +1746,6 @@ static void sendGamePacket(uint8_t opcode) {
 
   packet.won = config->won;
   packet.lost = config->lost;
-  packet.gold = config->gold;
   packet.xp = config->xp;
 
   packet.agl = config->agl;

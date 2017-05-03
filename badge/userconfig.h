@@ -11,12 +11,10 @@
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0
-#define CONFIG_VERSION    13
+#define CONFIG_VERSION    14
 #define CONFIG_NAME_MAXLEN 10
 
 #define CONFIG_LEDSIGN_MAXLEN	124
-
-/* can we display these on top LEDs */
 
 typedef enum _player_type {
   p_notset,
@@ -27,8 +25,9 @@ typedef enum _player_type {
   p_bender
 } player_type;
 
-/* if you change the userconfig struct, update CONFIG_VERSION
- * above
+/* WARNING: if you change the userconfig struct, update CONFIG_VERSION
+ * above so that the config is automatically init'd with the new 
+ * else, the config struct will be misaligned and full of garbage.
  */
 typedef struct userconfig {
   uint32_t signature;
@@ -66,10 +65,8 @@ typedef struct userconfig {
   uint8_t in_combat; 
   uint16_t unlocks;
 
-  /* todo: determine which stats are relevant to the game (egan) */
   int16_t hp;
   uint16_t xp;
-  uint16_t gold;
   uint8_t level;
 
   uint8_t agl;
@@ -107,7 +104,6 @@ typedef struct _userpkt {
   uint16_t unlocks;       /* 2 */
   int16_t hp;             /* 2 */
   uint16_t xp;            /* 2 */  
-  uint16_t gold;          /* 2 */
 
   uint8_t level;          /* 1 */
 

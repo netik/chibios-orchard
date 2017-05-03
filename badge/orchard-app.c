@@ -161,7 +161,6 @@ static void execute_ping(eventid_t id) {
   upkt.level     = config->level;
   upkt.won       = config->won;
   upkt.lost      = config->lost;
-  upkt.gold      = config->gold;
   upkt.xp        = config->xp;
   upkt.agl       = config->agl;
   upkt.might     = config->might;

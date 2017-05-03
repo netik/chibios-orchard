@@ -70,10 +70,9 @@ static void cmd_config_show(BaseSequentialStream *chp, int argc, char *argv[])
            config->might,
            config->luck);
 
-  chprintf(chp, "hp  %4d xp  %4d gold  %4d\r\n",
+  chprintf(chp, "hp  %4d xp  %4d\r\n",
            config->hp,
-           config->xp,
-           config->gold
+           config->xp
            );
 }
 
