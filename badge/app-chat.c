@@ -194,7 +194,7 @@ static void chat_event (OrchardAppContext *context,
 		}
 	}
 
-	if (event->type == ugfxEvent)
+	if (event->type == ugfxEvent || event->type == keyEvent)
 		ui->event (context, event);
 
 	if (event->type == radioEvent && event->radio.pPkt != NULL) {
