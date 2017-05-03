@@ -57,6 +57,8 @@ extern struct FXENTRY fxlist[];
 
 extern systime_t char_reset_at;
 
+static void do_timeout(void);
+
 static uint16_t calc_xp_gain(uint8_t won) {
   userconfig *config = getConfig();
   float factor = 1;
@@ -95,11 +97,6 @@ static uint16_t calc_xp_gain(uint8_t won) {
         factor = .75;
 
   if (won) {
-    /*
-     * XP is calculated as follows
-     * 
-     * XP = (Base XP) * (1 - (Char Level - Mob Level)/ZD )
-     */
     if (current_enemy.current_type == p_caesar) {
       factor = factor + 1;
     }
@@ -438,6 +435,12 @@ static void screen_select_draw(int8_t initial) {
   // calculate mod/con color, WoW Style
   int leveldelta = enemies[current_enemy_idx]->level - config->level;
 
+  // x/y cursors
+  uint16_t xpos = 0; 
+  uint16_t ypos = 0; 
+
+  char tmp[40];
+
   levelcolor = Lime;
 
   // harder than you 
@@ -471,9 +474,6 @@ static void screen_select_draw(int8_t initial) {
   putImageFile(getAvatarImage(enemies[current_enemy_idx]->current_type, "idla", 1, false),
                POS_PCENTER_X, POS_PCENTER_Y);
   
-  uint16_t xpos = 0; // cursor, so if we move or add things we don't have to rethink this  
-  uint16_t ypos = 0; // cursor, so if we move or add things we don't have to rethink this
-
   gdispDrawStringBox (0,
 		      ypos,
 		      gdispGetWidth(),
@@ -482,8 +482,6 @@ static void screen_select_draw(int8_t initial) {
 		      fontSM, Yellow, justifyCenter);
 
   // slightly above the middle
-
-  char tmp[40];
   ypos = (gdispGetHeight() / 2) - 60;
   xpos = (gdispGetWidth() / 2) + 10;
 
@@ -647,8 +645,7 @@ static void state_vs_screen_enter() {
             10,
             200);
 
-  // animate them 
-  // we always say we're waiting.
+  // animate characters a bit 
   gdispDrawStringBox (0,
                       STATUS_Y,
                       screen_width,
@@ -673,15 +670,19 @@ static void state_vs_screen_enter() {
   changeState(MOVE_SELECT);
 }
 
+static void do_timeout() {
+  orchardAppTimer(instance.context, 0, false); // shut down the timer
+  screen_alert_draw(true, "TIMED OUT!");
+  dacPlay("fight/select3.raw");
+  chThdSleepMilliseconds(ALERT_DELAY);
+  orchardAppRun(orchardAppByName("Badge"));
+}
+
 static void countdown_tick() {
   drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y,PROGRESS_BAR_W,PROGRESS_BAR_H,DEFAULT_WAIT_TIME,countdown, true, false);
   
   if (countdown <= 0) {
-    orchardAppTimer(instance.context, 0, false); // shut down the timer
-    screen_alert_draw(true, "TIMED OUT!");
-    dacPlay("fight/select3.raw");
-    chThdSleepMilliseconds(ALERT_DELAY);
-    orchardAppRun(orchardAppByName("Badge"));
+    do_timeout();
   }
 }
 
@@ -689,11 +690,7 @@ static void state_approval_demand_tick() {
   drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y+10,PROGRESS_BAR_W,PROGRESS_BAR_H,DEFAULT_WAIT_TIME,countdown, true, false);
   
   if (countdown <= 0) {
-    orchardAppTimer(instance.context, 0, false); // shut down the timer
-    screen_alert_draw(true, "TIMED OUT!");
-    dacPlay("fight/select3.raw");
-    chThdSleepMilliseconds(ALERT_DELAY);
-    orchardAppRun(orchardAppByName("Badge"));
+    do_timeout();
   }
 }
 
@@ -747,12 +744,8 @@ static void state_show_results_enter() {
   putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
 
   // if they didn't go and we didn't go, abort.
-  if ((ourattack <= 0) && (theirattack <= 0)) { 
-    orchardAppTimer(instance.context, 0, false); // shut down the timer
-    screen_alert_draw(true, "NO MOVE. TIMED OUT!");
-    dacPlay("fight/select3.raw");
-    chThdSleepMilliseconds(ALERT_DELAY);
-    orchardAppRun(orchardAppByName("Badge"));
+  if ((ourattack <= 0) && (theirattack <= 0)) {
+    do_timeout();
     return;
   }
   

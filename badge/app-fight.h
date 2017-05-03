@@ -94,7 +94,7 @@ typedef enum _fight_state {
   NEXTROUND,        // 11 - reset the round
   PLAYER_DEAD,      // 12 - I die!
   ENEMY_DEAD,       // 13 - You're dead.
-  LEVELUP,          // 14 - You're dead.
+  LEVELUP,          // 14 - I am on the bonus screen, leave me alone.
 } fight_state;
 
 typedef struct _state {
