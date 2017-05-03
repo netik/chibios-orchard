@@ -177,6 +177,7 @@ CSRC = main.c \
        app-spectrum.c \
        app-video.c \
        app-music.c \
+       app-photos.c \
        app-shout.c \
        app-chat.c \
        app-default.c \
