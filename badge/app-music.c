@@ -49,13 +49,13 @@
 
 #define BACKGROUND HTML2COLOR(0x470b67)
 
-typedef struct _VideoHandles {
+typedef struct _MusicHandles {
 	char **			listitems;
 	int			itemcnt;
 	OrchardUiContext	uiCtx;
 	short			in[128];
 	short			out[128];
-} VideoHandles;
+} MusicHandles;
 
 static uint32_t
 music_init(OrchardAppContext *context)
@@ -67,7 +67,7 @@ music_init(OrchardAppContext *context)
 static void
 music_start (OrchardAppContext *context)
 {
-	VideoHandles * p;
+	MusicHandles * p;
 	DIR d;
 	FILINFO info;
 	int i;
@@ -92,8 +92,8 @@ music_start (OrchardAppContext *context)
 
 	i += 2;
 
-	p = chHeapAlloc (NULL, sizeof(VideoHandles));
-	memset (p, 0, sizeof(VideoHandles));
+	p = chHeapAlloc (NULL, sizeof(MusicHandles));
+	memset (p, 0, sizeof(MusicHandles));
 	p->listitems = chHeapAlloc (NULL, sizeof(char *) * i);
 	p->itemcnt = i;
 
@@ -170,7 +170,7 @@ columnDraw (int col, int amp, int erase)
 }
 
 static int
-musicPlay (VideoHandles * p, char * fname)
+musicPlay (MusicHandles * p, char * fname)
 {
 	FIL f;
 	int i;
@@ -266,7 +266,7 @@ music_event(OrchardAppContext *context, const OrchardAppEvent *event)
 {
 	OrchardUiContext * uiContext;
 	const OrchardUi * ui;
-	VideoHandles * p;
+	MusicHandles * p;
 	char buf[32];
 	font_t font;
 
@@ -322,7 +322,7 @@ music_event(OrchardAppContext *context, const OrchardAppEvent *event)
 static void
 music_exit(OrchardAppContext *context)
 {
-	VideoHandles * p;
+	MusicHandles * p;
 	int i;
 
 	p = context->priv;
