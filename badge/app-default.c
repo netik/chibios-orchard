@@ -85,27 +85,31 @@ static void redraw_player(DefaultHandles *p) {
   const userconfig *config = getConfig();
   char tmp[20];
   char tmp2[40];
+  char * img;
+  int class;
 
   if (config->hp < (maxhp(config->current_type, config->unlocks, config->level) * .25)) {
-    if (lastimg != 2) 
-      putImageFile(getAvatarImage(config->current_type, "deth", 2, false),
-                 POS_PLAYER1_X, POS_PLAYER1_Y);
+    if (lastimg != 2) {
+      img = "deth";
+      class = 2;
+   }
     lastimg = 2;
-  } else { 
+  } else {
+    class = 1;
     if (config->hp < (maxhp(config->current_type, config->unlocks,config->level) * .50)) {
       // show the whoop'd ass graphic if you're less than 15%
       if (lastimg != 1)
-        putImageFile(getAvatarImage(config->current_type, "deth", 1, false),
-                   POS_PLAYER1_X, POS_PLAYER1_Y);
+        img = "deth";
       lastimg = 1;
     } else {
       if (lastimg != 0) 
-        putImageFile(getAvatarImage(config->current_type, "idla", 1, false),
-                     POS_PLAYER1_X, POS_PLAYER1_Y);
+        img = "idla";
       lastimg = 0;
     }
   }
 
+  putImageFile(getAvatarImage(config->current_type, img, class, false),
+             POS_PLAYER1_X, POS_PLAYER1_Y);
   /* hit point bar */
   
   gdispDrawThickLine(141, 77, 320, 77, Red, 2, FALSE);
@@ -137,13 +141,33 @@ static void redraw_player(DefaultHandles *p) {
 
 }
 
+static void draw_stat (DefaultHandles * p, uint16_t x,
+    uint16_t y, char * str1, char * str2)
+{
+  uint16_t lmargin = 141;
+
+  gdispDrawStringBox (lmargin + x,
+		      y,
+		      gdispGetFontMetric(p->fontSM, fontMaxWidth)*strlen(str1),
+		      gdispGetFontMetric(p->fontSM, fontHeight),
+		      str1,
+		      p->fontSM, Yellow, justifyLeft);
+  gdispDrawStringBox (lmargin + x + 40,
+		      y,
+                      45,
+		      gdispGetFontMetric(p->fontSM, fontHeight),
+		      str2,
+		      p->fontSM, White, justifyRight);
+
+  return;
+}
+
 static void redraw_badge(DefaultHandles *p) {
   // draw the entire background badge image. Shown when the screen is idle. 
   const userconfig *config = getConfig();
   char tmp[20];
   char tmp2[40];
   uint16_t ypos = 0; 
-  uint16_t lmargin = 141;
 
   redraw_player(p);
 
@@ -174,63 +198,19 @@ static void redraw_badge(DefaultHandles *p) {
 
   /* XP/WON */
   chsnprintf(tmp2, sizeof(tmp2), "%3d", config->xp);
-  gdispDrawStringBox (lmargin,
-		      ypos,
-		      45,
-		      gdispGetFontMetric(p->fontSM, fontHeight),
-		      "XP",
-		      p->fontSM, Yellow, justifyLeft);
-  gdispDrawStringBox (lmargin + 40,
-		      ypos,
-                      45,
-		      gdispGetFontMetric(p->fontSM, fontHeight),
-		      tmp2,
-		      p->fontSM, White, justifyRight);
+  draw_stat (p, 0, ypos, "XP", tmp2);
 
   chsnprintf(tmp2, sizeof(tmp2), "%3d", config->won);
-  gdispDrawStringBox (lmargin + 94,
-		      ypos,
-		      45,
-		      gdispGetFontMetric(p->fontSM, fontHeight),
-		      "WON",
-		      p->fontSM, Yellow, justifyLeft);
-  gdispDrawStringBox (lmargin + 94 + 35,
-		      ypos,
-                      45,
-		      gdispGetFontMetric(p->fontSM, fontHeight),
-		      tmp2,
-		      p->fontSM, White, justifyRight);
+  draw_stat (p, 94, ypos, "WON", tmp2);
 
   /* AGL / LOST */
   ypos = ypos + gdispGetFontMetric(p->fontSM, fontHeight) + 2;
   chsnprintf(tmp2, sizeof(tmp2), "%3d", config->agl);
-  gdispDrawStringBox (lmargin,
-		      ypos,
-		      45,
-		      gdispGetFontMetric(p->fontSM, fontHeight),
-		      "AGL",
-		      p->fontSM, Yellow, justifyLeft);
-  gdispDrawStringBox (lmargin + 40,
-		      ypos,
-                      45,
-		      gdispGetFontMetric(p->fontSM, fontHeight),
-		      tmp2,
-		      p->fontSM, White, justifyRight);
+  draw_stat (p, 0, ypos, "AGL", tmp2);
 
   chsnprintf(tmp2, sizeof(tmp2), "%3d", config->lost);
-  gdispDrawStringBox (lmargin + 94,
-		      ypos,
-		      60,
-		      gdispGetFontMetric(p->fontSM, fontHeight),
-		      "LOST",
-		      p->fontSM, Yellow, justifyLeft);
-  gdispDrawStringBox (lmargin + 94 + 35,
-		      ypos,
-                      45,
-		      gdispGetFontMetric(p->fontSM, fontHeight),
-		      tmp2,
-		      p->fontSM, White, justifyRight);
-  
+  draw_stat (p, 94, ypos, "LOST", tmp2);
+
   /* MIGHT */
   ypos = ypos + gdispGetFontMetric(p->fontSM, fontHeight) + 2;
   if (config->unlocks & UL_PLUSMIGHT) 
@@ -238,21 +218,8 @@ static void redraw_badge(DefaultHandles *p) {
   else
     chsnprintf(tmp2, sizeof(tmp2), "%3d", config->might);
         
+  draw_stat (p, 0, ypos, "MIGHT", tmp2);
 
-  gdispDrawStringBox (lmargin,
-		      ypos,
-		      60,
-		      gdispGetFontMetric(p->fontSM, fontHeight),
-		      "MIGHT",
-		      p->fontSM, Yellow, justifyLeft);
-  gdispDrawStringBox (lmargin + 40,
-		      ypos,
-                      45,
-		      gdispGetFontMetric(p->fontSM, fontHeight),
-		      tmp2,
-		      p->fontSM, White, justifyRight);
-
-  
   /* EFF supporter, +10% Defense and Logo */
   if (config->unlocks & UL_PLUSDEF) 
     putImageFile(IMG_EFFLOGO, 270, ypos+4);
