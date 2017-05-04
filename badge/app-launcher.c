@@ -76,13 +76,15 @@ static void draw_launcher_buttons(struct launcher_list * list) {
   // Create label widget: ghTitleR
   wi.g.show = TRUE;
   wi.g.x = 160;
+#ifdef notdef
   wi.g.y = 0;
   wi.g.width = 160;
   wi.g.height = 20;
-  wi.text = tmp;
-  wi.customDraw = gwinLabelDrawJustifiedRight;
   wi.customParam = 0;
   wi.customStyle = &DarkPurpleStyle;
+#endif
+  wi.text = tmp;
+  wi.customDraw = gwinLabelDrawJustifiedRight;
   list->ghTitleR = gwinLabelCreate(0, &wi);
   gwinSetFont(list->ghTitleR, list->fontFX);
   gwinLabelSetBorder(list->ghTitleR, FALSE);
@@ -115,21 +117,23 @@ static void draw_launcher_buttons(struct launcher_list * list) {
         wi.g.width = 80;
         wi.g.height = 80;
         wi.text = "";
-        wi.customParam = 0;
         wi.customDraw = noRender; 
+        wi.customParam = 0;
         wi.customStyle = 0;
         list->ghButtons[(i*LAUNCHER_COLS)+j] = gwinButtonCreate(0, &wi);
         
         // Create label widget: ghLabel1
-        wi.g.show = TRUE;
         wi.g.x = j * 90;
         wi.g.y = 110 * (i+1);
-        wi.g.width = 80;
         wi.g.height = 20;
         wi.text = "---";
         wi.customDraw = gwinLabelDrawJustifiedCenter;
+#ifdef notdef
+        wi.g.width = 80;
+        wi.g.show = TRUE;
         wi.customParam = 0;
         wi.customStyle = 0;
+#endif
         list->ghLabels[(i*LAUNCHER_COLS)+j] = gwinLabelCreate(0, &wi);
       }
   }
@@ -147,15 +151,17 @@ static void draw_launcher_buttons(struct launcher_list * list) {
   list->ghButtonUp = gwinButtonCreate(0, &wi);
 
   // create button widget: ghButtonDn
+  wi.g.y = 190;
+#ifdef notdef
   wi.g.show = TRUE;
   wi.g.x = 270;
-  wi.g.y = 190;
   wi.g.width = 50;
   wi.g.height = 50;
   wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowDown;
   wi.customParam = 0;
   wi.customStyle = &DarkPurpleStyle;
+#endif
+  wi.customDraw = gwinButtonDraw_ArrowDown;
   list->ghButtonDn = gwinButtonCreate(0, &wi);
   gwinRedraw(list->ghButtonDn);
 

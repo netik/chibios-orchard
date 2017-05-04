@@ -168,12 +168,12 @@ void drawProgressBar(coord_t x, coord_t y, coord_t width, coord_t height, int32_
   if (reverse) { 
     gdispFillArea(x,y+1,(width - remain)-1,height-2, Black);
     gdispFillArea((x+width)-remain,y,remain,height, c);
-    gdispDrawBox(x,y,width,height, c);
   } else {
     gdispFillArea(x + remain,y+1,(width - remain)-1,height-2, Black);
     gdispFillArea(x,y,remain,height, c);
-    gdispDrawBox(x,y,width,height, c);
   }
+
+  gdispDrawBox(x,y,width,height, c);
 }
 
 

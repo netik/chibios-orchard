@@ -16,6 +16,10 @@
 #include "ides_gfx.h"
 #include "unlocks.h"
 
+#include "src/gdriver/gdriver.h"
+#include "src/ginput/ginput_driver_mouse.h"
+
+
 // GHandles
 typedef struct _SetupHandles {
   GHandle ghCheckSound;
@@ -100,40 +104,46 @@ static void draw_setup_buttons(SetupHandles * p) {
   gwinLabelSetBorder(p->ghLabel1, FALSE);
 
   // Create label widget: ghLabelPattern
-  wi.g.show = TRUE;
-  wi.g.x = 10;
   wi.g.y = 30;
+#ifdef notdef
+  wi.g.x = 10;
+  wi.g.show = TRUE;
   wi.g.width = 190;
   wi.g.height = 20;
-  wi.text = "";
-  wi.customDraw = gwinLabelDrawJustifiedLeft;
   wi.customParam = 0;
   wi.customStyle = 0;
+  wi.customDraw = gwinLabelDrawJustifiedLeft;
+#endif
+  wi.text = "";
   p->ghLabelPattern = gwinLabelCreate(0, &wi);
   gwinLabelSetBorder(p->ghLabelPattern, FALSE);
 
   // create button widget: ghButtonPatUp
-  wi.g.show = TRUE;
   wi.g.x = 200;
   wi.g.y = 10;
   wi.g.width = 50;
   wi.g.height = 40;
   wi.text = "<-";
   wi.customDraw = gwinButtonDraw_Normal;
+#ifdef notdef
+  wi.g.show = TRUE;
   wi.customParam = 0;
+#endif
   wi.customStyle = &DarkPurpleFilledStyle;
   p->ghButtonPatUp = gwinButtonCreate(0, &wi);
 
   // Create label widget: ghLabel4
-  wi.g.show = TRUE;
   wi.g.x = 10;
   wi.g.y = 60;
   wi.g.width = 180;
   wi.g.height = 20;
   wi.text = "LED Brightness";
   wi.customDraw = gwinLabelDrawJustifiedLeft;
-  wi.customParam = 0;
   wi.customStyle = 0;
+#ifdef notdef
+  wi.g.show = TRUE;
+  wi.customParam = 0;
+#endif
   p->ghLabel4 = gwinLabelCreate(0, &wi);
   gwinLabelSetBorder(p->ghLabel4, FALSE);
 
@@ -153,63 +163,73 @@ static void draw_setup_buttons(SetupHandles * p) {
   p->ghButtonDimDn = gwinButtonCreate(0, &wi);
 
   // create button widget: ghButtonDimUp
-  wi.g.show = TRUE;
   wi.g.x = 260;
+#ifdef notdef
+  wi.g.show = TRUE;
   wi.g.y = 60;
   wi.g.width = 50;
   wi.g.height = 40;
-  wi.text = "->";
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
+#endif
+  wi.text = "->";
   wi.customStyle = &DarkPurpleFilledStyle;
   p->ghButtonDimUp = gwinButtonCreate(0, &wi);
 
   // create button widget: ghButtonCalibrate
-  wi.g.show = TRUE;
   wi.g.x = 200;
   wi.g.y = 110;
   wi.g.width = 110;
   wi.g.height = 36;
   wi.text = "Touch Cal";
+#ifdef notdef
   wi.customDraw = gwinButtonDraw_Normal;
+  wi.g.show = TRUE;
   wi.customParam = 0;
   wi.customStyle = &DarkPurpleFilledStyle;
+#endif
   p->ghButtonCalibrate = gwinButtonCreate(0, &wi);
 
   // create button widget: ghButtonSetName
-  wi.g.show = TRUE;
-  wi.g.x = 200;
   wi.g.y = 150;
+  wi.text = "Set Name";
+#ifdef notdef
+  wi.g.x = 200;
   wi.g.width = 110;
   wi.g.height = 36;
-  wi.text = "Set Name";
+  wi.g.show = TRUE;
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
   wi.customStyle = &DarkPurpleFilledStyle;
+#endif
   p->ghButtonSetName = gwinButtonCreate(0, &wi);
   
   // create button widget: ghButtonOK
-  wi.g.show = TRUE;
-  wi.g.x = 200;
   wi.g.y = 190;
+  wi.text = "Save";
+#ifdef notdef
+  wi.g.x = 200;
+  wi.g.show = TRUE;
   wi.g.width = 110;
   wi.g.height = 36;
-  wi.text = "Save";
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customParam = 0;
   wi.customStyle = &DarkPurpleFilledStyle;
+#endif
   p->ghButtonOK = gwinButtonCreate(0, &wi);
 
   // Create label widget: ghLabelStatus (network id)
   chsnprintf(tmp,sizeof(tmp), "Net ID: %08x", config->netid);
-  wi.g.show = TRUE;
   wi.g.x = 10;
-  wi.g.y = 200;
   wi.g.width = 180;
   wi.g.height = 20;
   wi.text = tmp;
   wi.customDraw = gwinLabelDrawJustifiedLeft;
+#ifdef notdef
+  wi.g.y = 200;
+  wi.g.show = TRUE;
   wi.customParam = 0;
+#endif
   wi.customStyle = 0;
   p->ghLabelStatus = gwinLabelCreate(0, &wi);
   gwinLabelSetBorder(p->ghLabelStatus, FALSE);
@@ -249,7 +269,8 @@ static void setup_event(OrchardAppContext *context,
   userconfig *config = getConfig();
   SetupHandles * p;
   uint8_t max_led_patterns;
-  
+  GMouse * m;
+ 
   p = context->priv;
 
   if ( config->unlocks & UL_LEDS ) { 
@@ -326,8 +347,18 @@ static void setup_event(OrchardAppContext *context,
       }
       
       if (((GEventGWinButton*)pe)->gwin == p->ghButtonCalibrate) {
+
+          /* Run the calibration GUI */
+          (void)ginputCalibrateMouse (0);
+
+          /* Save the calibration data */
+          m = (GMouse*)gdriverGetInstance (GDRIVER_TYPE_MOUSE, 0);
+          memcpy (&config->touch_data, &m->caldata,
+            sizeof(config->touch_data));
+          config->touch_data_present = 1;
+
           configSave(config);
-          orchardAppRun(orchardAppByName("CalibrateTS"));
+          orchardAppExit();
           return;
       }
 
