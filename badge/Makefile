@@ -165,7 +165,6 @@ CSRC = main.c \
        cmd-peer.c \
        cmd-unix.c \
        app-launcher.c \
-       app-calibrate.c \
        app-name.c \
        app-fight.c \
        app-choosetype.c \
