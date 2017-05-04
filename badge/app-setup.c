@@ -16,6 +16,10 @@
 #include "ides_gfx.h"
 #include "unlocks.h"
 
+#include "src/gdriver/gdriver.h"
+#include "src/ginput/ginput_driver_mouse.h"
+
+
 // GHandles
 typedef struct _SetupHandles {
   GHandle ghCheckSound;
@@ -249,7 +253,8 @@ static void setup_event(OrchardAppContext *context,
   userconfig *config = getConfig();
   SetupHandles * p;
   uint8_t max_led_patterns;
-  
+  GMouse * m;
+ 
   p = context->priv;
 
   if ( config->unlocks & UL_LEDS ) { 
@@ -326,8 +331,18 @@ static void setup_event(OrchardAppContext *context,
       }
       
       if (((GEventGWinButton*)pe)->gwin == p->ghButtonCalibrate) {
+
+          /* Run the calibration GUI */
+          (void)ginputCalibrateMouse (0);
+
+          /* Save the calibration data */
+          m = (GMouse*)gdriverGetInstance (GDRIVER_TYPE_MOUSE, 0);
+          memcpy (&config->touch_data, &m->caldata,
+            sizeof(config->touch_data));
+          config->touch_data_present = 1;
+
           configSave(config);
-          orchardAppRun(orchardAppByName("CalibrateTS"));
+          orchardAppExit();
           return;
       }
 
