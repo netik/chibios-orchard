@@ -617,7 +617,7 @@ static void state_vs_screen_enter() {
   
   gdispClear(Black);
   draw_idle_players();
-  chsnprintf(tmp, sizeof(tmp), "LEVEL %s", dec2romanstr(config->level+1));
+  chsnprintf(tmp, sizeof(tmp), "LEVEL %s", dec2romanstr(config->level));
   
   // levels
   gdispDrawStringBox (0,
@@ -627,7 +627,7 @@ static void state_vs_screen_enter() {
 		      tmp,
 		      fontSM, Lime, justifyLeft);
 
-  chsnprintf(tmp, sizeof(tmp), "LEVEL %s", dec2romanstr(current_enemy.level+1));
+  chsnprintf(tmp, sizeof(tmp), "LEVEL %s", dec2romanstr(current_enemy.level));
   gdispDrawStringBox (0,
 		      STATUS_Y,
 		      screen_width,
