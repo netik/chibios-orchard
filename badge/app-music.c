@@ -128,36 +128,35 @@ music_start (OrchardAppContext *context)
 }
 
 static void
-columnDraw (int col, int amp, int erase)
+columnDraw (int col, short amp, int erase)
 {
 	int x;
 	int y;
-	int level;
+
+	/* Clamp the amplitude at 128 pixels */
 
 	if (amp > 128)
 		amp = 128;
+
+	/* Set up the drawing aperture */
 
 	GDISP->p.x = col * 5;
 	GDISP->p.y = 240 - amp;
 	GDISP->p.cx = 4;
 	GDISP->p.cy = amp;
-	gdisp_lld_write_start (GDISP);
-	gdisp_lld_write_stop (GDISP);
 
-        GDISP->p.x = -1;
-       	GDISP->p.y = -1;
+	/* Now draw the column */
 
 	gdisp_lld_write_start (GDISP);
 	for (y = amp; y > 0; y--) {
 		if (erase)
 			GDISP->p.color = BACKGROUND;
 		else {
-			level = y;
-			if (level >= 0 && level < 32)
+			if (y >= 0 && y < 32)
 				GDISP->p.color = Lime;
-			if (level >= 32 && level < 64)
+			if (y >= 32 && y < 64)
 				GDISP->p.color = Yellow;
-			if (level >= 64 && level < 128)
+			if (y >= 64 && y <= 128)
 				GDISP->p.color = Red;
 		}
 		for (x = 0; x < 4; x++) {
@@ -177,8 +176,7 @@ musicPlay (MusicHandles * p, char * fname)
 	uint16_t * buf;
 	uint16_t * dacBuf;
 	UINT br;
-	float fl;
-	uint32_t b;
+	short b;
 	GEventMouse * me = NULL;
 	GSourceHandle gs;
 	GListener gl;
@@ -210,24 +208,17 @@ musicPlay (MusicHandles * p, char * fname)
 			columnDraw (i, b, 1);
 		}
 
-		chThdSleepMicroseconds (10);
+		chThdSleep (1);
 
-		for (i = 0; i < 128; i++) {
-			fl = (float)buf[i];
-			fl *= 1.6;
-			p->in[i] = fl;
-		}
+		for (i = 0; i < 128; i++)
+			p->in[i] = buf[i] << 2;
 
 		fix_fft (p->in, p->out, 7, 0);
 
-		for (i = 0; i < 63; i++) {
-			b = abs(p->in[i]);
-			b >>= 2;
-			p->in[i] = b;
-		}
-
 		for (i = 1; i < 63; i++) {
-			b = p->in[i];
+			b = abs(p->in[i]);
+			b >>= 3;
+			p->in[i] = b;
 			columnDraw (i, b, 0);
 		}
 
