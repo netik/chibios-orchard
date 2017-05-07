@@ -115,6 +115,7 @@ photos_event (OrchardAppContext *context,
 			p->cnt = 0;
 			f_closedir (&p->d);
 			f_opendir (&p->d, "photos");
+			orchardAppTimer (context, 1, FALSE);
 		} else {
 			if (strstr (info.fname, ".RGB") == NULL) {
 				orchardAppExit ();
@@ -124,8 +125,8 @@ photos_event (OrchardAppContext *context,
 			chsnprintf (str, sizeof(str),
 			    "photos/%s", info.fname);
 			scrollImage (str, 1);
+			orchardAppTimer (context, 5000000, FALSE);
 		}
-		orchardAppTimer (context, 5000000, FALSE);
 	}
 
 	if (event->type == appEvent && event->app.event == appTerminate) {
