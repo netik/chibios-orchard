@@ -140,6 +140,8 @@ photos_exit (OrchardAppContext *context)
 {
 	PhotoHandles * p;
 
+	scrollCount (0);
+
 	p = context->priv;
 
 	geventRegisterCallback (&p->gl, NULL, NULL);
