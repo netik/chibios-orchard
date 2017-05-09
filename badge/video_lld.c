@@ -49,7 +49,7 @@
  * with class 4 cards.
  *
  * We use a video frame resolution of 128x96 pixels and a frame rate of 8
- * frames per second. The 128x96 resulution is upscaled on the fly to the
+ * frames per second. The 128x96 resolution is upscaled on the fly to the
  * full 320x240 resolution of the display. This is a little tricky because
  * it results in a ratio of 2.5 to 1. Upscaling by a factor of 2 would be
  * easy, but 2.5 is slightly more complicated. (You can't draw half a pixel.)
