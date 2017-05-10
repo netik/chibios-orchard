@@ -425,7 +425,7 @@ videoWinPlay (char * fname, int x, int y)
 		 * it does not reset the viewport because we previously
 		 * programmed the display X/Y coordinates to -1 before
 		 * we began playing the video. This tells the start
-		 * routine to skip the set_viewport() ste. We don't need
+		 * routine to skip the set_viewport() step. We don't need
 		 * it because the display chip will automatically wrap
 		 * back to the start of the viewport once we finish drawing
 		 * a frame. This means we only need to initialize the
