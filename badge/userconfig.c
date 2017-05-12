@@ -45,7 +45,7 @@ int16_t maxhp(player_type ctype, uint16_t unlocks, uint8_t level) {
   }
 
   if (ctype == p_bender) {
-    hp = hp * 1.5;
+    hp = hp * 1.10;
   }
 
   if (ctype == p_caesar) {

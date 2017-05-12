@@ -63,7 +63,7 @@ void enemy_cleanup(void);            // reaps the list every other ping
 
 // lock/unlock this mutex before touching the enemies list!
 mutex_t enemies_mutex;
-static user *enemies[MAX_ENEMIES]; // array of pointers to enemy structures
+static peer *enemies[MAX_ENEMIES]; // array of pointers to enemy structures
 /* END Enemy ping/pong handling --------------------------------------------*/
 
 static uint8_t ui_override = 0;
@@ -129,7 +129,7 @@ void enemy_cleanup(void) {
 
 static void execute_ping(eventid_t id) {
   userconfig * config;
-  user upkt;
+  peer upkt;
   unsigned long clockdelta;
   
   (void) id;
@@ -143,13 +143,9 @@ static void execute_ping(eventid_t id) {
   
   /* time to send a ping. */
   /* build packet */
-
-  memset (&upkt, 0, sizeof(user));
+  memset (&upkt, 0, sizeof(peer));
   
   upkt.netid = config->netid;
-
-  // seq always 1 for ping. We do not send TTL.
-  upkt.seq   = 1; 
 
   strncpy(upkt.name, config->name, CONFIG_NAME_MAXLEN);
 
@@ -219,7 +215,6 @@ void orchardAppRadioCallback (KW01_PKT * pkt) {
    * expand this to permit buffering of more frames, but for now
    * this seems sufficient.
    */
-
   if (orchard_pkt_busy == 0) {
     memcpy (&orchard_pkt, pkt, sizeof(KW01_PKT));
     orchard_pkt_busy++;
@@ -573,7 +568,7 @@ uint8_t enemyCount(void) {
   return count;
 }
 
-user *enemy_lookup(user *u) {
+peer *enemy_lookup(peer *u) {
   // return an enemy record by name (bad?)
   osalMutexLock(&enemies_mutex);
 
@@ -590,8 +585,8 @@ user *enemy_lookup(user *u) {
   return NULL;
 }
 
-user *enemyAdd(user *u) {
-  user *record;
+peer *enemyAdd(peer *u) {
+  peer *record;
   uint32_t i;
   uint32_t oldttl;
   record = enemy_lookup(u);
@@ -599,12 +594,12 @@ user *enemyAdd(user *u) {
   if( record != NULL ) {
     /* update name and stats */
     oldttl = record->ttl;
-    if(record->ttl < ENEMIES_TTL_MAX) {
+    if(record->ttl < PEER_MAX_TTL) {
       oldttl++;
     }
 
     osalMutexLock(&enemies_mutex);
-    memcpy(record, u, sizeof(user));
+    memcpy(record, u, sizeof(peer));
     record->ttl = oldttl;
     osalMutexUnlock(&enemies_mutex);
     return record;  // enemy already exists, don't add it again
@@ -614,9 +609,9 @@ user *enemyAdd(user *u) {
 
   for( i = 0; i < MAX_ENEMIES; i++ ) {
     if( enemies[i] == NULL ) {
-      enemies[i] = (user *) chHeapAlloc(NULL, sizeof(user));
-      memcpy(enemies[i], u, sizeof(user));
-      enemies[i]->ttl = ENEMIES_TTL_INITIAL;
+      enemies[i] = (peer *) chHeapAlloc(NULL, sizeof(peer));
+      memcpy(enemies[i], u, sizeof(peer));
+      enemies[i]->ttl = PEER_TTL_INITIAL;
       osalMutexUnlock(&enemies_mutex);
       return enemies[i];
     }
@@ -627,12 +622,12 @@ user *enemyAdd(user *u) {
   return NULL;
 }
 
-int enemy_comp(const void *a, const void *b) {
+int peer_comp(const void *a, const void *b) {
   char *mya;
   char *myb;
   
-  mya = ((user *)a)->name;
-  myb = ((user *)b)->name;
+  mya = ((peer *)a)->name;
+  myb = ((peer *)b)->name;
 
   if( mya == NULL && myb == NULL )
     return 0;
@@ -648,7 +643,7 @@ int enemy_comp(const void *a, const void *b) {
 
 void enemiesSort(void) {
   osalMutexLock(&enemies_mutex);
-  qsort(enemies, MAX_ENEMIES, sizeof(char *), enemy_comp);
+  qsort(enemies, MAX_ENEMIES, sizeof(char *), peer_comp);
   osalMutexUnlock(&enemies_mutex);
 }
 
@@ -660,8 +655,8 @@ void enemiesUnlock(void) {
   osalMutexUnlock(&enemies_mutex);
 }
 
-user **enemiesGet(void) {
-  return (user **) enemies;   // you shouldn't modify this record outside of here, hence const
+peer **enemiesGet(void) {
+  return (peer **) enemies;   // you shouldn't modify this record outside of here, hence const
 }
 
 void orchardAppRestart(void) {

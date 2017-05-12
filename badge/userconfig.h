@@ -79,23 +79,46 @@ typedef struct userconfig {
 
 } userconfig;
 
-typedef struct _userpkt {
-  /* this is a shortened form of userdata for transmission */
-  /* appx 51 bytes, max is 66 (AES limitiation) */
-
-  /* stash this away for future attacks/lookups */
+typedef struct _peer {
+  /* this struct is used for holding users in memory */
+  /* it is also the format of our ping packet */
   /* unique network ID determined from use of lower 64 bits of SIM-UID */
   uint32_t netid;         /* 4 */
   uint8_t opcode;         /* 1 - BATTLE_OPCODE */
+  /* Player Payload */
+  char name[CONFIG_NAME_MAXLEN + 1];  /* 16 */
+  player_type p_type;     /* 1 */
+  player_type current_type;     /* 1 */
+  uint8_t in_combat;      /* 1 */
+  uint16_t unlocks;       /* 2 */
+  /* Player stats */
+  int16_t hp;             /* 2 */
+  uint16_t xp;            /* 2 */  
+  uint8_t level;          /* 1 */
+  uint8_t agl;            /* 1 */
+  uint8_t might;          /* 1 */
+  uint8_t luck;           /* 1 */
+  uint16_t won;           /* 2 */
+  uint16_t lost;          /* 2 */
+  uint32_t rtc;           /* 4 - their clock if they have it */
+  uint8_t ttl;            /* 1 - how recent this peer data is. 10 = 10 pings */
 
-  /* Network Payload */
-  uint16_t seq;           /* 2 */
-  uint16_t acknum;        /* 2 - only used during acknowledgements */
-  uint8_t ttl;            /* 1 */
+  /* Battle Payload */
+  /* A bitwise map indicating the attack type */
+  uint8_t attack_bitmap;  /* 1 */
+  int16_t damage;         /* 2 */
 
+} peer;
+
+typedef struct _fightpkt {
+  /* this is a shortened form of userdata for transmission during the fight */
+  /* MAX 52 bytes, max is 66 (AES limitiation) */
+
+  /* unique network ID determined from use of lower 64 bits of SIM-UID */
+  uint8_t opcode;         /* 1 - BATTLE_OPCODE */
+  
   /* clock, if any */
   unsigned long rtc;      /* 4 */ 
-  
   /* Player Payload */
   char name[CONFIG_NAME_MAXLEN + 1];  /* 16 */
   player_type p_type;     /* 1 */
@@ -104,9 +127,7 @@ typedef struct _userpkt {
   uint16_t unlocks;       /* 2 */
   int16_t hp;             /* 2 */
   uint16_t xp;            /* 2 */  
-
   uint8_t level;          /* 1 */
-
   uint8_t agl;            /* 1 */
   uint8_t might;          /* 1 */
   uint8_t luck;           /* 1 */
@@ -120,7 +141,7 @@ typedef struct _userpkt {
   uint8_t attack_bitmap;  /* 1 */
   int16_t damage;         /* 2 */
 
-} user;
+} fightpkt;
 
 /* prototypes */
 extern void configStart(void);

@@ -1051,7 +1051,6 @@ radioSend (RADIODriver * radio, kw01_dst_t dest, kw01_proto_t prot,
 #endif
 
 	/* Don't send more data than will fit in the FIFO. */
-
 	if (len > (radio->kw01_maxlen - KW01_PKT_HDRLEN))
 		return (-1);
 

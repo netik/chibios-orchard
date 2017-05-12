@@ -36,6 +36,7 @@
 #include "fontlist.h"
 #include "sound.h"
 #include "ides_gfx.h"
+#include "userconfig.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -59,8 +60,8 @@ static int insert_peer (OrchardAppContext * context, KW01_PKT * pkt)
 {
 	ChatHandles *	p;
 	int		i;
-	char 		peer[9];
-	user *		u;
+	char 		peerid[9];
+        peer *          u;
 
 	p = context->priv;
 
@@ -69,13 +70,13 @@ static int insert_peer (OrchardAppContext * context, KW01_PKT * pkt)
 	if (p->peers == (MAX_PEERS + 2))
 		return (-1);
 
-	chsnprintf (peer, sizeof(peer), "%08X", pkt->kw01_hdr.kw01_src);
+	chsnprintf (peerid, sizeof(peerid), "%08X", pkt->kw01_hdr.kw01_src);
 
-	u = (user *)pkt->kw01_payload;
+	u = (peer *)pkt->kw01_payload;
 
 	for (i = 2; i < p->peers; i++) {
 		/* Already an entry for this badge, just return. */
-		if (strncmp (p->listitems[i], peer, 8) == 0)
+		if (strncmp (p->listitems[i], peerid, 8) == 0)
 			return (-1);
 	}
 
@@ -83,7 +84,7 @@ static int insert_peer (OrchardAppContext * context, KW01_PKT * pkt)
 
 	p->listitems[p->peers] = chHeapAlloc (NULL, MAX_PEERMEM);
 	chsnprintf (p->listitems[p->peers], MAX_PEERMEM, "%s:%s",
-		peer, u->name);
+		peerid, u->name);
 	p->peers++;
 
 	return (0);

@@ -1,0 +1,61 @@
+#ifndef _PROTO_H_
+#define _PROTO_H_
+
+#define PROTOCOL_TEST		99
+
+/*
+ * States
+ */
+
+#define PROTO_STATE_IDLE	0x01
+#define PROTO_STATE_CONNECTED	0x02
+#define PROTO_STATE_WAITACK	0x03
+
+/*
+ * Messages
+ */
+
+#define PROTO_SYN		0x01
+#define PROTO_ACK		0x02
+#define PROTO_RST		0x03
+
+/*
+ * We tell the compiler to make this structure packed so that it
+ * doesn't try to silently insert any padding for alignment
+ * purposes.
+ */
+
+#pragma pack(1)
+typedef struct packet {
+	uint32_t		prot_seq;
+	uint8_t			prot_msg;
+	uint8_t			prot_payload[32];
+} PACKET;
+
+#pragma pack()
+#define MAX_PEERS	50
+#define MAX_PEERMEM	(CONFIG_NAME_MAXLEN + 10)
+
+typedef struct _ProtoHandles {
+	char *			listitems[MAX_PEERS + 2];
+	OrchardUiContext	uiCtx;
+	uint8_t			tx[KW01_PKT_PAYLOADLEN];
+	uint8_t 		peers;
+	int			peer;
+
+	uint32_t		netid;
+	uint32_t		txseq;
+	uint32_t		rxseq;
+	uint8_t			state;
+	int			interval;
+	int			intervals_since_last_contact;
+} ProtoHandles;
+
+extern void protoInit (OrchardAppContext * context);
+extern int msgSend (OrchardAppContext * context, char *);
+extern void rstSend (OrchardAppContext * context);
+extern void tickHandle (OrchardAppContext * context);
+extern int rxHandle (OrchardAppContext * context, KW01_PKT * pkt);
+extern int msgReceived (OrchardAppContext * context);
+
+#endif /* _PROTO_H_ */
