@@ -24,7 +24,7 @@ protoInit (OrchardAppContext *context)
   
   p->state = PROTO_STATE_IDLE;
   p->rxseq = p->txseq = rand();
-  p->interval = 500000;
+  p->interval = PROTO_TICK_US + (rand () & 0xFFFF);
   ringInit(&p->txring);
   
   return;
@@ -34,14 +34,22 @@ void
 tickHandle (OrchardAppContext *context)
 {
   ProtoHandles * p;
-  
   p = (((FightHandles *)context->priv)->proto);
+
+  // reset the interval
+
+  if (p->interval > 0) {
+    // no work to do yet
+    // regardless of frame rate, we will work this out.
+    p->interval = p->interval - ST2US(chVTGetSystemTime() - p->last_tick_time);
+    p->last_tick_time = chVTGetSystemTime();
+    return;
+  }
   
-  p->interval = 500000 + (rand () & 0xFFFF);
+  p->interval = PROTO_TICK_US + (rand () & 0xFFFF);
   
   chprintf (stream, "tick... int %d\r\n",
 	    p->intervals_since_last_contact);
-  orchardAppTimer (context, p->interval, FALSE);
   
   if (p->state != PROTO_STATE_IDLE) {
     p->intervals_since_last_contact++;

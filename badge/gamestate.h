@@ -79,6 +79,7 @@ static void state_approval_demand_exit(void);
 static void state_approval_wait_enter(void);
 
 static void state_vs_screen_enter(void);
+static void state_vs_screen_tick(void);
 
 static void state_move_select_enter(void);
 static void state_move_select_tick(void);
@@ -101,6 +102,11 @@ static uint16_t calc_xp_gain(uint8_t);
  * the game Enter always fires when entering a state, tick fires on
  * the timer, exit is always fired on state exit for cleanups and
  * other housekeeping.
+ *
+ * When designing routines, minimize the time spent in the enter and
+ * exit states and above all else, never ever put the thread to sleep
+ * or we will lose radio events.
+ *
  */
 state_funcs fight_funcs[] = { { // none
                                  NULL,
@@ -133,7 +139,7 @@ state_funcs fight_funcs[] = { { // none
                               },
                               {  // vs_screen
                                 state_vs_screen_enter,
-                                NULL,
+                                state_vs_screen_tick,
                                 NULL,
                               },
                               {  // move_select

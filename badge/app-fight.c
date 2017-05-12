@@ -41,16 +41,16 @@ static int32_t countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer va
 // if true, we started the fight. We also handle all coordination of the fight. 
 static uint8_t fightleader = false;   
 
-volatile fight_state current_fight_state = IDLE;  // current state 
+static fight_state current_fight_state = IDLE;  // current state 
 static fight_state next_fight_state = NONE;     // upon ACK, we will transition to this state. 
 static uint8_t current_enemy_idx = 0;
 static uint32_t last_ui_time = 0;
 static uint32_t last_tick_time = 0;
-static uint32_t last_send_time = 0;
 static uint8_t ourattack = 0;
 static uint8_t theirattack = 0;
 static uint8_t roundno = 0;
-static uint8_t animtick = 1;
+
+static uint16_t animtick = 1; 
 
 static int16_t last_hit = -1;
 static int16_t last_damage = -1;
@@ -305,7 +305,8 @@ static void state_approval_demand_exit(void) {
 static void state_move_select_enter() {
   userconfig *config = getConfig();
   FightHandles *p = instance.context->priv;
-  
+
+  animtick = 0;
   ourattack = 0;
   theirattack = 0;
   last_damage = -1;
@@ -365,9 +366,14 @@ static void state_move_select_enter() {
 static void state_move_select_tick() {
   drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y,PROGRESS_BAR_W,PROGRESS_BAR_H,MOVE_WAIT_TIME,countdown, true, false);
 
+  animtick++;
+
   if ((ourattack & ATTACK_MASK) == 0) {
     // animate arrows
-    if (animtick == 0) { 
+    //
+    // Every 66mS our timer fires. Wee'd like a blink rate of 250Ms on/off or so with no sleeping.
+    // frames 0-4 we are on. frames 5-8 we are off
+    if ((animtick > 0) && (animtick < 5)) { 
       gdispFillArea(160, POS_PLAYER2_Y, 50,150,Black);
     } else { 
       putImageFile("ar50.rgb",
@@ -382,9 +388,9 @@ static void state_move_select_tick() {
                    160,
                    POS_PLAYER2_Y + 100);
     }
-    
-    animtick = !animtick;
   }
+
+  if (animtick > 8) animtick = 0;
   
   if (countdown <= 0) {
     // TODO -- handle a move when the other player gives up
@@ -589,6 +595,7 @@ static void state_vs_screen_enter() {
   // versus screen!
   userconfig *config = getConfig();
   FightHandles *p;
+  animtick = 0;
   p = instance.context->priv;
     
   gdispClear(Black);
@@ -610,40 +617,50 @@ static void state_vs_screen_enter() {
 		      fontsm_height,
                       p->tmp,
 		      fontSM, Red, justifyRight);  
-  blinkText(0,
-            110,
-            screen_width,
-            fontlg_height,
-            "VS",
-            fontLG,
-            White,
-            justifyCenter,
-            10,
-            200);
+}
 
-  // animate characters a bit 
-  gdispDrawStringBox (0,
-                      STATUS_Y,
-                      screen_width,
-                      fontsm_height,
-                      "GET READY!",
-                      fontSM, White, justifyCenter);
-  dacPlay("fight/vs.raw");
-  
-  for (uint8_t i=0; i < 3; i++) {
-    putImageFile(getAvatarImage(config->current_type, "atth", 1, false),
-                 POS_PLAYER1_X, POS_PLAYER1_Y);
-    putImageFile(getAvatarImage(current_enemy.current_type, "atth", 1, true),
-                 POS_PLAYER2_X, POS_PLAYER2_Y);
-    chThdSleepMilliseconds(200);
-    putImageFile(getAvatarImage(config->current_type, "atth", 2, false),
-                 POS_PLAYER1_X, POS_PLAYER1_Y);
-    putImageFile(getAvatarImage(current_enemy.current_type, "atth", 2, true),
-                 POS_PLAYER2_X, POS_PLAYER2_Y);
-    chThdSleepMilliseconds(200);
+
+static void state_vs_screen_tick(void) {
+  userconfig *config = getConfig();
+
+  animtick++;
+
+  if (animtick < 40) { 
+    if (animtick % 6 < 3) { // blink duty cycle 
+      gdispDrawStringBox (0,110,screen_width, fontlg_height, "VS", fontLG, White, justifyCenter);
+    } else {
+      gdispDrawStringBox (0,110,screen_width, fontlg_height, "VS", fontLG, Black, justifyCenter);
+    }
   }
-    
-  changeState(MOVE_SELECT);
+
+  if (animtick == 40) { 
+    // animate characters a bit 
+    gdispDrawStringBox (0,
+                        STATUS_Y,
+                        screen_width,
+                        fontsm_height,
+                        "GET READY!",
+                        fontSM, White, justifyCenter);
+    dacPlay("fight/vs.raw");
+  }
+
+  if (animtick > 40) {
+    if (animtick % 4 < 2) { 
+      putImageFile(getAvatarImage(config->current_type, "atth", 1, false),
+                   POS_PLAYER1_X, POS_PLAYER1_Y);
+      putImageFile(getAvatarImage(current_enemy.current_type, "atth", 1, true),
+                   POS_PLAYER2_X, POS_PLAYER2_Y);
+    } else { 
+      putImageFile(getAvatarImage(config->current_type, "atth", 2, false),
+                   POS_PLAYER1_X, POS_PLAYER1_Y);
+      putImageFile(getAvatarImage(current_enemy.current_type, "atth", 2, true),
+                   POS_PLAYER2_X, POS_PLAYER2_Y);
+    }
+  }
+
+  if (animtick > 60)
+    changeState(MOVE_SELECT);
+
 }
 
 static void do_timeout(void) {
@@ -1634,7 +1651,6 @@ static void sendGamePacket(uint8_t opcode) {
 #ifdef DEBUG_FIGHT_NETWORK
   chprintf(stream, "%ld Transmit (to=%08x): currentstate=%d %s, opcode=0x%x, size=%d\r\n", chVTGetSystemTime()  , current_enemy.netid, current_fight_state, fight_state_name[current_fight_state],  packet.opcode,sizeof(packet));
 #endif /* DEBUG_FIGHT_NETWORK */
-  last_send_time = chVTGetSystemTime();
   res = msgSend(context, &packet);
 #ifdef DEBUG_FIGHT_NETWORK
   if (res == -1) {

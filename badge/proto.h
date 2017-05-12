@@ -36,6 +36,7 @@ typedef struct packet {
 
 #pragma pack()
 
+#define PROTO_TICK_US           500000
 #define PROTO_RING_SIZE         3
 
 typedef struct _ringBuf
@@ -53,6 +54,7 @@ typedef struct _ProtoHandles {
   uint32_t		rxseq;
   uint8_t		state;
   uint8_t               mtu; /* packet size */
+  uint32_t              last_tick_time;
   int			interval;
   int			intervals_since_last_contact;
 

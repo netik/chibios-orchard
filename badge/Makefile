@@ -168,6 +168,7 @@ CSRC = main.c \
        proto.c \
        app-launcher.c \
        app-name.c \
+       app-notify.c \
        app-choosetype.c \
        app-fight.c \
        app-unlock.c \
