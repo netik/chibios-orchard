@@ -658,7 +658,7 @@ static void state_vs_screen_tick(void) {
     }
   }
 
-  if (animtick > 60)
+  if (animtick > 50)
     changeState(MOVE_SELECT);
 
 }
@@ -1692,7 +1692,8 @@ static void fight_event(OrchardAppContext *context,
       fight_funcs[current_fight_state].tick();
 
     tickHandle(context);
-    chprintf (stream, "RX STATE: %d\r\n", msgReceived (context));    
+    //    chprintf (stream, "RX STATE: %d\r\n", msgReceived (context));
+
     // update the clock regardless of state.
     if (countdown > 0) {
       // our time reference is based on elapsed time. We will init if need be.
