@@ -37,6 +37,7 @@
 
 #include "ff.h"
 #include "ffconf.h"
+#include "ides_gfx.h"
 
 #include <string.h>
 
@@ -99,9 +100,10 @@ photos_event (OrchardAppContext *context,
 
 	if (event->type == appEvent && event->app.event == appStart) {
 		if (f_opendir (&p->d, "photos") != FR_OK)
-			orchardAppExit ();
+                  // give a helpful message if no photo dir.
+                  putImageFile("nophoto.rgb", 0, 0);
 		else
-			orchardAppTimer (context, 1000, FALSE);
+                  orchardAppTimer (context, 1000, FALSE);
 	}
 
 	if (event->type == timerEvent) {

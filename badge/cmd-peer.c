@@ -14,7 +14,7 @@ void cmd_peerlist(BaseSequentialStream *chp, int argc, char *argv[])
 {
   (void)argv;
   (void)argc;
-  user **enemies;
+  peer **enemies;
   int i,cnt;
 
   cnt = 0;
@@ -42,7 +42,7 @@ void cmd_peerlist(BaseSequentialStream *chp, int argc, char *argv[])
 orchard_command("peers", cmd_peerlist);
 
 void cmd_peeradd(BaseSequentialStream *chp, int argc, char *argv[]) {
-  user **enemies;
+  peer **enemies;
   uint16_t i,ic,hp,level;
 
   if (argc != 5) {
@@ -69,8 +69,8 @@ void cmd_peeradd(BaseSequentialStream *chp, int argc, char *argv[]) {
     osalMutexUnlock(&enemies_mutex);
   } else {
     osalMutexLock(&enemies_mutex);
-    enemies[i] = (user *) chHeapAlloc(NULL, sizeof(user));
-    enemies[i]->ttl = ENEMIES_TTL_INITIAL;
+    enemies[i] = (peer *) chHeapAlloc(NULL, sizeof(peer));
+    enemies[i]->ttl = PEER_TTL_INITIAL;
     enemies[i]->in_combat = ic;
     enemies[i]->hp = hp;
     enemies[i]->level = level;
@@ -95,19 +95,19 @@ void cmd_peersim(BaseSequentialStream *chp, int argc, char *argv[]) {
   (void) chp;
   (void) argc;
   (void) argv;
-  user **enemies;
+  peer **enemies;
 
   enemies = enemiesGet();
   osalMutexLock(&enemies_mutex);
   for (int i=0; i< MAX_ENEMIES; i++) {
     if (enemies[i] == NULL) {
       char tmp[15];
-      enemies[i] = (user *) chHeapAlloc(NULL, sizeof(user));
+      enemies[i] = (peer *) chHeapAlloc(NULL, sizeof(peer));
       // enemies[i]->ttl will be filled in by the recipient.
       enemies[i]->current_type = p_guard;
       enemies[i]->p_type = p_guard;
       enemies[i]->netid = i; // fake 
-      enemies[i]->ttl = 10;
+      enemies[i]->ttl = 12;
       enemies[i]->in_combat = 0;
       enemies[i]->level = 9;
 

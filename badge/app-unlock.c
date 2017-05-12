@@ -273,9 +273,6 @@ static void updatecode(OrchardAppContext *context, uint8_t position, int8_t dire
 
   // update labels
   switch(position) {
-  case 0:
-    wi = p->ghNum1;
-    break;
   case 1:
     wi = p->ghNum2;
     break;
@@ -287,6 +284,9 @@ static void updatecode(OrchardAppContext *context, uint8_t position, int8_t dire
     break;
   case 4:
     wi = p->ghNum5;
+    break;
+  default: /* 0 */
+    wi = p->ghNum1;
     break;
   }
 

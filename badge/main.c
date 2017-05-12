@@ -189,7 +189,7 @@ static void print_mcu_info(void) {
 }
 
 static void radio_ping_handler(KW01_PKT *pkt) {
-  user * u;
+  peer * u;
   userconfig *c = getConfig();
   
 #ifdef DEBUG_PINGS
@@ -199,7 +199,8 @@ static void radio_ping_handler(KW01_PKT *pkt) {
            pkt->kw01_hdr.kw01_prot,
            (uint8_t)KW01_RSSI(pkt->kw01_rssi));
 #endif
-  u = (user *)pkt->kw01_payload;
+  
+  u = (peer *)pkt->kw01_payload;
 
   if (c->unlocks & UL_PINGDUMP) { 
     chprintf(stream, "\r\nPING: {\"name\":\"%s\"," \

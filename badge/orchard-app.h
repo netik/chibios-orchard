@@ -21,9 +21,8 @@
 // max level of credit a enemy can have; defines how long a record can stay around
 // once a enemy goes away. Roughly equal to
 // 2 * (PING_MIN_INTERVAL + PING_RAND_INTERVAL / 2 * MAX_CREDIT) milliseconds
-#define ENEMIES_TTL_INITIAL  4
-#define ENEMIES_TTL_MAX  12
-#define ENEMIES_SORT_HYSTERESIS 4
+#define PEER_TTL_INITIAL  4
+#define PEER_MAX_TTL  12
 
 struct _OrchardApp;
 typedef struct _OrchardApp OrchardApp;
@@ -57,8 +56,8 @@ void enemiesSort(void);
 void enemiesLock(void);
 void enemiesUnlock(void);
 uint8_t enemyCount(void);
-user *enemyAdd(user *u);
-user **enemiesGet(void);
+peer *enemyAdd(peer *);
+peer **enemiesGet(void);
 
 #define MAX_ENEMIES  16   // max # of enemies to track
 #define UI_IDLE_TIME MS2ST(10000) // after 8 seconds, abort to main
