@@ -126,7 +126,6 @@ static uint16_t calc_xp_gain(uint8_t won) {
 
 static void changeState(fight_state nextstate) {
   // call previous state exit
-  // so long as we are updating state, no one else gets in.
 
   if (nextstate == current_fight_state) {
     // do nothing.
@@ -372,10 +371,8 @@ static void state_move_select_tick() {
     // animate arrows
     //
     // Every 66mS our timer fires. Wee'd like a blink rate of 250Ms on/off or so with no sleeping.
-    // frames 0-4 we are on. frames 5-8 we are off
+    // frames 0-4 on. frames 5-8 off
     if ((animtick > 0) && (animtick < 5)) { 
-      gdispFillArea(160, POS_PLAYER2_Y, 50,150,Black);
-    } else { 
       putImageFile("ar50.rgb",
                    160,
                    POS_PLAYER2_Y);
@@ -387,13 +384,16 @@ static void state_move_select_tick() {
       putImageFile("ar50.rgb",
                    160,
                    POS_PLAYER2_Y + 100);
+    } else { 
+      gdispFillArea(160, POS_PLAYER2_Y, 50,150,Black);
     }
   }
 
   if (animtick > 8) animtick = 0;
   
   if (countdown <= 0) {
-    // TODO -- handle a move when the other player gives up
+    /* TODO -- handle a move better when the other player gives
+       up. right now we kill the round */
     do_timeout();
   }
 }
@@ -420,7 +420,6 @@ static void screen_select_draw(int8_t initial) {
   // x/y cursors
   uint16_t xpos = 0; 
   uint16_t ypos = 0; 
-
 
   levelcolor = Lime;
 
