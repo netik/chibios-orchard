@@ -1,6 +1,6 @@
 #!/bin/bash
 
-(cd badge; make)
+make
 
 #/usr/local/bin/openocd -f interface/cmsis-dap.cfg \
 #/usr/local/bin/openocd -f interface/ftdi/olimex-arm-usb-ocd-h.cfg \

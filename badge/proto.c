@@ -21,10 +21,13 @@ protoInit (OrchardAppContext *context)
   ProtoHandles * p;
   
   p = (((FightHandles *)context->priv)->proto);
-  
+
   p->state = PROTO_STATE_IDLE;
   p->rxseq = p->txseq = rand();
   p->interval = PROTO_TICK_US + (rand () & 0xFFFF);
+
+  p->cb_ack = p->cb_recv = p->cb_timeout = NULL;
+
   ringInit(&p->txring);
   
   return;
@@ -201,9 +204,10 @@ rxHandle (OrchardAppContext *context, KW01_PKT * pkt)
     // we're gonna reuse the proto memory because reasons
     ringGetItem(&p->txring, true, proto);
 
-    // warning -- if we got an ack here we need a calback...
-    // because sending this packet will make it appear that we are still waiting for
-    // the original ack
+    // handle the ack callback
+    if (p->cb_ack != NULL)
+      p->cb_ack(pkt);
+
     if (! ringIsEmpty(&p->txring) ){
       ringGetItem(&p->txring, false, proto); // no dequeue, we're not done.
       p->state = PROTO_STATE_WAITACK;

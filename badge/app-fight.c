@@ -71,6 +71,7 @@ static KW01_PKT pending_enemy_pkt;
 static peer current_enemy;                    // current enemy we are attacking/talking to
 
 /* prototypes */
+static void fight_ack_callback(KW01_PKT *pkt);
 static void fight_recv_callback(KW01_PKT *pkt);
 static void fight_timeout_callback(KW01_PKT * pkt);
 static void do_timeout(void);
@@ -1548,7 +1549,9 @@ static void fight_start(OrchardAppContext *context) {
 
   /* set callbacks */
   p->proto->cb_timeout = fight_timeout_callback;
-  p->proto->cb_recv = fight_recv_callback; 
+  p->proto->cb_recv = fight_recv_callback;
+  p->proto->cb_ack = fight_ack_callback;
+
   /* set packet size */
   p->proto->mtu = sizeof(fightpkt);
   
@@ -2010,6 +2013,28 @@ static void fightRadioEventHandler(KW01_PKT * pkt) {
   return;
 }
 
+static void fight_ack_callback(KW01_PKT *pkt) {
+  /* this is called when one of our packets is ACK'd */
+  fightpkt u;
+  PACKET * proto; 
+  proto = (PACKET *)&pkt->kw01_payload;
+  //  userconfig *config = getConfig();
+  
+  /* unpack the packet */
+  memcpy(&u, proto->prot_payload, sizeof(fightpkt));
+
+  /* what kind of packet was this */
+  switch(u.opcode) {
+  case OP_BATTLE_REQ:
+    // we are ack'd, let's go.
+    if (current_fight_state == ENEMY_SELECT) { 
+      changeState(APPROVAL_WAIT);
+    }
+    break;
+  }
+
+}  
+  
 static void fight_recv_callback(KW01_PKT *pkt)
 {
   /* this is called by our protocol code when we receive a packet */
@@ -2038,11 +2063,6 @@ static void fight_recv_callback(KW01_PKT *pkt)
   case IDLE:
   case ENEMY_SELECT:
     // handle grants
-    if (u.opcode == OP_BATTLE_REQ_ACK) { 
-      // we are ack'd, let's go.
-      changeState(APPROVAL_WAIT);
-    }
-    
     if (u.opcode == OP_GRANT) { 
       strcpy(tmp, "YOU RECEIVED ");
       switch (u.damage) {
@@ -2092,7 +2112,6 @@ static void fight_recv_callback(KW01_PKT *pkt)
       
       ourattack = 0;
       theirattack = 0;
-      sendGamePacket(OP_BATTLE_REQ_ACK);
       changeState(APPROVAL_DEMAND);
       return;
     }
