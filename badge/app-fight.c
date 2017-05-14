@@ -725,6 +725,8 @@ static void state_show_results_enter() {
   gdispFillArea(160, POS_PLAYER2_Y, 50, 150,Black);
   putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
 
+  animtick = 0;
+  
   // if they didn't go and we didn't go, abort.
   if ((ourattack <= 0) && (theirattack <= 0)) {
     do_timeout();
@@ -875,8 +877,9 @@ static void state_show_results_enter() {
   }
   
   updatehp();
-  
+
   chThdSleepMilliseconds(500);
+  
   gdispDrawStringBox (textx,text_p1_y,50,50,ourdmg_s,fontFF,Black,justifyLeft);
   gdispDrawStringBox (textx+60,text_p2_y,50,50,theirdmg_s,fontFF,Black,justifyRight);
   
@@ -1053,6 +1056,28 @@ static void state_show_results_enter() {
 }
 
 static void state_show_results_tick() {
+  animtick++;
+
+  // Animate the attack results
+  // We have to do all of this tick-based or we will lose network traffic,
+  // and incur resends.
+
+  // "frame 1", Setup the screen
+
+  // "frame 2", 500 mS later, (should be a dacWait) (frame 8)
+
+  // "frame 3", 100 mS later show idle frame  (frame 10)
+
+  // if dying... 
+  // "frame 4" animate deth1, sleep 250mS
+  // "frame 5" animate deth2 250mS
+  // "frame 6" put up caesear messaging if any
+  // "frame 7", 1500mS later play a sample ?? why 1500mS
+  
+  // further frames - deal with FIN or NEXTROUND
+  
+  // end animations
+  
   if (countdown <= 0) { 
     orchardAppTimer(instance.context, 0, false); // shut down the timer
     screen_alert_draw(true, "NO NEXTROUND PKT?");
@@ -1198,6 +1223,7 @@ static void sendAttack(void) {
                       fontSM, White, justifyCenter);
 
   sendGamePacket(OP_IMOVED);
+  changeState(POST_MOVE);
 }
 
 static void draw_attack_buttons(void) {
@@ -2014,7 +2040,9 @@ static void fightRadioEventHandler(KW01_PKT * pkt) {
 }
 
 static void fight_ack_callback(KW01_PKT *pkt) {
-  /* this is called when one of our packets is ACK'd */
+  /* this is called when one of our packets is ACK'd state changes, if
+   * they are based on the network should only happen here !
+   */
   fightpkt u;
   PACKET * proto; 
   proto = (PACKET *)&pkt->kw01_payload;
@@ -2023,7 +2051,7 @@ static void fight_ack_callback(KW01_PKT *pkt) {
   /* unpack the packet */
   memcpy(&u, proto->prot_payload, sizeof(fightpkt));
 
-  /* what kind of packet was this */
+  /* what kind of packet was ACK'd? */
   switch(u.opcode) {
   case OP_BATTLE_REQ:
     // we are ack'd, let's go.
@@ -2031,6 +2059,21 @@ static void fight_ack_callback(KW01_PKT *pkt) {
       changeState(APPROVAL_WAIT);
     }
     break;
+  case OP_BATTLE_GO_ACK:
+    if (current_fight_state == APPROVAL_WAIT) { 
+      changeState(VS_SCREEN);
+    }
+    break;
+  case OP_IMOVED:
+    if (current_fight_state == POST_MOVE && last_damage != -1) { 
+      // if you ACK my move, and I am in POST_MOVE and I have your
+      // move, we can show results
+      changeState(SHOW_RESULTS);
+    }
+  case OP_NEXTROUND:
+    if (current_fight_state == SHOW_RESULTS) {
+      changeState(MOVE_SELECT);
+    }
   }
 
 }  
@@ -2116,15 +2159,9 @@ static void fight_recv_callback(KW01_PKT *pkt)
       return;
     }
     break;
-  case APPROVAL_DEMAND:
-    if (u.opcode == OP_BATTLE_GO_ACK) {
-      changeState(VS_SCREEN);
-    }
-    break;
   case APPROVAL_WAIT:
     if (u.opcode == OP_BATTLE_GO) {
       sendGamePacket(OP_BATTLE_GO_ACK);
-      changeState(VS_SCREEN);
     }
     if (u.opcode == OP_BATTLE_DECLINED) {
       orchardAppTimer(instance.context, 0, false);
@@ -2136,59 +2173,31 @@ static void fight_recv_callback(KW01_PKT *pkt)
       return;
     }
     break;
+  case APPROVAL_DEMAND:
+    if (u.opcode == OP_BATTLE_GO_ACK) {
+      changeState(VS_SCREEN);
+    }
+    break;
+#ifdef DEBUG_FIGHT_NETWORK
   case MOVE_SELECT:
     if (u.opcode == OP_IMOVED) {
       // If I see OP_IMOVED from the other side while we are in
       // MOVE_SELECT, store that move for later. 
-      
-#ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "RECV MOVE: (select) %d. our move %d.\r\n", theirattack, ourattack);
-#endif /* DEBUG_FIGHT_NETWORK */
-      sendGamePacket(OP_IMOVED_ACK);
-    }
-    if (u.opcode == OP_IMOVED_ACK) {
-      // if my move has been acked I need to be in POST_MOVE
-      changeState(POST_MOVE);
-    }
-    if (u.opcode == OP_TURNOVER) {
-      // you went before I did.
-      sendGamePacket(OP_TURNOVER_ACK);
-      changeState(SHOW_RESULTS);
     }
     break;
   case POST_MOVE: // no-op
     if (u.opcode == OP_IMOVED) {
-#ifdef DEBUG_FIGHT_NETWORK
-      chprintf(stream, "RECV MOVE: (postmove) %d. our move %d. - TURN OVER\r\n", theirattack, ourattack);
+      chprintf(stream, "RECV MOVE: (postmove) %d. our move %d. - TURNOVER!\r\n", theirattack, ourattack);
+      changeState(SHOW_RESULTS);
+      return;
+    }
 #endif /* DEBUG_FIGHT_NETWORK */
-      sendGamePacket(OP_TURNOVER);
-      return;
-    }
-    
-    if (u.opcode == OP_TURNOVER) { 
-      // if we are post move, and we get a turnover packet, then just go straight to
-      // results, we don't need an ACK at this point.
-      sendGamePacket(OP_TURNOVER_ACK);
-      changeState(SHOW_RESULTS);
-      return;
-    }
-
-    if (u.opcode == OP_TURNOVER_ACK) {
-      // they have acked our turnover and we're done.
-      changeState(SHOW_RESULTS);
-      return;
-    }
-    
     break;
   case SHOW_RESULTS:
     if ((u.opcode == OP_NEXTROUND) && (fightleader == false)) {
-      sendGamePacket(OP_NEXTROUND_ACK);
       changeState(MOVE_SELECT);
       return;
-    }
-
-    if (u.opcode == OP_NEXTROUND_ACK) {
-      changeState(MOVE_SELECT);
     }
     break;
 

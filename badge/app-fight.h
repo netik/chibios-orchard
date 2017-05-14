@@ -41,13 +41,11 @@
 #define OP_YOUDIE           0x0c   /* I kill you */
 
 #define OP_IMOVED           0x10   /* Here is my Move */
-#define OP_IMOVED_ACK       0x11   /* OK, I got your move. */
-
-#define OP_TURNOVER         0x12   /* The round is over, let's show results */
-#define OP_TURNOVER_ACK     0x13   /* I acknowledge that the round has ended */
 
 #define OP_NEXTROUND        0x14   /* Please start the next round */
-#define OP_NEXTROUND_ACK    0x15   /* Please start the next round */
+
+#define OP_FIN              0xfe   /* It's over. */
+#define OP_FIN_ACK          0xff   /* I agree It's over. */
 
 typedef struct _FightHandles {
   GListener glFight;
