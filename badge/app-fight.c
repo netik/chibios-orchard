@@ -1128,6 +1128,13 @@ static void clearstatus(void) {
 		gdispGetWidth(),
 		fontsm_height,
 		Black);
+
+  // clear the area where 'KO' is, if any
+  gdispFillArea(140,
+		15,
+		40,
+		30,
+		Black);
 }
 
 
