@@ -182,10 +182,10 @@ static void state_idle_enter(void) {
   memset(&current_enemy, 0, sizeof(current_enemy));
   memset(&pending_enemy_pkt, 0, sizeof(KW01_PKT));
   memset(&rr,0,sizeof(RoundState));
+
   rr.last_hit = -1;
   rr.last_damage = -1;
-  rr.ourattack = 0;
-  rr.theirattack = 0;
+
   config->in_combat = 0;
   pending_enemy_netid = 0;
 

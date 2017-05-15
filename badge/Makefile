@@ -184,6 +184,8 @@ CSRC = main.c \
        app-default.c \
        app-setup.c \
        app-email.c \
+       app-tetris.c \
+       tetris.c \
        ides_gfx.c \
        ui-keyboard.c \
        ui-list.c \

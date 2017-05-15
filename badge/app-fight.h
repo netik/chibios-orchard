@@ -1,10 +1,15 @@
 #ifndef __APP_FIGHT_H__
 #define __APP_FIGHT_H__
 
-/* debugging - this protocol can be a real pain in the ass */
-#undef DEBUG_FIGHT_TICK        // show the clock tick events, ugfx events, and other misc events
-#define DEBUG_FIGHT_NETWORK    // show all network (radio) traffic
-#define DEBUG_FIGHT_STATE      // debug state changes
+/* Fight Network Debugging */
+
+/* enabling these may require you to turn off other apps in the
+   Makefile, as it will add an enormous amount of space to flash to
+   make things human-readable. */
+
+#undef DEBUG_FIGHT_TICK       // show the clock tick events, ugfx events, and other misc events
+#undef DEBUG_FIGHT_NETWORK    // show all network (radio) traffic
+#undef DEBUG_FIGHT_STATE      // debug state changes
   
 // where the progres bar goes 
 #define PROGRESS_BAR_X 60

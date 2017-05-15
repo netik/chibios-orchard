@@ -51,13 +51,12 @@ tickHandle (OrchardAppContext *context)
   
   p->interval = PROTO_TICK_US + (rand () & 0xFFFF);
   
-  //  chprintf (stream, "tick... int %d\r\n",
-  //	    p->intervals_since_last_contact);
-  
   if (p->state != PROTO_STATE_IDLE) {
     p->intervals_since_last_contact++;
     if (p->intervals_since_last_contact > 10) {
+#ifdef DEBUG_FIGHT_NETWORK
       chprintf (stream, "request timed out!!\r\n");
+#endif
       p->intervals_since_last_contact = 0;
       p->state = PROTO_STATE_IDLE;
       p->rxseq = p->txseq = rand();
@@ -70,7 +69,9 @@ tickHandle (OrchardAppContext *context)
    */
   if (p->state == PROTO_STATE_WAITACK) {
     ringGetItem(&p->txring, false, &p->wpkt);
+#ifdef DEBUG_FIGHT_NETWORK
     chprintf (stream, "resend packet %d\r\n", p->wpkt.prot_seq);
+#endif
     radioSend (&KRADIO1, p->netid, RADIO_PROTOCOL_FIGHT,
                sizeof(PACKET), &p->wpkt);
   }
@@ -97,12 +98,18 @@ msgSend (OrchardAppContext *context, void * payload)
     /* we're up to date and can immediately send. */
     res = radioSend (&KRADIO1, p->netid, RADIO_PROTOCOL_FIGHT,
                      sizeof(PACKET), &p->wpkt);
+#ifdef DEBUG_FIGHT_NETWORK
     chprintf(stream, "Send message to peer %x txseq %d\r\n", p->netid, p->txseq);
+#endif
     p->txseq++; 
-  } else { 
+#ifdef DEBUG_FIGHT_NETWORK
+  } else {
     chprintf(stream, "packet queued (still busy)\r\n");
   }
-
+#else
+  }
+#endif
+  
   // always inject to queue.
   ringPutItem(&p->txring, &p->wpkt);    
 
@@ -155,8 +162,9 @@ rxHandle (OrchardAppContext *context, KW01_PKT * pkt)
   
   p = (((FightHandles *)context->priv)->proto);
   proto = (PACKET *)&pkt->kw01_payload;
-  
+#ifdef DEBUG_FIGHT_NETWORK  
   chprintf(stream,"in rxhandle, packet from %x expecting from %x protocol %x flags %d\r\n", pkt->kw01_hdr.kw01_src, p->netid, pkt->kw01_hdr.kw01_prot, proto->prot_msg);
+#endif
   
   /*
    * Note: we may end getting here either because we received
@@ -179,7 +187,9 @@ rxHandle (OrchardAppContext *context, KW01_PKT * pkt)
    * a bogus packet.
    */
   if (proto->prot_seq == p->txseq) {
+#ifdef DEBUG_FIGHT_NETWORK
     chprintf (stream, "out of txsequence message!!!\r\n");
+#endif
     p->state = PROTO_STATE_IDLE;
     p->intervals_since_last_contact = 0;
 
@@ -195,8 +205,10 @@ rxHandle (OrchardAppContext *context, KW01_PKT * pkt)
   
   switch (proto->prot_msg) {
   case PROTO_ACK:
+#ifdef DEBUG_FIGHT_NETWORK
     chprintf (stream, "message %d was acknowledged\r\n",
               proto->prot_seq);
+#endif
     p->rxseq++;
     p->state = PROTO_STATE_CONNECTED;
     sts = 0;
@@ -224,7 +236,9 @@ rxHandle (OrchardAppContext *context, KW01_PKT * pkt)
     
   case PROTO_SYN:
     proto->prot_msg = PROTO_ACK;
+#ifdef DEBUG_FIGHT_NETWORK
     chprintf (stream, "message %d was received\r\n", proto->prot_seq);
+#endif
     /* send ACK */
     result = radioSend (&KRADIO1, p->netid, RADIO_PROTOCOL_FIGHT,
                         sizeof(PACKET), proto);
@@ -237,7 +251,9 @@ rxHandle (OrchardAppContext *context, KW01_PKT * pkt)
     break;
     
   case PROTO_RST:
+#ifdef DEBUG_FIGHT_NETWORK
     chprintf (stream, "peer disconnected\r\n", proto->prot_seq);
+#endif
     proto->prot_msg = PROTO_ACK;
     radioSend (&KRADIO1, p->netid, RADIO_PROTOCOL_FIGHT,
                sizeof(PACKET), proto);
@@ -249,7 +265,9 @@ rxHandle (OrchardAppContext *context, KW01_PKT * pkt)
       p->cb_timeout(pkt);
     break;
   default:
+#ifdef DEBUG_FIGHT_NETWORK
     chprintf(stream, "bogus packet\r\n");
+#endif
     break;
   }
   
