@@ -51,8 +51,8 @@ tickHandle (OrchardAppContext *context)
   
   p->interval = PROTO_TICK_US + (rand () & 0xFFFF);
   
-  chprintf (stream, "tick... int %d\r\n",
-	    p->intervals_since_last_contact);
+  //  chprintf (stream, "tick... int %d\r\n",
+  //	    p->intervals_since_last_contact);
   
   if (p->state != PROTO_STATE_IDLE) {
     p->intervals_since_last_contact++;

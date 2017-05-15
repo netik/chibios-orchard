@@ -18,6 +18,7 @@
 
 #include "orchard-app.h"
 #include "led.h"
+
 #include "proto.h"
 #include "orchard-ui.h"
 #include "images.h"
@@ -31,9 +32,9 @@
 #include "userconfig.h"
 #include "unlocks.h"
 #include "app-fight.h"
-
-#include "dec2romanstr.h"
 #include "gamestate.h"
+#include "dec2romanstr.h"
+
 
 /* Globals */
 static int32_t countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value. 
@@ -1711,11 +1712,11 @@ static void sendGamePacket(uint8_t opcode) {
   chprintf(stream, "%ld Transmit (to=%08x): currentstate=%d %s, opcode=0x%x, size=%d\r\n", chVTGetSystemTime()  , current_enemy.netid, current_fight_state, fight_state_name[current_fight_state],  packet.opcode,sizeof(packet));
 #endif /* DEBUG_FIGHT_NETWORK */
   res = msgSend(context, &packet);
-#ifdef DEBUG_FIGHT_NETWORK
+
   if (res == -1) {
     chprintf(stream, "transmit fail. packet too big / xmit busy?\r\n");
   }
-#endif
+
 }
 
 static void fight_event(OrchardAppContext *context,
@@ -2218,13 +2219,15 @@ static void fight_recv_callback(KW01_PKT *pkt)
       chprintf(stream, "RECV MOVE: (select) %d. our move %d.\r\n", rr.theirattack, rr.ourattack);
     }
     break;
+#endif /* DEBUG_FIGHT_NETWORK */
   case POST_MOVE: // no-op
     if (u.opcode == OP_IMOVED) {
+#ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "RECV MOVE: (postmove) %d. our move %d. - TURNOVER!\r\n", rr.theirattack, rr.ourattack);
+#endif /* DEBUG_FIGHT_NETWORK */
       changeState(SHOW_RESULTS);
       return;
     }
-#endif /* DEBUG_FIGHT_NETWORK */
     break;
   case SHOW_RESULTS:
     if ((u.opcode == OP_NEXTROUND) && (fightleader == false)) {
