@@ -70,6 +70,38 @@ typedef struct _FightHandles {
   
 } FightHandles;
 
+
+typedef struct _DmgLoc {
+  /* this structure represents a location and filename based on a 
+   * damage bitmap
+   */
+  int ypos;
+  char type;
+  char filename[13];
+} DmgLoc;
+
+typedef struct _RoundState {
+  /* round number */
+  uint8_t roundno;
+
+  /* damage state, before results */
+  int16_t last_hit;
+  int16_t last_damage;
+  uint8_t ourattack;
+  uint8_t theirattack;
+
+  /* damage state and UI after results */
+  color_t p1color;
+  color_t p2color;
+  int16_t overkill_us;
+  int16_t overkill_them;
+  char ourdmg_s[10];
+  char theirdmg_s[10];
+
+  uint8_t match;
+  uint8_t winner;
+} RoundState;
+
 extern orchard_app_instance instance;
 
 #endif

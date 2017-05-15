@@ -46,14 +46,10 @@ static fight_state next_fight_state = NONE;     // upon ACK, we will transition 
 static uint8_t current_enemy_idx = 0;
 static uint32_t last_ui_time = 0;
 static uint32_t last_tick_time = 0;
-static uint8_t ourattack = 0;
-static uint8_t theirattack = 0;
-static uint8_t roundno = 0;
 
 static uint16_t animtick = 1; 
 
-static int16_t last_hit = -1;
-static int16_t last_damage = -1;
+/* TODO: Move all this garbage to fight handles and not static */
 static font_t fontSM;
 static font_t fontLG;
 static font_t fontFF;
@@ -69,12 +65,16 @@ extern systime_t char_reset_at;
 static uint32_t pending_enemy_netid = 0;
 static KW01_PKT pending_enemy_pkt;
 static peer current_enemy;                    // current enemy we are attacking/talking to
+static RoundState rr;
 
 /* prototypes */
 static void fight_ack_callback(KW01_PKT *pkt);
 static void fight_recv_callback(KW01_PKT *pkt);
 static void fight_timeout_callback(KW01_PKT * pkt);
 static void do_timeout(void);
+static void show_damage(void);
+static void show_user_death(void);
+static void show_opponent_death(void);
 
 static uint16_t calc_xp_gain(uint8_t won) {
   userconfig *config = getConfig();
@@ -137,12 +137,14 @@ static void changeState(fight_state nextstate) {
   }
 #ifdef DEBUG_FIGHT_STATE
   chprintf(stream, "FIGHT: moving to state %d: %s...\r\n", nextstate, fight_state_name[nextstate]);
+
 #endif
   
   if (fight_funcs[current_fight_state].exit != NULL) {
     fight_funcs[current_fight_state].exit();
   }
 
+  animtick = 0;
   current_fight_state = nextstate;
 
   // enter the new state
@@ -178,10 +180,10 @@ static void state_idle_enter(void) {
   
   // reset params
   config->in_combat = 0;
-  last_hit = -1;
-  last_damage = -1;
-  ourattack = 0;
-  theirattack = 0;
+  rr.last_hit = -1;
+  rr.last_damage = -1;
+  rr.ourattack = 0;
+  rr.theirattack = 0;
   memset(&current_enemy, 0, sizeof(current_enemy));
   memset(&pending_enemy_pkt, 0, sizeof(KW01_PKT));
   pending_enemy_netid = 0;
@@ -284,7 +286,7 @@ static void state_approval_demand_enter(void) {
   last_tick_time = chVTGetSystemTime();
   countdown=DEFAULT_WAIT_TIME;
 
-  roundno = 0;
+  rr.roundno = 0;
   fightleader = false;
   dacStop();
   playAttacked();
@@ -307,10 +309,10 @@ static void state_move_select_enter() {
   FightHandles *p = instance.context->priv;
 
   animtick = 0;
-  ourattack = 0;
-  theirattack = 0;
-  last_damage = -1;
-  last_hit = -1;
+  rr.ourattack = 0;
+  rr.theirattack = 0;
+  rr.last_damage = -1;
+  rr.last_hit = -1;
 
   clearstatus();
 
@@ -333,9 +335,9 @@ static void state_move_select_enter() {
 
   // round N , fight!  note that we only have four of these rounds
   // pre-recorded. After that, we're just going to say 'FIGHT!'
-  roundno++;
-  if (roundno < 5) { 
-    chsnprintf(p->tmp, sizeof(p->tmp), "fight/round%d.raw", roundno);
+  rr.roundno++;
+  if (rr.roundno < 5) { 
+    chsnprintf(p->tmp, sizeof(p->tmp), "fight/round%d.raw", rr.roundno);
     dacPlay(p->tmp);
     dacWait();
   }
@@ -368,7 +370,7 @@ static void state_move_select_tick() {
 
   animtick++;
 
-  if ((ourattack & ATTACK_MASK) == 0) {
+  if ((rr.ourattack & ATTACK_MASK) == 0) {
     // animate arrows
     //
     // Every 66mS our timer fires. Wee'd like a blink rate of 250Ms on/off or so with no sleeping.
@@ -511,7 +513,7 @@ static void screen_select_draw(int8_t initial) {
 }
 
 static void state_enemy_select_enter(void) {
-  roundno = 0;
+  rr.roundno = 0;
   screen_select_draw(TRUE);
   draw_select_buttons();
 }
@@ -561,7 +563,6 @@ static void state_grant_exit(void) {
 }
 
 static void draw_idle_players() {
-  uint16_t ypos = 0; // cursor, so if we move or add things we don't have to rethink this
   userconfig *config = getConfig();
 
   gdispClear(Black);
@@ -572,20 +573,18 @@ static void draw_idle_players() {
                POS_PLAYER2_X, POS_PLAYER2_Y);
  
   gdispDrawStringBox (0,
-		      ypos,
+		      0,
 		      screen_width,
 		      fontsm_height,
 		      config->name,
 		      fontSM, Lime, justifyLeft);
 
   gdispDrawStringBox (0,
-		      ypos,
+		      0,
 		      screen_width,
 		      fontsm_height,
                       current_enemy.name,
 		      fontSM, Red, justifyRight);
-
-  ypos = ypos + gdispGetFontMetric(fontSM, fontHeight);
 
   putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
   
@@ -658,9 +657,9 @@ static void state_vs_screen_tick(void) {
     }
   }
 
-  if (animtick > 50)
+  if (animtick > 50) {
     changeState(MOVE_SELECT);
-
+  }
 }
 
 static void do_timeout(void) {
@@ -704,380 +703,413 @@ static void state_show_results_enter() {
    * OP_NEXTROUND at the end of our animations. an ACK for this packet
    * moves us back to MOVE_SELECT
    *
-   * If we are not the fightmaster, we start a countdown in tick(), 
+   * If we are not the fightmaster, we start a countdown in tick(),
    * waiting for OP_NEXTROUND to come in. 
    */
-  char c=' ';
-  char attackfn1[13];
-  char attackfn2[13];
-  char ourdmg_s[10];
-  char theirdmg_s[10];
-  char tmp[35];
-  
-  uint16_t textx, text_p1_y, text_p2_y;
-  color_t p1color, p2color;
-  userconfig *config = getConfig();
+  animtick = 0;
 
-  int16_t overkill_us, overkill_them;
+  // if they didn't go and we didn't go, abort, we shouldn't be here.
+  if ((rr.ourattack <= 0) && (rr.theirattack <= 0)) {
+    do_timeout();
+    return;
+  }
   
   // clear status bar, remove arrows, redraw ground
   clearstatus();
   gdispFillArea(160, POS_PLAYER2_Y, 50, 150,Black);
   putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
+}
 
-  animtick = 0;
-  
-  // if they didn't go and we didn't go, abort.
-  if ((ourattack <= 0) && (theirattack <= 0)) {
-    do_timeout();
-    return;
-  }
+static void getDamageLoc(DmgLoc *dloc, uint8_t attack) {
+  /* given an attackbitmap, return a dmgloc with a 
+   * filename and screen y position to show the attack graphics
+   */
+  dloc->type=' ';
   
   // get the right filename for the attack
-  if (ourattack & ATTACK_HI) {
-    c='h';
-    text_p2_y = 40;
+  if (attack & ATTACK_HI) {
+    dloc->type='h';
+    dloc->ypos = 40;
   }
 
-  if (ourattack & ATTACK_MID) {
-    c='m';
-    text_p2_y = 120;
+  if (attack & ATTACK_MID) {
+    dloc->type='m';
+    dloc->ypos = 120;
   }
   
-  if (ourattack & ATTACK_LOW) {
-    c='l';
-    text_p2_y = 160;
+  if (attack & ATTACK_LOW) {
+    dloc->type='l';
+    dloc->ypos = 160;
   }
 
-  if (c == ' ') 
-    strcpy(attackfn1, "idla");
+  if (dloc->type == ' ') 
+    strcpy(dloc->filename, "idla");
   else 
-    chsnprintf(attackfn1, sizeof(attackfn1), "att%c", c);
+    chsnprintf(dloc->filename, sizeof(dloc->filename), "att%c", dloc->type);
 
-  c = ' ';
-  textx = 100;
-  if (theirattack & ATTACK_HI) {
-    c='h';
-    text_p1_y = 40;
-  }
+  return;
+}
+
+static void calc_damage(RoundState *r) {
+  /* given the current game state calculdate the damage to both players
+   * and the appropriate colors needed to show results.
+   */
+  userconfig *config = getConfig();
   
-  if (theirattack & ATTACK_MID) {
-    c='m';
-    text_p1_y = 120;
-  }
-  
-  if (theirattack & ATTACK_LOW) {
-    c='l';
-    text_p1_y = 160;
-  }
-  
-  if (c == ' ') 
-    strcpy(attackfn2, "idla");
-  else 
-    chsnprintf(attackfn2, sizeof(attackfn2), "att%c", c);
-
-  // compute damages
-  // Both sides have sent damage based on stats.
-  // If the hits were the same, deduct some damage
-
-  // update the health bars
-  updatehp();
-
   // if we didn't get a hit at all, they failed to do any damage. 
-  if (last_damage == -1) last_damage = 0;
+  if (rr.last_damage == -1) rr.last_damage = 0;
 
-  // If hits are the same, discount the damage 20%, unless
-  // someone had a crit, crits override a match
-  
-  p1color = Red;
-  p2color = Red;
+  // The default hit color is Red.
+  r->p1color = Red;
+  r->p2color = Red;
 
   // do we have the DEF unlock?
   if (config->unlocks & UL_PLUSDEF) {
-    last_damage = (int)(last_damage * 0.9);
+    rr.last_damage = (int)(rr.last_damage * 0.9);
 #ifdef DEBUG_FIGHT_STATE
-    chprintf(stream,"FIGHT: Our damage reduced due to UL_PLUSDEF now:%d\r\n", last_damage);
+    chprintf(stream,"FIGHT: Our damage reduced due to UL_PLUSDEF now:%d\r\n", rr.last_damage);
 #endif
   }
+
   // do they have the DEF unlock?
   if (current_enemy.unlocks & UL_PLUSDEF) {
-    last_hit = (int)(last_hit * 0.9);
+    rr.last_hit = (int)(rr.last_hit * 0.9);
 #ifdef DEBUG_FIGHT_STATE
-    chprintf(stream,"FIGHT: Our Hit reduced due to UL_PLUSDEF now:%d\r\n", last_hit);
+    chprintf(stream,"FIGHT: Our Hit reduced due to UL_PLUSDEF now:%d\r\n", rr.last_hit);
 #endif
   }
   
-  if ( ((theirattack & ATTACK_MASK) > 0) &&
-       ((ourattack & ATTACK_MASK) > 0) &&
-       ((theirattack & ATTACK_ISCRIT) == 0) &&
-       ((ourattack & ATTACK_ISCRIT) == 0) &&
-       (ourattack == theirattack) ) {
+  // If hits are the same, discount the damage 20%, unless
+  // someone had a crit, crits override a match
+  
+  if ( ((rr.theirattack & ATTACK_MASK) > 0) &&
+       ((rr.ourattack & ATTACK_MASK) > 0) &&
+       ((rr.theirattack & ATTACK_ISCRIT) == 0) &&
+       ((rr.ourattack & ATTACK_ISCRIT) == 0) &&
+       (rr.ourattack == rr.theirattack) ) {
 #ifdef DEBUG_FIGHT_STATE
-    chprintf(stream,"FIGHT: Damage reduced due to match us:%d them:%d\r\n", last_damage, last_hit);
+    chprintf(stream,"FIGHT: Damage reduced due to match us:%d them:%d\r\n", rr.last_damage, rr.last_hit);
 #endif
-
-    last_damage = (int)(last_damage * 0.8);
-    last_hit    = (int)(last_hit * 0.8);
+    rr.last_damage = (int)(rr.last_damage * 0.8);
+    rr.last_hit    = (int)(rr.last_hit * 0.8);
 
     // hits are yellow because of match
-    p1color = Yellow;
-    p2color = Yellow;
+    r->p1color = Yellow;
+    r->p2color = Yellow;
 
-    // clank!
-    dacPlay("fight/clank1.raw");
-  } else { 
-    playHit();
+    // we will defer sound processing to the tick() function, but remember
+    // if this is a match or not here
+    r->match = true;
+  } else {
+    r->match = false;
   }
 
-  config->hp = config->hp - last_damage;
+  // However, if this is crit, we override the color.
+  if (rr.theirattack & ATTACK_ISCRIT) { r->p1color = Purple; }
+  if (rr.ourattack & ATTACK_ISCRIT) { r->p2color = Purple; }
+
+  config->hp = config->hp - rr.last_damage;
   if (config->hp < 0) {
-    overkill_us = -config->hp;
+    r->overkill_us = -config->hp;
     config->hp = 0;
+    r->winner = 2;
   }
 
-  current_enemy.hp = current_enemy.hp - last_hit;
+  current_enemy.hp = current_enemy.hp - rr.last_hit;
   if (current_enemy.hp < 0) {
-    overkill_them = -current_enemy.hp;
+    r->overkill_them = -current_enemy.hp;
     current_enemy.hp = 0;
+    r->winner = 1;
   }
-  
-  // animate the characters
-  chsnprintf (ourdmg_s, sizeof(ourdmg_s), "-%d", last_damage );
-  chsnprintf (theirdmg_s, sizeof(theirdmg_s), "-%d", last_hit );
 
-#ifdef DEBUG_FIGHT_STATE
-  chprintf(stream,"FIGHT: Damage report! Us: %d Them: %d\r\n", last_damage, last_hit);
-#endif
-  // 45 down. 
-  // 140 | -40- | 140
-  putImageFile(getAvatarImage(config->current_type, attackfn1, 1, false),
-               POS_PLAYER1_X, POS_PLAYER1_Y);
-  
-  putImageFile(getAvatarImage(current_enemy.current_type, attackfn2, 1, true),
-               POS_PLAYER2_X, POS_PLAYER2_Y);
-  chThdSleepMilliseconds(250);
-  putImageFile(getAvatarImage(config->current_type, attackfn1, 2, false),
-               POS_PLAYER1_X, POS_PLAYER1_Y);
-  
-  putImageFile(getAvatarImage(current_enemy.current_type, attackfn2, 2, true),
-               POS_PLAYER2_X, POS_PLAYER2_Y);
-  
-  if (theirattack & ATTACK_ISCRIT) { p1color = Purple; }
-  if (ourattack & ATTACK_ISCRIT) { p2color = Purple; }
-  
-  // you attacking us
-  gdispDrawStringBox (textx,text_p1_y,50,50,ourdmg_s,fontFF,p1color,justifyLeft);
-  
-  // us attacking you
-  gdispDrawStringBox (textx+60,text_p2_y,50,50,theirdmg_s,fontFF,p2color,justifyRight);
-  
-  if (theirattack & ATTACK_ISCRIT || ourattack & ATTACK_ISCRIT) {
-    dacPlay("fight/hit1.raw");
-    chThdSleepMilliseconds(500); // sleep to finish playback -- two hit sounds = crit
-  }
-  
-  updatehp();
+  // the damage is now finally calculated, update our strings.
+  chsnprintf (r->ourdmg_s, sizeof(r->ourdmg_s), "-%d", rr.last_damage );
+  chsnprintf (r->theirdmg_s, sizeof(r->theirdmg_s), "-%d", rr.last_hit );
 
-  chThdSleepMilliseconds(500);
-  
-  gdispDrawStringBox (textx,text_p1_y,50,50,ourdmg_s,fontFF,Black,justifyLeft);
-  gdispDrawStringBox (textx+60,text_p2_y,50,50,theirdmg_s,fontFF,Black,justifyRight);
-  
-  putImageFile(getAvatarImage(config->current_type, "idla", 1, false),
-               POS_PLAYER1_X, POS_PLAYER1_Y);
-  
-  putImageFile(getAvatarImage(current_enemy.current_type, "idla", 1, true),
-               POS_PLAYER2_X, POS_PLAYER2_Y);
-  
-  chThdSleepMilliseconds(100);
-  
-  /* if I kill you, then I will show victory and head back to the badge screen */
   // handle tie:
   if ((current_enemy.hp == 0) && (config->hp == 0)) {
     /* both are dead, so whomever has greatest overkill wins.
      *
      * but that's the same, then the guy who started it wins.
      */
-
-    if (overkill_us == overkill_them) {
+    
+    if (r->overkill_us == r->overkill_them) {
       /* Oh, come on. Another tie? Give the win to the initiator */
       if (fightleader == true) {
         config->hp = 1;
+        r->winner = 1;
       } else {
         current_enemy.hp = 1;
+        r->winner = 2;
       }
     } else {
-      if (overkill_us > overkill_them) {
+      if (r->overkill_us > r->overkill_them) {
         /* we lose */
         current_enemy.hp = 1;
+        r->winner = 2;
       } else {
         config->hp = 1;
+        r->winner = 1;
       }
     }
-   
-  }
-  
-  if (current_enemy.hp == 0) {
-    changeState(ENEMY_DEAD);
-    dacPlay("fight/drop.raw");
-    putImageFile(getAvatarImage(current_enemy.current_type, "deth", 1, false),
-                 POS_PLAYER2_X, POS_PLAYER2_Y);
-    chThdSleepMilliseconds(250);
-    putImageFile(getAvatarImage(current_enemy.current_type, "deth", 2, false),
-                 POS_PLAYER2_X, POS_PLAYER2_Y);
-    chThdSleepMilliseconds(250);
-    chsnprintf(tmp, sizeof(tmp), "VICTORY!  (+%dXP)", calc_xp_gain(TRUE));
-    screen_alert_draw(false, tmp);
-
-    if (roundno == 1) {
-      // that was TOO easy, let's tell them about it
-      
-      // sleep to let drop.raw finish
-      chThdSleepMilliseconds(1500);
-      switch(rand() % 2 +1) {
-      case 1:
-        dacPlay("fight/outstnd.raw");
-        break;
-      default:
-        dacPlay("fight/flawless.raw");
-        break;
-      }
-    } else {
-      // victory!
-      dacWait();
-      dacPlay("yourv.raw");
-    }
-    
-    // reward XP and exit 
-    config->xp += calc_xp_gain(TRUE);
-    config->won++;
-    configSave(config);
-    
-    chThdSleepMilliseconds(ALERT_DELAY);
-  } else {
-    if (config->hp == 0) {
-      changeState(PLAYER_DEAD);
-      /* if you are dead, then you will do the same */
-      dacPlay("fight/defrmix.raw");
-
-      putImageFile(getAvatarImage(config->current_type, "deth", 1, false),
-                   POS_PLAYER1_X, POS_PLAYER1_Y);
-      chThdSleepMilliseconds(250);
-      putImageFile(getAvatarImage(config->current_type, "deth", 2, false),
-                   POS_PLAYER1_X, POS_PLAYER1_Y);
-      chThdSleepMilliseconds(250);
-
-      if (config->current_type == p_caesar) { 
-        chsnprintf(tmp, sizeof(tmp), "CAESAR HAS DIED. (+%dXP)", calc_xp_gain(FALSE));
-      } else { 
-        chsnprintf(tmp, sizeof(tmp), "YOU WERE DEFEATED (+%dXP)", calc_xp_gain(FALSE));
-      }
-      
-      screen_alert_draw(false, tmp);
-
-      // Insult the user if they lose in the 1st round.
-      if (roundno == 1) {
-        chThdSleepMilliseconds(1500);
-        switch(rand() % 3 + 1) {
-        case 1:
-          dacPlay("fight/pathtic.raw");
-          break;
-        case 2:
-          dacPlay("fight/nvrwin.raw");
-          break;
-        default:
-          dacPlay("fight/usuck.raw");
-          break;
-        }
-      } else {
-        // you lose, but let's be fun about it.
-        dacWait();
-        switch(current_enemy.current_type) {
-        case p_guard:
-          dacPlay("gwin.raw");
-          break;
-        case p_senator:
-          dacPlay("swin.raw");
-          break;
-        case p_caesar:
-          dacPlay("cwin.raw");
-          break;
-        case p_gladiatrix:
-          dacPlay("xwin.raw");
-          break;
-        case p_bender: /* KILL ALL HUMANS! */
-          dacPlay("bwin.raw");
-          break;
-        case p_notset:
-          break;
-        }
-      }
-      
-      // reward (some) XP and exit 
-      config->xp += calc_xp_gain(FALSE);
-      config->lost++;
-
-      // if you were caesar, put you back!
-      if (config->current_type == p_caesar) {
-        config->current_type = config->p_type;
-        char_reset_at = 0;
-      }
-      configSave(config);
-
-      chThdSleepMilliseconds(ALERT_DELAY);
-      chThdSleepMilliseconds(ALERT_DELAY);
-    }
-  }  
-
-  if (config->hp == 0 || current_enemy.hp == 0) {
-    // check for level UP
-    if ((config->level != calc_level(config->xp)) && (config->level != LEVEL_CAP)) {
-      // actual level up will be performed in-state
-      changeState(LEVELUP);
-      return;
-    }
-
-    // someone died, time to exit. 
-    orchardAppRun(orchardAppByName("Badge"));
-    return;
-  }
-
-  // no one is dead yet, go on!
-  if (fightleader == true) {
-    countdown = MS2ST(10000);
-    sendGamePacket(OP_NEXTROUND);
-  } else { 
-    /* else, we are waiting in state_show_results_tick() for a next round 
-     * packet. if we do not get on in short order, we abort.
-     */
-    last_tick_time = chVTGetSystemTime();
-    countdown = MS2ST(10000);
   }
 }
 
+static void show_damage(void) {
+  DmgLoc d;
+  userconfig *config = getConfig();
+
+  // update the health bars
+  updatehp();
+
+  // you attacking us
+  getDamageLoc(&d, rr.ourattack);
+  putImageFile(getAvatarImage(config->current_type, d.filename, 2, false),
+               POS_PLAYER1_X, POS_PLAYER1_Y);
+  gdispDrawStringBox (100,d.ypos,
+                      50,50,
+                      rr.ourdmg_s,
+                      fontFF,
+                      rr.p1color,
+                      justifyLeft);
+
+  // us attacking you
+  getDamageLoc(&d, rr.theirattack);  
+  putImageFile(getAvatarImage(current_enemy.current_type, d.filename, 2, true),
+               POS_PLAYER2_X, POS_PLAYER2_Y);
+  gdispDrawStringBox (160,d.ypos,
+                      50,50,
+                      rr.theirdmg_s,
+                      fontFF,
+                      rr.p2color,
+                      justifyRight);
+
+  // finally 
+  updatehp();
+}
+
+static void show_opponent_death() {
+  FightHandles *p = instance.context->priv;
+
+  dacPlay("fight/drop.raw");
+  
+  putImageFile(getAvatarImage(current_enemy.current_type, "deth", 1, false),
+               POS_PLAYER2_X, POS_PLAYER2_Y);
+  chThdSleepMilliseconds(250);
+  putImageFile(getAvatarImage(current_enemy.current_type, "deth", 2, false),
+               POS_PLAYER2_X, POS_PLAYER2_Y);
+  chThdSleepMilliseconds(250);
+  chsnprintf(p->tmp, sizeof(p->tmp), "VICTORY!  (+%dXP)", calc_xp_gain(TRUE));
+  screen_alert_draw(false, p->tmp);
+  
+  if (rr.roundno == 1) {
+    // that was TOO easy, let's tell them about it
+    
+    dacWait();
+    
+    switch(rand() % 2 +1) {
+    case 1:
+      dacPlay("fight/outstnd.raw");
+      break;
+    default:
+      dacPlay("fight/flawless.raw");
+      break;
+    }
+  } else {
+    // victory!
+    dacWait();
+    dacPlay("yourv.raw");
+  }
+}
+
+static void show_user_death() {
+  userconfig *config = getConfig();
+  FightHandles *p = instance.context->priv;
+  
+  /* if you are dead, then you will do the same */
+  dacPlay("fight/defrmix.raw");
+  
+  putImageFile(getAvatarImage(config->current_type, "deth", 1, false),
+               POS_PLAYER1_X, POS_PLAYER1_Y);
+  chThdSleepMilliseconds(250);
+  putImageFile(getAvatarImage(config->current_type, "deth", 2, false),
+               POS_PLAYER1_X, POS_PLAYER1_Y);
+  chThdSleepMilliseconds(250);
+  
+  if (config->current_type == p_caesar) { 
+    chsnprintf(p->tmp, sizeof(p->tmp), "CAESAR HAS DIED. (+%dXP)", calc_xp_gain(FALSE));
+  } else { 
+    chsnprintf(p->tmp, sizeof(p->tmp), "YOU WERE DEFEATED (+%dXP)", calc_xp_gain(FALSE));
+  }
+  
+  screen_alert_draw(false, p->tmp);
+  
+  // Insult the user if they lose in the 1st round.
+  if (rr.roundno == 1) {
+    dacWait(); // this may cause excessive sleeps, but it's in a different thread.. sooo...
+    switch(rand() % 3 + 1) {
+    case 1:
+      dacPlay("fight/pathtic.raw");
+      break;
+    case 2:
+      dacPlay("fight/nvrwin.raw");
+      break;
+    default:
+      dacPlay("fight/usuck.raw");
+      break;
+    }
+  } else {
+    // you lose, but let's be fun about it.
+    dacWait();
+    switch(current_enemy.current_type) {
+    case p_guard:
+      dacPlay("gwin.raw");
+      break;
+    case p_senator:
+      dacPlay("swin.raw");
+      break;
+    case p_caesar:
+      dacPlay("cwin.raw");
+      break;
+    case p_gladiatrix:
+      dacPlay("xwin.raw");
+      break;
+    case p_bender: /* KILL ALL HUMANS! */
+      dacPlay("bwin.raw");
+      break;
+    case p_notset:
+      break;
+    }
+  }
+  
+  // reward (some) XP and exit 
+  config->xp += calc_xp_gain(FALSE);
+  config->lost++;
+  
+  // if you were caesar, put you back!
+  if (config->current_type == p_caesar) {
+    config->current_type = config->p_type;
+    char_reset_at = 0;
+  }
+  configSave(config);
+}
+
 static void state_show_results_tick() {
+  userconfig *config = getConfig();
+  DmgLoc d;
+  
+  // Animate the attack results. First, advance the tick counter.
   animtick++;
 
-  // Animate the attack results
-  // We have to do all of this tick-based or we will lose network traffic,
-  // and incur resends.
+  // frame 0, calculate damage and populate the RoundResult structure
+  // which will be used by subsequent frames
+  if (animtick == 1) { 
+    // calculate damage and colors
+    calc_damage(&rr);
+#ifdef DEBUG_FIGHT_STATE
+    chprintf(stream,"FIGHT: Damage report! Us: %d Them: %d\r\n", rr.last_damage, rr.last_hit);
+#endif
 
-  // "frame 1", Setup the screen
+    getDamageLoc(&d, rr.ourattack);
+    putImageFile(getAvatarImage(config->current_type, d.filename, 1, false),
+                 POS_PLAYER1_X, POS_PLAYER1_Y);
+    
+    getDamageLoc(&d, rr.theirattack);
+    putImageFile(getAvatarImage(current_enemy.current_type, d.filename, 1, true),
+                 POS_PLAYER2_X, POS_PLAYER2_Y);
 
-  // "frame 2", 500 mS later, (should be a dacWait) (frame 8)
+    show_damage();
+    
+    // play sound in frame 1
+    if (rr.match == true) { 
+      dacPlay("fight/clank1.raw");
+    } else {
+      dacPlay("fight/hit1.raw");
+    }
+  }
 
-  // "frame 3", 100 mS later show idle frame  (frame 10)
+  if (animtick == 6) {
+    // if anyone had a critical hit play our sound again
+    if ((rr.theirattack & ATTACK_ISCRIT) || (rr.ourattack & ATTACK_ISCRIT)) {
+      dacPlay("fight/hit1.raw");
+    }
+  }
+  
+  // "frame 2", 500 mS later reset our dudes
+  if (animtick == 13) { // ~460mS or so, remove the damage indicators and reset the chars
+    DmgLoc d;
+
+    getDamageLoc(&d, rr.ourattack);
+    gdispDrawStringBox (100, d.ypos,
+                        50, 50,
+                        rr.ourdmg_s,
+                        fontFF,
+                        Black,
+                        justifyLeft);
+
+    getDamageLoc(&d, rr.theirattack);
+    gdispDrawStringBox (160, d.ypos,
+                        50, 50,
+                        rr.theirdmg_s,
+                        fontFF,
+                        Black,
+                        justifyRight);
+
+    putImageFile(getAvatarImage(config->current_type, "idla", 1, false),
+                 POS_PLAYER1_X, POS_PLAYER1_Y);
+    putImageFile(getAvatarImage(current_enemy.current_type, "idla", 1, true),
+                 POS_PLAYER2_X, POS_PLAYER2_Y);
+  }
 
   // if dying... 
-  // "frame 4" animate deth1, sleep 250mS
-  // "frame 5" animate deth2 250mS
-  // "frame 6" put up caesear messaging if any
-  // "frame 7", 1500mS later play a sample ?? why 1500mS
+  // part 4 -  animate deth1
+  if (animtick == 18) { 
+    if (current_enemy.hp == 0) {
+      show_opponent_death();
+      // reward XP and exit 
+      config->xp += calc_xp_gain(TRUE);
+      config->won++;
+      configSave(config);
+    } else {
+      if (config->hp == 0) {
+        show_user_death();
+      }
+    }
+  }
   
-  // further frames - deal with FIN or NEXTROUND
-  
-  // end animations
-  
+  // END ANIMATIONS
+  if (animtick == 30) {
+    if (rr.winner == 0) {
+      // no one is dead yet, go on!
+      if (fightleader == true) {
+        countdown = MS2ST(10000);
+        sendGamePacket(OP_NEXTROUND);
+        // we will transition out on ACK 
+      } else { 
+        /* else, we'll spin, waiting in state_show_results_tick() for a next round 
+         * packet. if we do not get on in ten seconds, we abort.
+         */
+        last_tick_time = chVTGetSystemTime();
+        countdown = MS2ST(10000);
+      }
+    }
+  }
+
+  if (animtick == 80) { // we give some time here to let the game finish up
+    // END OF GAME
+    if (rr.winner != 0) { 
+      // check for level UP
+      if ((config->level != calc_level(config->xp)) && (config->level != LEVEL_CAP)) {
+        changeState(LEVELUP);
+        return;
+      }
+      
+      // someone died, time to exit.  -- TODO WAIT FOR FIN!!
+      orchardAppRun(orchardAppByName("Badge"));
+      return;
+    }
+  }
+
   if (countdown <= 0) { 
     orchardAppTimer(instance.context, 0, false); // shut down the timer
     screen_alert_draw(true, "NO NEXTROUND PKT?");
@@ -1086,7 +1118,6 @@ static void state_show_results_tick() {
     orchardAppRun(orchardAppByName("Badge"));
   }
 }
-
 //--------------------- END state funcs
 
 static void clearstatus(void) {
@@ -1173,7 +1204,7 @@ static uint16_t calc_hit(userconfig *config, peer *current_enemy) {
   
   // did we crit?
   if ( (int)rand() % 100 <= config->luck ) { 
-    ourattack |= ATTACK_ISCRIT;
+    rr.ourattack |= ATTACK_ISCRIT;
     basedmg = basedmg * 2;
   }
 
@@ -1189,20 +1220,20 @@ static void sendAttack(void) {
   // clear middle to wipe arrow animations
   gdispFillArea(160, POS_PLAYER2_Y, 50,150,Black);
   
-  if (ourattack & ATTACK_HI) {
+  if (rr.ourattack & ATTACK_HI) {
     putImageFile("ar50.rgb",
                  160,
                  POS_PLAYER2_Y);
   }
 
-  if (ourattack & ATTACK_MID) {
+  if (rr.ourattack & ATTACK_MID) {
     putImageFile("ar50.rgb",
                  160,
                  POS_PLAYER2_Y + 50);
     
   }
   
-  if (ourattack & ATTACK_LOW) {
+  if (rr.ourattack & ATTACK_LOW) {
     putImageFile("ar50.rgb",
                  160,
                  POS_PLAYER2_Y + 100);
@@ -1666,15 +1697,15 @@ static void sendGamePacket(uint8_t opcode) {
   packet.might = config->might;
 
   /* we'll always send -1, unless the user has made a move, then we'll calculate the hit. */
-  if (last_hit == -1 && ourattack != 0) {
+  if (rr.last_hit == -1 && rr.ourattack != 0) {
     // if this is a turn-over packet, then we also transmit damage (to
-    // them). calc_hit will also set ATTACK_ISCRIT in ourattack if
+    // them). calc_hit will also set ATTACK_ISCRIT in rr.ourattack if
     // need be.
-    last_hit = calc_hit(config, &current_enemy);
+    rr.last_hit = calc_hit(config, &current_enemy);
   }
 
-  packet.damage = last_hit;
-  packet.attack_bitmap = ourattack;
+  packet.damage = rr.last_hit;
+  packet.attack_bitmap = rr.ourattack;
 
 #ifdef DEBUG_FIGHT_NETWORK
   chprintf(stream, "%ld Transmit (to=%08x): currentstate=%d %s, opcode=0x%x, size=%d\r\n", chVTGetSystemTime()  , current_enemy.netid, current_fight_state, fight_state_name[current_fight_state],  packet.opcode,sizeof(packet));
@@ -1706,13 +1737,13 @@ static void fight_event(OrchardAppContext *context,
   
   if (event->type == timerEvent) {
 #ifdef DEBUG_FIGHT_TICK
-    chprintf(stream, "tick @ %d mystate is %d, countdown is %d, last tick %d, ourattack %d, theirattack %d, delta %d\r\n",
+    chprintf(stream, "tick @ %d mystate is %d, countdown is %d, last tick %d, rr.ourattack %d, rr.theirattack %d, delta %d\r\n",
              chVTGetSystemTime(),
              current_fight_state,
              countdown,
              last_tick_time,
-             ourattack,
-             theirattack,
+             rr.ourattack,
+             rr.theirattack,
              (chVTGetSystemTime() - last_tick_time));
 #endif /* DEBUG_FIGHT_TICK */
 
@@ -1783,20 +1814,20 @@ static void fight_event(OrchardAppContext *context,
     case MOVE_SELECT:
       // TODO: cleanup -This code duplicates code from the button
       // handler, but just a couple lines per button.
-      if ((ourattack & ATTACK_MASK) == 0) {
+      if ((rr.ourattack & ATTACK_MASK) == 0) {
         if ( (event->key.code == keyDown) &&
              (event->key.flags == keyPress) )  {
-          ourattack |= ATTACK_LOW;
+          rr.ourattack |= ATTACK_LOW;
           sendAttack();
         }
         if ( (event->key.code == keyRight) &&
              (event->key.flags == keyPress) )  {
-          ourattack |= ATTACK_MID;
+          rr.ourattack |= ATTACK_MID;
           sendAttack();
         }
         if ( (event->key.code == keyUp) &&
            (event->key.flags == keyPress) )  {
-          ourattack |= ATTACK_HI;
+          rr.ourattack |= ATTACK_HI;
           sendAttack();
         }
       } else {
@@ -1813,26 +1844,26 @@ static void fight_event(OrchardAppContext *context,
            * extend the structure any further 
            */
         case keyUp:
-          last_hit = UL_PLUSDEF;
+          rr.last_hit = UL_PLUSDEF;
           sendGamePacket(OP_GRANT);
           break;
         case keyDown:
-          last_hit = UL_LUCK;
+          rr.last_hit = UL_LUCK;
           sendGamePacket(OP_GRANT);
           break;
         case keyLeft:
-          last_hit = UL_HEAL;
+          rr.last_hit = UL_HEAL;
           sendGamePacket(OP_GRANT);
           break;
         case keyRight:
-          last_hit = UL_PLUSHP;
+          rr.last_hit = UL_PLUSHP;
           break;
         default:
-          last_hit = 0;
+          rr.last_hit = 0;
           break;
         }
 
-        if (last_hit != 0) { 
+        if (rr.last_hit != 0) { 
           screen_alert_draw(true, "GRANT SENT");
           dacPlay("fight/leveiup.raw");
           chThdSleepMilliseconds(ALERT_DELAY);
@@ -1955,17 +1986,17 @@ static void fight_event(OrchardAppContext *context,
         return;
       }
       
-      if ((ourattack & ATTACK_MASK) == 0) {
+      if ((rr.ourattack & ATTACK_MASK) == 0) {
         if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackLow) {
-          ourattack |= ATTACK_LOW;
+          rr.ourattack |= ATTACK_LOW;
           sendAttack();
         }
         if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackMid) {
-          ourattack |= ATTACK_MID;
+          rr.ourattack |= ATTACK_MID;
           sendAttack();
         }
         if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackHi) {
-          ourattack |= ATTACK_HI;
+          rr.ourattack |= ATTACK_HI;
           sendAttack();
         }
       } else {
@@ -2046,7 +2077,6 @@ static void fight_ack_callback(KW01_PKT *pkt) {
   fightpkt u;
   PACKET * proto; 
   proto = (PACKET *)&pkt->kw01_payload;
-  //  userconfig *config = getConfig();
   
   /* unpack the packet */
   memcpy(&u, proto->prot_payload, sizeof(fightpkt));
@@ -2065,15 +2095,17 @@ static void fight_ack_callback(KW01_PKT *pkt) {
     }
     break;
   case OP_IMOVED:
-    if (current_fight_state == POST_MOVE && last_damage != -1) { 
+    if (current_fight_state == POST_MOVE && rr.last_damage != -1) { 
       // if you ACK my move, and I am in POST_MOVE and I have your
       // move, we can show results
       changeState(SHOW_RESULTS);
     }
+    break;
   case OP_NEXTROUND:
     if (current_fight_state == SHOW_RESULTS) {
       changeState(MOVE_SELECT);
     }
+    break;
   }
 
 }  
@@ -2092,8 +2124,8 @@ static void fight_recv_callback(KW01_PKT *pkt)
   
   /* does this payload contain damage information? */
   if (u.damage != -1) {
-    theirattack = u.attack_bitmap;
-    last_damage = u.damage;
+    rr.theirattack = u.attack_bitmap;
+    rr.last_damage = u.damage;
   }
   
   // DEBUG
@@ -2153,8 +2185,8 @@ static void fight_recv_callback(KW01_PKT *pkt)
       current_enemy.won = u.won;
       current_enemy.lost = u.lost;
       
-      ourattack = 0;
-      theirattack = 0;
+      rr.ourattack = 0;
+      rr.theirattack = 0;
       changeState(APPROVAL_DEMAND);
       return;
     }
@@ -2183,12 +2215,12 @@ static void fight_recv_callback(KW01_PKT *pkt)
     if (u.opcode == OP_IMOVED) {
       // If I see OP_IMOVED from the other side while we are in
       // MOVE_SELECT, store that move for later. 
-      chprintf(stream, "RECV MOVE: (select) %d. our move %d.\r\n", theirattack, ourattack);
+      chprintf(stream, "RECV MOVE: (select) %d. our move %d.\r\n", rr.theirattack, rr.ourattack);
     }
     break;
   case POST_MOVE: // no-op
     if (u.opcode == OP_IMOVED) {
-      chprintf(stream, "RECV MOVE: (postmove) %d. our move %d. - TURNOVER!\r\n", theirattack, ourattack);
+      chprintf(stream, "RECV MOVE: (postmove) %d. our move %d. - TURNOVER!\r\n", rr.theirattack, rr.ourattack);
       changeState(SHOW_RESULTS);
       return;
     }
