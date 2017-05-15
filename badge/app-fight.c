@@ -291,10 +291,15 @@ static void state_approval_demand_enter(void) {
 static void state_approval_demand_exit(void) {
   FightHandles *p = instance.context->priv;
 
-  gwinDestroy (p->ghDeny);
-  gwinDestroy (p->ghAccept);
-  p->ghDeny = NULL;
-  p->ghAccept = NULL;
+  if (p->ghDeny != NULL) {
+    gwinDestroy (p->ghDeny);
+    p->ghDeny = NULL;
+  }
+
+  if (p->ghAccept != NULL) { 
+    gwinDestroy (p->ghAccept);
+    p->ghAccept = NULL;
+  }
 }
 
 static void state_move_select_enter() {
@@ -2007,6 +2012,10 @@ static void fight_event(OrchardAppContext *context,
         // Pindar, 522-443 BC.
         // do our cleanups now so that the screen doesn't redraw while exiting
         orchardAppTimer(context, 0, false); // shut down the timer
+        gwinDestroy (p->ghDeny);
+        p->ghDeny = NULL;
+        gwinDestroy (p->ghAccept);
+        p->ghAccept = NULL;
         
         sendGamePacket(OP_BATTLE_DECLINED);
         screen_alert_draw(true, "Dulce bellum inexpertis.");
@@ -2016,6 +2025,11 @@ static void fight_event(OrchardAppContext *context,
         return;
       }
       if ( ((GEventGWinButton*)pe)->gwin == p->ghAccept) {
+        gwinDestroy (p->ghDeny);
+        p->ghDeny = NULL;
+        gwinDestroy (p->ghAccept);
+        p->ghAccept = NULL;
+
         config->in_combat = true;
         configSave(config);
         screen_alert_draw(false, "SYNCING...");
