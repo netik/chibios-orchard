@@ -329,22 +329,6 @@ static void state_move_select_enter() {
   // round N , fight!  note that we only have four of these rounds
   // pre-recorded. After that, we're just going to say 'FIGHT!'
   rr.roundno++;
-  if (rr.roundno < 5) { 
-    chsnprintf(p->tmp, sizeof(p->tmp), "fight/round%d.raw", rr.roundno);
-    dacPlay(p->tmp);
-    dacWait();
-  }
-
-  if (current_enemy.hp < (maxhp(current_enemy.current_type, current_enemy.unlocks,current_enemy.level) * .2)) {
-    if (current_enemy.current_type == p_gladiatrix) { 
-      dacPlay("fight/finishf.raw");  // Finish Her!
-    } else {
-      dacPlay("fight/finishm.raw");  // Finish Him!
-    }
-  } else { 
-    dacPlay("fight/fight.raw");
-  }
-  dacWait();
   
   // remove choose attack message by overprinting in black
   gdispDrawStringBox (0,
@@ -359,10 +343,31 @@ static void state_move_select_enter() {
 }
 
 static void state_move_select_tick() {
+  FightHandles *p;
+  p = instance.context->priv;
+
   drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y,PROGRESS_BAR_W,PROGRESS_BAR_H,MOVE_WAIT_TIME,countdown, true, false);
 
   animtick++;
 
+  /* fight sounds */
+  if (animtick == 1) { 
+    chsnprintf(p->tmp, sizeof(p->tmp), "fight/round%d.raw", rr.roundno);
+    dacPlay(p->tmp);
+  }
+
+  if (animtick == 60) { /* 4 seconds in */
+    if (current_enemy.hp < (maxhp(current_enemy.current_type, current_enemy.unlocks,current_enemy.level) * .2)) {
+      if (current_enemy.current_type == p_gladiatrix) { 
+        dacPlay("fight/finishf.raw");  // Finish Her!
+      } else {
+        dacPlay("fight/finishm.raw");  // Finish Him!
+      }
+    } else { 
+      dacPlay("fight/fight.raw");
+    }
+  }
+  
   if ((rr.ourattack & ATTACK_MASK) == 0) {
     // animate arrows
     //
@@ -916,7 +921,6 @@ static void show_opponent_death() {
   
   if (rr.roundno == 1) {
     // that was TOO easy, let's tell them about it
-    
     dacWait();
     
     switch(rand() % 2 +1) {
@@ -958,7 +962,7 @@ static void show_user_death() {
   
   // Insult the user if they lose in the 1st round.
   if (rr.roundno == 1) {
-    dacWait(); // this may cause excessive sleeps, but it's in a different thread.. sooo...
+    dacWait(); 
     switch(rand() % 3 + 1) {
     case 1:
       dacPlay("fight/pathtic.raw");
