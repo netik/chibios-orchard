@@ -25,7 +25,7 @@ USE_OPT += -DREV2_RADIO_WAR -DRADIO_POLL_FREQ=1000
 # interrupts, we'll get stuck forever thinking the buttons are being
 # pressed. Only the real badge has the right joypad buttons anyway.
 
-#USE_OPT += -DENABLE_JOYPAD
+USE_OPT += -DENABLE_JOYPAD
 
 # enable this to bypass startup splash page and sponsors
 #USE_OPT += -DFAST_STARTUP
