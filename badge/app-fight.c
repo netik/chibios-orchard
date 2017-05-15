@@ -43,7 +43,6 @@ static int32_t countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer va
 static uint8_t fightleader = false;   
 
 static fight_state current_fight_state = IDLE;  // current state 
-static fight_state next_fight_state = NONE;     // upon ACK, we will transition to this state. 
 static uint8_t current_enemy_idx = 0;
 static uint32_t last_ui_time = 0;
 static uint32_t last_tick_time = 0;
@@ -179,15 +178,17 @@ static void state_idle_enter(void) {
     p->ghAttackLow = NULL;
   }
   
-  // reset params
-  config->in_combat = 0;
+  // reset game state
+  memset(&current_enemy, 0, sizeof(current_enemy));
+  memset(&pending_enemy_pkt, 0, sizeof(KW01_PKT));
+  memset(&rr,0,sizeof(RoundState));
   rr.last_hit = -1;
   rr.last_damage = -1;
   rr.ourattack = 0;
   rr.theirattack = 0;
-  memset(&current_enemy, 0, sizeof(current_enemy));
-  memset(&pending_enemy_pkt, 0, sizeof(KW01_PKT));
+  config->in_combat = 0;
   pending_enemy_netid = 0;
+
   ledSetFunction(fxlist[config->led_pattern].function);
 }
 
@@ -982,17 +983,6 @@ static void show_user_death() {
       break;
     }
   }
-  
-  // reward (some) XP and exit 
-  config->xp += calc_xp_gain(FALSE);
-  config->lost++;
-  
-  // if you were caesar, put you back!
-  if (config->current_type == p_caesar) {
-    config->current_type = config->p_type;
-    char_reset_at = 0;
-  }
-  configSave(config);
 }
 
 static void state_show_results_tick() {
@@ -1029,7 +1019,7 @@ static void state_show_results_tick() {
     }
   }
 
-  if (animtick == 6) {
+  if (animtick == 6) { 
     // if anyone had a critical hit play our sound again
     if ((rr.theirattack & ATTACK_ISCRIT) || (rr.ourattack & ATTACK_ISCRIT)) {
       dacPlay("fight/hit1.raw");
@@ -1074,6 +1064,16 @@ static void state_show_results_tick() {
     } else {
       if (config->hp == 0) {
         show_user_death();
+        // reward (some) XP and exit 
+        config->xp += calc_xp_gain(FALSE);
+        config->lost++;
+        
+        // if you were caesar, put you back!
+        if (config->current_type == p_caesar) {
+          config->current_type = config->p_type;
+          char_reset_at = 0;
+        }
+        configSave(config);
       }
     }
   }
@@ -1752,9 +1752,6 @@ static void fight_event(OrchardAppContext *context,
       fight_funcs[current_fight_state].tick();
 
     tickHandle(context);
-    //    chprintf (stream, "RX STATE: %d\r\n", msgReceived (context));
-
-    // update the clock regardless of state.
     if (countdown > 0) {
       // our time reference is based on elapsed time. We will init if need be.
       if (last_tick_time != 0) { 
@@ -1806,7 +1803,6 @@ static void fight_event(OrchardAppContext *context,
 
         // We're going to preemptively call this before changing state
         // so the screen doesn't go black while we wait for an ACK.
-        next_fight_state = APPROVAL_WAIT;
         screen_alert_draw(true, "Connecting...");
         sendGamePacket(OP_BATTLE_REQ);
         return;
@@ -1866,16 +1862,14 @@ static void fight_event(OrchardAppContext *context,
 
         if (rr.last_hit != 0) { 
           screen_alert_draw(true, "GRANT SENT");
-          dacPlay("fight/leveiup.raw");
+          dacPlay("fight/buff.raw");
           chThdSleepMilliseconds(ALERT_DELAY);
           orchardAppRun(orchardAppByName("Badge"));
-          next_fight_state = IDLE;
           sendGamePacket(OP_GRANT);
         } else {
           screen_alert_draw(true, "CANCELLED");
           dacPlay("fight/drop.raw");
           chThdSleepMilliseconds(ALERT_DELAY);
-          next_fight_state = IDLE;
           orchardAppRun(orchardAppByName("Badge"));
         }
       }
@@ -1921,7 +1915,6 @@ static void fight_event(OrchardAppContext *context,
 
         // We're going to preemptively call this before changing state
         // so the screen doesn't go black while we wait for an ACK.
-        next_fight_state = APPROVAL_WAIT;
         screen_alert_draw(true, "Connecting...");
         sendGamePacket(OP_BATTLE_REQ);
         return;
@@ -1962,7 +1955,6 @@ static void fight_event(OrchardAppContext *context,
         // do our cleanups now so that the screen doesn't redraw while exiting
         orchardAppTimer(context, 0, false); // shut down the timer
         
-        next_fight_state = IDLE;
         sendGamePacket(OP_BATTLE_DECLINED);
         screen_alert_draw(true, "Dulce bellum inexpertis.");
         dacPlay("fight/drop.raw");
@@ -2019,7 +2011,12 @@ static void fight_exit(OrchardAppContext *context) {
 
   // don't change back to idle state from any other function. Let fight_exit take care of it.
   changeState(IDLE);
-  
+    
+  gdispCloseFont(fontLG);
+  gdispCloseFont(fontSM);
+  gdispCloseFont(fontFF);
+  gdispCloseFont(fontXS);
+
   geventDetachSource (&p->glFight, NULL);
   geventRegisterCallback (&p->glFight, NULL, NULL);
 
@@ -2027,13 +2024,9 @@ static void fight_exit(OrchardAppContext *context) {
   chHeapFree (context->priv);
   context->priv = NULL;
   memset(&current_enemy, 0, sizeof(current_enemy));
+
   config->in_combat = 0;
   configSave(config);
-  
-  gdispCloseFont(fontLG);
-  gdispCloseFont(fontSM);
-  gdispCloseFont(fontFF);
-  gdispCloseFont(fontXS);
   return;
 }
 
@@ -2158,6 +2151,7 @@ static void fight_recv_callback(KW01_PKT *pkt)
       default:
         strcat(tmp,"AN UNLOCK!");
       }
+      dacPlay("fight/buff.raw");
       screen_alert_draw(true, tmp);
       /* merge the two */
       config->unlocks |= current_enemy.damage;
@@ -2168,10 +2162,10 @@ static void fight_recv_callback(KW01_PKT *pkt)
       return;
     }
     
-    if (u.opcode == OP_BATTLE_REQ) {
+    if (u.opcode == OP_BATTLE_REQ) { 
       /* copy the data over to current_enemy */
       memset(&current_enemy, 0, sizeof(current_enemy));
-      current_enemy.netid = pending_enemy_netid;
+        current_enemy.netid = pending_enemy_netid;
       strncpy(current_enemy.name, u.name, CONFIG_NAME_MAXLEN);
       current_enemy.p_type = u.p_type;
       current_enemy.current_type = u.current_type;
@@ -2188,6 +2182,7 @@ static void fight_recv_callback(KW01_PKT *pkt)
       
       rr.ourattack = 0;
       rr.theirattack = 0;
+
       changeState(APPROVAL_DEMAND);
       return;
     }

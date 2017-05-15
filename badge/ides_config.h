@@ -33,15 +33,26 @@
  * UL_PLUSDEF has been activated */
 #define HEAL_INTERVAL_US 1000000      /* 1 second */
 
-// production use 66666 uS = 15 FPS. Eeeviil...
-// testing use 1000000 (1 sec)
+/* The game framerate is 15 frames per second. We advance one frame
+ * per state tick and track this in the animtick global variable.
+ *
+ * If you make large updates to the screen that take longer than 66mS,
+ * you will have to reduce the frame rate and adjust animtion timings
+ * (animtick) in app-fight.c.
+ *
+ * We do not dynamically adjust the animiation times
+ * based on FPS or wallclok.
+ *
+ * 15FPS seems to be a good balance for this CPU. 
+ */
 #define FRAME_INTERVAL_US 66666
 
-// WAIT_TIMEs are always in system ticks.
-// caveat! the system timer is a uint32_t and can roll over! be aware!
+/* *_WAIT_TIMEs are always in system ticks. */
+/* caveat! the system timer is a uint32_t and can roll over! be aware! */
 #define DEFAULT_WAIT_TIME MS2ST(10000) // how long we wait for the user to respond. MUST BE IN SYSTEM TICKS. 
 #define MIN_HOLDOFF 50                 // we introduce a small delay if we are resending (contention protocol). MUST BE IN mS
 #define MAX_RETRIES 4                  // if we do that 3 times, abort.
 #define MOVE_WAIT_TIME MS2ST(15000)    // Max game time. MUST BE IN SYSTEM TICKS. If you do nothing, the game ends.
+
 #endif
 

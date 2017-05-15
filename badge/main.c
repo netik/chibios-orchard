@@ -203,7 +203,7 @@ static void radio_ping_handler(KW01_PKT *pkt) {
   u = (peer *)pkt->kw01_payload;
 
   if (c->unlocks & UL_PINGDUMP) { 
-    chprintf(stream, "\r\nPING: {\"name\":\"%s\"," \
+    chprintf(stream, "PING: {\"name\":\"%s\"," \
              "\"badgeid\":\"%08x\"," \
              "\"ptype\":\"%d\"," \
              "\"ctype\":\"%d\"," \
