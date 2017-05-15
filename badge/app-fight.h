@@ -68,6 +68,17 @@ typedef struct _FightHandles {
   GHandle ghLevelUpAgl;
   GHandle ghLevelUpMight;
 
+  font_t fontSM;
+  font_t fontLG;
+  font_t fontFF;
+  font_t fontXS;
+
+  /* memoize these things to reduce calls */
+  uint16_t screen_width;
+  uint16_t screen_height;
+  uint16_t fontsm_height;
+  uint16_t fontlg_height;
+
   /* text workspace */
   char tmp[40];
 
