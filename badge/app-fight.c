@@ -35,7 +35,6 @@
 #include "gamestate.h"
 #include "dec2romanstr.h"
 
-
 /* Globals */
 static int32_t countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer value. 
 
@@ -62,13 +61,14 @@ static RoundState rr;
 static void fight_ack_callback(KW01_PKT *pkt);
 static void fight_recv_callback(KW01_PKT *pkt);
 static void fight_timeout_callback(KW01_PKT * pkt);
+static void start_fight(OrchardAppContext *context);
 static void do_timeout(void);
 static void show_damage(void);
 static void show_user_death(void);
 static void show_opponent_death(void);
 
 static uint16_t calc_xp_gain(uint8_t won) {
-  userconfig *config = getConfig();
+  userconfig *config = getConfig();  
   float factor = 1;
 
   int8_t leveldelta;
@@ -291,15 +291,11 @@ static void state_approval_demand_enter(void) {
 static void state_approval_demand_exit(void) {
   FightHandles *p = instance.context->priv;
 
-  if (p->ghDeny != NULL) {
-    gwinDestroy (p->ghDeny);
-    p->ghDeny = NULL;
-  }
-
-  if (p->ghAccept != NULL) { 
-    gwinDestroy (p->ghAccept);
-    p->ghAccept = NULL;
-  }
+  gwinDestroy (p->ghDeny);
+  p->ghDeny = NULL;
+    
+  gwinDestroy (p->ghAccept);
+  p->ghAccept = NULL;
 }
 
 static void state_move_select_enter() {
@@ -361,7 +357,7 @@ static void state_move_select_tick() {
     dacPlay(p->tmp);
   }
 
-  if (animtick == 60) { /* 4 seconds in */
+  if (animtick == 15) { 
     if (current_enemy.hp < (maxhp(current_enemy.current_type, current_enemy.unlocks,current_enemy.level) * .2)) {
       if (current_enemy.current_type == p_gladiatrix) { 
         dacPlay("fight/finishf.raw");  // Finish Her!
@@ -378,7 +374,7 @@ static void state_move_select_tick() {
     //
     // Every 66mS our timer fires. Wee'd like a blink rate of 250Ms on/off or so with no sleeping.
     // frames 0-4 on. frames 5-8 off
-    if ((animtick > 0) && (animtick < 5)) { 
+    if (animtick % 8 < 5) { 
       putImageFile("ar50.rgb",
                    160,
                    POS_PLAYER2_Y);
@@ -395,8 +391,6 @@ static void state_move_select_tick() {
     }
   }
 
-  if (animtick > 8) animtick = 0;
-  
   if (countdown <= 0) {
     /* TODO -- handle a move better when the other player gives
        up. right now we kill the round */
@@ -537,11 +531,11 @@ static void state_enemy_select_exit() {
   gwinDestroy (p->ghExitButton);
   gwinDestroy (p->ghNextEnemy);
   gwinDestroy (p->ghPrevEnemy);
-
   p->ghAttack = NULL;
   p->ghExitButton = NULL;
   p->ghNextEnemy = NULL;
   p->ghPrevEnemy = NULL;
+
 }
 
 static void state_grant_enter(void) {
@@ -1777,6 +1771,30 @@ static void sendGamePacket(uint8_t opcode) {
 
 }
 
+static void start_fight(OrchardAppContext *context) {
+  FightHandles * p = context->priv;
+  userconfig *config = getConfig();
+  peer **enemies = enemiesGet();
+
+  // hide the buttons so they can't be hit again
+  gwinHide (p->ghAttack);
+  gwinHide (p->ghExitButton);
+  gwinHide (p->ghNextEnemy);
+  gwinHide (p->ghPrevEnemy);
+  
+  dacPlay("fight/select.raw");
+  fightleader = true;
+  memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(peer));
+  config->in_combat = true;
+  config->lastcombat = chVTGetSystemTime();
+  configSave(config);
+  
+  // We're going to preemptively call this before changing state
+  // so the screen doesn't go black while we wait for an ACK.
+  screen_alert_draw(true, "Connecting...");
+  sendGamePacket(OP_BATTLE_REQ);
+}
+
 static void fight_event(OrchardAppContext *context,
 			const OrchardAppEvent *event) {
 
@@ -1851,18 +1869,7 @@ static void fight_event(OrchardAppContext *context,
       if ( (event->key.code == keySelect) &&
            (event->key.flags == keyPress) )  {
         // we are attacking.
-        // TODO: this code duplicates the button based start code. DRY IT UP
-        dacPlay("fight/select.raw");
-        fightleader = true;
-        memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(peer));
-        config->in_combat = true;
-        config->lastcombat = chVTGetSystemTime();
-        configSave(config);
-
-        // We're going to preemptively call this before changing state
-        // so the screen doesn't go black while we wait for an ACK.
-        screen_alert_draw(true, "Connecting...");
-        sendGamePacket(OP_BATTLE_REQ);
+        start_fight(context);
         return;
       }
       break;
@@ -1964,17 +1971,7 @@ static void fight_event(OrchardAppContext *context,
       }
       if ( ((GEventGWinButton*)pe)->gwin == p->ghAttack) { 
         // we are attacking.
-        dacPlay("fight/select.raw");
-        fightleader = true;
-        memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(peer));
-        config->in_combat = true;
-        config->lastcombat = chVTGetSystemTime();
-        configSave(config);
-
-        // We're going to preemptively call this before changing state
-        // so the screen doesn't go black while we wait for an ACK.
-        screen_alert_draw(true, "Connecting...");
-        sendGamePacket(OP_BATTLE_REQ);
+        start_fight(context);
         return;
       }
 
@@ -2025,10 +2022,8 @@ static void fight_event(OrchardAppContext *context,
         return;
       }
       if ( ((GEventGWinButton*)pe)->gwin == p->ghAccept) {
-        gwinDestroy (p->ghDeny);
-        p->ghDeny = NULL;
-        gwinDestroy (p->ghAccept);
-        p->ghAccept = NULL;
+        gwinHide(p->ghDeny);
+        gwinHide(p->ghAccept);
 
         config->in_combat = true;
         configSave(config);
