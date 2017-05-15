@@ -69,9 +69,8 @@ void configSave(userconfig *newConfig) {
 
   if (ret == F_ERR_NOTBLANK) {
     chprintf(stream, "ERROR (%d): Unable to save config to flash.\r\n", ret);
-  } else {
-    chprintf(stream, "Config saved.\r\n");
   }
+
   osalMutexUnlock(&config_mutex);
 }
 
