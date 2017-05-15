@@ -1628,10 +1628,11 @@ static void fight_start(OrchardAppContext *context) {
   geventRegisterCallback (&p->glFight, orchardAppUgfxCallback, &p->glFight);
   
   /* are we entering a fight? */
+#ifdef DEBUG_FIGHT_STATE
   chprintf(stream, "FIGHT: entering with enemy %08x state %d\r\n", current_enemy.netid, current_fight_state);
+  chprintf(stream, "pending enemy id %x\r\n", pending_enemy_netid);      
+#endif
   last_tick_time = chVTGetSystemTime();
-
-  chprintf(stream,"starting with %x\r\n", pending_enemy_netid);      
   
   if (pending_enemy_netid != 0 && current_fight_state != APPROVAL_DEMAND) {
     /* if a packet has come in before we launched, we will process it
@@ -2013,9 +2014,11 @@ static void fight_exit(OrchardAppContext *context) {
   userconfig *config = getConfig();
   p = context->priv;
   dacStop();
-  
-  chprintf(stream, "FIGHT: fight_exit\r\n");
 
+#ifdef DEBUG_FIGHT_STATE
+  chprintf(stream, "FIGHT: fight_exit\r\n");
+#endif
+  
   // don't change back to idle state from any other function. Let fight_exit take care of it.
   changeState(IDLE);
     

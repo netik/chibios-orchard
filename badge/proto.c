@@ -158,7 +158,10 @@ rxHandle (OrchardAppContext *context, KW01_PKT * pkt)
   ProtoHandles * p;
   PACKET * proto;  // inbound
   int sts = -1;
+
+#ifdef DEBUG_FIGHT_NETWORK
   int result;
+#endif
   
   p = (((FightHandles *)context->priv)->proto);
   proto = (PACKET *)&pkt->kw01_payload;
@@ -239,11 +242,17 @@ rxHandle (OrchardAppContext *context, KW01_PKT * pkt)
 #ifdef DEBUG_FIGHT_NETWORK
     chprintf (stream, "message %d was received\r\n", proto->prot_seq);
 #endif
+#ifdef DEBUG_FIGHT_NETWORK
     /* send ACK */
     result = radioSend (&KRADIO1, p->netid, RADIO_PROTOCOL_FIGHT,
                         sizeof(PACKET), proto);
-    
+
     chprintf(stream, "ack sent = %d\r\n", result);
+#else
+    /* send ACK */
+    radioSend (&KRADIO1, p->netid, RADIO_PROTOCOL_FIGHT,
+                        sizeof(PACKET), proto);
+#endif
     
     /* fire the recv callback with the full packet */
     if (p->cb_recv != NULL)
