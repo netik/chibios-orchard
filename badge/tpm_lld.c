@@ -131,23 +131,16 @@ static
 THD_FUNCTION(pwmThread, arg)
 {
 	PWM_NOTE * p;
-	userconfig *config;
 	thread_t * th;
 
 	(void)arg;
 
 	chRegSetThreadName ("pwm");
-	config = getConfig();
 
 	while (1) {
 		th = chMsgWait ();
 		chMsgRelease (th, MSG_OK);
 		
-		if (config->sound_enabled == 0) {
-			play = 0;
-			pTune = NULL;
-		}
-
 		play = 1;
 
 		while (play) {
@@ -373,22 +366,31 @@ pwmToneStop (void)
 void
 pwmThreadPlay (const PWM_NOTE * p)
 {
-	/*
-	 * Cancel any currently playing tune and wait for the
-	 * player thread to go idle. We have to do this otherwise
-	 * our next command to play a tune might be ignored.
-	 */
-
-	play = 0;
-
-	if (p == NULL)
-		return;
-
-	while (pTune != NULL)
-		chThdSleepMicroseconds(1);
-
-	pTune = (PWM_NOTE *)p;
-	chMsgSend (pThread, MSG_OK);
-
-	return;
+  /*
+   * Cancel any currently playing tune and wait for the
+   * player thread to go idle. We have to do this otherwise
+   * our next command to play a tune might be ignored.
+   */
+  userconfig *config;
+  config = getConfig();
+  
+  if (config->sound_enabled == 0) {
+    play = 0;
+    pTune = NULL;
+    return;
+  }
+  
+  
+  play = 0;
+  
+  if (p == NULL)
+    return;
+  
+  while (pTune != NULL)
+    chThdSleepMicroseconds(1);
+  
+  pTune = (PWM_NOTE *)p;
+  chMsgSend (pThread, MSG_OK);
+  
+  return;
 }
