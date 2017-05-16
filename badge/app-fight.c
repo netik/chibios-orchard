@@ -66,7 +66,8 @@ static void do_timeout(void);
 static void show_damage(void);
 static void show_user_death(void);
 static void show_opponent_death(void);
-
+static void copyfp_topeer (uint8_t clear, fightpkt *fp, peer *p);
+  
 static uint16_t calc_xp_gain(uint8_t won) {
   userconfig *config = getConfig();  
   float factor = 1;
@@ -906,7 +907,8 @@ static void show_damage(void) {
 
 static void show_opponent_death() {
   FightHandles *p = instance.context->priv;
-
+  userconfig *config = getConfig();
+  
   dacPlay("fight/drop.raw");
   
   putImageFile(getAvatarImage(current_enemy.current_type, "deth", 1, false),
@@ -915,7 +917,12 @@ static void show_opponent_death() {
   putImageFile(getAvatarImage(current_enemy.current_type, "deth", 2, false),
                POS_PLAYER2_X, POS_PLAYER2_Y);
   chThdSleepMilliseconds(250);
-  chsnprintf(p->tmp, sizeof(p->tmp), "VICTORY!  (+%dXP)", calc_xp_gain(TRUE));
+  if (current_enemy.current_type == p_caesar) { 
+    chsnprintf(p->tmp, sizeof(p->tmp), "ET TU, %s? (+%dXP)", config->name, calc_xp_gain(TRUE));
+  } else {
+    chsnprintf(p->tmp, sizeof(p->tmp), "VICTORY!  (+%dXP)", calc_xp_gain(TRUE));
+  }
+  
   screen_alert_draw(false, p->tmp);
   
   if (rr.roundno == 1) {
@@ -952,7 +959,7 @@ static void show_user_death() {
   chThdSleepMilliseconds(250);
   
   if (config->current_type == p_caesar) { 
-    chsnprintf(p->tmp, sizeof(p->tmp), "CAESAR HAS DIED. (+%dXP)", calc_xp_gain(FALSE));
+    chsnprintf(p->tmp, sizeof(p->tmp), "CAESAR HAS DIED (+%dXP)", calc_xp_gain(FALSE));
   } else { 
     chsnprintf(p->tmp, sizeof(p->tmp), "YOU WERE DEFEATED (+%dXP)", calc_xp_gain(FALSE));
   }
@@ -998,6 +1005,20 @@ static void show_user_death() {
   }
 }
 
+static void *vary_play(char *fn, char *prefix, int max) {
+  // given a file name and counter, return back a random audio file
+  int i = rand() % max + 1;
+  int l;
+
+  l = strlen(prefix);
+  strcpy(fn, prefix);
+  fn[l] = (char)i + 48;
+  fn[l+1] = '\0';
+  strcat(fn, ".raw");
+
+  return(fn);
+}
+
 static void state_show_results_tick() {
   userconfig *config = getConfig();
   DmgLoc d;
@@ -1027,21 +1048,20 @@ static void state_show_results_tick() {
 
     show_damage();
     
-    // play sound in frame 1
-    if (rr.match == true) { 
-      dacPlay("fight/clank1.raw");
-    } else {
-      dacPlay("fight/hit1.raw");
+    // play one sound in frame 1, either a hard clank, soft clank, or random hit sound
+    if ((rr.theirattack & ATTACK_ISCRIT) || (rr.ourattack & ATTACK_ISCRIT)) {
+      // crit
+      dacPlay("fight/clank2.raw");
+    } else { 
+      if (rr.match == true) { 
+        dacPlay("fight/clank1.raw");
+      } else {
+        vary_play(p->tmp, "fight/hit", 3);
+        dacPlay(p->tmp);
+      }
     }
   }
 
-  if (animtick == 6) { 
-    // if anyone had a critical hit play our sound again
-    if ((rr.theirattack & ATTACK_ISCRIT) || (rr.ourattack & ATTACK_ISCRIT)) {
-      dacPlay("fight/hit1.raw");
-    }
-  }
-  
   // "frame 2", 500 mS later reset our dudes
   if (animtick == 13) { // ~460mS or so, remove the damage indicators and reset the chars
     DmgLoc d;
@@ -2149,6 +2169,7 @@ static void fight_ack_callback(KW01_PKT *pkt) {
     break;
   case OP_BATTLE_GO_ACK:
     if (current_fight_state == APPROVAL_WAIT) { 
+      copyfp_topeer(false, &u, &current_enemy);
       changeState(VS_SCREEN);
     }
     break;
@@ -2167,7 +2188,29 @@ static void fight_ack_callback(KW01_PKT *pkt) {
   }
 
 }  
+
+static void copyfp_topeer (uint8_t clear, fightpkt *fp, peer *p) {
+  /* copy (or update) the peer based on a fightpkt 
+   * does not copy rtc, ttl, attack bitmap, or damage
+   */
+  if (clear)
+    memset(&p, 0, sizeof(p));
   
+  strncpy(p->name, fp->name, CONFIG_NAME_MAXLEN);
+  p->p_type = fp->p_type;
+  p->current_type = fp->current_type;
+  p->in_combat = fp->in_combat;
+  p->unlocks = fp->unlocks;
+  p->hp = fp->hp;
+  p->xp = fp->xp;
+  p->level = fp->level;
+  p->agl = fp->agl;
+  p->might = fp->might;
+  p->luck = fp->luck;
+  p->won = fp->won;
+  p->lost = fp->lost;
+}      
+
 static void fight_recv_callback(KW01_PKT *pkt)
 {
   /* this is called by our protocol code when we receive a packet */
@@ -2226,24 +2269,11 @@ static void fight_recv_callback(KW01_PKT *pkt)
       return;
     }
     
-    if (u.opcode == OP_BATTLE_REQ) { 
+    if (u.opcode == OP_BATTLE_REQ) {
       /* copy the data over to current_enemy */
-      memset(&current_enemy, 0, sizeof(current_enemy));
-        current_enemy.netid = pending_enemy_netid;
-      strncpy(current_enemy.name, u.name, CONFIG_NAME_MAXLEN);
-      current_enemy.p_type = u.p_type;
-      current_enemy.current_type = u.current_type;
-      current_enemy.in_combat = u.in_combat;
-      current_enemy.unlocks = u.unlocks;
-      current_enemy.hp = u.hp;
-      current_enemy.xp = u.xp;
-      current_enemy.level = u.level;
-      current_enemy.agl = u.agl;
-      current_enemy.might = u.might;
-      current_enemy.luck = u.luck;
-      current_enemy.won = u.won;
-      current_enemy.lost = u.lost;
-      
+      copyfp_topeer(true, &u, &current_enemy);
+      current_enemy.netid = pending_enemy_netid;
+
       rr.ourattack = 0;
       rr.theirattack = 0;
 
@@ -2267,6 +2297,7 @@ static void fight_recv_callback(KW01_PKT *pkt)
     break;
   case APPROVAL_DEMAND:
     if (u.opcode == OP_BATTLE_GO_ACK) {
+      copyfp_topeer(false, &u, &current_enemy);
       changeState(VS_SCREEN);
     }
     break;

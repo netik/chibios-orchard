@@ -331,10 +331,24 @@ static uint8_t validate_code(OrchardAppContext *context, userconfig *config) {
         config->current_type = p_bender;
         char_reset_at = chVTGetSystemTime() + MAX_BUFF_TIME;
         dacPlay("biteass.raw");
-      } else {
-        // default sound
-        dacPlay("fight/leveiup.raw");
       }
+
+      // caesear
+      if ((1 << i) == UL_CAESAR) {
+        config->current_type = p_caesar;
+        char_reset_at = chVTGetSystemTime() + MAX_BUFF_TIME;
+        config->hp = maxhp(config->current_type, config->unlocks, config->level);
+      }
+
+      // senator
+      if ((1 << i) == UL_SENATOR) {
+        config->current_type = p_senator;
+        char_reset_at = chVTGetSystemTime() + MAX_BUFF_TIME;
+        config->hp = maxhp(config->current_type, config->unlocks, config->level);
+      }
+      
+      if ((1 << i) != UL_BENDER)      // default sound
+        dacPlay("fight/leveiup.raw");
 
       // save to config
       configSave(config);

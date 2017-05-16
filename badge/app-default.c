@@ -353,7 +353,7 @@ static void default_event(OrchardAppContext *context,
 
     }
 
-    /* draw char time remaining if any */
+    /* draw class time remaining if any */
     if (char_reset_at != 0) {
       systime_t delta = ST2S((char_reset_at - chVTGetSystemTime()));
       systime_t minleft, secleft;
@@ -361,12 +361,18 @@ static void default_event(OrchardAppContext *context,
       secleft = delta - (minleft * 60);
       chsnprintf(tmp, sizeof(tmp), "%02d:%02d", minleft, secleft);
 
+      /* if an unlockable class, show the class name next to the
+         clock */
       if (config->current_type == p_caesar) {
         strcat(tmp," CAESAR");
       }
 
       if (config->current_type == p_bender) {
         strcat(tmp," BENDER");
+      }
+
+      if (config->current_type == p_senator) {
+        strcat(tmp," SENATOR");
       }
 
       gdispFillArea( 141,62, 
