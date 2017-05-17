@@ -188,6 +188,44 @@ static void state_idle_enter(void) {
   ledSetFunction(fxlist[config->led_pattern].function);
 }
 
+static void state_grant_accept_enter(void) {
+  userconfig *config = getConfig();
+  FightHandles *p;
+  p = instance.context->priv;
+
+  strcpy(p->tmp, "YOU RECEIVED ");
+  switch (rr.last_hit) {
+  case UL_HEAL:
+    strcat(p->tmp,"2X HEAL!");
+    break;
+  case UL_PLUSDEF:
+    strcat(p->tmp,"EFF DEF.!");
+    break;
+  case UL_LUCK:
+    strcat(p->tmp,"+20% LUCK!");
+    config->luck = 40;
+    break;
+  case UL_PLUSHP:
+    strcat(p->tmp,"+10% HP!");
+    break;
+  default:
+    strcat(p->tmp,"AN UNLOCK!");
+  }
+  
+  config->unlocks |= rr.last_hit;
+  dacPlay("fight/buff.raw");
+  screen_alert_draw(true, p->tmp);
+  
+  /* merge the two */
+  configSave(config);
+  memset(&current_enemy, 0, sizeof(current_enemy));
+  pending_enemy_netid = 0;
+  chThdSleepMilliseconds(ALERT_DELAY);
+  
+  /* exit */
+  orchardAppRun(orchardAppByName("Badge"));
+}
+
 static void fight_timeout_callback(KW01_PKT *p) {
   (void)p; // don't care. dispose of this. 
   
@@ -2235,9 +2273,7 @@ static void fight_recv_callback(KW01_PKT *pkt)
   fightpkt u;
   PACKET * proto; 
   proto = (PACKET *)&pkt->kw01_payload;
-  char tmp[40];
   userconfig *config = getConfig();
-  
   /* unpack the packet */
   memcpy(&u, proto->prot_payload, sizeof(fightpkt));
   
@@ -2257,36 +2293,11 @@ static void fight_recv_callback(KW01_PKT *pkt)
   case IDLE:
   case ENEMY_SELECT:
     // handle grants
-    if (u.opcode == OP_GRANT) { 
-      strcpy(tmp, "YOU RECEIVED ");
-      switch (u.damage) {
-      case UL_HEAL:
-        strcat(tmp,"2X HEAL!");
-        break;
-      case UL_PLUSDEF:
-        strcat(tmp,"EFF DEF.!");
-        break;
-      case UL_LUCK:
-        strcat(tmp,"+20% LUCK!");
-        config->luck = 40;
-      break;
-      case UL_PLUSHP:
-        strcat(tmp,"+10% HP!");
-        break;
-      default:
-        strcat(tmp,"AN UNLOCK!");
-      }
-
-      config->unlocks |= u.damage;
-      dacPlay("fight/buff.raw");
-      screen_alert_draw(true, tmp);
-
-      /* merge the two */
-      configSave(config);
-      memset(&current_enemy, 0, sizeof(current_enemy));
-      pending_enemy_netid = 0;
-      chThdSleepMilliseconds(ALERT_DELAY);
-      orchardAppRun(orchardAppByName("Badge"));
+    if (u.opcode == OP_GRANT) {
+      copyfp_topeer(true, &u, &current_enemy);
+      current_enemy.netid = pending_enemy_netid;
+      rr.last_hit = u.damage;
+      changeState(GRANT_ACCEPT);
       return;
     }
     

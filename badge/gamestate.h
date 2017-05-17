@@ -3,34 +3,36 @@
 const char* fight_state_name[]  = {
   "NONE"  ,             // 0 - Not started yet. 
   "IDLE"  ,             // 1 - Our app isn't running or idle
-  "ENEMY_SELECT"  ,     // 2 - Choose enemy screen
-  "GRANT_SCREEN"  ,     // 3 - Choose enemy screen
-  "APPROVAL_DEMAND"  ,  // 4 - I want to fight you!
-  "APPROVAL_WAIT"  ,    // 5 - I am waiting to see if you want to fight me
-  "VS_SCREEN"  ,        // 6 - I am showing the versus screen.
-  "MOVE_SELECT"  ,      // 7 - We are picking a move.
-  "POST_MOVE"  ,        // 8 - We have picked one and are waiting on you or the clock
-  "SHOW_RESULTS"  ,     // 9 - We are showing results
-  "PLAYER_DEAD"  ,      // 10 - I die!
-  "ENEMY_DEAD",         // 11 - You're dead.
-  "LEVELUP"             // 12 - Show the bonus screen
+  "GRANT_ACCEPT" ,      // 2 - Show the bonus screen
+  "ENEMY_SELECT"  ,     // 3 - Choose enemy screen
+  "GRANT_SCREEN"  ,     // 4 - Choose enemy screen
+  "APPROVAL_DEMAND"  ,  // 5 - I want to fight you!
+  "APPROVAL_WAIT"  ,    // 6 - I am waiting to see if you want to fight me
+  "VS_SCREEN"  ,        // 7 - I am showing the versus screen.
+  "MOVE_SELECT"  ,      // 8 - We are picking a move.
+  "POST_MOVE"  ,        // 9 - We have picked one and are waiting on you or the clock
+  "SHOW_RESULTS"  ,     // 10 - We are showing results
+  "PLAYER_DEAD"  ,      // 11 - I die!
+  "ENEMY_DEAD",         // 12 - You're dead.
+  "LEVELUP"             // 13 - Show the bonus screen
   };
 #endif /* DEBUG_FIGHT_STATE */
 
 typedef enum _fight_state {
   NONE  ,           // 0 - Not started yet. 
   IDLE,             // 1 - Our app isn't running or idle
-  ENEMY_SELECT,     // 2 - Choose enemy screen
-  GRANT_SCREEN,     // 3 - Grant screen
-  APPROVAL_DEMAND,  // 4 - I want to fight you!
-  APPROVAL_WAIT,    // 5 - I am waiting to see if you want to fight me
-  VS_SCREEN,        // 6 - I am showing the versus screen.
-  MOVE_SELECT,      // 7 - We are picking a move.
-  POST_MOVE,        // 8 - We have picked one and are waiting on you or the clock
-  SHOW_RESULTS,     // 9 - We are showing results, and will wait for an ACK
-  PLAYER_DEAD,      // 10- I die!
-  ENEMY_DEAD,       // 11 - You're dead.
-  LEVELUP,          // 12 - I am on the bonus screen, leave me alone.
+  GRANT_ACCEPT,     // 2 - We're getting a grant
+  ENEMY_SELECT,     // 3 - Choose enemy screen
+  GRANT_SCREEN,     // 4 - We're sending a grant
+  APPROVAL_DEMAND,  // 5 - I want to fight you!
+  APPROVAL_WAIT,    // 6 - I am waiting to see if you want to fight me
+  VS_SCREEN,        // 7 - I am showing the versus screen.
+  MOVE_SELECT,      // 8 - We are picking a move.
+  POST_MOVE,        // 9 - We have picked one and are waiting on you or the clock
+  SHOW_RESULTS,     // 10 - We are showing results, and will wait for an ACK
+  PLAYER_DEAD,      // 11 - I die!
+  ENEMY_DEAD,       // 12 - You're dead.
+  LEVELUP,          // 13 - I am on the bonus screen, leave me alone.
 } fight_state;
 
 typedef struct _state {
@@ -67,6 +69,8 @@ static void state_idle_enter(void);
 static void state_enemy_select_enter(void);
 static void state_enemy_select_tick(void);
 static void state_enemy_select_exit(void);
+
+static void state_grant_accept_enter(void);
 
 static void state_grant_enter(void);
 static void state_grant_tick(void);
@@ -109,12 +113,17 @@ static uint16_t calc_xp_gain(uint8_t);
  *
  */
 state_funcs fight_funcs[] = { { // none
-                                 NULL,
-                                 NULL,
-                                 NULL},
+                                NULL,
+                                NULL,
+                                NULL,},
                               { // idle
                                 state_idle_enter,
                                 NULL,
+                                NULL,
+                              },
+                              { // grant accept
+                                NULL,
+                                state_grant_accept_enter,
                                 NULL,
                               },
                               { // enemy select
