@@ -48,6 +48,11 @@ rgb/%.rgb : tif/%.tif
 	tools/scripts/convert_to_rgb.sh $(subst .tif,r.tif,$(subst tif/,tif/mirrored/,$<))
 	mv $(subst .tif,r.rgb,$(subst tif/,tif/mirrored/,$<)) rgb/
 
+# put your photos in photos_src and then run 'make photos' to make the rgb files.
+photos/%.rgb: photos_src/%.jpg
+	tools/scripts/convert_to_rgb.sh $<
+	mv $(subst photos/,photos_src/,$(@)) $(subst rgb/,jpg/,$(@))
+
 dac/%.raw: dac/%.mp3
 	tools/scripts/sndmp3toraw.sh $<
 
@@ -57,16 +62,22 @@ dac/%.raw: dac/%.wav
 dac/fight/%.raw: dac/fight/%.mp3
 	tools/scripts/sndmp3toraw.sh $<
 
-# please stop adding non-TIF images to the collection, we want uncompressed media when possible.
+# When possible, please use TIF images. Aliasing is a real issue on
+# our display and higher quality input is better.
+
+# images used by the system, app-fight, and the "LED" app.
 images: tools_dep $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard tif/*.tif))))) \
 	          $(addprefix rgb/font/led/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard jpg/font/led/*.jpg))))) \
 	          $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard jpg/*.jpg)))))
 
-# please stop adding MP3s to the collection, we want uncompressed audio. It's already shitty enough.
+# User supplied photos if any.
+photos: tools_dep $(addprefix photos/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard photos_src/*.jpg)))))
+
+# When possible please use .wav files as source material. MP3s already
+# have enough compression and loss.
 sounds: tools_dep $(addprefix dac/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/fight*.mp3))))) \
                   $(addprefix dac/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/*.wav))))) \
 	          $(addprefix dac/fight/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/fight/*.mp3)))))
-
 
 sdcard: dirs tools_dep images midi sounds
 	@if [ ! -d "sdcard" ]; then mkdir sdcard; fi
@@ -78,6 +89,8 @@ sdcard: dirs tools_dep images midi sounds
 	@cp ../badge/build/badge.bin sdcard
 	@cp dac/*.raw sdcard
 	@if [ ! -d "sdcard/fight" ]; then mkdir sdcard/fight; fi
+	@if [ ! -d "sdcard/photos" ]; then mkdir sdcard/photos; fi
+	@cp photos/*.rgb sdcard/photos
 	@cp dac/fight/*.raw sdcard/fight
 	@cp video/*.vid sdcard
 	@echo
