@@ -112,8 +112,12 @@ static uint16_t calc_xp_gain(uint8_t won) {
     
     return (80 + ((config->level-1) * 16)) * factor;
   } else {
-    /* Death does not factor in the multiplier */
-    return (10 + ((config->level-1) * 16));
+    // someone killed you, so you get much less XP, but we will give
+    // some extra XP if someone higher than you killed you.
+    if (factor < 1)
+      factor = 1;
+
+    return (10 + ((config->level-1) * 16)) * factor;
   }
 }
 
@@ -265,13 +269,6 @@ static void state_approval_demand_enter(void) {
   gwinSetDefaultStyle(&RedButtonStyle, FALSE);
 
   wi.g.x = 190;
-#ifdef notdef
-  gwinWidgetClearInit(&wi);
-  wi.g.show = TRUE;
-  wi.g.y = POS_FLOOR_Y-10;
-  wi.g.width = 100;
-  wi.g.height = gdispGetFontMetric(p->fontFF, fontHeight) + 2;
-#endif
   wi.text = "FIGHT!";
   p->ghAccept = gwinButtonCreate(0, &wi);
 
@@ -319,13 +316,6 @@ static void state_move_select_enter() {
   putImageFile(getAvatarImage(current_enemy.current_type, "idla", 1, true),
                POS_PLAYER2_X, POS_PLAYER2_Y);
 
-  gdispDrawStringBox (0,
-                      STATUS_Y+14,
-                      p->screen_width,
-                      p->fontsm_height,
-                      "Choose attack!",
-                      p->fontSM, White, justifyCenter);
-  
   draw_attack_buttons();
 
   // round N , fight!  note that we only have four of these rounds
@@ -376,20 +366,20 @@ static void state_move_select_tick() {
     // Every 66mS our timer fires. Wee'd like a blink rate of 250Ms on/off or so with no sleeping.
     // frames 0-4 on. frames 5-8 off
     if (animtick % 8 < 5) { 
-      putImageFile("ar50.rgb",
+      putImageFile("arrows.rgb",
                    160,
-                   POS_PLAYER2_Y);
-      
-      putImageFile("ar50.rgb",
-                   160,
-                   POS_PLAYER2_Y + 50);
-      
-      putImageFile("ar50.rgb",
-                   160,
-                   POS_PLAYER2_Y + 100);
+                   59);
     } else { 
-      gdispFillArea(160, POS_PLAYER2_Y, 50,150,Black);
+      gdispFillArea(160, 59, 50, 140, Black);
     }
+
+    // persist the message so the user knows what to do.
+    gdispDrawStringBox (0,
+                        STATUS_Y+14,
+                        p->screen_width,
+                        p->fontsm_height,
+                        "Choose attack!",
+                        p->fontSM, White, justifyCenter);
   }
 
   if (countdown <= 0) {
@@ -1006,7 +996,8 @@ static void show_user_death() {
 }
 
 static void *vary_play(char *fn, char *prefix, int max) {
-  // given a file name and counter, return back a random audio file
+  /* given a file name and maximum index, return back a random audio
+     file. Indexes begin at 1. */
   int i = rand() % max + 1;
   int l;
 
@@ -1331,28 +1322,12 @@ static void draw_attack_buttons(void) {
   wi.g.x = 180;
   wi.g.y = 110;
   wi.text = "5";
-#ifdef notdef
-  wi.g.show = TRUE;
-  wi.g.width = 140;
-  wi.g.height = 56;
-  wi.customDraw = noRender;
-  wi.customParam = 0;
-  wi.customStyle = 0;
-#endif
   p->ghAttackMid = gwinButtonCreate(0, &wi);
   
   // create button widget: ghAttackLow
   wi.g.x = 180;
   wi.g.y = 160;
   wi.text = "6";
-#ifdef notdef
-  wi.g.show = TRUE;
-  wi.g.width = 140;
-  wi.g.height = 56;
-  wi.customDraw = noRender;
-  wi.customParam = 0;
-  wi.customStyle = 0;
-#endif
   p->ghAttackLow = gwinButtonCreate(0, &wi);
 }
   
@@ -1771,9 +1746,6 @@ static void sendGamePacket(uint8_t opcode) {
 
   /* we'll always send -1, unless the user has made a move, then we'll calculate the hit. */
   if (rr.last_hit == -1 && rr.ourattack != 0) {
-    // if this is a turn-over packet, then we also transmit damage (to
-    // them). calc_hit will also set ATTACK_ISCRIT in rr.ourattack if
-    // need be.
     rr.last_hit = calc_hit(config, &current_enemy);
   }
 
@@ -1939,6 +1911,7 @@ static void fight_event(OrchardAppContext *context,
           break;
         case keyRight:
           rr.last_hit = UL_PLUSHP;
+          sendGamePacket(OP_GRANT);
           break;
         default:
           rr.last_hit = 0;
@@ -1978,8 +1951,10 @@ static void fight_event(OrchardAppContext *context,
     case GEVENT_GWIN_BUTTON:
       last_ui_time = chVTGetSystemTime();
 
-      if ( ((GEventGWinButton*)pe)->gwin == p->ghExitButton) { 
+      if ( ((GEventGWinButton*)pe)->gwin == p->ghExitButton) {
+#ifdef DEBUG_FIGHT_STATE        
         chprintf(stream, "FIGHT: exitapp\r\n");
+#endif
         orchardAppRun(orchardAppByName("Badge"));
         return;
       }
@@ -2013,9 +1988,11 @@ static void fight_event(OrchardAppContext *context,
       if ( ((GEventGWinButton*)pe)->gwin == p->ghLevelUpAgl) {
         config->agl++;
         config->level++;
-        config->hp = maxhp(config->current_type, config->unlocks, config->level); // restore hp
-        configSave(config);
 
+        if (config->current_type != p_caesar)
+          config->hp = maxhp(config->current_type, config->unlocks, config->level); // restore hp
+
+        configSave(config);
         screen_alert_draw(false, "Agility Upgraded!");
         dacPlay("fight/select.raw");
         chThdSleepMilliseconds(ALERT_DELAY);
@@ -2060,24 +2037,26 @@ static void fight_event(OrchardAppContext *context,
         }
         return;
       }
-      
-      if ((rr.ourattack & ATTACK_MASK) == 0) {
-        if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackLow) {
-          rr.ourattack |= ATTACK_LOW;
-          sendAttack();
+
+      if ((current_fight_state == POST_MOVE) || (current_fight_state == MOVE_SELECT)) { 
+        if ((rr.ourattack & ATTACK_MASK) == 0) {
+          if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackLow) {
+            rr.ourattack |= ATTACK_LOW;
+            sendAttack();
+          }
+          if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackMid) {
+            rr.ourattack |= ATTACK_MID;
+            sendAttack();
+          }
+          if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackHi) {
+            rr.ourattack |= ATTACK_HI;
+            sendAttack();
+          }
+        } else {
+          // can't move.
+          chprintf(stream, "rejecting event -- already went\r\n");
+          playNope();
         }
-        if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackMid) {
-          rr.ourattack |= ATTACK_MID;
-          sendAttack();
-        }
-        if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackHi) {
-          rr.ourattack |= ATTACK_HI;
-          sendAttack();
-        }
-      } else {
-        // can't move.
-        chprintf(stream, "rejecting event -- already went\r\n");
-        playNope();
       }
     }
   }
@@ -2169,7 +2148,6 @@ static void fight_ack_callback(KW01_PKT *pkt) {
     break;
   case OP_BATTLE_GO_ACK:
     if (current_fight_state == APPROVAL_WAIT) { 
-      copyfp_topeer(false, &u, &current_enemy);
       changeState(VS_SCREEN);
     }
     break;
@@ -2189,12 +2167,12 @@ static void fight_ack_callback(KW01_PKT *pkt) {
 
 }  
 
-static void copyfp_topeer (uint8_t clear, fightpkt *fp, peer *p) {
+static void copyfp_topeer(uint8_t clear, fightpkt *fp, peer *p) {
   /* copy (or update) the peer based on a fightpkt 
-   * does not copy rtc, ttl, attack bitmap, or damage
+   * does not copy rtc, ttl, attack bitmap, the netid, or damage
    */
   if (clear)
-    memset(&p, 0, sizeof(p));
+    memset(p, 0, sizeof(peer));
   
   strncpy(p->name, fp->name, CONFIG_NAME_MAXLEN);
   p->p_type = fp->p_type;
@@ -2264,6 +2242,7 @@ static void fight_recv_callback(KW01_PKT *pkt)
       config->unlocks |= current_enemy.damage;
       configSave(config);
       memset(&current_enemy, 0, sizeof(current_enemy));
+      pending_enemy_netid = 0;
       chThdSleepMilliseconds(ALERT_DELAY);
       orchardAppRun(orchardAppByName("Badge"));
       return;
@@ -2283,6 +2262,7 @@ static void fight_recv_callback(KW01_PKT *pkt)
     break;
   case APPROVAL_WAIT:
     if (u.opcode == OP_BATTLE_GO) {
+      copyfp_topeer(false, &u, &current_enemy);
       sendGamePacket(OP_BATTLE_GO_ACK);
     }
     if (u.opcode == OP_BATTLE_DECLINED) {
@@ -2307,6 +2287,9 @@ static void fight_recv_callback(KW01_PKT *pkt)
       // If I see OP_IMOVED from the other side while we are in
       // MOVE_SELECT, store that move for later. 
       chprintf(stream, "RECV MOVE: (select) %d. our move %d.\r\n", rr.theirattack, rr.ourattack);
+
+      // make sure we're in absolute agreement on hp by copying the data again.
+      copyfp_topeer(false, &u, &current_enemy);
     }
     break;
 #endif /* DEBUG_FIGHT_NETWORK */
@@ -2316,6 +2299,8 @@ static void fight_recv_callback(KW01_PKT *pkt)
       chprintf(stream, "RECV MOVE: (postmove) %d. our move %d. - TURNOVER!\r\n", rr.theirattack, rr.ourattack);
 #endif /* DEBUG_FIGHT_NETWORK */
       changeState(SHOW_RESULTS);
+      // make sure we're in absolute agreement on hp by copying the data again.
+      copyfp_topeer(false, &u, &current_enemy);
       return;
     }
     break;

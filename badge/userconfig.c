@@ -181,6 +181,7 @@ void configStart(void) {
       // reset class on fight
       chprintf(stream, "Class reset to %d.\r\n", config_cache.p_type);
       config_cache.current_type = config_cache.p_type;
+      config_cache.hp = maxhp(config_cache.p_type, config_cache.unlocks, config_cache.level);
       configSave(&config_cache);
     }
   }
