@@ -715,8 +715,9 @@ static void state_show_results_enter() {
   /* we should be out of this screen in five seconds or less. We will
    * change this timer in frame 30.
    */
-  countdown = MS2ST(5000);
-  
+  last_tick_time = chVTGetSystemTime();
+  countdown = MS2ST(10000);
+
   // if they didn't go and we didn't go, abort, we shouldn't be here.
   if ((rr.ourattack <= 0) && (rr.theirattack <= 0)) {
     do_timeout();
@@ -2241,10 +2242,12 @@ static void fight_recv_callback(KW01_PKT *pkt)
       default:
         strcat(tmp,"AN UNLOCK!");
       }
+
+      config->unlocks |= u.damage;
       dacPlay("fight/buff.raw");
       screen_alert_draw(true, tmp);
+
       /* merge the two */
-      config->unlocks |= current_enemy.damage;
       configSave(config);
       memset(&current_enemy, 0, sizeof(current_enemy));
       pending_enemy_netid = 0;

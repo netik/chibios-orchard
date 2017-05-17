@@ -1,18 +1,18 @@
 #ifndef __UNLOCKS_H__
 #define __UNLOCKS_H__
 
-/* these are a set of bit flags in config->unlocks which can do different things to the badge */
+/* These are a set of bit flags in config->unlocks which can do
+   different things to the badge. There are 11 unlocks. */
 
-/*                                                   Implemented? */
-#define UL_PLUSDEF      ( 1 << 0 ) // EFF + 10% DEF  y
-#define UL_PLUSHP       ( 1 << 1 ) // +10% HP        y
-#define UL_PLUSMIGHT    ( 1 << 2 ) // +1 MIGHT       y
-#define UL_LUCK         ( 1 << 3 ) // +20% LUCK      y
-#define UL_HEAL         ( 1 << 4 ) // 2X HEAL        y
-#define UL_LEDS         ( 1 << 5 ) // MORE LEDs      y
-#define UL_CAESAR       ( 1 << 6 ) // CAESAR         n
-#define UL_SENATOR      ( 1 << 7 ) // SENATOR        n
-#define UL_BENDER       ( 1 << 8 ) // BENDER         y
-#define UL_GOD          ( 1 << 9 ) // GOD_MODE       y
-#define UL_PINGDUMP     ( 1 << 10 ) // NETWORK DEBUG y
+#define UL_PLUSDEF      ( 1 << 0 ) // EFF + 10% DEF  
+#define UL_PLUSHP       ( 1 << 1 ) // +10% HP        
+#define UL_PLUSMIGHT    ( 1 << 2 ) // +1 MIGHT       
+#define UL_LUCK         ( 1 << 3 ) // +20% LUCK      
+#define UL_HEAL         ( 1 << 4 ) // 2X HEAL        
+#define UL_LEDS         ( 1 << 5 ) // MORE LEDs      
+#define UL_CAESAR       ( 1 << 6 ) // CAESAR         
+#define UL_SENATOR      ( 1 << 7 ) // SENATOR        
+#define UL_BENDER       ( 1 << 8 ) // BENDER         
+#define UL_GOD          ( 1 << 9 ) // GOD_MODE       
+#define UL_PINGDUMP     ( 1 << 10 ) // NETWORK DEBUG 
 #endif
