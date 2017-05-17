@@ -66,9 +66,10 @@ dac/fight/%.raw: dac/fight/%.mp3
 # our display and higher quality input is better.
 
 # images used by the system, app-fight, and the "LED" app.
-images: tools_dep $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard tif/*.tif))))) \
-	          $(addprefix rgb/font/led/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard jpg/font/led/*.jpg))))) \
-	          $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard jpg/*.jpg)))))
+images: tools_dep photos \
+        $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard tif/*.tif))))) \
+        $(addprefix rgb/font/led/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard jpg/font/led/*.jpg))))) \
+        $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard jpg/*.jpg)))))
 
 # User supplied photos if any.
 photos: tools_dep $(addprefix photos/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard photos_src/*.jpg)))))
@@ -80,19 +81,15 @@ sounds: tools_dep $(addprefix dac/, $(notdir  $(addsuffix .raw, $(basename $(wil
 	          $(addprefix dac/fight/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/fight/*.mp3)))))
 
 sdcard: dirs tools_dep images midi sounds
-	@if [ ! -d "sdcard" ]; then mkdir sdcard; fi
-	@cp rgb/*.rgb sdcard
-	@if [ ! -d "sdcard/font/led" ]; then mkdir -p sdcard/font/led; fi
-	@cp rgb/font/led/*.rgb sdcard/font/led
-	@find midi -name \*.bin -exec cp {} sdcard \;
-	@cp ../updater/updater.bin sdcard
-	@cp ../badge/build/badge.bin sdcard
-	@cp dac/*.raw sdcard
-	@if [ ! -d "sdcard/fight" ]; then mkdir sdcard/fight; fi
-	@if [ ! -d "sdcard/photos" ]; then mkdir sdcard/photos; fi
-	@cp photos/*.rgb sdcard/photos
-	@cp dac/fight/*.raw sdcard/fight
-	@cp video/*.vid sdcard
+	-cp rgb/*.rgb sdcard
+	-cp rgb/font/led/*.rgb sdcard/font/led
+	-find midi -name \*.bin -exec cp {} sdcard \;
+	-cp ../updater/updater.bin sdcard
+	-cp ../badge/build/badge.bin sdcard
+	-cp dac/*.raw sdcard
+	-cp photos/*.rgb sdcard/photos
+	-cp dac/fight/*.raw sdcard/fight
+	-cp video/*.vid sdcard
 	@echo
 	@echo 'sdcard built!'
 	@echo
@@ -121,12 +118,10 @@ clean_images:
 	-rm -f rgb/*
 
 dirs:
-	-mkdir sdcard
-	-mkdir sdcard/font
-	-mkdir sdcard/font/led
-	-mkdir rgb
-	-mkdir rgb/font
-	-mkdir rgb/font/led
+	-[ -d sdcard/fight ] || mkdir -p sdcard/fight
+	-[ -d sdcard/photos ] || mkdir -p sdcard/photos
+	-[ -d sdcard/font/led ] || mkdir -p sdcard/font/led
+	-[ -d rgb/font/led ] || mkdir -p rgb/font/led
 
 cleansd:
 	@if [ -d "sdcard" ]; then rm -rf sdcard; fi; 
