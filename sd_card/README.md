@@ -90,11 +90,11 @@ You can then display these in the software by calling `putImagefile(x,y,'filenam
 
 The badge contains a photo-frame application that will let you show your own images. 
 
-As a demo, we've loaded a few photos from our recent trip to Rome. Place JPGs into `photos_src/` and then type `make photos`.
+As a demo, we've loaded a few photos from our recent trip to Rome. Place TIFs into `photos_src/` and then type `make photos`.
 
 Typing `make images` will also perform a build of the `photos/` sdcard directory.
 
-Images must be 320x240 at 
+Images must be 320x240. Because we're using scrolling, the 
 
 ## Icons
 

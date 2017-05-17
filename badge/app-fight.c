@@ -1407,7 +1407,9 @@ static uint8_t nextEnemy() {
     if (ce > MAX_ENEMIES-1) {
       ce = 0;
     }
-  } while ( ( (enemies[ce] == NULL) || (enemies[ce]->in_combat == 1)) &&
+  } while ( ( (enemies[ce] == NULL) ||
+              (enemies[ce]->in_combat == 1) ||
+              (enemies[ce]->p_type == p_notset)) &&
             (distance < MAX_ENEMIES));
 		   
   if (enemies[ce] != NULL) { 
@@ -1436,7 +1438,9 @@ static uint8_t prevEnemy() {
       ce = MAX_ENEMIES-1;
     }
   } while ( (
-             (enemies[ce] == NULL) || (enemies[ce]->in_combat == 1)
+             (enemies[ce] == NULL) ||
+             (enemies[ce]->in_combat == 1) ||
+             (enemies[ce]->p_type == p_notset)
              ) &&
              (distance < MAX_ENEMIES)
             );
@@ -2115,6 +2119,19 @@ static void fightRadioEventHandler(KW01_PKT * pkt) {
   /* peek inside the packet and see if it's bound for us */
   proto = (PACKET *)&pkt->kw01_payload;
   fp = (fightpkt *)proto->prot_payload;
+
+  /* There are a few apps which we will not respond to events during,
+   * because they consume the cpu. Ignore the radio requests when
+   * these apps are running.
+   */
+
+  if ((instance.app == orchardAppByName("Play Videos")) ||
+      (instance.app == orchardAppByName("LED Sign")) ||
+      (instance.app == orchardAppByName("Credits")) ||
+      (instance.app == orchardAppByName("E-mail"))) {
+    return;
+  }
+
   if (pkt->kw01_hdr.kw01_prot == RADIO_PROTOCOL_FIGHT) {   
     if (( (fp->opcode == OP_BATTLE_REQ) || (fp->opcode == OP_GRANT) ) &&
         config->in_combat == 0) {
