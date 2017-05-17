@@ -17,7 +17,7 @@ ifeq ($(USE_OPT),)
 # for traffic. This does not need to be enabled for any fully functional
 # badges.
 #
-USE_OPT += -DREV2_RADIO_WAR -DRADIO_POLL_FREQ=1000
+# USE_OPT += -DREV2_RADIO_WAR -DRADIO_POLL_FREQ=1000
 
 # Enable joypad buttons. This should be turned on for production builds.
 # It's off for now because the Freescale/NXP Freedom KW019032 reference
@@ -86,7 +86,7 @@ endif
 # Stack size to be allocated to the Cortex-M process stack. This stack is
 # the stack used by the main() thread.
 ifeq ($(USE_PROCESS_STACKSIZE),)
-  USE_PROCESS_STACKSIZE = 0x500
+  USE_PROCESS_STACKSIZE = 0x400
 endif
 
 # Stack size to the allocated to the Cortex-M main/exceptions stack. This
