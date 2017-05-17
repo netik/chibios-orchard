@@ -561,7 +561,9 @@ uint8_t enemyCount(void) {
   
   osalMutexLock(&enemies_mutex);
   for( i = 0; i < MAX_ENEMIES; i++ ) {
-    if( enemies[i] != NULL )
+    if ( ( enemies[i] != NULL ) &&
+         ( enemies[i]->in_combat == 0) &&
+         ( enemies[i]->p_type != p_notset) )
       count++;
   }
   osalMutexUnlock(&enemies_mutex);
