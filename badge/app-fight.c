@@ -712,6 +712,11 @@ static void state_show_results_enter() {
    */
   animtick = 0;
 
+  /* we should be out of this screen in five seconds or less. We will
+   * change this timer in frame 30.
+   */
+  countdown = MS2ST(5000);
+  
   // if they didn't go and we didn't go, abort, we shouldn't be here.
   if ((rr.ourattack <= 0) && (rr.theirattack <= 0)) {
     do_timeout();
