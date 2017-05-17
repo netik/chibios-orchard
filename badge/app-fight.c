@@ -2281,18 +2281,17 @@ static void fight_recv_callback(KW01_PKT *pkt)
       changeState(VS_SCREEN);
     }
     break;
-#ifdef DEBUG_FIGHT_NETWORK
   case MOVE_SELECT:
     if (u.opcode == OP_IMOVED) {
       // If I see OP_IMOVED from the other side while we are in
       // MOVE_SELECT, store that move for later. 
+#ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "RECV MOVE: (select) %d. our move %d.\r\n", rr.theirattack, rr.ourattack);
-
+#endif /* DEBUG_FIGHT_NETWORK */
       // make sure we're in absolute agreement on hp by copying the data again.
       copyfp_topeer(false, &u, &current_enemy);
     }
     break;
-#endif /* DEBUG_FIGHT_NETWORK */
   case POST_MOVE: // no-op
     if (u.opcode == OP_IMOVED) {
 #ifdef DEBUG_FIGHT_NETWORK
