@@ -8,8 +8,8 @@
    make things human-readable. */
 
 #undef DEBUG_FIGHT_TICK       // show the clock tick events, ugfx events, and other misc events
-#define DEBUG_FIGHT_NETWORK    // show all network (radio) traffic
-#define DEBUG_FIGHT_STATE      // debug state changes
+#undef DEBUG_FIGHT_NETWORK    // show all network (radio) traffic
+#undef DEBUG_FIGHT_STATE      // debug state changes
   
 // where the progres bar goes 
 #define PROGRESS_BAR_X 60
