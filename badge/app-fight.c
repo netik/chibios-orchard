@@ -535,6 +535,13 @@ static void state_grant_enter(void) {
   
   gdispClear(Black);
   putImageFile("grants.rgb", 0, 0);
+
+  last_ui_time = chVTGetSystemTime();
+
+  // This will disable the countdown (last_tick_time will be zero). We
+  // will reset it when we send a grant
+  countdown = MS2ST(5000);
+  last_tick_time = 0;
   
   gdispDrawStringBox (0,
 		      110,
