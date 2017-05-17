@@ -545,8 +545,13 @@ static void state_grant_enter(void) {
 }
 
 static void state_grant_tick(void) {
-  if( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) {
+  if ( ( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) && (rr.last_hit == -1) ) {
     orchardAppRun(orchardAppByName("Badge"));
+  }
+
+  // else, we are pending on a transmit. 
+  if (countdown <= 0) {
+    do_timeout();
   }
 }
 
@@ -1925,10 +1930,10 @@ static void fight_event(OrchardAppContext *context,
         }
 
         if (rr.last_hit != 0) { 
-          screen_alert_draw(true, "GRANT SENT");
+          screen_alert_draw(true, "SENDING...");
           dacPlay("fight/buff.raw");
-          chThdSleepMilliseconds(ALERT_DELAY);
-          orchardAppRun(orchardAppByName("Badge"));
+          last_tick_time = chVTGetSystemTime();
+          countdown=DEFAULT_WAIT_TIME;
           sendGamePacket(OP_GRANT);
         } else {
           screen_alert_draw(true, "CANCELLED");
@@ -2146,6 +2151,11 @@ static void fight_ack_callback(KW01_PKT *pkt) {
 
   /* what kind of packet was ACK'd? */
   switch(u.opcode) {
+  case OP_GRANT:
+    screen_alert_draw(true, "SENT.");
+    chThdSleepMilliseconds(ALERT_DELAY);
+    orchardAppRun(orchardAppByName("Badge"));
+    break;
   case OP_BATTLE_REQ:
     // we are ack'd, let's go.
     if (current_fight_state == ENEMY_SELECT) { 
