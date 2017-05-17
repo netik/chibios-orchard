@@ -13,10 +13,9 @@ Then type `make sdcard` to generate the assets.
 To start over again, type `make clean` and optionally to erase the sdcard directory type `make cleansd`
 
 When make finishes, you can then copy the `sdcard/` folder over to your sd card and insert it into the badge.
+If you're on MacOSX and the SD Card is labelled as `/Volumes/SPQR_DC25`, you can type `make osxsd` and the Makefile will perform the copy for you. 
 
-**NOTE!** If you remove and reinsert the SD card you must reset the entire badge (push reset!). 
-
-**Our code does not detect SD card removal and replacement.**
+**NOTE!** If you remove and reinsert the SD card you must restart the entire badge (push reset!). **Our code does not detect SD card removal and replacement.**
 
 ## Audio
 
@@ -87,7 +86,15 @@ The badge can display images in the RGB565 format provided that the correct head
 
 You can then display these in the software by calling `putImagefile(x,y,'filename')`
 
-You can also play videos using the built-in photos app.
+## Photos App
+
+The badge contains a photo-frame application that will let you show your own images. 
+
+As a demo, we've loaded a few photos from our recent trip to Rome. Place JPGs into `photos_src/` and then type `make photos`.
+
+Typing `make images` will also perform a build of the `photos/` sdcard directory.
+
+Images must be 320x240 at 
 
 ## Icons
 

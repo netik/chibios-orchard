@@ -28,7 +28,6 @@ all: dirs tools_dep images sounds video
 
 # These rules will build the mirrored and standard images only if the
 # jpgs have changed.
-#mv: rename jpg/font/led/font/led/20.rgb to rgb/font/led/20.rgb: No such file or directory
 
 rgb/font/led/%.rgb : jpg/font/led/%.jpg 
 	tools/scripts/convert_to_rgb.sh $<
@@ -48,11 +47,22 @@ rgb/%.rgb : tif/%.tif
 	tools/scripts/convert_to_rgb.sh $(subst .tif,r.tif,$(subst tif/,tif/mirrored/,$<))
 	mv $(subst .tif,r.rgb,$(subst tif/,tif/mirrored/,$<)) rgb/
 
-# put your photos in photos_src and then run 'make photos' to make the rgb files.
-photos/%.rgb: photos_src/%.jpg
-	tools/scripts/convert_to_rgb.sh $<
-	mv $(subst photos/,photos_src/,$(@)) $(subst rgb/,jpg/,$(@))
+# User-supplied images
+#
+# put your photos in photos_src and then run 'make photos' to make the
+# rgb files.  photos must be 320x240, To facilitate scrolling, we have
+# to reverse and rotate the image 90 degress, just like we do for the
+# credits app.
+#
+photos/%.rgb: photos_src/%.tif
+	convert $< -resize \!320x240 -rotate 90 -flop $(subst photos_src/,photos/,$<)
+	tools/scripts/convert_to_rgb.sh $(subst photos_src/,photos/,$<)
+	rm $(subst photos_src/,photos/,$<)
 
+# User supplied photos if any.
+photos: tools_dep $(addprefix photos/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard photos_src/*.tif)))))
+
+# Sounds
 dac/%.raw: dac/%.mp3
 	tools/scripts/sndmp3toraw.sh $<
 
@@ -64,15 +74,11 @@ dac/fight/%.raw: dac/fight/%.mp3
 
 # When possible, please use TIF images. Aliasing is a real issue on
 # our display and higher quality input is better.
-
 # images used by the system, app-fight, and the "LED" app.
 images: tools_dep photos \
         $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard tif/*.tif))))) \
         $(addprefix rgb/font/led/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard jpg/font/led/*.jpg))))) \
         $(addprefix rgb/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard jpg/*.jpg)))))
-
-# User supplied photos if any.
-photos: tools_dep $(addprefix photos/, $(notdir  $(addsuffix .rgb, $(basename $(wildcard photos_src/*.jpg)))))
 
 # When possible please use .wav files as source material. MP3s already
 # have enough compression and loss.
