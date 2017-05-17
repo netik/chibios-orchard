@@ -62,7 +62,9 @@ credits_start(OrchardAppContext *context)
 	gdispClear (Black);
 	scrollCount (0);
 
-	if (r != 0)
+	if (r == 0)
+		dacPlay (NULL);
+	else
 		dacPlay ("click.raw");
 
 	orchardAppExit ();

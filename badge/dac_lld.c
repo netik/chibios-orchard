@@ -142,12 +142,14 @@ THD_FUNCTION(dacThread, arg)
 	FIL f;
 	UINT br;
 	uint16_t * p;
+	userconfig *config;
 	thread_t * th;
 	char * file = NULL;
 
         (void)arg;
 
 	chRegSetThreadName ("dac");
+	config = getConfig();
 
 	while (1) {
 		if (play == 0) {
@@ -157,6 +159,11 @@ THD_FUNCTION(dacThread, arg)
 			chMsgRelease (th, MSG_OK);
 		}
  
+		if (config->sound_enabled == 0) {
+			play = 0;
+			file = NULL;
+			continue;
+		}
 
 		/*
 		 * If the video app is running, then it's already using
@@ -318,14 +325,8 @@ dacLoopPlay (char * file, uint8_t loop)
 void
 dacPlay (char * file)
 {
-  userconfig *config;
-  config = getConfig();
-
-  if (config->sound_enabled == 0)
-    return;
-
-  dacLoopPlay (file, DAC_PLAY_ONCE);
-  return;
+	dacLoopPlay (file, DAC_PLAY_ONCE);
+	return;
 }
 
 /******************************************************************************
@@ -347,7 +348,7 @@ int
 dacWait (void)
 {
 	int waits = 0;
-        
+
 	while (play != 0) {
 		chThdSleep (1);
 		waits++;
