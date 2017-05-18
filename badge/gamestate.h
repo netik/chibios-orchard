@@ -3,9 +3,9 @@
 const char* fight_state_name[]  = {
   "NONE"  ,             // 0 - Not started yet. 
   "IDLE"  ,             // 1 - Our app isn't running or idle
-  "GRANT_ACCEPT" ,      // 2 - Show the bonus screen
+  "GRANT_ACCEPT" ,      // 2 - Shown when you get an unlock from a BLACK_BADGE
   "ENEMY_SELECT"  ,     // 3 - Choose enemy screen
-  "GRANT_SCREEN"  ,     // 4 - Choose enemy screen
+  "GRANT_SCREEN"  ,     // 4 - Choose grant to send to user
   "APPROVAL_DEMAND"  ,  // 5 - I want to fight you!
   "APPROVAL_WAIT"  ,    // 6 - I am waiting to see if you want to fight me
   "VS_SCREEN"  ,        // 7 - I am showing the versus screen.
