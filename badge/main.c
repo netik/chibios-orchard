@@ -200,8 +200,10 @@ static void radio_ping_handler(KW01_PKT *pkt) {
 #endif
   
   u = (peer *)pkt->kw01_payload;
-#ifdef BLACK_BADGE
-  if (c->unlocks & UL_PINGDUMP) { 
+
+#ifndef LEADERBOARD_AGENT
+  if (c->unlocks & UL_PINGDUMP) {
+#endif
     chprintf(stream, "PING: {\"name\":\"%s\"," \
              "\"badgeid\":\"%08x\"," \
              "\"ptype\":\"%d\"," \
@@ -228,6 +230,7 @@ static void radio_ping_handler(KW01_PKT *pkt) {
              u->agl,
              u->might
              );
+#ifndef LEADERBOARD_AGENT
   }
 #endif
   enemyAdd(u);

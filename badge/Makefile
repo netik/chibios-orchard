@@ -38,6 +38,13 @@ USE_OPT += -DENABLE_JOYPAD
 # used on production badges.
 #USE_OPT += -DBLACK_BADGE
 
+# Enabling this will cause a (factory default) device to stop sending
+# out pings so it cannot be identified. The device will also monitor
+# and dump all pings as JSON for collection purposes. A similar
+# feature is available by getting enabling the unlock UL_PINGDUMP on
+# generic badges, minus the ability to disable pings.
+#USE_OPT += -DLEADERBOARD_AGENT
+
 endif
 
 # C specific options here (added to USE_OPT).

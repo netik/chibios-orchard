@@ -128,14 +128,17 @@ void enemy_cleanup(void) {
 }
 
 static void execute_ping(eventid_t id) {
+
+#ifndef LEADERBOARD_AGENT
   userconfig * config;
   peer upkt;
   unsigned long clockdelta;
+  config = getConfig();
+#endif
   
   (void) id;
-
-  config = getConfig();
-
+  
+#ifndef LEADERBOARD_AGENT
   if (config->airplane_mode) {
     /* we do not send pings in airplane mode */
     return;
@@ -169,7 +172,8 @@ static void execute_ping(eventid_t id) {
   
   radioSend (&KRADIO1, RADIO_BROADCAST_ADDRESS,  RADIO_PROTOCOL_PING,
 	     sizeof (upkt), &upkt);
-  
+
+#endif /* LEADERBOARD_AGENT */
   // while we're at it, clean up the enemy list every two pings
   if( cleanup_state ) {
     enemy_cleanup();
