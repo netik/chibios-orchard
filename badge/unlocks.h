@@ -14,5 +14,5 @@
 #define UL_SENATOR      ( 1 << 7 ) // SENATOR
 #define UL_BENDER       ( 1 << 8 ) // BENDER
 #define UL_GOD          ( 1 << 9 ) // GOD_MODE       
-#define UL_PINGDUMP     ( 1 << 10 ) // NETWORK DEBUG
+#define UL_PINGDUMP     ( 1 << 10 ) // NETWORK DEBUG (BLACK_BADGE only)
 #endif

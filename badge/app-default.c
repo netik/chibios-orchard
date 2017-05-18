@@ -381,7 +381,6 @@ static void default_event(OrchardAppContext *context,
         destroy_buttons(p);
         draw_buttons(p);
         redraw_badge(p);
-        
         return;
       }
 
@@ -490,7 +489,7 @@ static void default_event(OrchardAppContext *context,
       configSave(config);
 
       dacPlay("fight/leveiup.raw");      
-      screen_alert_draw(true, "CHARACTER UPGRADE EXPIRED");
+      screen_alert_draw(true, "VENI, VIDI, VICI...");
       chThdSleepMilliseconds(ALERT_DELAY);
       gdispClear(Black);
       lastimg = -1;
