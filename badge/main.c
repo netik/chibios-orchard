@@ -187,7 +187,9 @@ static void print_mcu_info(void) {
 
 static void radio_ping_handler(KW01_PKT *pkt) {
   peer * u;
+#ifdef BLACK_BADGE
   userconfig *c = getConfig();
+#endif
   
 #ifdef DEBUG_PINGS
   chprintf(stream, "\r\nGot a ping --  %02x -> %02x : %02x (signal strength: -%ddBm)\r\n",
