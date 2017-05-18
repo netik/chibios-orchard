@@ -119,11 +119,8 @@ static void shell_termination_handler(eventid_t id) {
 }
 
 static void orchard_app_restart(eventid_t id) {
-  //  static int i = 1;
   (void)id;
 
-  // jna: removing this, it's not really necessary for debug anymore. 
-  //  chprintf(stream, "\r\nRunning next app (pid #%d)\r\n", ++i);
   orchardAppRestart();
 }
 
@@ -201,7 +198,7 @@ static void radio_ping_handler(KW01_PKT *pkt) {
 #endif
   
   u = (peer *)pkt->kw01_payload;
-
+#ifdef BLACK_BADGE
   if (c->unlocks & UL_PINGDUMP) { 
     chprintf(stream, "PING: {\"name\":\"%s\"," \
              "\"badgeid\":\"%08x\"," \
@@ -230,7 +227,7 @@ static void radio_ping_handler(KW01_PKT *pkt) {
              u->might
              );
   }
-
+#endif
   enemyAdd(u);
 
   /* set the clock if any */
@@ -294,7 +291,6 @@ int main(void)
   print_mcu_info();
 
   /* start the engines */
-
 #if HAL_USE_MMC_SPI
   pit0Start (&PIT1, NULL);
 #else
@@ -441,7 +437,7 @@ int main(void)
    * We check to see if config is null to avoid an edge case here if
    * HALT_ON_SDFAIL is undefined and the SD card fails to start.  
    *
-o   */
+   */
   if (config == NULL) { 
     configStart ();
     config = getConfig ();
@@ -461,7 +457,6 @@ o   */
   /* Initialize uGfx */
   gfxInit();
   uiStart();
-  
 
   /* Draw a banner... */
   oledOrchardBanner();
@@ -484,7 +479,7 @@ o   */
   evtTableHook(orchard_events, orchard_app_terminated, orchard_app_restart);
   orchardAppRestart();
 
-  /* handle radio events for ping */
+  /* set our inbound ping handler */
   radioHandlerSet(radioDriver, RADIO_PROTOCOL_PING, radio_ping_handler);
  
   chThdSetPriority (NORMALPRIO + 1);
@@ -507,7 +502,6 @@ void halt(void) {
 
   //  oledStop(&SPID2);
   chprintf(stream, "OLED stopped\n\r");
-
   chprintf(stream, "Slowing clock, sleeping radio & halting CPU...\n\r");
   pee_pbe();  // transition through three states to get to fei mode
   pbe_fbe();
@@ -520,14 +514,12 @@ void halt(void) {
 // look in ../os/ext/CMSIS/KINETIS/kl17z.h for CPU register set
 void cpuStop(void) {
   volatile unsigned int dummyread;
-  /*The PMPROT register may have already been written by init
-    code. If so, then this next write is not done since
-    PMPROT is write once after RESET
-    this write-once bit allows the MCU to enter the
-    normal STOP mode.
-    If AVLP is already a 1, VLPS mode is entered
-    instead of normal STOP
-    is SMC_PMPROT = 0 */
+  /* The PMPROT register may have already been written by init
+     code. If so, then this next write is not done since PMPROT is
+     write once after RESET this write-once bit allows the MCU to
+     enter the normal STOP mode.  If AVLP is already a 1, VLPS mode is
+     entered instead of normal STOP is SMC_PMPROT = 0 */
+
   /* Set the STOPM field to 0b000 for normal STOP mode
      For Kinetis L: if trying to enter Stop from VLPR user
      forced to VLPS low power mode */
@@ -536,6 +528,7 @@ void cpuStop(void) {
   
   /*wait for write to complete to SMC before stopping core */
   dummyread =  SMC->PMCTRL;
+
   //#warning "check that this disassembles to a read"
   //  (void) SMC->PMCTRL; // check that this works
   dummyread++; // get rid of compiler warning
@@ -578,9 +571,10 @@ uint8_t pee_pbe(void) {
       return 0x8;                                                       // return error code
     } 
   
-  // As we are running from the PLL by default the PLL and external clock settings are valid
-  // To move to PBE from PEE simply requires the switching of the CLKS mux to select the ext clock 
-  // As CLKS is already 0 the CLKS value can simply be OR'ed into the register 
+  // As we are running from the PLL by default the PLL and external
+  // clock settings are valid To move to PBE from PEE simply requires
+  // the switching of the CLKS mux to select the ext clock As CLKS is
+  // already 0 the CLKS value can simply be OR'ed into the register
   MCG->C1 |= MCG_C1_CLKS(2); // switch CLKS mux to select external reference clock as MCG_OUT
   
   // Wait for clock status bits to update 
@@ -699,7 +693,7 @@ uint8_t fbe_fei(void) {
       return 0x4;                                                       // return error code
     }
 
-// Check IRC frequency is within spec.
+  // Check IRC frequency is within spec.
   if ((slow_irc_freq < 31250) || (slow_irc_freq > 39063))
     {
       return 0x31;
