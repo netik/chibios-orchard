@@ -320,7 +320,6 @@ static void state_approval_demand_enter(void) {
   dacStop();
   playAttacked();
 
-  config->lastcombat = chVTGetSystemTime();
   configSave(config);
 }
 
@@ -421,14 +420,9 @@ static void state_move_select_tick() {
   }
 
   if (countdown <= 0) {
-    /* TODO -- handle a move better when the other player gives
-       up. right now we kill the round */
+    /* no one moved, just abort */
     do_timeout();
   }
-}
-
-static void state_move_select_exit() {
-  //  gdispFillArea(160, POS_PLAYER2_Y, 50,150,Black);
 }
 
 static void screen_select_draw(int8_t initial) {
@@ -669,7 +663,7 @@ static void state_vs_screen_tick(void) {
   
   animtick++;
 
-  if (animtick < 40) { 
+  if (animtick < 40) {  // for the first 2.6 seconds... 
     if (animtick % 6 < 3) { // blink duty cycle 
       gdispDrawStringBox (0,110,
                           p->screen_width, p->fontlg_height,
@@ -819,7 +813,7 @@ static void calc_damage(RoundState *r) {
   // if we didn't get a hit at all, they failed to do any damage. 
   if (rr.last_damage == -1) rr.last_damage = 0;
 
-  // The default hit color is Red.
+  // Set the default hit color
   r->p1color = Red;
   r->p2color = Red;
 
@@ -888,13 +882,9 @@ static void calc_damage(RoundState *r) {
 
   // handle tie:
   if ((current_enemy.hp == 0) && (config->hp == 0)) {
-    /* both are dead, so whomever has greatest overkill wins.
-     *
-     * but that's the same, then the guy who started it wins.
-     */
-    
+    /* both are dead, so whomever has greatest overkill wins. */
     if (r->overkill_us == r->overkill_them) {
-      /* Oh, come on. Another tie? Give the win to the initiator */
+      /* But that's the same, so the guy who started it wins. */
       if (fightleader == true) {
         config->hp = 1;
         r->winner = 1;
@@ -1014,13 +1004,16 @@ static void show_user_death() {
   
   // Insult the user if they lose in the 1st round.
   if (rr.roundno == 1) {
-    dacWait(); 
-    switch(rand() % 3 + 1) {
+    dacWait();
+    switch(rand() % 4 + 1) {
     case 1:
       dacPlay("fight/pathtic.raw");
       break;
     case 2:
       dacPlay("fight/nvrwin.raw");
+      break;
+    case 3:
+      dacPlay("fight/brutal.raw");
       break;
     default:
       dacPlay("fight/usuck.raw");
@@ -1045,7 +1038,7 @@ static void show_user_death() {
     case p_bender: /* KILL ALL HUMANS! */
       dacPlay("bwin.raw");
       break;
-    case p_notset:
+    case p_notset: /* should never be reached, not possible to fight if p_notset */
       break;
     }
   }
@@ -1147,6 +1140,10 @@ static void state_show_results_tick() {
     } else {
       if (config->hp == 0) {
         show_user_death();
+
+        // record time of death
+        config->lastdeath = chVTGetSystemTime();
+
         // reward (some) XP and exit 
         config->xp += calc_xp_gain(FALSE);
         config->lost++;
@@ -1838,7 +1835,6 @@ static void start_fight(OrchardAppContext *context) {
   fightleader = true;
   memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(peer));
   config->in_combat = true;
-  config->lastcombat = chVTGetSystemTime();
   configSave(config);
   
   // We're going to preemptively call this before changing state

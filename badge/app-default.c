@@ -31,10 +31,12 @@ static systime_t last_caesar_check = 0;
 extern systime_t char_reset_at;
 
 static int8_t lastimg = -1;
+static uint8_t rotated = false;
 
 typedef struct _DefaultHandles {
   GHandle ghFightButton;
   GHandle ghExitButton;
+  GHandle ghRotateButton;
   GListener glBadge;
   font_t fontLG, fontSM, fontXS;
 
@@ -44,11 +46,17 @@ typedef struct _DefaultHandles {
 
 
 const OrchardAppEventKeyCode konami[] = { keyUp, keyUp, keyDown, 
-                                     keyDown, keyLeft, keyRight,
-                                     keyLeft, keyRight, keySelect };
+                                          keyDown, keyLeft, keyRight,
+                                          keyLeft, keyRight, keySelect };
 extern uint8_t shout_ok;
 
-static void draw_badge_buttons(DefaultHandles * p) {
+static void destroy_buttons(DefaultHandles *p) {
+  gwinDestroy (p->ghFightButton);
+  gwinDestroy (p->ghExitButton);
+  gwinDestroy (p->ghRotateButton);
+}
+
+static void draw_buttons(DefaultHandles * p) {
   GWidgetInit wi;
   coord_t totalheight = gdispGetHeight();
   
@@ -64,18 +72,14 @@ static void draw_badge_buttons(DefaultHandles * p) {
 
   p->ghFightButton = gwinButtonCreate(NULL, &wi);
 
-#ifdef notdef
-  gwinWidgetClearInit(&wi);
-  wi.g.show = TRUE;
-  wi.g.width = 60;
-  wi.g.height = 60;
-  wi.g.y = totalheight - 60;
-  wi.text = "";
-  wi.customDraw = noRender;
-#endif
   wi.g.x = gdispGetWidth() - 60;
-
   p->ghExitButton = gwinButtonCreate(NULL, &wi);
+
+  wi.g.x = POS_PLAYER1_X;
+  wi.g.y = totalheight - 40 - PLAYER_SIZE_Y;
+  wi.g.width = PLAYER_SIZE_X;
+  wi.g.height = PLAYER_SIZE_Y;
+  p->ghRotateButton = gwinButtonCreate(NULL, &wi);
 }
 
 static void redraw_player(DefaultHandles *p) {
@@ -83,11 +87,13 @@ static void redraw_player(DefaultHandles *p) {
   // draw the character during the HP update, it will blink and we
   // don't want that.
   const userconfig *config = getConfig();
+  coord_t totalheight = gdispGetHeight();
   char tmp[20];
   char tmp2[40];
   char * img;
   int class;
-
+  uint16_t hpx;
+  
   if (config->hp < (maxhp(config->current_type, config->unlocks, config->level) * .25)) {
     if (lastimg != 2) {
       img = "deth";
@@ -109,29 +115,34 @@ static void redraw_player(DefaultHandles *p) {
   }
 
   putImageFile(getAvatarImage(config->current_type, img, class, false),
-             POS_PLAYER1_X, POS_PLAYER1_Y);
+               POS_PLAYER1_X, totalheight - 42 - PLAYER_SIZE_Y);
+
   /* hit point bar */
-  
-  gdispDrawThickLine(141, 77, 320, 77, Red, 2, FALSE);
-  gdispDrawThickLine(141, 98, 320, 98, Red, 2, FALSE);
+  if (rotated)
+    hpx = 61;
+  else
+    hpx = 141; 
+      
+  gdispDrawThickLine(hpx, 77, 320, 77, Red, 2, FALSE);
+  gdispDrawThickLine(hpx, 98, 320, 98, Red, 2, FALSE);
   
   chsnprintf(tmp, sizeof(tmp), "HP");
   chsnprintf(tmp2, sizeof(tmp2), "%d", config->hp);
 
-  gdispDrawStringBox (142,
+  gdispDrawStringBox (hpx+1,
 		      83,
 		      30,
 		      gdispGetFontMetric(p->fontXS, fontHeight),
 		      tmp,
 		      p->fontXS, White, justifyLeft);
 
-  drawProgressBar(163,83,120,11,maxhp(config->current_type, config->unlocks,config->level), config->hp, 0, false);
+  drawProgressBar(hpx+22,83,120,11,maxhp(config->current_type, config->unlocks,config->level), config->hp, 0, false);
 
-  gdispFillArea( 289, 83,
+  gdispFillArea( hpx+148, 83,
                  30,gdispGetFontMetric(p->fontXS, fontHeight),
                  Black );
                        
-  gdispDrawStringBox (289,
+  gdispDrawStringBox (hpx+148,
 		      83,
                       30,
 		      gdispGetFontMetric(p->fontXS, fontHeight),
@@ -141,9 +152,9 @@ static void redraw_player(DefaultHandles *p) {
 
 }
 
-static void draw_stat (DefaultHandles * p, uint16_t x,
-    uint16_t y, char * str1, char * str2)
-{
+static void draw_stat (DefaultHandles * p,
+                       uint16_t x, uint16_t y,
+                       char * str1, char * str2) {
   uint16_t lmargin = 141;
 
   gdispDrawStringBox (lmargin + x,
@@ -158,20 +169,26 @@ static void draw_stat (DefaultHandles * p, uint16_t x,
 		      gdispGetFontMetric(p->fontSM, fontHeight),
 		      str2,
 		      p->fontSM, White, justifyRight);
-
   return;
 }
 
 static void redraw_badge(DefaultHandles *p) {
   // draw the entire background badge image. Shown when the screen is idle. 
   const userconfig *config = getConfig();
+  coord_t totalheight = gdispGetHeight();
+  coord_t totalwidth = gdispGetWidth();
+  
   char tmp[20];
   char tmp2[40];
   uint16_t ypos = 0; 
 
   redraw_player(p);
 
-  putImageFile(IMG_GROUND_BTNS, 0, POS_FLOOR_Y);
+  if (rotated) { 
+    putImageFile(IMG_GROUND_BTN_ROT, 0, totalheight-40);
+  } else {
+    putImageFile(IMG_GROUND_BTNS, 0, totalheight-40);
+  }
 
   gdispDrawStringBox (0,
 		      ypos,
@@ -200,16 +217,20 @@ static void redraw_badge(DefaultHandles *p) {
   chsnprintf(tmp2, sizeof(tmp2), "%3d", config->xp);
   draw_stat (p, 0, ypos, "XP", tmp2);
 
-  chsnprintf(tmp2, sizeof(tmp2), "%3d", config->won);
-  draw_stat (p, 94, ypos, "WON", tmp2);
+  if (!rotated) {
+    chsnprintf(tmp2, sizeof(tmp2), "%3d", config->won);
+    draw_stat (p, 94, ypos, "WON", tmp2);
+  }
 
   /* AGL / LOST */
   ypos = ypos + gdispGetFontMetric(p->fontSM, fontHeight) + 2;
   chsnprintf(tmp2, sizeof(tmp2), "%3d", config->agl);
   draw_stat (p, 0, ypos, "AGL", tmp2);
 
-  chsnprintf(tmp2, sizeof(tmp2), "%3d", config->lost);
-  draw_stat (p, 94, ypos, "LOST", tmp2);
+  if (!rotated) { 
+    chsnprintf(tmp2, sizeof(tmp2), "%3d", config->lost);
+    draw_stat (p, 94, ypos, "LOST", tmp2);
+  }
 
   /* MIGHT */
   ypos = ypos + gdispGetFontMetric(p->fontSM, fontHeight) + 2;
@@ -217,16 +238,23 @@ static void redraw_badge(DefaultHandles *p) {
     chsnprintf(tmp2, sizeof(tmp2), "%3d", config->might + 1);
   else
     chsnprintf(tmp2, sizeof(tmp2), "%3d", config->might);
-        
   draw_stat (p, 0, ypos, "MIGHT", tmp2);
 
-  /* EFF supporter, +10% Defense and Logo */
+  if (rotated) {
+    ypos = ypos + gdispGetFontMetric(p->fontSM, fontHeight) + 2;
+    chsnprintf(tmp2, sizeof(tmp2), "%3d", config->won);
+    draw_stat (p, 0, ypos, "WON", tmp2);
+    ypos = ypos + gdispGetFontMetric(p->fontSM, fontHeight) + 2;
+    chsnprintf(tmp2, sizeof(tmp2), "%3d", config->lost);
+    draw_stat (p, 0, ypos, "LOST", tmp2);
+  }
+
+  /* EFF supporter, +10% Defense and 50x35 logo*/
   if (config->unlocks & UL_PLUSDEF) 
-    putImageFile(IMG_EFFLOGO, 270, ypos+4);
+    putImageFile(IMG_EFFLOGO, totalwidth-50, totalheight-42-35);
 
   if (config->airplane_mode)
     putImageFile(IMG_PLANE, 0, 0);
-
 }
 
 static uint32_t default_init(OrchardAppContext *context) {
@@ -252,10 +280,15 @@ static void default_start(OrchardAppContext *context) {
   last_caesar_check = chVTGetSystemTime();
 
   gdispClear(Black);
+  if (rotated) { 
+    gdispSetOrientation (0);
+  } else {
+    gdispSetOrientation (GDISP_DEFAULT_ORIENTATION);
+  }
 
   lastimg = -1;
   redraw_badge(p);
-  draw_badge_buttons(p);
+  draw_buttons(p);
   
   geventListenerInit(&p->glBadge);
   gwinAttachListener(&p->glBadge);
@@ -292,7 +325,13 @@ static void default_event(OrchardAppContext *context,
   userconfig *config = getConfig();
   tmElements_t dt;
   char tmp[40];
+  uint16_t lmargin;
 
+  if (rotated)
+    lmargin = 61;
+  else
+    lmargin = 141;
+  
   p = context->priv;
 
   if (event->type == keyEvent) {
@@ -326,6 +365,23 @@ static void default_event(OrchardAppContext *context,
 
       if (((GEventGWinButton*)pe)->gwin == p->ghExitButton) {
         orchardAppExit();
+        return;
+      }
+
+      if (((GEventGWinButton*)pe)->gwin == p->ghRotateButton) {
+        rotated = !rotated;
+
+	if (rotated) { 
+          gdispSetOrientation (0);
+        } else {
+          gdispSetOrientation (GDISP_DEFAULT_ORIENTATION);
+        }
+        
+        gdispClear(Black);
+        destroy_buttons(p);
+        draw_buttons(p);
+        redraw_badge(p);
+        
         return;
       }
 
@@ -375,11 +431,11 @@ static void default_event(OrchardAppContext *context,
         strcat(tmp," SENATOR");
       }
 
-      gdispFillArea( 141,62, 
+      gdispFillArea( lmargin,62, 
                      60, gdispGetFontMetric(p->fontXS, fontHeight),
                      Black );
       
-      gdispDrawStringBox (141,
+      gdispDrawStringBox (lmargin,
                           62,
                           gdispGetWidth(),
                           gdispGetFontMetric(p->fontXS, fontHeight),
@@ -469,6 +525,8 @@ static void default_exit(OrchardAppContext *context) {
   p = context->priv;
   gwinDestroy (p->ghFightButton);
   gwinDestroy (p->ghExitButton);
+  gwinDestroy (p->ghRotateButton);
+  
   gdispCloseFont (p->fontXS);
   gdispCloseFont (p->fontLG);
   gdispCloseFont (p->fontSM);
@@ -480,6 +538,8 @@ static void default_exit(OrchardAppContext *context) {
 
   shout_ok = 0;
 
+  gdispSetOrientation (GDISP_DEFAULT_ORIENTATION);
+  
   return;
 }
 

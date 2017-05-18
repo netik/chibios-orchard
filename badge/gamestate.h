@@ -87,7 +87,6 @@ static void state_vs_screen_tick(void);
 
 static void state_move_select_enter(void);
 static void state_move_select_tick(void);
-static void state_move_select_exit(void);
 
 static void state_post_move_tick(void);
 
@@ -154,7 +153,7 @@ state_funcs fight_funcs[] = { { // none
                               {  // move_select
                                 state_move_select_enter,
                                 state_move_select_tick,
-                                state_move_select_exit
+                                NULL,
                               },
                               {  // post_move
                                 NULL,

@@ -24,22 +24,23 @@ Matthew (graphics,art)\r\n\r\n"
 
 // Remember! Filenames must be in old school dos format (8x3)
 //                         12345678.123
-#define IMG_SPLASH        "SPQR.RGB"
+#define IMG_SPLASH         "SPQR.RGB"
 
-#define IMG_GROUND        "ground.rgb" // ground 
-#define IMG_GROUND_BTNS   "grbutt.rgb" // ground with no buttons
-#define IMG_GROUND_BCK    "grback.rgb" // ground with back button
+#define IMG_GROUND         "ground.rgb" // ground 
+#define IMG_GROUND_BTNS    "grbutt.rgb" // ground with no buttons
+#define IMG_GROUND_BTN_ROT "grrot.rgb"  // ground, rotated with buttons
+#define IMG_GROUND_BCK     "grback.rgb" // ground with back button
 
-#define IMG_BLOCK         "block.rgb"
-#define IMG_ATTACK        "attack.rgb"
+#define IMG_BLOCK          "block.rgb"
+#define IMG_ATTACK         "attack.rgb"
 
 // app
-#define IMG_UNLOCKBG      "unlockbg.rgb"
-#define IMG_CHOOSETYPE    "choose.rgb"
-#define IMG_ARROW_DN_50   "ar50dn.rgb"
+#define IMG_UNLOCKBG       "unlockbg.rgb"
+#define IMG_CHOOSETYPE     "choose.rgb"
+#define IMG_ARROW_DN_50    "ar50dn.rgb"
 
-#define IMG_PLANE         "plane.rgb"
-#define IMG_EFFLOGO       "efflogo.rgb"
+#define IMG_PLANE          "plane.rgb"
+#define IMG_EFFLOGO        "efflogo.rgb"
 
 #define IMG_SPLASH_DISPLAY_TIME          5000 // longer if music playing
 #define IMG_SPLASH_NO_SOUND_DISPLAY_TIME 1000
@@ -55,6 +56,9 @@ Matthew (graphics,art)\r\n\r\n"
 #define POS_PCENTER_Y  45
 
 #define POS_FLOOR_Y    200
+
+#define PLAYER_SIZE_X  140
+#define PLAYER_SIZE_Y  160
 
 /* screen locations */
 #define STATUS_Y       20     /* where the status row is on screen */

@@ -52,7 +52,7 @@ static void cmd_config_show(BaseSequentialStream *chp, int argc, char *argv[])
   chprintf(chp, "netid      0x%08x\r\n", config->netid);
   chprintf(chp, "unlocks    0x%04x\r\n", config->unlocks);
   chprintf(chp, "sound      %d\r\n", config->sound_enabled);
-  chprintf(chp, "lastcombat %d\r\n", config->lastcombat);
+  chprintf(chp, "lastdeath  %d\r\n", config->lastdeath);
   chprintf(chp, "incombat   %d\r\n", config->in_combat);
   chprintf(chp, "led mode   %d dim %d\r\n", config->led_pattern, config->led_shift);
   chprintf(chp, "led color  %d %d %d\r\n",

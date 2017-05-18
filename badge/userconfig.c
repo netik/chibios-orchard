@@ -102,8 +102,8 @@ static void init_config(userconfig *config) {
   config->won = 0;
   config->lost = 0;
 
-  config->lastcombat = 0; // how long since combat started
-  config->in_combat = 1;  // we are incombat until type is set. 
+  config->lastdeath = 0; // last death time to calc healing
+  config->in_combat = 1; // we are incombat until type is set. 
   
   /* stats, dunno if we will use */
   config->xp = 0;

@@ -61,7 +61,7 @@ typedef struct userconfig {
   player_type p_type;
   char name[CONFIG_NAME_MAXLEN];
   
-  uint16_t lastcombat; // how long since combat started
+  uint16_t lastdeath; // last time you died
   uint8_t in_combat; 
   uint16_t unlocks;
 
