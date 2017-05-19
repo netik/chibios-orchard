@@ -432,6 +432,9 @@ static void goLeft(void) {
 static DECLARE_THREAD_FUNCTION(thdTetris, arg) {
   (void)arg;
   uint8_t i;
+
+  chRegSetThreadName ("Tetris");
+
   while (!tetrisGameOver) {
     // key handling
     if (gfxSystemTicks() - tetrisPreviousKeyTime >= gfxMillisecondsToTicks(tetrisKeySpeed) || gfxSystemTicks() <= gfxMillisecondsToTicks(tetrisKeySpeed)) {

@@ -17,33 +17,37 @@ ifeq ($(USE_OPT),)
 # for traffic. This does not need to be enabled for any fully functional
 # badges.
 #
-USE_OPT += -DREV2_RADIO_WAR -DRADIO_POLL_FREQ=1000
+# USE_OPT += -DREV2_RADIO_WAR -DRADIO_POLL_FREQ=1000
 
 # Enable joypad buttons. This should be turned on for production builds.
-# It's off for now because the Freescale/NXP Freedom KW019032 reference
+# This is optional because the Freescale/NXP Freedom KW019032 reference
 # board has the pins wired up in such a way that if we enable the joypad
 # interrupts, we'll get stuck forever thinking the buttons are being
 # pressed. Only the real badge has the right joypad buttons anyway.
-
+#
 USE_OPT += -DENABLE_JOYPAD
 
 # enable this to bypass startup splash page and sponsors
-#USE_OPT += -DFAST_STARTUP
+#
+# USE_OPT += -DFAST_STARTUP
 
 # Enable tilt sensor. Also only present on production board.
-#USE_OPT+= -DENABLE_TILT_SENSOR
+#
+# USE_OPT+= -DENABLE_TILT_SENSOR
 
 # enable this to enable admin and development modes. Enables all
 # configuration utilities and other goodies reserved. Should not be
 # used on production badges.
-#USE_OPT += -DBLACK_BADGE
+#
+# USE_OPT += -DBLACK_BADGE
 
 # Enabling this will cause a (factory default) device to stop sending
 # out pings so it cannot be identified. The device will also monitor
 # and dump all pings as JSON for collection purposes. A similar
 # feature is available by getting enabling the unlock UL_PINGDUMP on
 # generic badges, minus the ability to disable pings.
-USE_OPT += -DLEADERBOARD_AGENT
+#
+# USE_OPT += -DLEADERBOARD_AGENT
 
 endif
 
