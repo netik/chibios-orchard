@@ -20,11 +20,20 @@ tetris_init (OrchardAppContext *context)
 static void
 tetris_start (OrchardAppContext *context)
 {
+	orientation_t o;
+
 	(void)context;
 
+	/*
+	 * We need to use portrait orientation otherwise the playfield
+	 * won't be fully visible. Once the game is over, we restore the
+	 * orientation back to its previous setting.
+	 */
+
+	o = gdispGetOrientation ();
 	gdispSetOrientation (0);
 	tetrisStart ();
-	gdispSetOrientation (GDISP_DEFAULT_ORIENTATION);
+	gdispSetOrientation (o);
 
 	chThdSleepMilliseconds (1000);
 
