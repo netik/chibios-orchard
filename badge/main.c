@@ -224,11 +224,13 @@ static void radio_ping_handler(KW01_PKT *pkt) {
              "\"lost\":%d," \
              "\"agl\":%d," \
              "\"might\":%d" \
+             "\"luck\":%d" \
              "}\r\n",
              u->won,
              u->lost,
              u->agl,
-             u->might
+             u->might,
+             u->luck
              );
 #ifndef LEADERBOARD_AGENT
   }

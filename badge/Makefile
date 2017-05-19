@@ -17,7 +17,7 @@ ifeq ($(USE_OPT),)
 # for traffic. This does not need to be enabled for any fully functional
 # badges.
 #
-#USE_OPT += -DREV2_RADIO_WAR -DRADIO_POLL_FREQ=1000
+USE_OPT += -DREV2_RADIO_WAR -DRADIO_POLL_FREQ=1000
 
 # Enable joypad buttons. This should be turned on for production builds.
 # It's off for now because the Freescale/NXP Freedom KW019032 reference
@@ -43,7 +43,7 @@ USE_OPT += -DENABLE_JOYPAD
 # and dump all pings as JSON for collection purposes. A similar
 # feature is available by getting enabling the unlock UL_PINGDUMP on
 # generic badges, minus the ability to disable pings.
-#USE_OPT += -DLEADERBOARD_AGENT
+USE_OPT += -DLEADERBOARD_AGENT
 
 endif
 
