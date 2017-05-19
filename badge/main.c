@@ -223,7 +223,7 @@ static void radio_ping_handler(KW01_PKT *pkt) {
              "\"won\":%d,"  \
              "\"lost\":%d," \
              "\"agl\":%d," \
-             "\"might\":%d" \
+             "\"might\":%d," \
              "\"luck\":%d" \
              "}\r\n",
              u->won,
