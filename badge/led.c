@@ -50,6 +50,7 @@ static void anim_dualbounce(void);
 static void anim_violets(void);
 static void anim_wave(void);
 static void anim_violetwave(void); // sorry, my favorite color is purple sooo... 
+static void anim_kraftwerk(void);
 
 static uint8_t ledExitRequest = 0;
 static uint8_t ledsOff = 0;
@@ -72,6 +73,7 @@ const struct FXENTRY fxlist[] = {
   { "Spot the Fed", anim_police_all},
   { "Violets", anim_violets},
   { "Violet Wave", anim_violetwave },
+  { "Kraftwerk", anim_kraftwerk },
   { "All Solid", anim_all_same}
 };
 
@@ -519,6 +521,18 @@ static void anim_triangle(void) {
 
   fx_position++;
   if (fx_position > N3) { fx_position = 0; }
+}
+
+
+static void anim_kraftwerk(void) {
+  fx_index++;
+  if (fx_index % 8 == 0) { fx_position++; }
+  
+  if (fx_position > 6) { fx_position = 0; };
+
+  ledClear();
+  ledSetRGB(led_config.fb, 11-fx_position, 255,0,0);
+  ledSetRGB(led_config.fb, fx_position, 255,0,0);
 }
 
 static void anim_violets(void) {

@@ -8,7 +8,7 @@
 
 /* starting from 1, not 0!  */
 #define LED_PATTERNS_LIMITED 10 // most but not all patterns
-#define LED_PATTERNS_FULL    14 // all if unlocked.
+#define LED_PATTERNS_FULL    15 // all if unlocked.
 
 #define sign(x) (( x > 0 ) - ( x < 0 ))
 
