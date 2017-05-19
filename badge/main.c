@@ -187,7 +187,7 @@ static void print_mcu_info(void) {
 
 static void radio_ping_handler(KW01_PKT *pkt) {
   peer * u;
-#ifdef BLACK_BADGE
+#ifndef LEADERBOARD_AGENT
   userconfig *c = getConfig();
 #endif
   

@@ -163,6 +163,7 @@ static void execute_ping(eventid_t id) {
   upkt.xp        = config->xp;
   upkt.agl       = config->agl;
   upkt.might     = config->might;
+  upkt.luck      = config->luck;
 
   // if we have the clock, send the current clock.
   if (rtc != 0) {
