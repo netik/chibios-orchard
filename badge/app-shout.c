@@ -63,7 +63,7 @@ static void shout_start (OrchardAppContext *context)
           keyboardUiContext->itemlist = (const char **)chHeapAlloc(NULL,
                                                                    sizeof(char *) * 2);
           keyboardUiContext->itemlist[0] =
-            "Shout something,\npress ENTER when done";
+            "Shout something,\npress ENTER to send.\n";
           keyboardUiContext->itemlist[1] = p;
           keyboardUiContext->total = KW01_PKT_PAYLOADLEN - 1;
           
@@ -81,7 +81,6 @@ static void shout_event (OrchardAppContext *context,
 {
 	OrchardUiContext * keyboardUiContext;
 	const OrchardUi * keyboardUi;
-	font_t font;
 
 	keyboardUi = context->instance->ui;
 	keyboardUiContext = context->instance->uicontext;
@@ -97,9 +96,6 @@ static void shout_event (OrchardAppContext *context,
 		    (event->ui.flags == uiOK)) {
 
 			/* Terminate UI */
-
-			keyboardUi->exit (context);
-
 			/* Send the message */
 
 			radioSend (&KRADIO1, RADIO_BROADCAST_ADDRESS,
@@ -107,17 +103,8 @@ static void shout_event (OrchardAppContext *context,
 			    keyboardUiContext->selected + 1,
 			    keyboardUiContext->itemlist[1]);
 
-			chHeapFree ((char *)keyboardUiContext->itemlist[1]);
-
 			/* Display a confirmation message */
-
-			font = gdispOpenFont(FONT_FIXED);
-			gdispDrawStringBox (0, (gdispGetHeight() / 2) -
-				gdispGetFontMetric(font, fontHeight),
-				gdispGetWidth(),
-				gdispGetFontMetric(font, fontHeight),
-				"Shout sent!", font, Red, justifyCenter);
-			gdispCloseFont (font);
+                        screen_alert_draw(true, "SHOUT SENT");
 			playVictory ();
 
 			/* Wait for a second, then exit */
@@ -132,7 +119,15 @@ static void shout_event (OrchardAppContext *context,
 
 static void shout_exit (OrchardAppContext *context)
 {
-  if (context->instance->uicontext) { 
+  OrchardUiContext * keyboardUiContext;
+  const OrchardUi * keyboardUi;
+  keyboardUi = context->instance->ui;
+  keyboardUiContext = context->instance->uicontext;
+  
+  keyboardUi->exit (context);
+  chHeapFree ((char *)keyboardUiContext->itemlist[1]);
+
+  if (context->instance->uicontext) {   
     chHeapFree (context->instance->uicontext->itemlist);
     chHeapFree (context->instance->uicontext);
   }
