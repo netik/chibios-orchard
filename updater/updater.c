@@ -125,6 +125,7 @@ int updater (void)
 	uint8_t * src = (uint8_t *)UPDATER_DATBUF;
 	uint8_t * dst = (uint8_t *)0x0;
 	FATFS * fs = (FATFS *)UPDATER_FATFS;
+	uint32_t * fixup;
 
 	/* Disable all interrupts */
 
@@ -191,6 +192,37 @@ int updater (void)
 
 	while (1) {
 		f_read (&f, src, UPDATE_SIZE, &br);
+
+		/*
+		 * This fixup is useed to ensure that the flash
+		 * security bits are set correctly. The words at
+		 * address 0x400 are actually four registers which
+		 * are used to set the security state of the processor.
+ 		 * These coincide with the cfmprotect region of the
+		 * firmware image which is set by the linker to contain
+		 * the right values to keep the flash unlocked. This
+		 * means that when flashing a properly generated
+		 * firmware image, the flash will always remain unlocked.
+		 *
+		 * However the updater doesn't have any way to validate
+		 * the image, so it's possible for the user to flash a
+		 * garbage file that happens to contain just the right
+		 * values to permanently lock the flash, which will
+		 * brick the badge.
+		 *
+		 * To prevent this, we _always_ force the security
+		 * bits to the unlocked state no matter what the
+		 * original file contains.
+		 */
+
+		if (dst == (uint8_t *)0x400) {
+			fixup = (uint32_t *)src;
+			fixup[0] = 0xFFFFFFFF;
+			fixup[1] = 0xFFFFFFFF;
+			fixup[2] = 0xFFFFFFFF;
+			fixup[3] = 0xFFFFFFFE;
+		}
+
 		if (br == 0)
 			break;
 		flashErase (dst);
