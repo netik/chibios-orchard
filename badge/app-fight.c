@@ -154,26 +154,6 @@ static void changeState(fight_state nextstate) {
 static void state_idle_enter(void) {
   userconfig *config = getConfig();
 
-  FightHandles *p;
-  p = instance.context->priv;
-
-  // clean up the fight. This will fire a repaint that erases the area
-  // under the button.  So, do not enter this state unless you are
-  // ready to clear the screen and the fight is over.
-  
-  if (p->ghAttackHi != NULL) {
-    gwinDestroy (p->ghAttackHi);
-    p->ghAttackHi = NULL;
-  }
-  if (p->ghAttackHi != NULL) {
-    gwinDestroy (p->ghAttackMid);
-    p->ghAttackMid = NULL;
-  }
-  if (p->ghAttackHi != NULL) {
-    gwinDestroy (p->ghAttackLow);
-    p->ghAttackLow = NULL;
-  }
-  
   // reset game state
   memset(&current_enemy, 0, sizeof(current_enemy));
   memset(&pending_enemy_pkt, 0, sizeof(KW01_PKT));
@@ -1503,19 +1483,6 @@ static void state_levelup_enter(void) {
   FightHandles *p = instance.context->priv;
   userconfig *config = getConfig();
 
-  if (p->ghAttackHi != NULL) {
-    gwinDestroy (p->ghAttackHi);
-    p->ghAttackHi = NULL;
-  }
-  if (p->ghAttackHi != NULL) {
-    gwinDestroy (p->ghAttackMid);
-    p->ghAttackMid = NULL;
-  }
-  if (p->ghAttackHi != NULL) {
-    gwinDestroy (p->ghAttackLow);
-    p->ghAttackLow = NULL;
-  }
-
   gdispClear(Black);
 
   chsnprintf(p->tmp, sizeof(p->tmp), "LEVEL %s", dec2romanstr(config->level+1));
@@ -2108,6 +2075,13 @@ static void fight_event(OrchardAppContext *context,
             rr.ourattack |= ATTACK_HI;
             sendAttack();
           }
+
+          /* Destroy the arrow button handles */
+
+          gwinDestroy (p->ghAttackHi);
+          gwinDestroy (p->ghAttackMid);
+          gwinDestroy (p->ghAttackLow);
+
         } else {
           // can't move.
           chprintf(stream, "rejecting event -- already went\r\n");

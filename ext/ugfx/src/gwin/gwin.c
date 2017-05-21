@@ -120,8 +120,17 @@ void _gwinDestroy(GHandle gh, GRedrawMethod how) {
 	if (!gh)
 		return;
 
+#ifdef notdef
 	// Make the window invisible
+
+	/*
+	 * You know what? No. How about you let the _USER_ _DECIDE_
+	 * if they want to make the widged invisible. Hunh? How
+	 * about them apples. Sheesh.
+	 */
+
 	gwinSetVisible(gh, FALSE);
+#endif
 
 	// Make sure it is flushed first - must be REDRAW_WAIT or REDRAW_INSESSION
 	_gwinFlushRedraws(how);
