@@ -1067,9 +1067,9 @@ static void state_show_results_tick() {
   if (animtick == 1) { 
     // calculate damage and colors
     calc_damage(&rr);
-#ifdef DEBUG_FIGHT_STATE
-    chprintf(stream,"FIGHT: Damage report! Us: %d Them: %d\r\n", rr.last_damage, rr.last_hit);
-#endif
+
+    chprintf(stream,"FIGHT: Damage report! Us: %d (hp: %d) Them: %d (hp: %d)\r\n", rr.last_damage, config->hp, rr.last_hit, current_enemy.hp);
+
 
     getDamageLoc(&d, rr.ourattack);
     putImageFile(getAvatarImage(config->current_type, d.filename, 1, false),
@@ -1263,6 +1263,8 @@ static uint16_t xp_for_level(uint8_t level) {
 
 static uint16_t calc_hit(userconfig *config, peer *current_enemy) {
   uint16_t basedmg;
+  uint16_t basemax;
+  uint16_t basemin;
   uint16_t basemult;
   
   // This code calculates base hit and luck only for transmitting to
@@ -1274,10 +1276,11 @@ static uint16_t calc_hit(userconfig *config, peer *current_enemy) {
                    1.711770, 1.792790, 1.866066, 1.933182, 1.995262  };
   
   // the max damage you can do
-  basemult = (25*(exps[config->level - 1]));
-
-  // base multiplier is always rand 75% to 100%
-  basemult = (rand() % basemult) + (basemult * .50);
+  basemax = 42 * exps[config->level - 1];
+  basemin = basemax * .65; 
+    
+  // base multiplier is always rand 50% to 100% of basemax
+  basemult = rand() % (basemax - basemin + 1) + basemin;
 
   // caesar bonus if you are a senator! 
   if ((current_enemy->current_type == p_caesar) && (config->current_type == p_senator)) { 
@@ -2220,7 +2223,7 @@ static void fight_ack_callback(KW01_PKT *pkt) {
     }
     break;
   case OP_NEXTROUND:
-    if (current_fight_state == SHOW_RESULTS) {
+    if ((current_fight_state == SHOW_RESULTS) && (rr.winner == 0)) {
       changeState(MOVE_SELECT);
     }
     break;
