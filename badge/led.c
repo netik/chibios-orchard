@@ -214,7 +214,22 @@ void handle_progress(void) {
   ledClear();
 
   for(i=0; i < total_lit; i++)  {
-    ledSetRGB(led_config.fb, i, roygbiv[c].r, roygbiv[c].g, roygbiv[c].b);
+    // invert the last few, because our LEDs are clockwise. 
+    if (i > 5) {
+
+      /*
+        board layout:          actual:
+         0  1  2  3  4  5      0 1 2 3  4  5 
+        11 10  9  8  7  6      6 7 8 9 10 11
+
+        so when we want to light 6, we want to light 11. 
+        light 7, we light 10, etc... 
+      */
+
+      ledSetRGB(led_config.fb, 17-i, roygbiv[c].r, roygbiv[c].g, roygbiv[c].b);
+    } else {
+      ledSetRGB(led_config.fb, i, roygbiv[c].r, roygbiv[c].g, roygbiv[c].b);
+    }
   }
 					     
 }
