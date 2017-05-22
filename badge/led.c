@@ -53,7 +53,7 @@ static void anim_violetwave(void); // sorry, my favorite color is purple sooo...
 static void anim_kraftwerk(void);
 
 static uint8_t ledExitRequest = 0;
-static uint8_t ledsOff = 0;
+static uint8_t ledsOff = 1;
 
 extern void ledUpdate(uint8_t *fb, uint32_t len);
 static void ledSetRGB(void *ptr, int x, uint8_t r, uint8_t g, uint8_t b);
