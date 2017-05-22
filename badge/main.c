@@ -448,7 +448,9 @@ int main(void)
     configStart ();
     config = getConfig ();
     ledStart (LEDS_COUNT, led_fb);
-    effectsStart();
+    if (config->led_pattern > 0) { 
+      effectsStart();
+    }
   }
   
   chprintf(stream, "HW UDID: 0x");
@@ -476,8 +478,11 @@ int main(void)
   }
 
   /* Promote sponsors */
+  putImageFile("dc25lgo.rgb", 0, 0);
+  chThdSleepMilliseconds (2500);
+  
   putImageFile("sponsor.rgb", 0, 0);
-  chThdSleepMilliseconds (5000);
+  chThdSleepMilliseconds (2500);
 #endif
   
   /* run apps */

@@ -35,6 +35,7 @@
 
 #include "radio_lld.h"
 #include "sound.h"
+#include "dac_lld.h"
 #include "fontlist.h"
 
 #include <string.h>
@@ -99,8 +100,8 @@ static void notify_start(OrchardAppContext *context)
 	gdispDrawStringBox (0, (gdispGetHeight() / 2), 
 	    gdispGetWidth(), gdispGetFontMetric(font, fontHeight),
 	    buf, font, Green, justifyCenter);
-	gdispCloseFont (font);
-	playVictory ();
+	gdispCloseFont (font);	
+        dacPlay("alert1.raw");
 
 	chThdSleepMilliseconds (5000);
 

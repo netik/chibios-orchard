@@ -19,7 +19,6 @@
 #include "src/gdriver/gdriver.h"
 #include "src/ginput/ginput_driver_mouse.h"
 
-
 // GHandles
 typedef struct _SetupHandles {
   GHandle ghCheckSound;
@@ -43,6 +42,11 @@ extern struct FXENTRY fxlist[];
 
 static font_t fontSM;
 static font_t fontXS;
+/* prototypes */
+static void nextLedPattern(uint8_t);
+static void prevLedPattern(uint8_t);
+static void nextLedBright(void);
+static void prevLedBright(void);
 
 static void draw_setup_buttons(SetupHandles * p) {
   userconfig *config = getConfig();
@@ -105,15 +109,6 @@ static void draw_setup_buttons(SetupHandles * p) {
 
   // Create label widget: ghLabelPattern
   wi.g.y = 30;
-#ifdef notdef
-  wi.g.x = 10;
-  wi.g.show = TRUE;
-  wi.g.width = 190;
-  wi.g.height = 20;
-  wi.customParam = 0;
-  wi.customStyle = 0;
-  wi.customDraw = gwinLabelDrawJustifiedLeft;
-#endif
   wi.text = "";
   p->ghLabelPattern = gwinLabelCreate(0, &wi);
   gwinLabelSetBorder(p->ghLabelPattern, FALSE);
@@ -125,10 +120,6 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.g.height = 40;
   wi.text = "<-";
   wi.customDraw = gwinButtonDraw_Normal;
-#ifdef notdef
-  wi.g.show = TRUE;
-  wi.customParam = 0;
-#endif
   wi.customStyle = &DarkPurpleFilledStyle;
   p->ghButtonPatUp = gwinButtonCreate(0, &wi);
 
@@ -140,10 +131,6 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.text = "LED Brightness";
   wi.customDraw = gwinLabelDrawJustifiedLeft;
   wi.customStyle = 0;
-#ifdef notdef
-  wi.g.show = TRUE;
-  wi.customParam = 0;
-#endif
   p->ghLabel4 = gwinLabelCreate(0, &wi);
   gwinLabelSetBorder(p->ghLabel4, FALSE);
 
@@ -164,14 +151,6 @@ static void draw_setup_buttons(SetupHandles * p) {
 
   // create button widget: ghButtonDimUp
   wi.g.x = 260;
-#ifdef notdef
-  wi.g.show = TRUE;
-  wi.g.y = 60;
-  wi.g.width = 50;
-  wi.g.height = 40;
-  wi.customDraw = gwinButtonDraw_Normal;
-  wi.customParam = 0;
-#endif
   wi.text = "->";
   wi.customStyle = &DarkPurpleFilledStyle;
   p->ghButtonDimUp = gwinButtonCreate(0, &wi);
@@ -182,40 +161,16 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.g.width = 110;
   wi.g.height = 36;
   wi.text = "Touch Cal";
-#ifdef notdef
-  wi.customDraw = gwinButtonDraw_Normal;
-  wi.g.show = TRUE;
-  wi.customParam = 0;
-  wi.customStyle = &DarkPurpleFilledStyle;
-#endif
   p->ghButtonCalibrate = gwinButtonCreate(0, &wi);
 
   // create button widget: ghButtonSetName
   wi.g.y = 150;
   wi.text = "Set Name";
-#ifdef notdef
-  wi.g.x = 200;
-  wi.g.width = 110;
-  wi.g.height = 36;
-  wi.g.show = TRUE;
-  wi.customDraw = gwinButtonDraw_Normal;
-  wi.customParam = 0;
-  wi.customStyle = &DarkPurpleFilledStyle;
-#endif
   p->ghButtonSetName = gwinButtonCreate(0, &wi);
   
   // create button widget: ghButtonOK
   wi.g.y = 190;
   wi.text = "Save";
-#ifdef notdef
-  wi.g.x = 200;
-  wi.g.show = TRUE;
-  wi.g.width = 110;
-  wi.g.height = 36;
-  wi.customDraw = gwinButtonDraw_Normal;
-  wi.customParam = 0;
-  wi.customStyle = &DarkPurpleFilledStyle;
-#endif
   p->ghButtonOK = gwinButtonCreate(0, &wi);
 
   // Create label widget: ghLabelStatus (network id)
@@ -225,11 +180,6 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.g.height = 20;
   wi.text = tmp;
   wi.customDraw = gwinLabelDrawJustifiedLeft;
-#ifdef notdef
-  wi.g.y = 200;
-  wi.g.show = TRUE;
-  wi.customParam = 0;
-#endif
   wi.customStyle = 0;
   p->ghLabelStatus = gwinLabelCreate(0, &wi);
   gwinLabelSetBorder(p->ghLabelStatus, FALSE);
@@ -263,6 +213,35 @@ static void setup_start(OrchardAppContext *context) {
 
 }
 
+static void nextLedPattern(uint8_t max_led_patterns) {
+  userconfig *config = getConfig();
+  config->led_pattern++;
+  ledResetPattern();
+  if (config->led_pattern >= max_led_patterns) config->led_pattern = 0;
+  ledSetFunction(fxlist[config->led_pattern].function);
+}
+
+static void prevLedPattern(uint8_t max_led_patterns) {
+  userconfig *config = getConfig();
+  config->led_pattern--;
+  ledResetPattern();
+  if (config->led_pattern == 255) config->led_pattern = max_led_patterns - 1;
+  ledSetFunction(fxlist[config->led_pattern].function);
+}
+
+static void nextLedBright() {
+  userconfig *config = getConfig();
+  config->led_shift--;
+  if (config->led_shift == 255) config->led_shift = 7;
+  ledSetBrightness(config->led_shift);}
+
+static void prevLedBright() {
+  userconfig *config = getConfig();
+  config->led_shift++;
+  if (config->led_shift > 7) config->led_shift = 0;
+  ledSetBrightness(config->led_shift);
+}
+
 static void setup_event(OrchardAppContext *context,
 	const OrchardAppEvent *event) {
   GEvent * pe;
@@ -292,29 +271,19 @@ static void setup_event(OrchardAppContext *context,
     last_ui_time = chVTGetSystemTime();
     if ( (event->key.code == keyLeft) &&
          (event->key.flags == keyPress) )  {
-      config->led_shift++;
-      if (config->led_shift > 7) config->led_shift = 0;
-      ledSetBrightness(config->led_shift);
+      prevLedBright();
     }
     if ( (event->key.code == keyRight) &&
          (event->key.flags == keyPress) )  {
-      	config->led_shift--;
-        if (config->led_shift == 255) config->led_shift = 7;
-        ledSetBrightness(config->led_shift);
+      nextLedBright();
     }
     if ( (event->key.code == keyUp) &&
          (event->key.flags == keyPress) )  {
-      config->led_pattern--;
-      ledResetPattern();
-      if (config->led_pattern == 255) config->led_pattern = max_led_patterns - 1;
-      ledSetFunction(fxlist[config->led_pattern].function);
+      prevLedPattern(max_led_patterns);
     }
     if ( (event->key.code == keyDown) &&
          (event->key.flags == keyPress) )  {
-      config->led_pattern++;
-      ledResetPattern();
-      if (config->led_pattern >= max_led_patterns) config->led_pattern = 0;
-      ledSetFunction(fxlist[config->led_pattern].function);
+      nextLedPattern(max_led_patterns);
     }
     if ( (event->key.code == keySelect) &&
          (event->key.flags == keyPress) )  {

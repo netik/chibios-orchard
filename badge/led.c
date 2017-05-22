@@ -60,6 +60,7 @@ static void ledSetRGB(void *ptr, int x, uint8_t r, uint8_t g, uint8_t b);
 
 /* Update FX_COUNT in led.h if you make changes here */
 const struct FXENTRY fxlist[] = {
+  { "Off", NULL },
   { "Double Bounce", anim_dualbounce },
   { "Dot (White)", anim_dot},
   { "Larsen Scanner", anim_larsen},
@@ -177,8 +178,17 @@ void ledSetFunction(void *func) {
 
   ledClear();
   if (func == NULL) {
+    // run the current config.
+    if (config->led_pattern == 0) {
+      if (ledsOff == 0) {
+        effectsStop();  // we are entering sleep
+      }
+    }
     led_current_func = fxlist[config->led_pattern].function;
   } else {
+    if (ledsOff == 1) // we are coming out of sleep
+        effectsStart();
+    
     led_current_func = func;
   }
 }
@@ -759,7 +769,6 @@ void effectsStart(void) {
   fx_index = 0;
 
   // set user config
-  config = getConfig();
   led_brightshift = config->led_shift;
 
   (*fxlist[config->led_pattern].function)();

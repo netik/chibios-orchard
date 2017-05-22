@@ -34,7 +34,7 @@
 #include "orchard-ui.h"
 #include "radio_lld.h"
 #include "fontlist.h"
-#include "sound.h"
+#include "dac_lld.h"
 #include "ides_gfx.h"
 
 #include <string.h>
@@ -105,7 +105,7 @@ static void shout_event (OrchardAppContext *context,
 
 			/* Display a confirmation message */
                         screen_alert_draw(true, "SHOUT SENT");
-			playVictory ();
+                        dacPlay("alert1.raw");
 
 			/* Wait for a second, then exit */
 
