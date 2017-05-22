@@ -68,6 +68,8 @@ typedef struct _FightHandles {
   GHandle ghLevelUpAgl;
   GHandle ghLevelUpMight;
 
+  GHandle ghGrantFlip;
+  
   font_t fontSM;
   font_t fontLG;
   font_t fontFF;
@@ -81,7 +83,8 @@ typedef struct _FightHandles {
 
   /* text workspace */
   char tmp[40];
-
+  int grant_page;
+  
   ProtoHandles *proto;
   
 } FightHandles;

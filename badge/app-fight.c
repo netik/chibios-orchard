@@ -175,6 +175,7 @@ static void state_grant_accept_enter(void) {
 
   strcpy(p->tmp, "YOU RECEIVED ");
   switch (rr.last_hit) {
+  // page 1
   case UL_HEAL:
     strcat(p->tmp,"2X HEAL!");
     break;
@@ -187,6 +188,21 @@ static void state_grant_accept_enter(void) {
     break;
   case UL_PLUSHP:
     strcat(p->tmp,"+10% HP!");
+    break;
+  // page 2
+  case UL_PLUSMIGHT:
+    strcat(p->tmp,"+1 MIGHT!");
+    break;
+  case UL_LEDS:
+    strcat(p->tmp,"MOAH BLING");
+    break;
+  case UL_CAESAR:
+  case UL_SENATOR:
+    strcat(p->tmp,"CHAR MORPH");
+    char_reset_at = chVTGetSystemTime() + MAX_BUFF_TIME;
+    config->current_type = (rr.last_hit & UL_CAESAR) ? p_caesar : p_senator;
+    config->hp = maxhp(config->current_type, config->unlocks, config->level);
+    configSave(config);
     break;
   default:
     strcat(p->tmp,"AN UNLOCK!");
@@ -553,21 +569,11 @@ static void state_enemy_select_exit() {
   p->ghPrevEnemy = NULL;
 
 }
+static void draw_grant_image(void) {
+  FightHandles *p = instance.context->priv;
+  chsnprintf(p->tmp, sizeof(p->tmp), "grants%d.rgb", p->grant_page+1);
+  putImageFile(p->tmp, 0, 0);
 
-static void state_grant_enter(void) {
-  FightHandles *p;
-  p = instance.context->priv;
-  
-  gdispClear(Black);
-  putImageFile("grants.rgb", 0, 0);
-
-  last_ui_time = chVTGetSystemTime();
-
-  // This will disable the countdown (last_tick_time will be zero). We
-  // will reset it when we send a grant
-  countdown = MS2ST(5000);
-  last_tick_time = 0;
-  
   gdispDrawStringBox (0,
 		      110,
 		      gdispGetWidth(),
@@ -575,6 +581,33 @@ static void state_grant_enter(void) {
 		      current_enemy.name,
 		      p->fontSM, Yellow, justifyCenter);
 }
+
+static void state_grant_enter(void) {
+  GWidgetInit wi;
+  FightHandles *p;
+  p = instance.context->priv;
+  
+  gdispClear(Black);
+  draw_grant_image();
+  gwinWidgetClearInit(&wi);
+  wi.g.show = TRUE;
+  wi.g.x = 267;
+  wi.g.y = 194;
+  wi.g.width = 40;
+  wi.g.height = 40;
+  wi.customDraw = noRender;
+  wi.customParam = 0;
+  wi.customStyle = 0;
+  p->ghGrantFlip = gwinButtonCreate(0, &wi);
+  
+  last_ui_time = chVTGetSystemTime();
+
+  // This will disable the countdown (last_tick_time will be zero). We
+  // will reset it when we send a grant
+  countdown = MS2ST(10000);
+  last_tick_time = 0;
+}  
+
 
 static void state_grant_tick(void) {
   if ( ( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) && (rr.last_hit == -1) ) {
@@ -588,6 +621,10 @@ static void state_grant_tick(void) {
 }
 
 static void state_grant_exit(void) {
+  FightHandles *p;
+  p = instance.context->priv;
+
+  gwinDestroy(p->ghGrantFlip);
 }
 
 static void draw_idle_players() {
@@ -1289,6 +1326,11 @@ static uint16_t calc_hit(userconfig *config, peer *current_enemy) {
 
   // factor in agl/might
   basedmg = basemult + (2*config->might) - (3*current_enemy->agl);
+
+  // unlock?
+  if (config->unlocks & UL_PLUSMIGHT) {
+    basedmg += 2;
+  }
   
   // did we crit?
   if ( (int)rand() % 100 <= config->luck ) { 
@@ -1931,30 +1973,58 @@ static void fight_event(OrchardAppContext *context,
       break;
     case GRANT_SCREEN:
       if (event->key.flags == keyPress)  {
-        switch (event->key.code) {
-          /* we're going to overload the damage value here 
-           * because we need to send a 16 bit number and don't want to 
-           * extend the structure any further 
-           */
-        case keyUp:
-          rr.last_hit = UL_PLUSDEF;
-          sendGamePacket(OP_GRANT);
-          break;
-        case keyDown:
-          rr.last_hit = UL_LUCK;
-          sendGamePacket(OP_GRANT);
-          break;
-        case keyLeft:
-          rr.last_hit = UL_HEAL;
-          sendGamePacket(OP_GRANT);
-          break;
-        case keyRight:
-          rr.last_hit = UL_PLUSHP;
-          sendGamePacket(OP_GRANT);
-          break;
-        default:
-          rr.last_hit = 0;
-          break;
+        if (p->grant_page == 0) {
+          /* Page 1 */
+          switch (event->key.code) {
+            /* we're going to overload the damage value here 
+             * because we need to send a 16 bit number and don't want to 
+             * extend the structure any further.
+             *
+             * Unfortuantely we're not able to send GOD or AGL here.
+             */
+          case keyUp:
+            rr.last_hit = UL_PLUSDEF;
+            sendGamePacket(OP_GRANT);
+            break;
+          case keyDown:
+            rr.last_hit = UL_LUCK;
+            sendGamePacket(OP_GRANT);
+            break;
+          case keyLeft:
+            rr.last_hit = UL_HEAL;
+            sendGamePacket(OP_GRANT);
+            break;
+          case keyRight:
+            rr.last_hit = UL_PLUSHP;
+            sendGamePacket(OP_GRANT);
+            break;
+          default:
+            rr.last_hit = 0;
+            break;
+          }
+        } else {
+          /* Page 2 */
+          switch (event->key.code) {
+          case keyUp:
+            rr.last_hit = UL_PLUSMIGHT;
+            sendGamePacket(OP_GRANT);
+            break;
+          case keyDown:
+            rr.last_hit = UL_LEDS;
+            sendGamePacket(OP_GRANT);
+            break;
+          case keyLeft:
+            rr.last_hit = UL_CAESAR;
+            sendGamePacket(OP_GRANT);
+            break;
+          case keyRight:
+            rr.last_hit = UL_SENATOR;
+            sendGamePacket(OP_GRANT);
+            break;
+          default:
+            rr.last_hit = 0;
+            break;
+          }
         }
 
         if (rr.last_hit != 0) { 
@@ -1990,6 +2060,12 @@ static void fight_event(OrchardAppContext *context,
     case GEVENT_GWIN_BUTTON:
       last_ui_time = chVTGetSystemTime();
 
+      if ( ((GEventGWinButton*)pe)->gwin == p->ghGrantFlip) {
+        p->grant_page = !p->grant_page;
+        draw_grant_image();
+        countdown = MS2ST(10000);
+      }
+      
       if ( ((GEventGWinButton*)pe)->gwin == p->ghExitButton) {
 #ifdef DEBUG_FIGHT_STATE        
         chprintf(stream, "FIGHT: exitapp\r\n");
