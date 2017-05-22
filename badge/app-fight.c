@@ -466,15 +466,16 @@ static void screen_select_draw(int8_t initial) {
 
   ypos = ypos + p->fontsm_height;
 
-  chsnprintf(p->tmp, sizeof(p->tmp), "NEXT LEVEL AT %d XP",
-             xp_for_level(config->level+1));
-  
-  gdispDrawStringBox (0,
-		      ypos,
-                      p->screen_width,
-		      gdispGetFontMetric(p->fontXS, fontHeight),
-                      p->tmp,
-		      p->fontXS, Gray, justifyCenter);
+  if (config->level != 10) { 
+    chsnprintf(p->tmp, sizeof(p->tmp), "NEXT LEVEL AT %d XP",
+               xp_for_level(config->level+1));
+    gdispDrawStringBox (0,
+                        ypos,
+                        p->screen_width,
+                        gdispGetFontMetric(p->fontXS, fontHeight),
+                        p->tmp,
+                        p->fontXS, Gray, justifyCenter);
+  }
 
   // slightly above the middle
   ypos = (gdispGetHeight() / 2) - 60;
