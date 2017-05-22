@@ -459,10 +459,22 @@ static void screen_select_draw(int8_t initial) {
   
   gdispDrawStringBox (0,
 		      ypos,
-		      gdispGetWidth(),
-		      gdispGetFontMetric(p->fontSM, fontHeight),
+                      p->screen_width,
+		      p->fontsm_height,
 		      "Select a Challenger",
 		      p->fontSM, Yellow, justifyCenter);
+
+  ypos = ypos + p->fontsm_height;
+
+  chsnprintf(p->tmp, sizeof(p->tmp), "NEXT LEVEL AT %d XP",
+             xp_for_level(config->level+1));
+  
+  gdispDrawStringBox (0,
+		      ypos,
+                      p->screen_width,
+		      gdispGetFontMetric(p->fontXS, fontHeight),
+                      p->tmp,
+		      p->fontXS, Gray, justifyCenter);
 
   // slightly above the middle
   ypos = (gdispGetHeight() / 2) - 60;
@@ -472,14 +484,14 @@ static void screen_select_draw(int8_t initial) {
   chsnprintf(p->tmp, sizeof(p->tmp), "%d of %d", current_enemy_idx + 1, enemyCount() );
   gdispDrawStringBox (xpos,
 		      ypos - 20,
-		      gdispGetWidth() - xpos - 30,
+		      p->screen_width - xpos - 30,
 		      gdispGetFontMetric(p->fontXS, fontHeight),
 		      p->tmp,
 		      p->fontXS, White, justifyRight);
   // who 
   gdispDrawStringBox (xpos,
 		      ypos,
-		      gdispGetWidth() - xpos,
+		      p->screen_width - xpos,
 		      gdispGetFontMetric(p->fontFF, fontHeight),
 		      enemies[current_enemy_idx]->name,
 		      p->fontFF, levelcolor, justifyLeft);
@@ -489,7 +501,7 @@ static void screen_select_draw(int8_t initial) {
   chsnprintf(p->tmp, sizeof(p->tmp), "LEVEL %s", dec2romanstr(enemies[current_enemy_idx]->level));
   gdispDrawStringBox (xpos,
 		      ypos,
-		      gdispGetWidth() - xpos,
+		      p->screen_width - xpos,
 		      gdispGetFontMetric(p->fontFF, fontHeight),
 		      p->tmp,
 		      p->fontFF, Yellow, justifyLeft);
@@ -498,7 +510,7 @@ static void screen_select_draw(int8_t initial) {
   chsnprintf(p->tmp, sizeof(p->tmp), "HP %d", enemies[current_enemy_idx]->hp);
   gdispDrawStringBox (xpos,
 		      ypos,
-		      gdispGetWidth() - xpos,
+		      p->screen_width - xpos,
 		      gdispGetFontMetric(p->fontFF, fontHeight),
 		      p->tmp,
 		      p->fontFF, Yellow, justifyLeft);
@@ -1236,8 +1248,8 @@ static uint8_t calc_level(uint16_t xp) {
 static uint16_t xp_for_level(uint8_t level) {
   // return the required amount of XP for a given level
   uint16_t xp_req[] = {
- // 1    2    3    4    5    6    7   8     9   10   
-    0, 400, 880, 1440,2080,2800,3600,4480,5440, 6480
+  //1    2    3     4     5     6     7     8     9    10   
+    0, 400, 880, 1440, 2080, 2800, 3600, 4480, 5440, 6480
   };
   
   if ((level <= 10) && (level >= 1)) {
