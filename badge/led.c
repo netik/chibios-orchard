@@ -771,7 +771,8 @@ void effectsStart(void) {
   // set user config
   led_brightshift = config->led_shift;
 
-  (*fxlist[config->led_pattern].function)();
+  if (*fxlist[config->led_pattern].function != NULL)
+    (*fxlist[config->led_pattern].function)();
   
   ledExitRequest = 0;
   ledsOff = 0;
