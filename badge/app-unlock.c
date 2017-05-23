@@ -126,57 +126,23 @@ static void init_unlock_ui(UnlockHandles *p) {
 
   // create button widget: ghNum3
   wi.g.x = 140;
-#ifdef notdef
-  wi.g.show = TRUE;
-  wi.g.y = 40;
-  wi.g.width = 40;
-  wi.g.height = 40;
-  wi.text = "0";
-  wi.customDraw = gwinButtonDraw_Normal;
-  wi.customParam = 0;
-  wi.customStyle = &IvoryStyle;
-#endif
   p->ghNum3 = gwinButtonCreate(0, &wi);
   gwinSetFont(p->ghNum3, p->font_jupiterpro_36);
   gwinRedraw(p->ghNum3);
 
   // create button widget: ghNum4
   wi.g.x = 190;
-#ifdef notdef
-  wi.g.show = TRUE;
-  wi.g.y = 40;
-  wi.g.width = 40;
-  wi.g.height = 40;
-  wi.text = "0";
-  wi.customDraw = gwinButtonDraw_Normal;
-  wi.customParam = 0;
-  wi.customStyle = &IvoryStyle;
-#endif
   p->ghNum4 = gwinButtonCreate(0, &wi);
   gwinSetFont(p->ghNum4, p->font_jupiterpro_36);
   gwinRedraw(p->ghNum4);
 
   // create button widget: ghNum5
   wi.g.x = 240;
-#ifdef notdef
-  wi.g.show = TRUE;
-  wi.g.y = 40;
-  wi.g.width = 40;
-  wi.g.height = 40;
-  wi.text = "0";
-  wi.customDraw = gwinButtonDraw_Normal;
-  wi.customParam = 0;
-  wi.customStyle = &IvoryStyle;
-#endif
   p->ghNum5 = gwinButtonCreate(0, &wi);
   gwinSetFont(p->ghNum5,  p->font_jupiterpro_36);
   gwinRedraw(p->ghNum5);
   
   // create button widget: ghBack
-#ifdef notdef
-  wi.g.show = TRUE;
-  wi.customStyle = &IvoryStyle;
-#endif
   wi.g.x = 10;
   wi.g.y = 100;
   wi.g.width = 110;
@@ -187,12 +153,6 @@ static void init_unlock_ui(UnlockHandles *p) {
   // create button widget: ghUnlock
   wi.g.x = 200;
   wi.g.y = 100;
-#ifdef notdef
-  wi.g.show = TRUE;
-  wi.g.width = 110;
-  wi.g.height = 30;
-  wi.customStyle = &IvoryStyle;
-#endif
   wi.text = "UNLOCK";
   wi.customDraw = 0;
   p->ghUnlock = gwinButtonCreate(0, &wi);
@@ -220,14 +180,13 @@ static uint32_t unlock_init(OrchardAppContext *context)
 static void unlock_start(OrchardAppContext *context)
 {
   UnlockHandles *p;
-  uint8_t i;
 
   // clear the screen
   gdispClear (Black);
 
   // aha, you found us!
   dacPlay("fight/leveiup.raw");
-  dacWait ();
+
   /* background */
   putImageFile(IMG_UNLOCKBG, 0, 0);
 
@@ -246,9 +205,7 @@ static void unlock_start(OrchardAppContext *context)
                           &p->glUnlockListener);
 
   /* starting code */
-  for (i=0;i<5;i++) {
-    code[i] = 0;
-  }
+  memset(&code, 0, 5);
   ledSetFunction(leds_show_unlocks);
   orchardAppTimer(context, 1000, true);  
 }
@@ -308,7 +265,6 @@ static uint8_t validate_code(OrchardAppContext *context, userconfig *config) {
   UnlockHandles *p = context->priv;
   
   for (i=0; i < MAX_ULCODES; i++) {
-    
     if ((unlock_codes[i][0] == code[0]) &&
         (unlock_codes[i][1] == ((code[1] << 4) + code[2])) &&
         (unlock_codes[i][2] == ((code[3] << 4) + code[4]))) {
