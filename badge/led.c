@@ -39,14 +39,15 @@ static struct led_config {
 static void anim_dot(void);
 static void anim_larsen(void);
 static void anim_police_all(void);
-static void anim_police_dots(void);
+static void anim_mardi_gras(void);
 static void anim_rainbow_fade(void);
 static void anim_rainbow_loop(void);
 static void anim_solid_color(void);
 static void anim_triangle(void);
 static void anim_comet(void);
 static void anim_all_same(void);
-static void anim_dualbounce(void);
+static void anim_double_bounce(void);
+static void anim_rgb_bounce(void);
 static void anim_violets(void);
 static void anim_wave(void);
 static void anim_violetwave(void); // sorry, my favorite color is purple sooo... 
@@ -61,7 +62,7 @@ static void ledSetRGB(void *ptr, int x, uint8_t r, uint8_t g, uint8_t b);
 /* Update FX_COUNT in led.h if you make changes here */
 const struct FXENTRY fxlist[] = {
   { "Off", NULL },
-  { "Double Bounce", anim_dualbounce },
+  { "Double Bounce", anim_double_bounce },
   { "Dot (White)", anim_dot},
   { "Larsen Scanner", anim_larsen},
   { "Rainbow Fade", anim_rainbow_fade},
@@ -70,9 +71,10 @@ const struct FXENTRY fxlist[] = {
   { "Yellow Ramp", anim_triangle},
   { "Comet", anim_comet},
   { "Wave", anim_wave },
-  { "Mardi Gras", anim_police_dots},
+  { "Mardi Gras", anim_mardi_gras},
   { "Spot the Fed", anim_police_all},
   { "Violets", anim_violets},
+  { "RGB Bounce", anim_rgb_bounce},
   { "Violet Wave", anim_violetwave },
   { "Kraftwerk", anim_kraftwerk },
   { "All Solid", anim_all_same}
@@ -506,7 +508,7 @@ static void Bounce(uint16_t animationFrame, int hue)
   drawFractionalBar(position, 3, hue,0);
 }
 
-static void anim_dualbounce(void) {
+static void anim_double_bounce(void) {
   // https://gist.github.com/hsiboy/f9ef711418b40e259b06
 
   ledClear();
@@ -570,6 +572,14 @@ static void anim_kraftwerk(void) {
   ledSetRGB(led_config.fb, fx_position, 255,0,0);
 }
 
+static void anim_rgb_bounce(void) {
+  ledClear();
+  Bounce(fx_position, 0); // red
+  Bounce(fx_position + (MAX_INT_VALUE/2), 114); // green
+  Bounce(fx_position + (MAX_INT_VALUE/3), 253); // blue
+  fx_position += 500; 
+}
+
 static void anim_violets(void) {
   uint8_t acolor[3];
 
@@ -591,7 +601,7 @@ static void anim_violets(void) {
   }
   
   for(int i = 0; i < led_config.max_pixels; i++ ) {
-    HSVtoRGB(274, 200 ,fx_position, acolor);
+    HSVtoRGB(274, 255, fx_position, acolor);
     ledSetRGB(led_config.fb, i, acolor[0], acolor[1], acolor[2]);
   }
 
@@ -659,7 +669,7 @@ static void anim_police_all(void) {
   ledSetRGB(led_config.fb, fx_positionB, 0, 0, 255);
 }
 
-static void anim_police_dots(void) {
+static void anim_mardi_gras(void) {
   fx_position++;
 
   if (fx_position >= led_config.max_pixels) {fx_position = 0;}
@@ -670,6 +680,8 @@ static void anim_police_dots(void) {
     else if (i == idexB) { ledSetRGB(led_config.fb, i, 225, 0, 255 ); }
     else  { ledSetRGB(led_config.fb, i, 0, 0, 0 ); }
   }
+
+  chThdSleepMilliseconds(20);
 }
 
 
