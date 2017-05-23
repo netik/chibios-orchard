@@ -460,7 +460,9 @@ static void default_event(OrchardAppContext *context,
            (nearby_caesar() == FALSE) &&
            (config->airplane_mode == FALSE) )  {
         if (rand() % 100 <= CAESAR_CHANCE) { 
+#ifdef DEBUG_FIGHT_STATE 
           chprintf(stream, "won election\r\n");
+#endif
           /* become Caesar for an hour */
           char_reset_at = chVTGetSystemTime() + MAX_BUFF_TIME;
           config->current_type = p_caesar;
