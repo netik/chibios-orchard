@@ -44,7 +44,7 @@ static void anim_rainbow_fade(void);
 static void anim_rainbow_loop(void);
 static void anim_solid_color(void);
 static void anim_triangle(void);
-static void anim_one_hue_pulse(void);
+static void anim_comet(void);
 static void anim_all_same(void);
 static void anim_dualbounce(void);
 static void anim_violets(void);
@@ -68,7 +68,7 @@ const struct FXENTRY fxlist[] = {
   { "Rainbow Loop", anim_rainbow_loop},
   { "Green Cycle", anim_solid_color},
   { "Yellow Ramp", anim_triangle},
-  { "Random Hue Pulse", anim_one_hue_pulse},
+  { "Comet", anim_comet},
   { "Wave", anim_wave },
   { "Mardi Gras", anim_police_dots},
   { "Spot the Fed", anim_police_all},
@@ -442,7 +442,7 @@ static void ledAddHSV(void *ptr, int x, int h, uint8_t s, uint8_t v) {
 }
 
 
-//Anti-aliasing code care of Mark Kriegsman Google+: https://plus.google.com/112916219338292742137/posts/2VYNQgD38Pw
+// Anti-aliasing code care of Mark Kriegsman Google+: https://plus.google.com/112916219338292742137/posts/2VYNQgD38Pw
 void drawFractionalBar(int pos16, int width, int hue, bool wrap)
 {
   uint8_t i = pos16 / 16; // convert from pos to raw pixel number
@@ -479,6 +479,16 @@ void drawFractionalBar(int pos16, int width, int hue, bool wrap)
           return;
         }
       }
+  }
+}
+
+static void FadeLEDs(void *ptr, int8_t fadeamount) {
+  // reduce or increase all LEDs by some value
+  for(int i = 0; i < led_config.max_pixels; i++ ) {
+    uint8_t *buf = ((uint8_t *)ptr) + (3 * i);
+    buf[0] = qsub8(buf[0], fadeamount);
+    buf[1] = qsub8(buf[1], fadeamount);
+    buf[2] = qsub8(buf[2], fadeamount);
   }
 }
 
@@ -590,28 +600,27 @@ static void anim_violets(void) {
     ledSetRGB(led_config.fb, random8(0, led_config.max_pixels), 0xf0, 0xf0, 0xf0);
 }
 
-static void anim_one_hue_pulse(void) { //-PULSE BRIGHTNESS ON ALL LEDS TO ONE COLOR
-  if (fx_index == 0) {
-    // if it's the first time through, pick a random color
-    fx_index = 200;
-  }
-    
-  if (fx_direction == 0) {
-    fx_position++;
-    if (fx_position >= 255) {fx_direction = 1;}
-  }
-
-  if (fx_direction == 1) {
-    fx_position--;
-    if (fx_position <= 1) {fx_direction = 0;}
-  }
+static void anim_comet(void) {
+  uint8_t color[3];
+  int hueval = 180;
+  uint8_t intensity = 200;
+  uint8_t bright;
   
-  uint8_t acolor[3];
-  HSVtoRGB(fx_index, 255, fx_position, acolor);
-
-  for(int i = 0 ; i < led_config.max_pixels; i++ ) {
-    ledSetRGB(led_config.fb, i, acolor[0], acolor[1], acolor[2]);
+  if (fx_position >= led_config.max_pixels) { 
+    fx_position = 0;
   }
+
+  HSVtoRGB(hueval, 255, intensity, color);
+  ledSetRGB(led_config.fb, fx_position, color[0], color[1], color[2]); // head
+
+  
+  bright=random8(50,100);
+  HSVtoRGB((hueval+40), 255, bright, color);
+  ledSetRGB(led_config.fb, fx_position, color[0], color[1], color[2]);
+
+  FadeLEDs(led_config.fb, 8);
+  fx_position++;  
+
 }
 
 static void anim_rainbow_fade(void) {
