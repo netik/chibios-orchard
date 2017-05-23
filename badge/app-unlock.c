@@ -113,13 +113,6 @@ static void init_unlock_ui(UnlockHandles *p) {
   // create button widget: ghNum2
   wi.g.show = TRUE;
   wi.g.x = 90;
-  wi.g.y = 40;
-  wi.g.width = 40;
-  wi.g.height = 40;
-  wi.text = "0";
-  wi.customDraw = gwinButtonDraw_Normal;
-  wi.customParam = 0;
-  wi.customStyle = &IvoryStyle;
   p->ghNum2 = gwinButtonCreate(0, &wi);
   gwinSetFont(p->ghNum2, p->font_jupiterpro_36);
   gwinRedraw(p->ghNum2);
@@ -149,10 +142,11 @@ static void init_unlock_ui(UnlockHandles *p) {
   wi.g.height = 30;
   wi.text = "<-";
   p->ghBack = gwinButtonCreate(0, &wi);
+  gwinSetFont(p->ghBack,  p->font_manteka_20);
+  gwinRedraw(p->ghBack);
 
   // create button widget: ghUnlock
   wi.g.x = 200;
-  wi.g.y = 100;
   wi.text = "UNLOCK";
   wi.customDraw = 0;
   p->ghUnlock = gwinButtonCreate(0, &wi);

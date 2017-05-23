@@ -183,6 +183,7 @@ CSRC = main.c \
        app-choosetype.c \
        app-fight.c \
        app-unlock.c \
+       app-verify-update.c \
        app-update.c \
        app-credits.c \
        app-ledsign.c \
