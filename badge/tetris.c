@@ -206,21 +206,25 @@ static void tellScore(uint8_t color) {
   char pps_str[12];
   uint8_t i;
   uitoa(tetrisLines, pps_str, sizeof(pps_str));
-  gdispFillArea((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+5, gdispGetHeight()-50, gdispGetStringWidth(pps_str, font16)+4,  gdispGetCharWidth('A', font16)+2, tetrisShapeColors[0]);
-  gdispDrawString((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+5, gdispGetHeight()-50, pps_str, font16, tetrisShapeColors[color]);
+  coord_t height;
+
+  height = gdispGetHeight();
+
+  gdispFillArea((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+5, height-50, gdispGetStringWidth(pps_str, font16)+4,  gdispGetCharWidth('A', font16)+2, tetrisShapeColors[0]);
+  gdispDrawString((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+5, height-50, pps_str, font16, tetrisShapeColors[color]);
   uitoa(tetrisScore, pps_str, sizeof(pps_str));
-  gdispFillArea(0, 0, gdispGetWidth(),  gdispGetHeight()-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-6, tetrisShapeColors[0]);
+  gdispFillArea(0, 0, gdispGetWidth(),  height-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-6, tetrisShapeColors[0]);
   for (i = 0; i < strlen(pps_str); i++) {
-    if (pps_str[i] == '0') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, gdispGetHeight()-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[0], Lime);
-    if (pps_str[i] == '1') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, gdispGetHeight()-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[1], Lime);
-    if (pps_str[i] == '2') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, gdispGetHeight()-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[2], Lime);
-    if (pps_str[i] == '3') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, gdispGetHeight()-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[3], Lime);
-    if (pps_str[i] == '4') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, gdispGetHeight()-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[4], Lime);
-    if (pps_str[i] == '5') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, gdispGetHeight()-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[5], Lime);
-    if (pps_str[i] == '6') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, gdispGetHeight()-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[6], Lime);
-    if (pps_str[i] == '7') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, gdispGetHeight()-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[7], Lime);
-    if (pps_str[i] == '8') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, gdispGetHeight()-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[8], Lime);
-    if (pps_str[i] == '9') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, gdispGetHeight()-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[9], Lime);
+    if (pps_str[i] == '0') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, height-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[0], Lime);
+    if (pps_str[i] == '1') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, height-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[1], Lime);
+    if (pps_str[i] == '2') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, height-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[2], Lime);
+    if (pps_str[i] == '3') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, height-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[3], Lime);
+    if (pps_str[i] == '4') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, height-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[4], Lime);
+    if (pps_str[i] == '5') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, height-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[5], Lime);
+    if (pps_str[i] == '6') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, height-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[6], Lime);
+    if (pps_str[i] == '7') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, height-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[7], Lime);
+    if (pps_str[i] == '8') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, height-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[8], Lime);
+    if (pps_str[i] == '9') sevenSegDraw(TETRIS_SEVEN_SEG_SCORE_X, height-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-SEVEN_SEG_CHAR_HEIGHT-7, sevenSegNumbers[9], Lime);
   }
 }
 
@@ -264,16 +268,22 @@ static void printGameOver(void) {
 }
 
 static void printTouchAreas(void) {
-  gdispDrawStringBox(0, 0, gdispGetWidth(), gdispGetFontMetric(font16, fontHeight), "Touch Areas", font16, White, justifyCenter);
-  gdispDrawStringBox(0, 0, gdispGetWidth(), gdispGetHeight()/4, "Pause", font16, Grey, justifyCenter);
-  gdispDrawStringBox(0, gdispGetHeight()/4, gdispGetWidth(), gdispGetHeight()/2, "Rotate", font16, Grey, justifyCenter);
-  gdispDrawStringBox(0, gdispGetHeight()-(gdispGetHeight()/4), gdispGetWidth()/4, gdispGetHeight()/4, "Left", font16, Grey, justifyCenter);
-  gdispDrawStringBox(gdispGetWidth()/4, gdispGetHeight()-(gdispGetHeight()/4), gdispGetWidth()/2, gdispGetHeight()/4, "Down", font16, Grey, justifyCenter);
-  gdispDrawStringBox(gdispGetWidth()-(gdispGetWidth()/4), gdispGetHeight()-(gdispGetHeight()/4), gdispGetWidth()/4, gdispGetHeight()/4, "Right", font16, Grey, justifyCenter);
-  gdispDrawLine(0, gdispGetHeight()/4, gdispGetWidth()-1, gdispGetHeight()/4, Grey);
-  gdispDrawLine(0, gdispGetHeight()-gdispGetHeight()/4, gdispGetWidth()-1, gdispGetHeight()-gdispGetHeight()/4, Grey);
-  gdispDrawLine(gdispGetWidth()/4, gdispGetHeight()-gdispGetHeight()/4, gdispGetWidth()/4, gdispGetHeight()-1, Grey);
-  gdispDrawLine(gdispGetWidth()-(gdispGetWidth()/4), gdispGetHeight()-gdispGetHeight()/4, gdispGetWidth()-(gdispGetWidth()/4), gdispGetHeight()-1, Grey);
+  coord_t height;
+  coord_t width;
+
+  height = gdispGetHeight();
+  width = gdispGetWidth();
+
+  gdispDrawStringBox(0, 0, width, gdispGetFontMetric(font16, fontHeight), "Touch Areas", font16, White, justifyCenter);
+  gdispDrawStringBox(0, 0, width, height/4, "Pause", font16, Grey, justifyCenter);
+  gdispDrawStringBox(0, height/4, width, height/2, "Rotate", font16, Grey, justifyCenter);
+  gdispDrawStringBox(0, height-(height/4), width/4, height/4, "Left", font16, Grey, justifyCenter);
+  gdispDrawStringBox(width/4, height-(height/4), width/2, height/4, "Down", font16, Grey, justifyCenter);
+  gdispDrawStringBox(width-(width/4), height-(height/4), width/4, height/4, "Right", font16, Grey, justifyCenter);
+  gdispDrawLine(0, height/4, width-1, height/4, Grey);
+  gdispDrawLine(0, height-height/4, width-1, height-height/4, Grey);
+  gdispDrawLine(width/4, height-height/4, width/4, height-1, Grey);
+  gdispDrawLine(width-(width/4), height-height/4, width-(width/4), height-1, Grey);
 }
 
 static bool_t stay(bool_t down) {
