@@ -195,10 +195,10 @@ static void tellScore(uint8_t color) {
   char pps_str[12];
   uitoa(tetrisLines, pps_str, sizeof(pps_str));
   
-  gdispFillArea((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+5, gdispGetHeight()-50, gdispGetStringWidth(pps_str, font16)+4,  gdispGetCharWidth('A', font16)+2, tetrisShapeColors[0]);
-  gdispDrawString((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+5, gdispGetHeight()-50, pps_str, font16, tetrisShapeColors[color]);
+  gdispFillArea((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+5, height-50, gdispGetStringWidth(pps_str, font16)+4,  gdispGetCharWidth('A', font16)+2, tetrisShapeColors[0]);
+  gdispDrawString((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+5, height-50, pps_str, font16, tetrisShapeColors[color]);
   uitoa(tetrisScore, pps_str, sizeof(pps_str));
-  gdispFillArea(0, 0, gdispGetWidth(),  gdispGetHeight()-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-6, tetrisShapeColors[0]);
+  gdispFillArea(0, 0, gdispGetWidth(),  height-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-6, tetrisShapeColors[0]);
 
   gdispDrawStringBox(0,
                      0,
@@ -250,16 +250,22 @@ static void printGameOver(void) {
 }
 
 static void printTouchAreas(void) {
-  gdispDrawStringBox(0, 0, gdispGetWidth(), gdispGetFontMetric(font16, fontHeight), "Touch Areas", font16, White, justifyCenter);
-  gdispDrawStringBox(0, 0, gdispGetWidth(), gdispGetHeight()/4, "Pause", font16, Grey, justifyCenter);
-  gdispDrawStringBox(0, gdispGetHeight()/4, gdispGetWidth(), gdispGetHeight()/2, "Rotate", font16, Grey, justifyCenter);
-  gdispDrawStringBox(0, gdispGetHeight()-(gdispGetHeight()/4), gdispGetWidth()/4, gdispGetHeight()/4, "Left", font16, Grey, justifyCenter);
-  gdispDrawStringBox(gdispGetWidth()/4, gdispGetHeight()-(gdispGetHeight()/4), gdispGetWidth()/2, gdispGetHeight()/4, "Down", font16, Grey, justifyCenter);
-  gdispDrawStringBox(gdispGetWidth()-(gdispGetWidth()/4), gdispGetHeight()-(gdispGetHeight()/4), gdispGetWidth()/4, gdispGetHeight()/4, "Right", font16, Grey, justifyCenter);
-  gdispDrawLine(0, gdispGetHeight()/4, gdispGetWidth()-1, gdispGetHeight()/4, Grey);
-  gdispDrawLine(0, gdispGetHeight()-gdispGetHeight()/4, gdispGetWidth()-1, gdispGetHeight()-gdispGetHeight()/4, Grey);
-  gdispDrawLine(gdispGetWidth()/4, gdispGetHeight()-gdispGetHeight()/4, gdispGetWidth()/4, gdispGetHeight()-1, Grey);
-  gdispDrawLine(gdispGetWidth()-(gdispGetWidth()/4), gdispGetHeight()-gdispGetHeight()/4, gdispGetWidth()-(gdispGetWidth()/4), gdispGetHeight()-1, Grey);
+  coord_t height;
+  coord_t width;
+
+  height = gdispGetHeight();
+  width = gdispGetWidth();
+
+  gdispDrawStringBox(0, 0, width, gdispGetFontMetric(font16, fontHeight), "Touch Areas", font16, White, justifyCenter);
+  gdispDrawStringBox(0, 0, width, height/4, "Pause", font16, Grey, justifyCenter);
+  gdispDrawStringBox(0, height/4, width, height/2, "Rotate", font16, Grey, justifyCenter);
+  gdispDrawStringBox(0, height-(height/4), width/4, height/4, "Left", font16, Grey, justifyCenter);
+  gdispDrawStringBox(width/4, height-(height/4), width/2, height/4, "Down", font16, Grey, justifyCenter);
+  gdispDrawStringBox(width-(width/4), height-(height/4), width/4, height/4, "Right", font16, Grey, justifyCenter);
+  gdispDrawLine(0, height/4, width-1, height/4, Grey);
+  gdispDrawLine(0, height-height/4, width-1, height-height/4, Grey);
+  gdispDrawLine(width/4, height-height/4, width/4, height-1, Grey);
+  gdispDrawLine(width-(width/4), height-height/4, width-(width/4), height-1, Grey);
 }
 
 static bool_t stay(bool_t down) {

@@ -117,6 +117,11 @@ scrollImage (char * file, int delay)
 	o = gdispGetOrientation();
 	me = NULL;
 
+	/* Sanity check for bogus images */
+
+	if (hdr->gdi_id1 != 'N' || hdr->gdi_id2 != 'I' || w > 240)
+		goto out;
+
 	for (i = 0; i < h; i++) {
 		f_read (&f, buf, sizeof(pixel_t) * w, &br);
 		gdispBlitAreaEx (scroll_pos, (gdispGetHeight () - w) / 2, 1,
@@ -133,6 +138,8 @@ scrollImage (char * file, int delay)
 	}
 
 	geventDetachSource (&gl, NULL);
+
+out:
 
 	chHeapFree (buf);
 	f_close (&f);
