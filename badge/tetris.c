@@ -193,6 +193,9 @@ static void createShape(void) {
 
 static void tellScore(uint8_t color) {
   char pps_str[12];
+  coord_t height;
+  height = gdispGetHeight();
+  
   uitoa(tetrisLines, pps_str, sizeof(pps_str));
   
   gdispFillArea((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+5, height-50, gdispGetStringWidth(pps_str, font16)+4,  gdispGetCharWidth('A', font16)+2, tetrisShapeColors[0]);
