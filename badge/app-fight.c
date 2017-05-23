@@ -1104,9 +1104,9 @@ static void state_show_results_tick() {
   if (animtick == 1) { 
     // calculate damage and colors
     calc_damage(&rr);
-
+#ifdef DEBUG_FIGHT_STATE
     chprintf(stream,"FIGHT: Damage report! Us: %d (hp: %d) Them: %d (hp: %d)\r\n", rr.last_damage, config->hp, rr.last_hit, current_enemy.hp);
-
+#endif
 
     getDamageLoc(&d, rr.ourattack);
     putImageFile(getAvatarImage(config->current_type, d.filename, 1, false),
