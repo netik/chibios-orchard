@@ -183,7 +183,6 @@ CSRC = main.c \
        app-choosetype.c \
        app-fight.c \
        app-unlock.c \
-       app-verify-update.c \
        app-update.c \
        app-credits.c \
        app-ledsign.c \
@@ -348,6 +347,8 @@ PRE_MAKE_ALL_RULE_HOOK: gitversion.h buildtime.h
 
 buildtime.h: updatebuildtime
 	echo "#define BUILDTIME \"Built: `/bin/date` (`/bin/hostname -s`)\"" > $@
+	echo "#define BUILDVER `/bin/date +%s`" >> $@
+	echo "#define BUILDMAGIC 0xCAFEBABE" >> $@
 
 gitversion.h: updatebuildtime
 	echo "static const char *gitversion = \"$(shell git rev-parse HEAD)\";" > $@

@@ -33,6 +33,7 @@
 #include "orchard-app.h"
 #include "orchard-ui.h"
 #include "fontlist.h"
+#include "ides_gfx.h"
 
 #include "ff.h"
 #include "ffconf.h"
@@ -40,7 +41,29 @@
 #include "led.h"
 #include "radio_lld.h"
 
+#include "buildtime.h"
+
 #include "../updater/updater.h"
+
+#include <string.h>
+
+typedef struct _VHandles {
+	GListener glCtListener;
+	GHandle ghOK;
+	GHandle ghCANCEL;
+	GHandle ghConsole;
+	font_t font;
+} VHandles;
+
+typedef struct _buildinfo {
+	uint64_t	build_magic;
+	uint64_t	build_ver;
+} buildinfo;
+
+__attribute__((section(".fwversion")))
+static volatile const buildinfo firmware_version = {
+	BUILDMAGIC, BUILDVER
+};
 
 typedef uint32_t (*pFwUpdate) (void);
 
@@ -56,63 +79,12 @@ gtimerCallback (void * arg)
 	return;
 }
 
-static uint32_t
-update_init(OrchardAppContext *context)
-{
-	(void)context;
-
-	return (0);
-}
-
 static void
-update_start(OrchardAppContext *context)
+update (void)
 {
 	FIL f;
 	UINT br;
-	GHandle ghConsole;
-	GWidgetInit wi;
-	font_t font;
-	FILINFO finfo;
 	GTimer * t;
-
-	(void)context;
-
-	font = gdispOpenFont (FONT_KEYBOARD);
-	gwinSetDefaultFont (font);
-
-	gwinWidgetClearInit (&wi);
-	wi.g.show = FALSE;
-	wi.g.x = 0;
-	wi.g.y = 0;
-	wi.g.width = gdispGetWidth();
-	wi.g.height = gdispGetHeight();
-        ghConsole = gwinConsoleCreate (0, &wi.g);
-	gwinSetColor (ghConsole, Yellow);
-	gwinSetBgColor (ghConsole, Blue);
-	gwinShow (ghConsole);
-	gwinClear (ghConsole);
-
-	gwinPrintf (ghConsole, "Searching for updater...\n");
-	if (f_stat (UPDATER_NAME, &finfo) != FR_OK) {
-		gwinPrintf (ghConsole, "Not found.\n");
-		goto done;
-	} else
-		gwinPrintf (ghConsole, "Found! (%d bytes)\n", finfo.fsize);
-
-	gwinPrintf (ghConsole, "Searching for firmware image...\n");
-	if (f_stat ("BADGE.BIN", &finfo) != FR_OK) {
-		gwinPrintf (ghConsole, "Not found.\n");
-		goto done;
-	} else
-		gwinPrintf (ghConsole, "Found! (%d bytes)\n", finfo.fsize);
-
-	gwinPrintf (ghConsole, "\nThe firmware will now be re-\n"
-				"flashed from the SD card.\n\n"
-				"PLEASE DO NOT POWER OFF THE\n"
-				"BADGE OR REMOVE THE CARD UNTIL\n"
-				"THE UPDATE COMPLETES!\n\n"
-				"The system will reboot when\n"
-				"flashing is done. \n");
 
 	/*
 	 * We need to take over the system and we're about to clobber
@@ -161,13 +133,130 @@ update_start(OrchardAppContext *context)
 
 	/* NOTREACHED */
 
+	return;
+}
+
+static uint32_t
+update_init(OrchardAppContext *context)
+{
+	(void)context;
+
+	return (0);
+}
+
+static void
+update_start(OrchardAppContext *context)
+{
+	FIL f;
+	UINT br;
+	GHandle ghConsole;
+	GWidgetInit wi;
+	font_t font;
+	FILINFO finfo;
+	buildinfo buildinfo;
+	VHandles * p;
+
+	font = gdispOpenFont (FONT_FIXED);
+	gwinSetDefaultFont (font);
+
+	wi.g.show = FALSE;
+	wi.g.x = 0;
+	wi.g.y = 0;
+	wi.g.width = gdispGetWidth();
+	wi.g.height = gdispGetHeight();
+	ghConsole = gwinConsoleCreate (0, &wi.g);
+	gwinSetColor (ghConsole, Yellow);
+	gwinSetBgColor (ghConsole, Blue);
+	gwinShow (ghConsole);
+	gwinClear (ghConsole);
+
+	if (f_stat (UPDATER_NAME, &finfo) != FR_OK) {
+		gwinPrintf (ghConsole,
+		    "\n\n\n"
+		    "    UPDATER.BIN image was not\n"
+		    "    found on the SD card!");
+		goto done;
+	}
+
+	if (f_stat ("BADGE.BIN", &finfo) != FR_OK) {
+		gwinPrintf (ghConsole,
+		    "\n\n\n"
+		    "    BADGE.BIN image was not\n"
+		    "     found on the SD card!");
+		goto done;
+	}
+
+	/*
+	 * Check that the firmware version in the file is newer than
+	 * the current version.
+	 */
+
+	f_open (&f, "BADGE.BIN", FA_READ);
+	f_lseek (&f, 0x410);
+	f_read (&f, (char *)&buildinfo, sizeof (buildinfo), &br);
+	f_close (&f);
+
+	if (buildinfo.build_magic != BUILDMAGIC) {
+		gwinPrintf (ghConsole,
+		    "\n\n\n"
+		    "    Invalid firmware image!\n"
+		    "    Firmware magic is: %x\n"
+		    "    Expected: %x",
+		    buildinfo.build_magic, BUILDMAGIC);
+		goto done;
+	}
+
+	if (buildinfo.build_ver <= firmware_version.build_ver) {
+		gwinPrintf (ghConsole,
+		    "\n\n\n"
+		    "    Firmware on the SD card is\n"
+		    "    older than the currently\n"
+		    "    running version!");
+		goto done;
+	}
+
+	p = chHeapAlloc (NULL, sizeof(VHandles));
+	memset (p, 0, sizeof(VHandles));
+	context->priv = p;
+
+	p->font = font;
+	p->ghConsole = ghConsole;
+
+ 	gdispDrawStringBox (0, 40, 320, 20, "UPDATE FIRMWARE",
+	    font, White, justifyCenter);
+
+ 	gdispDrawStringBox (0, 100, 320, 20, "ARE YOU SURE",
+	    font, Red, justifyCenter);
+
+	gwinSetDefaultStyle (&RedButtonStyle, FALSE);
+	gwinWidgetClearInit (&wi);
+	wi.g.show = TRUE;
+	wi.g.x = 0;
+	wi.g.y = 210;
+	wi.g.width = 150;
+	wi.g.height = 30;
+	wi.text = "CANCEL";
+	p->ghCANCEL = gwinButtonCreate(0, &wi);
+  
+	wi.g.x = 170;
+	wi.text = "CONFIRM";
+	p->ghOK = gwinButtonCreate(0, &wi);
+
+	gwinSetDefaultStyle (&BlackWidgetStyle, FALSE);
+
+	geventListenerInit (&p->glCtListener);
+	gwinAttachListener (&p->glCtListener);
+	geventRegisterCallback (&p->glCtListener, orchardAppUgfxCallback,
+	    &p->glCtListener);
+
+	return;
+
 done:
-	gwinPrintf (ghConsole, "\nAborting.\n");
 
-	chThdSleepMilliseconds (2000);
+	chThdSleepMilliseconds (3000);
 
-	gdispCloseFont (font);
 	gwinDestroy (ghConsole);
+	gdispCloseFont (font);
 	orchardAppExit ();
 
 	return;
@@ -176,8 +265,31 @@ done:
 static void
 update_event(OrchardAppContext *context, const OrchardAppEvent *event)
 {
-	(void)context;
-	(void)event;
+	VHandles * p;
+	GEvent * pe;
+	GEventGWinButton * be;
+
+	p = context->priv;
+
+	if (event->type == ugfxEvent) {
+		pe = event->ugfx.pEvent;
+		if (pe->type == GEVENT_GWIN_BUTTON) {
+			be = (GEventGWinButton *)pe;
+			if (be->gwin == p->ghOK) {
+				gwinClear (p->ghConsole);
+				gwinPrintf (p->ghConsole,
+				    "\n\n"
+				    " FIRMWARE UPDATE IN PROGRESS\n"
+				    " DO NOT POWER OFF THE BADGE\n"
+				    " UNTIL IT COMPLETES!\n\n"
+				    " THE BADGE WILL REBOOT WHEN\n"
+				    " THE UPDATE IS FINSHED");
+				update ();
+			}
+			if (be->gwin == p->ghCANCEL)
+				orchardAppExit ();
+		}
+	}
 
 	return;
 }
@@ -185,10 +297,26 @@ update_event(OrchardAppContext *context, const OrchardAppEvent *event)
 static
 void update_exit(OrchardAppContext *context)
 {
-	(void)context;
+	VHandles * p;
+
+	p = context->priv;
+
+	if (p == NULL)
+		return;
+
+	gdispCloseFont (p->font);
+	gwinDestroy (p->ghOK);
+	gwinDestroy (p->ghCANCEL);
+	gwinDestroy (p->ghConsole);
+
+	geventDetachSource (&p->glCtListener, NULL);
+	geventRegisterCallback (&p->glCtListener, NULL, NULL);
+   
+	chHeapFree (p);
+	context->priv = NULL;
 
 	return;
 }
 
-orchard_app("UFW2", "update.rgb", APP_FLAG_HIDDEN,
+orchard_app("Update FW", "update.rgb", 0,
             update_init, update_start, update_event, update_exit, 9999);
