@@ -34,6 +34,9 @@
  * Some minor changes have been made by the uGFX maintainers.
  */
 
+#include "ch.h"
+#include "chprintf.h"
+
 #include "gfx.h"
 #include "tetris.h"
 
@@ -104,46 +107,6 @@ static void initRng(void) {
   srand(gfxSystemTicks());
 }
 
-static int uitoa(unsigned int value, char * buf, int max) {
-  int n = 0;
-  int i = 0;
-  int tmp = 0;
-
-  if (!buf) return -3;
-  if (2 > max) return -4;
-  i=1;
-  tmp = value;
-  if (0 > tmp) {
-    tmp *= -1;
-    i++;
-  }
-  for (;;) {
-    tmp /= 10;
-    if (0 >= tmp) break;
-    i++;
-  }
-  if (i >= max) {
-    buf[0] = '?';
-    buf[1] = 0x0;
-    return 2;
-  }
-  n = i;
-  tmp = value;
-  if (0 > tmp) {
-    tmp *= -1;
-  }
-  buf[i--] = 0x0;
-  for (;;) {
-    buf[i--] = (tmp % 10) + '0';
-    tmp /= 10;
-    if (0 >= tmp) break;
-  }
-  if (-1 != i) {
-    buf[i--] = '-';
-  }
-  return n;
-}
-
 static void drawShape(uint8_t color) {
   int i;
   for (i = 0; i <= 3; i++) {
@@ -195,12 +158,12 @@ static void tellScore(uint8_t color) {
   char pps_str[12];
   coord_t height;
   height = gdispGetHeight();
-  
-  uitoa(tetrisLines, pps_str, sizeof(pps_str));
+
+  chsnprintf (pps_str, sizeof(pps_str), "%d", tetrisLines);
   
   gdispFillArea((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+5, height-50, gdispGetStringWidth(pps_str, font16)+4,  gdispGetCharWidth('A', font16)+2, tetrisShapeColors[0]);
   gdispDrawString((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+5, height-50, pps_str, font16, tetrisShapeColors[color]);
-  uitoa(tetrisScore, pps_str, sizeof(pps_str));
+  chsnprintf (pps_str, sizeof(pps_str), "%d", tetrisScore);
   gdispFillArea(0, 0, gdispGetWidth(),  height-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-6, tetrisShapeColors[0]);
 
   gdispDrawStringBox(0,

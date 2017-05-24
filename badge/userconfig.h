@@ -11,7 +11,7 @@
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0
-#define CONFIG_VERSION    14
+#define CONFIG_VERSION    15
 #define CONFIG_NAME_MAXLEN 10
 
 #define CONFIG_LEDSIGN_MAXLEN	124
@@ -59,7 +59,7 @@ typedef struct userconfig {
   /* game */
   player_type current_type;
   player_type p_type;
-  char name[CONFIG_NAME_MAXLEN];
+  char name[CONFIG_NAME_MAXLEN+1];
   
   uint16_t lastdeath; // last time you died
   uint8_t in_combat; 
