@@ -60,9 +60,9 @@ CFLAGS+=  -mcpu=cortex-m0plus -Os -ggdb -fomit-frame-pointer		\
 ASFLAGS= $(CFLAGS)
 
 updater: $(OBJS)
-	$(CC) $(OBJS) -ggdb -nostdlib -Wl,-Tlink.lds,--gc-sections	\
+	$(CC) $(OBJS) -ggdb -nostdlib -nostartfiles			\
 	-mcpu=cortex-m0plus -msoft-float -mthumb -flto 			\
-	-nostartfiles -o $@ -lgcc
+	-Wl,--no-warn-mismatch,-Tlink.lds -lgcc -o $@
 	$(OBJCOPY) -O binary $@ updater.bin
 
 clean:

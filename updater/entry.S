@@ -53,4 +53,4 @@
 main:
 	ldr	r0, = #UPDATER_STACK
 	mov	sp, r0
-	b	updater
+	bl	updater
