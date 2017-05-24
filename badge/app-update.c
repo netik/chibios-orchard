@@ -283,7 +283,7 @@ update_event(OrchardAppContext *context, const OrchardAppEvent *event)
 				    " DO NOT POWER OFF THE BADGE\n"
 				    " UNTIL IT COMPLETES!\n\n"
 				    " THE BADGE WILL REBOOT WHEN\n"
-				    " THE UPDATE IS FINSHED");
+				    " THE UPDATE IS FINISHED");
 				update ();
 			}
 			if (be->gwin == p->ghCANCEL)
