@@ -182,7 +182,7 @@ update_start(OrchardAppContext *context)
 		gwinPrintf (ghConsole,
 		    "\n\n\n"
 		    "    BADGE.BIN image was not\n"
-		    "     found on the SD card!");
+		    "    found on the SD card!");
 		goto done;
 	}
 
