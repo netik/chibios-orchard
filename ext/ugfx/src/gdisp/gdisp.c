@@ -582,7 +582,7 @@ void _gdispInit(void)
 		}
 	#else
 		{
-			extern const GDISPVMT const		GDISPVMT_OnlyOne[1];
+			extern const GDISPVMT 		GDISPVMT_OnlyOne[1];
 
 			if (!(GDISPVMT_OnlyOne->d.flags & GDISP_VFLG_DYNAMICONLY))
 				gdriverRegister(&GDISPVMT_OnlyOne->d, 0);

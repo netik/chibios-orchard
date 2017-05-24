@@ -15,7 +15,7 @@
 // Get the hardware interface
 #include "gmouse_lld_MCU_board.h"
 
-const GMouseVMT const GMOUSE_DRIVER_VMT[1] = {{
+const GMouseVMT GMOUSE_DRIVER_VMT[1] = {{
 	{
 		GDRIVER_TYPE_TOUCH,
 		GMOUSE_VFLG_TOUCH|GMOUSE_VFLG_CALIBRATE|GMOUSE_VFLG_CAL_TEST

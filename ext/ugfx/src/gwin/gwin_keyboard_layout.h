@@ -50,8 +50,8 @@
  */
 
 typedef struct GVSpecialKey {
-	const char const *keycap;				// The caption on the key
-	const char const *sendkey;				// The key to send (NULL means none)
+	const char *keycap;				// The caption on the key
+	const char *sendkey;				// The key to send (NULL means none)
 	uint8_t		flags;						// Flags
 		#define GVKEY_INVERT		0x01		//		Invert the color
 		#define GVKEY_SINGLESET		0x02		//		Change set when this key is pressed but only for a single keystroke
