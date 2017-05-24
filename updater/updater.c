@@ -220,7 +220,7 @@ int updater (void)
 			fixup[0] = 0xFFFFFFFF;
 			fixup[1] = 0xFFFFFFFF;
 			fixup[2] = 0xFFFFFFFF;
-			fixup[3] = 0xFFFFFFFE;
+			fixup[3] = 0xFFFFFF7E;
 		}
 
 		if (br == 0)
