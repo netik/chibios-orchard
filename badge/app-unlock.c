@@ -57,6 +57,9 @@ static uint8_t unlock_codes[MAX_ULCODES][3] = { { 0x01, 0xde, 0xf1 }, // 0 +10% 
                                                 { 0x0a, 0x1a, 0x1a }  // 10 PINGDUMP
 
 };
+
+static uint8_t unlock_challenge[] = { 0x16, 0xe1, 0x6a };
+
 static char *unlock_desc[] = { "+10% DEF",
                                "+10% HP",
                                "+1 MIGHT",
@@ -75,6 +78,7 @@ static uint8_t code[5];
 static int8_t focused = 0;
 
 static void updatecode(OrchardAppContext *, uint8_t, int8_t);
+static void do_unlock(OrchardAppContext *context);
 static void unlock_result(UnlockHandles *, char *);
 
 static void unlock_result(UnlockHandles *p, char *msg) {
@@ -311,13 +315,41 @@ static uint8_t validate_code(OrchardAppContext *context, userconfig *config) {
   return false;
 }
 
-
+static void do_unlock(OrchardAppContext *context) { 
+  userconfig *config = getConfig();
+  UnlockHandles * p;
+  p = context->priv;
+  
+  if (validate_code(context, config)) {
+    return;
+  } else {
+    
+    if (code[0] == 0x0f) {
+      char tmp[20];
+      chsnprintf(tmp, sizeof(tmp), "%x%x%x%x ?",
+                 code[0] ^ unlock_challenge[0],
+                 code[1] ^ unlock_challenge[1],
+                 code[2] ^ unlock_challenge[2],
+                 code[3] ^ unlock_challenge[3]);
+      unlock_result(p, tmp);
+      dacPlay("alert1.raw");
+    } else { 
+      // no match
+      ledSetFunction(leds_all_strobered);
+      unlock_result(p, "unlock failed.");
+      dacPlay("fight/pathtic.raw");
+    }
+    
+    chThdSleepMilliseconds(ALERT_DELAY);
+    orchardAppRun(orchardAppByName("Badge"));
+    return;
+  }
+}
 static void unlock_event(OrchardAppContext *context,
                        const OrchardAppEvent *event)
 {
   GEvent * pe;
   UnlockHandles * p;
-  userconfig *config = getConfig();
   
   p = context->priv;
 
@@ -340,16 +372,7 @@ static void unlock_event(OrchardAppContext *context,
       }
       
       if ( ((GEventGWinButton*)pe)->gwin == p->ghUnlock) {
-        if (validate_code(context, config)) {
-          return;
-        } else {
-          ledSetFunction(leds_all_strobered);
-          unlock_result(p, "unlock failed.");
-          dacPlay("fight/pathtic.raw");
-          chThdSleepMilliseconds(ALERT_DELAY);
-          orchardAppRun(orchardAppByName("Badge"));
-          return;
-        }
+        do_unlock(context);
       }
       
       /* tapping the number advances the value */
@@ -417,16 +440,7 @@ static void unlock_event(OrchardAppContext *context,
     
     if ( (event->key.code == keySelect) &&
          (event->key.flags == keyPress) ) {
-      if (validate_code(context, config)) {
-        return;
-      } else {
-        ledSetFunction(leds_all_strobered);
-        unlock_result(p, "unlock failed.");
-        dacPlay("fight/pathtic.raw");
-        chThdSleepMilliseconds(ALERT_DELAY);
-        orchardAppRun(orchardAppByName("Badge"));
-        return;
-      }
+        do_unlock(context);
     }
   }
 }
