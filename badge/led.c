@@ -37,7 +37,7 @@ static struct led_config {
 
 /* animation prototypes */
 static void anim_dot(void);
-static void anim_larsen(void);
+static void anim_larson(void);
 static void anim_police_all(void);
 static void anim_mardi_gras(void);
 static void anim_rainbow_fade(void);
@@ -64,7 +64,7 @@ const struct FXENTRY fxlist[] = {
   { "Off", NULL },
   { "Double Bounce", anim_double_bounce },
   { "Dot (White)", anim_dot},
-  { "Larsen Scanner", anim_larsen},
+  { "Larson Scanner", anim_larson},
   { "Rainbow Fade", anim_rainbow_fade},
   { "Rainbow Loop", anim_rainbow_loop},
   { "Green Cycle", anim_solid_color},
@@ -698,7 +698,7 @@ static void anim_dot(void) { // single dim white dot, one direction
   }
 }
 
-static void anim_larsen(void) {
+static void anim_larson(void) {
   Color c, scol;
   uint8_t i;
   float spread = 1.0;
