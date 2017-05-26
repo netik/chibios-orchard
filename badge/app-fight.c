@@ -2207,7 +2207,12 @@ static void fight_exit(OrchardAppContext *context) {
   
   // don't change back to idle state from any other function. Let fight_exit take care of it.
   changeState(IDLE);
-    
+  if (config->airplane_mode) {
+    // in airplane mode our allocations never run, so
+    // just exit immediately.
+    return;
+  }
+  
   gdispCloseFont(p->fontLG);
   gdispCloseFont(p->fontSM);
   gdispCloseFont(p->fontFF);
