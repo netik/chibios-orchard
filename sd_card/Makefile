@@ -87,6 +87,7 @@ sounds: tools_dep $(addprefix dac/, $(notdir  $(addsuffix .raw, $(basename $(wil
 	          $(addprefix dac/fight/, $(notdir  $(addsuffix .raw, $(basename $(wildcard dac/fight/*.mp3)))))
 
 sdcard: dirs tools_dep images midi sounds
+	-cp sdcard-readme.txt sdcard/README.txt
 	-cp rgb/*.rgb sdcard
 	-cp rgb/font/led/*.rgb sdcard/font/led
 	-find midi -name \*.bin -exec cp {} sdcard \;
