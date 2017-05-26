@@ -1868,6 +1868,21 @@ static void start_fight(OrchardAppContext *context) {
   sendGamePacket(OP_BATTLE_REQ);
 }
 
+static void accept_fight(void) {
+  userconfig *config = getConfig();
+  FightHandles *p = instance.context->priv;
+
+  gwinHide(p->ghDeny);
+  gwinHide(p->ghAccept);
+  
+  config->in_combat = true;
+  configSave(config);
+  screen_alert_draw(false, "SYNCING...");
+  dacPlay("fight/excellnt.raw");
+  dacWait();
+  sendGamePacket(OP_BATTLE_GO);
+}
+
 static void fight_event(OrchardAppContext *context,
 			const OrchardAppEvent *event) {
 
@@ -2041,6 +2056,10 @@ static void fight_event(OrchardAppContext *context,
         }
       }
       break;
+    case APPROVAL_DEMAND:
+      if ((event->key.flags == keyPress) && (event->key.code == keySelect)) {
+        accept_fight();
+      }
     default:
       break;
     }
@@ -2134,15 +2153,7 @@ static void fight_event(OrchardAppContext *context,
         return;
       }
       if ( ((GEventGWinButton*)pe)->gwin == p->ghAccept) {
-        gwinHide(p->ghDeny);
-        gwinHide(p->ghAccept);
-
-        config->in_combat = true;
-        configSave(config);
-        screen_alert_draw(false, "SYNCING...");
-        dacPlay("fight/excellnt.raw");
-        dacWait();
-        sendGamePacket(OP_BATTLE_GO);
+        accept_fight();
         return;
       }
       
