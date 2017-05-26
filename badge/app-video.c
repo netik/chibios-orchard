@@ -37,6 +37,7 @@
 
 #include "ff.h"
 #include "ffconf.h"
+#include "led.h"
 
 #include <string.h>
 
@@ -122,7 +123,9 @@ video_event(OrchardAppContext *context, const OrchardAppEvent *event)
 	OrchardUiContext * uiContext;
 	const OrchardUi * ui;
 	VideoHandles * p;
-
+        userconfig *config = getConfig();
+        int lastpat;
+        
 	p = context->priv;
 	ui = context->instance->ui;
 	uiContext = context->instance->uicontext;
@@ -141,7 +144,6 @@ video_event(OrchardAppContext *context, const OrchardAppEvent *event)
 		 * If this is the list ui exiting, it means we chose a
 		 * video to play, or else the user selected exit.
 		 */
-
  		ui->exit (context);
 		context->instance->ui = NULL;
 
@@ -151,9 +153,13 @@ video_event(OrchardAppContext *context, const OrchardAppEvent *event)
 			orchardAppExit ();
 			return;
 		}
-
+                lastpat = config->led_pattern;
+                config->led_pattern = 0;
+                ledSetFunction(NULL);
 		if (videoPlay (p->listitems[uiContext->selected + 1]) != 0)
 			dacPlay ("click.raw");
+                config->led_pattern = lastpat;
+                effectsStart();
 		orchardAppExit ();
 	}
 
