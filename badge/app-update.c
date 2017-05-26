@@ -200,9 +200,10 @@ update_start(OrchardAppContext *context)
 		gwinPrintf (ghConsole,
 		    "\n\n\n"
 		    "    Invalid firmware image!\n"
-		    "    Firmware magic is: %x\n"
-		    "    Expected: %x",
-		    buildinfo.build_magic, BUILDMAGIC);
+		    "    Firmware magic: %x\n"
+		    "    Expected magic: %x",
+		    (uint32_t)buildinfo.build_magic,
+		    (uint32_t)BUILDMAGIC);
 		goto done;
 	}
 
