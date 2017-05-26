@@ -123,9 +123,9 @@ video_event(OrchardAppContext *context, const OrchardAppEvent *event)
 	OrchardUiContext * uiContext;
 	const OrchardUi * ui;
 	VideoHandles * p;
-        userconfig *config = getConfig();
-        int lastpat;
-        
+	userconfig *config;
+	int lastpat;
+
 	p = context->priv;
 	ui = context->instance->ui;
 	uiContext = context->instance->uicontext;
@@ -153,13 +153,14 @@ video_event(OrchardAppContext *context, const OrchardAppEvent *event)
 			orchardAppExit ();
 			return;
 		}
-                lastpat = config->led_pattern;
-                config->led_pattern = 0;
-                ledSetFunction(NULL);
+		config = getConfig();
+		lastpat = config->led_pattern;
+		config->led_pattern = 0;
+		ledSetFunction(NULL);
 		if (videoPlay (p->listitems[uiContext->selected + 1]) != 0)
 			dacPlay ("click.raw");
-                config->led_pattern = lastpat;
-                effectsStart();
+		config->led_pattern = lastpat;
+		effectsStart();
 		orchardAppExit ();
 	}
 
