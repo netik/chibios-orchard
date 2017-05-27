@@ -75,6 +75,7 @@
 * RETURNS: 16-bit sensor value for X, Y or Z axis, or temperature reading
 */
 
+__attribute__((section(".textextra")))
 uint16_t xptGet (uint8_t cmd)
 {
 	uint8_t		reg;
