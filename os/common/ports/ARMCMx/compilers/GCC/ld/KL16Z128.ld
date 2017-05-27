@@ -20,9 +20,9 @@
 MEMORY
 {
     flash0   : org = 0x00000000, len = 0x100
+    flashver : org = 0x00000100, len = 0x10
     flashcfg : org = 0x00000400, len = 0x10
-    flashver : org = 0x00000410, len = 0x10
-    flash    : org = 0x00000420, len = 128k - 0x420 - 1k
+    flash    : org = 0x00000410, len = 128k - 0x410 - 1k
     flashram : org = 0x0001FC00, len = 1k
     ram0     : org = 0x1FFFF000, len = 16k
     ram1     : org = 0x00000000, len = 0
@@ -80,15 +80,15 @@ SECTIONS
         KEEP(*(.vectors))
     } > flash0
 
-    .cfmprotect : ALIGN(4) SUBALIGN(4)
-    {
-        KEEP(*(.cfmconfig))
-    } > flashcfg
-
     .cfmversion : ALIGN(4) SUBALIGN(4)
     {
         KEEP(*(.fwversion))
     } > flashver
+
+    .cfmprotect : ALIGN(4) SUBALIGN(4)
+    {
+        KEEP(*(.cfmconfig))
+    } > flashcfg
 
     _text = .;
 

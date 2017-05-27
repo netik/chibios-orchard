@@ -188,11 +188,17 @@ update_start(OrchardAppContext *context)
 
 	/*
 	 * Check that the firmware version in the file is newer than
-	 * the current version.
+	 * the current version. The firmware_version structure is
+	 * stored at a fixed location within the image using some
+	 * link script magic. The offset currently is 0x100. In order
+	 * to avoid hard-coding this value, we use the address of
+	 * the firmware_version in the current firmware as the file
+	 * offset where we need to search for the corresponding
+	 * structure in the new firmware.
 	 */
 
 	f_open (&f, "BADGE.BIN", FA_READ);
-	f_lseek (&f, 0x410);
+	f_lseek (&f, (FSIZE_t)&firmware_version);
 	f_read (&f, (char *)&buildinfo, sizeof (buildinfo), &br);
 	f_close (&f);
 
