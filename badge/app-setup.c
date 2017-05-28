@@ -190,7 +190,7 @@ static void draw_setup_buttons(SetupHandles * p) {
   // Create label widget: ghLabelStatus (network id)
   chsnprintf(tmp,sizeof(tmp), "Net ID: %08x", config->netid);
   wi.g.width = 180;
-  wi.g.y = 220;
+  wi.g.y = 206;
   wi.g.x = 10;
   wi.g.height = 20;
   wi.text = tmp;
