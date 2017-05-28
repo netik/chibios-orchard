@@ -31,12 +31,10 @@ static systime_t last_caesar_check = 0;
 extern systime_t char_reset_at;
 
 static int8_t lastimg = -1;
-static uint8_t rotated = false;
 
 typedef struct _DefaultHandles {
   GHandle ghFightButton;
   GHandle ghExitButton;
-  GHandle ghRotateButton;
   GListener glBadge;
   font_t fontLG, fontSM, fontXS;
 
@@ -53,7 +51,6 @@ extern uint8_t shout_ok;
 static void destroy_buttons(DefaultHandles *p) {
   gwinDestroy (p->ghFightButton);
   gwinDestroy (p->ghExitButton);
-  gwinDestroy (p->ghRotateButton);
 }
 
 static void draw_buttons(DefaultHandles * p) {
@@ -74,12 +71,6 @@ static void draw_buttons(DefaultHandles * p) {
 
   wi.g.x = gdispGetWidth() - 60;
   p->ghExitButton = gwinButtonCreate(NULL, &wi);
-
-  wi.g.x = POS_PLAYER1_X;
-  wi.g.y = totalheight - 40 - PLAYER_SIZE_Y;
-  wi.g.width = PLAYER_SIZE_X;
-  wi.g.height = PLAYER_SIZE_Y;
-  p->ghRotateButton = gwinButtonCreate(NULL, &wi);
 }
 
 static void redraw_player(DefaultHandles *p) {
@@ -118,7 +109,7 @@ static void redraw_player(DefaultHandles *p) {
                POS_PLAYER1_X, totalheight - 42 - PLAYER_SIZE_Y);
 
   /* hit point bar */
-  if (rotated)
+  if (config->rotate)
     hpx = 61;
   else
     hpx = 141; 
@@ -184,7 +175,7 @@ static void redraw_badge(DefaultHandles *p) {
 
   redraw_player(p);
 
-  if (rotated) { 
+  if (config->rotate) { 
     putImageFile(IMG_GROUND_BTN_ROT, 0, totalheight-40);
   } else {
     putImageFile(IMG_GROUND_BTNS, 0, totalheight-40);
@@ -217,7 +208,7 @@ static void redraw_badge(DefaultHandles *p) {
   chsnprintf(tmp2, sizeof(tmp2), "%3d", config->xp);
   draw_stat (p, 0, ypos, "XP", tmp2);
 
-  if (!rotated) {
+  if (!config->rotate) {
     chsnprintf(tmp2, sizeof(tmp2), "%3d", config->won);
     draw_stat (p, 94, ypos, "WON", tmp2);
   }
@@ -227,7 +218,7 @@ static void redraw_badge(DefaultHandles *p) {
   chsnprintf(tmp2, sizeof(tmp2), "%3d", config->agl);
   draw_stat (p, 0, ypos, "AGL", tmp2);
 
-  if (!rotated) { 
+  if (!config->rotate) { 
     chsnprintf(tmp2, sizeof(tmp2), "%3d", config->lost);
     draw_stat (p, 94, ypos, "LOST", tmp2);
   }
@@ -240,7 +231,7 @@ static void redraw_badge(DefaultHandles *p) {
     chsnprintf(tmp2, sizeof(tmp2), "%3d", config->might);
   draw_stat (p, 0, ypos, "MIGHT", tmp2);
 
-  if (rotated) {
+  if (config->rotate) {
     ypos = ypos + gdispGetFontMetric(p->fontSM, fontHeight) + 2;
     chsnprintf(tmp2, sizeof(tmp2), "%3d", config->won);
     draw_stat (p, 0, ypos, "WON", tmp2);
@@ -269,6 +260,7 @@ static uint32_t default_init(OrchardAppContext *context) {
 
 static void default_start(OrchardAppContext *context) {
   DefaultHandles * p;
+  const userconfig *config = getConfig();
 
   p = chHeapAlloc (NULL, sizeof(DefaultHandles));
   context->priv = p;
@@ -280,7 +272,8 @@ static void default_start(OrchardAppContext *context) {
   last_caesar_check = chVTGetSystemTime();
 
   gdispClear(Black);
-  if (rotated) { 
+
+  if (config->rotate) { 
     gdispSetOrientation (0);
   } else {
     gdispSetOrientation (GDISP_DEFAULT_ORIENTATION);
@@ -327,7 +320,7 @@ static void default_event(OrchardAppContext *context,
   char tmp[40];
   uint16_t lmargin;
 
-  if (rotated)
+  if (config->rotate)
     lmargin = 61;
   else
     lmargin = 141;
@@ -367,24 +360,6 @@ static void default_event(OrchardAppContext *context,
         orchardAppExit();
         return;
       }
-
-      if (((GEventGWinButton*)pe)->gwin == p->ghRotateButton) {
-        rotated = !rotated;
-
-	if (rotated) { 
-          gdispSetOrientation (0);
-        } else {
-          gdispSetOrientation (GDISP_DEFAULT_ORIENTATION);
-        }
-        
-        gdispClear(Black);
-        destroy_buttons(p);
-        draw_buttons(p);
-        redraw_badge(p);
-        return;
-      }
-
-      break;
     }
   }
 
@@ -524,10 +499,8 @@ static void default_exit(OrchardAppContext *context) {
   orchardAppTimer(context, 0, false); // shut down the timer
   
   p = context->priv;
-  gwinDestroy (p->ghFightButton);
-  gwinDestroy (p->ghExitButton);
-  gwinDestroy (p->ghRotateButton);
-  
+  destroy_buttons(p);
+
   gdispCloseFont (p->fontXS);
   gdispCloseFont (p->fontLG);
   gdispCloseFont (p->fontSM);

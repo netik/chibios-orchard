@@ -23,6 +23,7 @@
 typedef struct _SetupHandles {
   GHandle ghCheckSound;
   GHandle ghCheckAirplane;
+  GHandle ghCheckRotate;
   GHandle ghLabel1;
   GHandle ghLabelPattern;
   GHandle ghButtonPatDn;
@@ -81,6 +82,19 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.customStyle = 0;
   p->ghCheckAirplane = gwinCheckboxCreate(0, &wi);
   gwinCheckboxCheck(p->ghCheckAirplane, config->airplane_mode);
+
+  // create checkbox widget: ghCheckRotate
+  wi.g.show = TRUE;
+  wi.g.x = 10;
+  wi.g.y = 180;
+  wi.g.width = 180;
+  wi.g.height = 20;
+  wi.text = "Rotate Badge";
+  wi.customDraw = gwinCheckboxDraw_CheckOnLeft;
+  wi.customParam = 0;
+  wi.customStyle = 0;
+  p->ghCheckRotate = gwinCheckboxCreate(0, &wi);
+  gwinCheckboxCheck(p->ghCheckRotate, config->rotate);
 
   // create button widget: ghButtonPatDn
   wi.g.show = TRUE;
@@ -175,8 +189,9 @@ static void draw_setup_buttons(SetupHandles * p) {
 
   // Create label widget: ghLabelStatus (network id)
   chsnprintf(tmp,sizeof(tmp), "Net ID: %08x", config->netid);
-  wi.g.x = 10;
   wi.g.width = 180;
+  wi.g.y = 220;
+  wi.g.x = 10;
   wi.g.height = 20;
   wi.text = tmp;
   wi.customDraw = gwinLabelDrawJustifiedLeft;
@@ -300,12 +315,16 @@ static void setup_event(OrchardAppContext *context,
       
     case GEVENT_GWIN_CHECKBOX:
       if (((GEventGWinCheckbox*)pe)->gwin == p->ghCheckSound) {
-	// The state of our checkbox has changed
-	config->sound_enabled = ((GEventGWinCheckbox*)pe)->isChecked;
+        // The state of our checkbox has changed
+        config->sound_enabled = ((GEventGWinCheckbox*)pe)->isChecked;
       }
       if (((GEventGWinCheckbox*)pe)->gwin == p->ghCheckAirplane) {
-	// The state of our checkbox has changed
-	config->airplane_mode = ((GEventGWinCheckbox*)pe)->isChecked;
+        // The state of our checkbox has changed
+        config->airplane_mode = ((GEventGWinCheckbox*)pe)->isChecked;
+      }
+      if (((GEventGWinCheckbox*)pe)->gwin == p->ghCheckRotate) {
+        // The state of our checkbox has changed
+        config->rotate = ((GEventGWinCheckbox*)pe)->isChecked;
       }
       break;
     case GEVENT_GWIN_BUTTON:
@@ -378,6 +397,7 @@ static void setup_exit(OrchardAppContext *context) {
 
   gwinDestroy(p->ghCheckSound);
   gwinDestroy(p->ghCheckAirplane);
+  gwinDestroy(p->ghCheckRotate);
   gwinDestroy(p->ghLabel1);
   gwinDestroy(p->ghLabelPattern);
   gwinDestroy(p->ghButtonPatDn);

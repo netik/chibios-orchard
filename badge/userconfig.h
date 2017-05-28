@@ -11,7 +11,7 @@
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0
-#define CONFIG_VERSION    15
+#define CONFIG_VERSION    16
 #define CONFIG_NAME_MAXLEN 10
 
 #define CONFIG_LEDSIGN_MAXLEN	124
@@ -48,6 +48,7 @@ typedef struct userconfig {
   uint8_t led_shift;
   uint8_t sound_enabled;
   uint8_t airplane_mode;
+  uint8_t rotate;
   
   /* touchpad calibration data */
   uint8_t touch_data_present;
