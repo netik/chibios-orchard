@@ -2428,9 +2428,10 @@ static void fight_recv_callback(KW01_PKT *pkt)
 #ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "RECV MOVE: (postmove) %d. our move %d. - TURNOVER!\r\n", rr.theirattack, rr.ourattack);
 #endif /* DEBUG_FIGHT_NETWORK */
-      changeState(SHOW_RESULTS);
+
       // make sure we're in absolute agreement on hp by copying the data again.
       copyfp_topeer(false, &u, &current_enemy);
+      changeState(SHOW_RESULTS);
       return;
     }
     break;
