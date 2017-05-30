@@ -104,7 +104,7 @@ void hal_lld_init(void) {
   halSPCSetPeripheralClockMode(30, SPC5_ME_PCTL_RUN(2) | SPC5_ME_PCTL_LP(2));
 
   /* TB counter enabled for debug and measurements.*/
-  asm volatile ("li      %%r3, 0x4000       \t\n"   /* TBEN bit.            */
+  asm volatile ("e_li    %%r3, 0x4000       \t\n"   /* TBEN bit.            */
                 "mtspr   1008, %%r3"                /* HID0 register.       */
                 : : : "r3");
 
