@@ -372,7 +372,7 @@ static void default_event(OrchardAppContext *context,
       if ((dt.Second % 10 == 0) || (lasttemp == 0)) { 
         lasttemp = radioTemperatureGet (radioDriver);
         // we're going to display this in farenheit, I don't care about yo' celsius.
-        lasttemp *= ( 9/5 ) + 32 + config->tempcal;
+        lasttemp = (lasttemp * ( 9/5 )) + 32 + config->tempcal;
       }
       
       breakTime(rtc + ST2S((chVTGetSystemTime() - rtc_set_at)), &dt);
