@@ -31,6 +31,7 @@ static systime_t last_caesar_check = 0;
 extern systime_t char_reset_at;
 
 static int8_t lastimg = -1;
+static int8_t lasttemp = 0;
 
 typedef struct _DefaultHandles {
   GHandle ghFightButton;
@@ -367,16 +368,18 @@ static void default_event(OrchardAppContext *context,
   if (event->type == timerEvent) {
     /* draw the clock */
     if (rtc != 0) {
-      int t;
-      t = radioTemperatureGet (radioDriver);
-      // we're going to display this in farenheit, I don't care about yo' celsius.
-      t = t * 9/5 + 32;
+      // only update the temperature every ten seconds, because reading the temperature shuts down the radio receiver for 100mS
+      if ((dt.Second % 10 == 0) || (lasttemp == 0)) { 
+        lasttemp = radioTemperatureGet (radioDriver);
+        // we're going to display this in farenheit, I don't care about yo' celsius.
+        lasttemp *= ( 9/5 ) + 32 + config->tempcal;
+      }
       
       breakTime(rtc + ST2S((chVTGetSystemTime() - rtc_set_at)), &dt);
-      chsnprintf(tmp, sizeof(tmp), "%02d:%02d:%02d | %d F", dt.Hour, dt.Minute, dt.Second, t);
+      chsnprintf(tmp, sizeof(tmp), "%02d:%02d:%02d | %d F", dt.Hour, dt.Minute, dt.Second, lasttemp);
 
       gdispFillArea( 0,0, 
-                     60, gdispGetFontMetric(p->fontXS, fontHeight),
+                     120, gdispGetFontMetric(p->fontXS, fontHeight),
                      Black );
       
       gdispDrawStringBox (0,

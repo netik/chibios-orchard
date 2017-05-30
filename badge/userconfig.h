@@ -11,7 +11,7 @@
 #define CONFIG_SIGNATURE  0xdeadbeef  // duh
 
 #define CONFIG_OFFSET     0
-#define CONFIG_VERSION    16
+#define CONFIG_VERSION    17
 #define CONFIG_NAME_MAXLEN 10
 
 #define CONFIG_LEDSIGN_MAXLEN	124
@@ -36,7 +36,8 @@ typedef struct userconfig {
   /* unique network ID determined from use of lower 64 bits of
      SIM-UID */
   uint32_t netid;
-
+  int8_t tempcal; /* temperature calibration +/- some degrees F */
+  
   /* hw config */
   uint8_t led_pattern;
   
