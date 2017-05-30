@@ -31,7 +31,7 @@ static systime_t last_caesar_check = 0;
 extern systime_t char_reset_at;
 
 static int8_t lastimg = -1;
-static int8_t lasttemp = 0;
+static int lasttemp = 0;
 
 typedef struct _DefaultHandles {
   GHandle ghFightButton;
@@ -372,7 +372,7 @@ static void default_event(OrchardAppContext *context,
       if ((dt.Second % 10 == 0) || (lasttemp == 0)) { 
         lasttemp = radioTemperatureGet (radioDriver);
         // we're going to display this in farenheit, I don't care about yo' celsius.
-        lasttemp = (lasttemp * ( 9/5 )) + 32 + config->tempcal;
+        lasttemp = (1.8 * lasttemp) + 32 + config->tempcal;
       }
       
       breakTime(rtc + ST2S((chVTGetSystemTime() - rtc_set_at)), &dt);
