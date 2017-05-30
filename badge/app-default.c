@@ -368,6 +368,9 @@ static void default_event(OrchardAppContext *context,
   if (event->type == timerEvent) {
     /* draw the clock */
     if (rtc != 0) {
+      coord_t totalheight = gdispGetHeight();
+      coord_t totalwidth = gdispGetWidth();
+      
       // only update the temperature every ten seconds, because reading the temperature shuts down the radio receiver for 100mS
       if ((dt.Second % 10 == 0) || (lasttemp == 0)) { 
         lasttemp = radioTemperatureGet (radioDriver);
@@ -377,18 +380,30 @@ static void default_event(OrchardAppContext *context,
       
       breakTime(rtc + ST2S((chVTGetSystemTime() - rtc_set_at)), &dt);
       chsnprintf(tmp, sizeof(tmp), "%02d:%02d:%02d | %d F", dt.Hour, dt.Minute, dt.Second, lasttemp);
-
-      gdispFillArea( 0,0, 
-                     120, gdispGetFontMetric(p->fontXS, fontHeight),
-                     Black );
-      
-      gdispDrawStringBox (0,
-                          0,
-                          gdispGetWidth(),
-                          gdispGetFontMetric(p->fontXS, fontHeight),
-                          tmp,
-                          p->fontXS, Grey, justifyLeft);
-
+      if (config->rotate) { 
+        gdispFillArea( totalwidth - 100, totalheight - 50,
+                       100, gdispGetFontMetric(p->fontXS, fontHeight),
+                       Black );
+        
+        gdispDrawStringBox (0,
+                            totalheight - 50,
+                            gdispGetWidth(),
+                            gdispGetFontMetric(p->fontXS, fontHeight),
+                            tmp,
+                            p->fontXS, White, justifyRight);
+      } else {
+        gdispFillArea( (totalwidth / 2) - 50, totalheight - 50,
+                       100, gdispGetFontMetric(p->fontXS, fontHeight),
+                       Black );
+        
+        gdispDrawStringBox (0,
+                            totalheight - 50,
+                            gdispGetWidth(),
+                            gdispGetFontMetric(p->fontXS, fontHeight),
+                            tmp,
+                            p->fontXS, White, justifyCenter);
+      }
+        
     }
 
     /* draw class time remaining if any */
