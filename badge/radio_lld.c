@@ -1343,6 +1343,8 @@ radioTemperatureGet (RADIODriver * radio)
 			break;
 	}
 
+	temp = radioSpiRead (radio, KW01_TEMPVAL);
+
 	if (radioModeSet (radio, KW01_MODE_RX) != 0) {
 		radioRelease (radio);
 		return (-1);
@@ -1352,8 +1354,6 @@ radioTemperatureGet (RADIODriver * radio)
 		radioRelease (radio);
 		return (-1);
 	}
-
-	temp = radioSpiRead (radio, KW01_TEMPVAL);
 
 	radioRelease (radio);
 
