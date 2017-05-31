@@ -46,7 +46,7 @@ static uint8_t current_enemy_idx = 0;
 static uint32_t last_ui_time = 0;
 static uint32_t last_tick_time = 0;
 
-static uint16_t animtick = 1; 
+static uint16_t animtick = 0; 
 
 extern struct FXENTRY fxlist[];
 
@@ -122,8 +122,7 @@ static uint16_t calc_xp_gain(uint8_t won) {
 }
 
 static void changeState(fight_state nextstate) {
-  // call previous state exit
-
+  // if we need to switch states, do so. 
   if (nextstate == current_fight_state) {
     // do nothing.
 #ifdef DEBUG_FIGHT_STATE
@@ -135,7 +134,8 @@ static void changeState(fight_state nextstate) {
   chprintf(stream, "FIGHT: moving to state %d: %s...\r\n", nextstate, fight_state_name[nextstate]);
 
 #endif
-  
+
+  // exit the old state and reset counters
   if (fight_funcs[current_fight_state].exit != NULL) {
     fight_funcs[current_fight_state].exit();
   }
@@ -333,7 +333,6 @@ static void state_move_select_enter() {
   userconfig *config = getConfig();
   FightHandles *p = instance.context->priv;
 
-  animtick = 0;
   rr.ourattack = 0;
   rr.theirattack = 0;
   rr.last_damage = -1;
@@ -661,7 +660,6 @@ static void state_vs_screen_enter() {
   // versus screen!
   userconfig *config = getConfig();
   FightHandles *p;
-  animtick = 0;
   p = instance.context->priv;
     
   gdispClear(Black);
@@ -738,8 +736,10 @@ static void state_vs_screen_tick(void) {
 }
 
 static void do_timeout(void) {
-  // A timeout occurs when someone doesn't move or the game times out.
-  // not a network problem.
+  /* A timeout occurs when someone doesn't move or the game times out.
+   * Note that we can't really tell the difference between 'user took
+   * no action' and 'badge stopped communicating' as we don't
+   * implement a heartbeat aside from pings */
   orchardAppTimer(instance.context, 0, false); // shut down the timer
   screen_alert_draw(true, "TIMED OUT!");
   dacPlay("fight/select3.raw");
@@ -784,7 +784,6 @@ static void state_show_results_enter() {
    * If we are not the fightmaster, we start a countdown in tick(),
    * waiting for OP_NEXTROUND to come in. 
    */
-  animtick = 0;
 
   /* we should be out of this screen in five seconds or less. We will
    * change this timer in frame 30.
