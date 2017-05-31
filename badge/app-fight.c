@@ -2436,7 +2436,7 @@ static void fight_recv_callback(KW01_PKT *pkt)
     }
     break;
   case SHOW_RESULTS:
-    if ((u.opcode == OP_NEXTROUND) && (fightleader == false)) {
+    if ((u.opcode == OP_NEXTROUND) && (fightleader == false) && (rr.winner == 0)) {
       changeState(MOVE_SELECT);
       return;
     }
