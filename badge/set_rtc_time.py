@@ -10,13 +10,12 @@ print "Current time:"
 now = int(time.mktime(datetime.datetime.now().timetuple()))
 print now
 
-
 ser = serial.Serial(timeout=1,
                     xonxoff=False,
                     dsrdtr=True,
                     rtscts=True)
 ser.baudrate = 115200
-ser.port = '/dev/cu.usbserial-A505O8VQ'
+ser.port = '/dev/cu.usbserial-A505TQUZ'
 
 ser.open()
 if not ser.is_open:
@@ -29,6 +28,9 @@ ser.flush()
 
 i=0
 
+# UTC To PST
+now = now - (60 * 60 * 7)
+
 while 1 == 1:
     i = i + 1
     b = ser.readline()
@@ -40,4 +42,3 @@ while 1 == 1:
         ser.flush()
         time.sleep(1)
         sys.exit(0)
-        
