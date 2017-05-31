@@ -893,14 +893,14 @@ static void calc_damage(RoundState *r) {
   if (rr.ourattack & ATTACK_ISCRIT) { r->p2color = Purple; }
 
   config->hp = config->hp - rr.last_damage;
-  if (config->hp < 0) {
+  if (config->hp <= 0) {
     r->overkill_us = -config->hp;
     config->hp = 0;
     r->winner = 2;
   }
 
   current_enemy.hp = current_enemy.hp - rr.last_hit;
-  if (current_enemy.hp < 0) {
+  if (current_enemy.hp <= 0) {
     r->overkill_them = -current_enemy.hp;
     current_enemy.hp = 0;
     r->winner = 1;
