@@ -1326,6 +1326,7 @@ radioTemperatureGet (RADIODriver * radio)
 {
 	int temp;
 	unsigned int i;
+	userconfig * config;
 
 	radioAcquire (radio);
 
@@ -1365,7 +1366,9 @@ radioTemperatureGet (RADIODriver * radio)
 	 * calibration value.
 	 */
 
-	temp -= 99;
+	config = getConfig();
+
+	temp -= config->tempcal;
 
 	return (temp);
 }

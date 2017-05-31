@@ -113,8 +113,8 @@ static void cmd_config_set(BaseSequentialStream *chp, int argc, char *argv[]) {
   }
 
   if (!strcasecmp(argv[1], "tempcal")) {
-    config->tempcal = strtol (argv[2], NULL, 0);
-    chprintf(chp, "temperature calibration set to %d degrees F.\r\n", config->tempcal);
+    config->tempcal = strtoul (argv[2], NULL, 0);
+    chprintf(chp, "temperature calibration set to %d degrees C.\r\n", config->tempcal);
     return;
   }
 

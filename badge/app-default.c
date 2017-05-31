@@ -31,7 +31,6 @@ static systime_t last_caesar_check = 0;
 extern systime_t char_reset_at;
 
 static int8_t lastimg = -1;
-static int lasttemp = 0;
 
 typedef struct _DefaultHandles {
   GHandle ghFightButton;
@@ -320,6 +319,9 @@ static void default_event(OrchardAppContext *context,
   tmElements_t dt;
   char tmp[40];
   uint16_t lmargin;
+  int lasttemp;
+  coord_t totalheight = gdispGetHeight();
+  coord_t totalwidth = gdispGetWidth();
 
   if (config->rotate)
     lmargin = 61;
@@ -368,14 +370,12 @@ static void default_event(OrchardAppContext *context,
   if (event->type == timerEvent) {
     /* draw the clock */
     if (rtc != 0) {
-      coord_t totalheight = gdispGetHeight();
-      coord_t totalwidth = gdispGetWidth();
       
       // only update the temperature every ten seconds, because reading the temperature shuts down the radio receiver for 100mS
       if ((dt.Second % 10 == 0) || (lasttemp == 0)) { 
         lasttemp = radioTemperatureGet (radioDriver);
         // we're going to display this in farenheit, I don't care about yo' celsius.
-        lasttemp = (1.8 * lasttemp) + 32 + config->tempcal;
+        lasttemp = (1.8 * lasttemp) + 32;
       }
       
       breakTime(rtc + ST2S((chVTGetSystemTime() - rtc_set_at)), &dt);
@@ -387,7 +387,7 @@ static void default_event(OrchardAppContext *context,
         
         gdispDrawStringBox (0,
                             totalheight - 50,
-                            gdispGetWidth(),
+                            totalwidth,
                             gdispGetFontMetric(p->fontXS, fontHeight),
                             tmp,
                             p->fontXS, White, justifyRight);
@@ -398,7 +398,7 @@ static void default_event(OrchardAppContext *context,
         
         gdispDrawStringBox (0,
                             totalheight - 50,
-                            gdispGetWidth(),
+                            totalwidth,
                             gdispGetFontMetric(p->fontXS, fontHeight),
                             tmp,
                             p->fontXS, White, justifyCenter);
