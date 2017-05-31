@@ -368,31 +368,30 @@ static void default_event(OrchardAppContext *context,
 
   /* timed events (heal, caesar election, etc.) */
   if (event->type == timerEvent) {
-    /* draw the clock */
+    lasttemp = radioTemperatureGet (radioDriver);
+    // we're going to display this in farenheit, I don't care about yo' celsius.
+    lasttemp = (1.8 * lasttemp) + 32;
+
     if (rtc != 0) {
-      
-      // only update the temperature every ten seconds, because reading the temperature shuts down the radio receiver for 100mS
-      if ((dt.Second % 10 == 0) || (lasttemp == 0)) { 
-        lasttemp = radioTemperatureGet (radioDriver);
-        // we're going to display this in farenheit, I don't care about yo' celsius.
-        lasttemp = (1.8 * lasttemp) + 32;
-      }
-      
+      /* draw the clock */
       breakTime(rtc + ST2S((chVTGetSystemTime() - rtc_set_at)), &dt);
       chsnprintf(tmp, sizeof(tmp), "%02d:%02d:%02d | %d F", dt.Hour, dt.Minute, dt.Second, lasttemp);
-
-      gdispFillArea( totalwidth - 100, totalheight - 50,
-                     100, gdispGetFontMetric(p->fontXS, fontHeight),
-                     Black );
-      
-      gdispDrawStringBox (0,
-                          totalheight - 50,
-                          totalwidth,
-                          gdispGetFontMetric(p->fontXS, fontHeight),
-                          tmp,
-                          p->fontXS, White, justifyRight);
+    } else {
+      /* temp only */
+      chsnprintf(tmp, sizeof(tmp), "%d F", lasttemp);
     }
-
+    
+    gdispFillArea( totalwidth - 100, totalheight - 50,
+                   100, gdispGetFontMetric(p->fontXS, fontHeight),
+                   Black );
+    
+    gdispDrawStringBox (0,
+                        totalheight - 50,
+                        totalwidth,
+                        gdispGetFontMetric(p->fontXS, fontHeight),
+                        tmp,
+                        p->fontXS, White, justifyRight);
+  
     /* draw class time remaining if any */
     if (char_reset_at != 0) {
       systime_t delta = ST2S((char_reset_at - chVTGetSystemTime()));
