@@ -11,8 +11,8 @@
 #include "ringbuf.h"
 
 /*  
- * A naive implementation of the Stop and Wait protocol with timeout
- * and ARQ and a short txring.
+ * A naive implementation of the Stop and Wait protocol with timeout,
+ * ARQ, and a txqueue.
  */
 
 void

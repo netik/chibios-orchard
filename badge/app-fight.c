@@ -4,7 +4,7 @@
  * John Adams <jna@retina.net>
  * 2017
  *
- * This code implements the roman fighting game. It relies on
+ * This code implements the Roman fighting game. It relies on
  * app-default to handle healing and some game events, as well as
  * proto.c to transmit game data over the radio network.
  *
@@ -2428,14 +2428,15 @@ static void fight_recv_callback(KW01_PKT *pkt)
 #ifdef DEBUG_FIGHT_NETWORK
       chprintf(stream, "RECV MOVE: (postmove) %d. our move %d. - TURNOVER!\r\n", rr.theirattack, rr.ourattack);
 #endif /* DEBUG_FIGHT_NETWORK */
-      changeState(SHOW_RESULTS);
+
       // make sure we're in absolute agreement on hp by copying the data again.
       copyfp_topeer(false, &u, &current_enemy);
+      changeState(SHOW_RESULTS);
       return;
     }
     break;
   case SHOW_RESULTS:
-    if ((u.opcode == OP_NEXTROUND) && (fightleader == false)) {
+    if ((u.opcode == OP_NEXTROUND) && (fightleader == false) && (rr.winner == 0)) {
       changeState(MOVE_SELECT);
       return;
     }
@@ -2443,6 +2444,7 @@ static void fight_recv_callback(KW01_PKT *pkt)
 
   default:
     // this shouldn't fire, but log it if it does.
+#ifdef DEBUG_FIGHT_NETWORK
 #ifdef DEBUG_FIGHT_STATE
     chprintf(stream, "%08x %d --> RECV %x - no handler (mystate=%d %s)\r\n",
              pkt->kw01_hdr.kw01_src, proto->prot_seq, u.opcode, 
@@ -2452,6 +2454,8 @@ static void fight_recv_callback(KW01_PKT *pkt)
              pkt->kw01_hdr.kw01_src, proto->prot_seq, u.opcode, 
              current_fight_state);
 #endif
+#endif
+    break;
   }
 }
 

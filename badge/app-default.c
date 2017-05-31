@@ -242,7 +242,7 @@ static void redraw_badge(DefaultHandles *p) {
 
   /* EFF supporter, +10% Defense and 50x35 logo*/
   if (config->unlocks & UL_PLUSDEF) 
-    putImageFile(IMG_EFFLOGO, totalwidth-50, totalheight-42-35);
+    putImageFile(IMG_EFFLOGO, totalwidth-50, totalheight-85);
 
   if (config->airplane_mode)
     putImageFile(IMG_PLANE, 0, 0);
@@ -319,6 +319,9 @@ static void default_event(OrchardAppContext *context,
   tmElements_t dt;
   char tmp[40];
   uint16_t lmargin;
+  int lasttemp;
+  coord_t totalheight = gdispGetHeight();
+  coord_t totalwidth = gdispGetWidth();
 
   if (config->rotate)
     lmargin = 61;
@@ -365,24 +368,30 @@ static void default_event(OrchardAppContext *context,
 
   /* timed events (heal, caesar election, etc.) */
   if (event->type == timerEvent) {
-    /* draw the clock */
+    lasttemp = radioTemperatureGet (radioDriver);
+    // we're going to display this in farenheit, I don't care about yo' celsius.
+    lasttemp = (1.8 * lasttemp) + 32;
+
     if (rtc != 0) {
+      /* draw the clock */
       breakTime(rtc + ST2S((chVTGetSystemTime() - rtc_set_at)), &dt);
-      chsnprintf(tmp, sizeof(tmp), "%02d:%02d:%02d", dt.Hour, dt.Minute, dt.Second);
-
-      gdispFillArea( 0,0, 
-                     60, gdispGetFontMetric(p->fontXS, fontHeight),
-                     Black );
-      
-      gdispDrawStringBox (0,
-                          0,
-                          gdispGetWidth(),
-                          gdispGetFontMetric(p->fontXS, fontHeight),
-                          tmp,
-                          p->fontXS, Grey, justifyLeft);
-
+      chsnprintf(tmp, sizeof(tmp), "%02d:%02d:%02d | %d F", dt.Hour, dt.Minute, dt.Second, lasttemp);
+    } else {
+      /* temp only */
+      chsnprintf(tmp, sizeof(tmp), "%d F", lasttemp);
     }
-
+    
+    gdispFillArea( totalwidth - 100, totalheight - 50,
+                   100, gdispGetFontMetric(p->fontXS, fontHeight),
+                   Black );
+    
+    gdispDrawStringBox (0,
+                        totalheight - 50,
+                        totalwidth,
+                        gdispGetFontMetric(p->fontXS, fontHeight),
+                        tmp,
+                        p->fontXS, White, justifyRight);
+  
     /* draw class time remaining if any */
     if (char_reset_at != 0) {
       systime_t delta = ST2S((char_reset_at - chVTGetSystemTime()));

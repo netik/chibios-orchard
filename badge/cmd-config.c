@@ -54,6 +54,7 @@ static void cmd_config_show(BaseSequentialStream *chp, int argc, char *argv[])
   chprintf(chp, "sound      %d\r\n", config->sound_enabled);
   chprintf(chp, "lastdeath  %d\r\n", config->lastdeath);
   chprintf(chp, "incombat   %d\r\n", config->in_combat);
+  chprintf(chp, "tempcal    %d\r\n", config->tempcal);
   chprintf(chp, "led mode   %d dim %d\r\n", config->led_pattern, config->led_shift);
   chprintf(chp, "led color  %d %d %d\r\n",
            config->led_r,
@@ -108,6 +109,12 @@ static void cmd_config_set(BaseSequentialStream *chp, int argc, char *argv[]) {
   if (!strcasecmp(argv[1], "ctype")) {
     config->current_type = strtoul (argv[2], NULL, 0);
     chprintf(chp, "current class set to %d.\r\n", config->current_type);
+    return;
+  }
+
+  if (!strcasecmp(argv[1], "tempcal")) {
+    config->tempcal = strtoul (argv[2], NULL, 0);
+    chprintf(chp, "temperature calibration set to %d degrees C.\r\n", config->tempcal);
     return;
   }
 
