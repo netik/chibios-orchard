@@ -79,7 +79,7 @@ static void init_config(userconfig *config) {
    * so it's easier to maintain.  */
   config->signature = CONFIG_SIGNATURE;
   config->version = CONFIG_VERSION;
-  config->tempcal = 0;
+  config->tempcal = 99;
   config->unlocks = 0;
 
   /* this is a very, very naive approach to uniqueness, but it might work. */
