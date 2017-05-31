@@ -2455,6 +2455,7 @@ static void fight_recv_callback(KW01_PKT *pkt)
              current_fight_state);
 #endif
 #endif
+    break;
   }
 }
 
