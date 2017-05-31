@@ -242,7 +242,7 @@ static void redraw_badge(DefaultHandles *p) {
 
   /* EFF supporter, +10% Defense and 50x35 logo*/
   if (config->unlocks & UL_PLUSDEF) 
-    putImageFile(IMG_EFFLOGO, totalwidth-50, totalheight-42-35);
+    putImageFile(IMG_EFFLOGO, totalwidth-50, totalheight-85);
 
   if (config->airplane_mode)
     putImageFile(IMG_PLANE, 0, 0);
@@ -380,30 +380,17 @@ static void default_event(OrchardAppContext *context,
       
       breakTime(rtc + ST2S((chVTGetSystemTime() - rtc_set_at)), &dt);
       chsnprintf(tmp, sizeof(tmp), "%02d:%02d:%02d | %d F", dt.Hour, dt.Minute, dt.Second, lasttemp);
-      if (config->rotate) { 
-        gdispFillArea( totalwidth - 100, totalheight - 50,
-                       100, gdispGetFontMetric(p->fontXS, fontHeight),
-                       Black );
-        
-        gdispDrawStringBox (0,
-                            totalheight - 50,
-                            totalwidth,
-                            gdispGetFontMetric(p->fontXS, fontHeight),
-                            tmp,
-                            p->fontXS, White, justifyRight);
-      } else {
-        gdispFillArea( (totalwidth / 2) - 50, totalheight - 50,
-                       100, gdispGetFontMetric(p->fontXS, fontHeight),
-                       Black );
-        
-        gdispDrawStringBox (0,
-                            totalheight - 50,
-                            totalwidth,
-                            gdispGetFontMetric(p->fontXS, fontHeight),
-                            tmp,
-                            p->fontXS, White, justifyCenter);
-      }
-        
+
+      gdispFillArea( totalwidth - 100, totalheight - 50,
+                     100, gdispGetFontMetric(p->fontXS, fontHeight),
+                     Black );
+      
+      gdispDrawStringBox (0,
+                          totalheight - 50,
+                          totalwidth,
+                          gdispGetFontMetric(p->fontXS, fontHeight),
+                          tmp,
+                          p->fontXS, White, justifyRight);
     }
 
     /* draw class time remaining if any */
