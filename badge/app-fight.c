@@ -1317,9 +1317,13 @@ static uint16_t calc_hit(userconfig *config, peer *current_enemy) {
   // show_results.
 
   // power table (x^0.3) to avoid using pow() math library
-  float exps[] = { 1.000000, 1.231144, 1.390389, 1.515717, 1.620657,
-                   1.711770, 1.792790, 1.866066, 1.933182, 1.995262  };
-  
+  //  float exps[] = { 1.000000, 1.231144, 1.390389, 1.515717, 1.620657,
+  //                   1.711770, 1.792790, 1.866066, 1.933182, 1.995262  };
+
+  // power table (x^0.2) to avoid using pow() math library
+  float exps[] = { 1.000000, 1.148698, 1.245731, 1.319508, 1.379730,
+                   1.430969, 1.475773, 1.515717, 1.551846, 1.584893  };
+
   // the max damage you can do
   basemax = 42 * exps[config->level - 1];
   basemin = basemax * .65; 
