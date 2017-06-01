@@ -40,22 +40,19 @@ static int32_t countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer va
 
 // if true, we started the fight. We also handle all coordination of the fight. 
 static uint8_t fightleader = false;   
-
 static fight_state current_fight_state = IDLE;  // current state 
 static uint8_t current_enemy_idx = 0;
 static uint32_t last_ui_time = 0;
 static uint32_t last_tick_time = 0;
-
 static uint16_t animtick = 0; 
-
 extern struct FXENTRY fxlist[];
-
-extern systime_t char_reset_at;
-
 static uint32_t pending_enemy_netid = 0;
 static KW01_PKT pending_enemy_pkt;
 static peer current_enemy;                    // current enemy we are attacking/talking to
 static RoundState rr;
+
+extern systime_t char_reset_at;
+extern void ledShowHP(void);
 
 /* prototypes */
 static void fight_ack_callback(KW01_PKT *pkt);
@@ -420,6 +417,13 @@ static void state_move_select_tick() {
   }
 }
 
+static void state_move_select_exit(void) {
+  // set the LEDS to show HP
+  userconfig *config = getConfig();
+  ledSetHP(config, &current_enemy);
+  ledSetFunction(ledShowHP);
+}
+
 static void screen_select_draw(int8_t initial) {
   // enemy selection screen
   // setting initial to TRUE will cause a repaint of the entire
@@ -643,14 +647,14 @@ static void draw_idle_players() {
 		      p->screen_width,
 		      p->fontsm_height,
 		      config->name,
-		      p->fontSM, Lime, justifyLeft);
+		      p->fontSM, Orange, justifyLeft);
 
   gdispDrawStringBox (0,
 		      0,
 		      p->screen_width,
 		      p->fontsm_height,
                       current_enemy.name,
-		      p->fontSM, Red, justifyRight);
+		      p->fontSM, Blue, justifyRight);
 
   putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
   
@@ -660,9 +664,12 @@ static void state_vs_screen_enter() {
   // versus screen!
   userconfig *config = getConfig();
   FightHandles *p;
+  ledSetHP(config, &current_enemy);
+  ledSetFunction(ledShowHP);
   p = instance.context->priv;
-    
+  
   gdispClear(Black);
+  
   draw_idle_players();
   chsnprintf(p->tmp, sizeof(p->tmp), "LEVEL %s", dec2romanstr(config->level));
   
@@ -672,7 +679,7 @@ static void state_vs_screen_enter() {
 		      p->screen_width,
 		      p->fontsm_height,
 		      p->tmp,
-		      p->fontSM, Lime, justifyLeft);
+		      p->fontSM, Orange, justifyLeft);
 
   chsnprintf(p->tmp, sizeof(p->tmp), "LEVEL %s", dec2romanstr(current_enemy.level));
   gdispDrawStringBox (0,
@@ -680,7 +687,7 @@ static void state_vs_screen_enter() {
 		      p->screen_width,
 		      p->fontsm_height,
                       p->tmp,
-		      p->fontSM, Red, justifyRight);  
+		      p->fontSM, Blue, justifyRight);  
 }
 
 
@@ -768,7 +775,7 @@ static void state_approval_demand_tick() {
 
 
 static void state_post_move_tick() {
-  drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y,PROGRESS_BAR_W,PROGRESS_BAR_H,MOVE_WAIT_TIME,countdown, true, false);
+  drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y,PROGRESS_BAR_W,PROGRESS_BAR_H,MOVE_WAIT_TIME,countdown, false, false);
   if (countdown <= 0) {
     do_timeout();
   }
@@ -1155,6 +1162,8 @@ static void state_show_results_tick() {
                  POS_PLAYER1_X, POS_PLAYER1_Y);
     putImageFile(getAvatarImage(current_enemy.current_type, "idla", 1, true),
                  POS_PLAYER2_X, POS_PLAYER2_Y);
+
+    ledSetHP(config, &current_enemy);
   }
 
   // if dying... 
@@ -1384,7 +1393,7 @@ static void sendAttack(void) {
                       gdispGetFontMetric(p->fontSM, fontHeight),
                       "WAITING FOR CHALLENGER'S MOVE",
                       p->fontSM, White, justifyCenter);
-
+   
   sendGamePacket(OP_IMOVED);
   changeState(POST_MOVE);
 }

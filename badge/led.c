@@ -22,7 +22,7 @@
 
 static int16_t fx_index = 0;           // fx index 
 static int16_t fx_position = 0;        // fx position counter
-static float   led_progress = 0;       // last progress setting
+static float   led_progress = 0;       // last progress setting for drawProgressBar
 static int8_t  fx_direction = 1;       // fx direction
 static uint8_t led_brightshift = 0;    // right-shift value, normally zero.
 
@@ -34,6 +34,9 @@ static struct led_config {
   uint8_t  pixel_count;  // generated pixel length
   uint8_t  max_pixels;   // maximal generation length
 } led_config;
+
+/* storage area for current hp state */
+static led_hp ledhp;
 
 /* animation prototypes */
 static void anim_dot(void);
@@ -72,17 +75,17 @@ const struct FXENTRY fxlist[] = {
   { "Comet", anim_comet},
   { "Wave", anim_wave },
   { "Mardi Gras", anim_mardi_gras},
+  { "All Solid", anim_all_same},
   { "Spot the Fed", anim_police_all},
   { "Violets", anim_violets},
   { "RGB Bounce", anim_rgb_bounce},
   { "Violet Wave", anim_violetwave },
-  { "Kraftwerk", anim_kraftwerk },
-  { "All Solid", anim_all_same}
+  { "Kraftwerk", anim_kraftwerk }
 };
 
 // stock colors
 const RgbColor roygbiv[7] = { {0xff, 0, 0},
-                              {0xff, 0xa5, 0},
+                              {0xff, 0x32, 0},
                               {0xff, 0xff, 0},
                               {0, 0xff, 0},
                               {0, 0, 0xff},
@@ -99,39 +102,26 @@ void ledClear(void);
 /// @returns sin of theta, value between -32767 to 32767.
 static int16_t msin( uint16_t theta )
 {
-      static const uint16_t base[] =
-        { 0, 6393, 12539, 18204, 23170, 27245, 30273, 32137 };
-          static const uint8_t slope[] =
-            { 49, 48, 44, 38, 31, 23, 14, 4 };
-
-          uint16_t offset = (theta & 0x3FFF) >> 3; // 0..2047
-          if( theta & 0x4000 ) offset = 2047 - offset;
-
-          uint8_t section = offset / 256; // 0..7
-          uint16_t b   = base[section];
-          uint8_t  m   = slope[section];
-
-          uint8_t secoffset8 = (uint8_t)(offset) / 2;
-
-          uint16_t mx = m * secoffset8;
-          int16_t  y  = mx + b;
-
-          if( theta & 0x8000 ) y = -y;
-
-          return y;
-}
-
-
-
-uint16_t factorial(uint16_t n)
-{
-  uint16_t c;
-  uint16_t result = 1;
-
-  for (c = 1; c <= n; c++)
-    result = result * c;
-
-  return result;
+  static const uint16_t base[] =
+    { 0, 6393, 12539, 18204, 23170, 27245, 30273, 32137 };
+  static const uint8_t slope[] =
+    { 49, 48, 44, 38, 31, 23, 14, 4 };
+  
+  uint16_t offset = (theta & 0x3FFF) >> 3; // 0..2047
+  if( theta & 0x4000 ) offset = 2047 - offset;
+  
+  uint8_t section = offset / 256; // 0..7
+  uint16_t b   = base[section];
+  uint8_t  m   = slope[section];
+  
+  uint8_t secoffset8 = (uint8_t)(offset) / 2;
+  
+  uint16_t mx = m * secoffset8;
+  int16_t  y  = mx + b;
+  
+  if( theta & 0x8000 ) y = -y;
+  
+  return y;
 }
 
 // These are a variety of functions shamelessly ported from fastled.
@@ -199,6 +189,36 @@ void ledSetProgress(float p) {
   led_progress = p;
 }
 
+void ledSetHP(userconfig *c, peer *p) {
+  ledhp.top = c->hp;
+  ledhp.topmax = maxhp(c->current_type, c->unlocks, c->level);
+  ledhp.bot = p->hp;
+  ledhp.botmax = maxhp(p->current_type, p->unlocks, p->level);
+}
+
+void ledShowHP(void) {
+  uint8_t i;
+
+  /* Light the LEDs to represent the HP available. We will pulse them at a rate that matches the amount remaining */
+  float pct_lit_top = (float)ledhp.top / ledhp.topmax;
+  float pct_lit_bot = (float)ledhp.bot / ledhp.botmax;
+  int total_lit_top = 6 * pct_lit_top;
+  int total_lit_bot = 6 * pct_lit_bot;
+  
+  ledClear();
+
+  /* top */
+  for(i=0; i < total_lit_top; i++)  {
+    /* orange bar */
+    ledSetRGB(led_config.fb, i, roygbiv[1].r, roygbiv[1].g, roygbiv[1].b);
+  }
+
+  for(i=0; i < total_lit_bot; i++)  {
+    /* blue bar */
+    ledSetRGB(led_config.fb, 11-i, roygbiv[4].r, roygbiv[4].g, roygbiv[4].b);
+  }
+}
+
 void handle_progress(void) {
   uint8_t i,c;
   
@@ -220,7 +240,7 @@ void handle_progress(void) {
     if (i > 5) {
 
       /*
-        board layout:          actual:
+        board layout:          actual representation:
          0  1  2  3  4  5      0 1 2 3  4  5 
         11 10  9  8  7  6      6 7 8 9 10 11
 
@@ -756,13 +776,8 @@ static void anim_solid_color(void) {
 static void anim_all_same(void) {
   userconfig *config = getConfig();
 
-  uint8_t colors[3];
-
-  // temp hack to play with colors
-  HSVtoRGB(config->led_r, config->led_g, config->led_b, colors);
   for(int i = 0 ; i < led_config.max_pixels; i++ ) {
-    //    ledSetRGB(led_config.fb, i, config->led_r, config->led_g, config->led_b);
-    ledSetRGB(led_config.fb, i, colors[0], colors[1], colors[2]);
+    ledSetRGB(led_config.fb, i, config->led_r, config->led_g, config->led_b);
   }
 }
 
