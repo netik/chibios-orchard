@@ -413,19 +413,34 @@ static void default_event(OrchardAppContext *context,
       if (config->current_type == p_senator) {
         strcat(tmp," SENATOR");
       }
+      if (config->rotate) { 
+        gdispFillArea(gdispGetWidth() - 100,
+                      totalheight - 70,
+                      100,
+                      gdispGetFontMetric(p->fontXS, fontHeight),
+                      Black );
+        
+        gdispDrawStringBox( 0,
+                            totalheight - 70,
+                            gdispGetWidth(),
+                            gdispGetFontMetric(p->fontXS, fontHeight),
+                            tmp,
+                            p->fontXS, White, justifyRight);
+      } else {
+        gdispFillArea( lmargin,
+                       totalheight - 50,
+                       60,
+                       gdispGetFontMetric(p->fontXS, fontHeight),
+                       Black );
+        
+        gdispDrawStringBox (lmargin,
+                            totalheight - 50,
+                            gdispGetWidth() - lmargin,
+                            gdispGetFontMetric(p->fontXS, fontHeight),
+                            tmp,
+                            p->fontXS, White, justifyLeft);
 
-      gdispFillArea( lmargin,
-                     totalheight - 50,
-                     60,
-                     gdispGetFontMetric(p->fontXS, fontHeight),
-                     Black );
-      
-      gdispDrawStringBox (lmargin,
-                          totalheight - 50,
-                          gdispGetWidth(),
-                          gdispGetFontMetric(p->fontXS, fontHeight),
-                          tmp,
-                          p->fontXS, White, justifyLeft);
+      }
     }
 
     /* Caesar Election
