@@ -414,12 +414,14 @@ static void default_event(OrchardAppContext *context,
         strcat(tmp," SENATOR");
       }
 
-      gdispFillArea( lmargin,62, 
-                     60, gdispGetFontMetric(p->fontXS, fontHeight),
+      gdispFillArea( lmargin,
+                     totalheight - 50,
+                     60,
+                     gdispGetFontMetric(p->fontXS, fontHeight),
                      Black );
       
       gdispDrawStringBox (lmargin,
-                          62,
+                          totalheight - 50,
                           gdispGetWidth(),
                           gdispGetFontMetric(p->fontXS, fontHeight),
                           tmp,
