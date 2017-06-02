@@ -1994,7 +1994,9 @@ static void fight_event(OrchardAppContext *context,
         }
       } else {
         // can't move.
+#ifdef DEBUG_FIGHT_STATE
         chprintf(stream, "rejecting key event -- already went\r\n");
+#endif
         playNope();
       }
       break;
@@ -2199,7 +2201,9 @@ static void fight_event(OrchardAppContext *context,
 
         } else {
           // can't move.
+#ifdef DEBUG_FIGHT_STATE
           chprintf(stream, "rejecting event -- already went\r\n");
+#endif
           playNope();
         }
       }
