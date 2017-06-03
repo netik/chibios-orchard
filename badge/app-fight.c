@@ -1019,7 +1019,8 @@ static void show_opponent_death() {
 static void show_user_death() {
   userconfig *config = getConfig();
   FightHandles *p = instance.context->priv;
-  
+  char * effect;
+
   /* if you are dead, then you will do the same */
   dacPlay("fight/defrmix.raw");
   
@@ -1040,43 +1041,43 @@ static void show_user_death() {
   
   // Insult the user if they lose in the 1st round.
   if (rr.roundno == 1) {
-    dacWait();
     switch(rand() % 4 + 1) {
     case 1:
-      dacPlay("fight/pathtic.raw");
+      effect = "fight/pathtic.raw";
       break;
     case 2:
-      dacPlay("fight/nvrwin.raw");
+      effect = "fight/nvrwin.raw";
       break;
     case 3:
-      dacPlay("fight/brutal.raw");
+      effect = "fight/brutal.raw";
       break;
     default:
-      dacPlay("fight/usuck.raw");
+      effect = "fight/usuck.raw";
       break;
     }
   } else {
     // you lose, but let's be fun about it.
-    dacWait();
     switch(current_enemy.current_type) {
     case p_guard:
-      dacPlay("gwin.raw");
+      effect = "gwin.raw";
       break;
     case p_senator:
-      dacPlay("swin.raw");
+      effect = "swin.raw";
       break;
     case p_caesar:
-      dacPlay("cwin.raw");
+      effect = "cwin.raw";
       break;
     case p_gladiatrix:
-      dacPlay("xwin.raw");
+      effect = "xwin.raw";
       break;
     case p_bender: /* KILL ALL HUMANS! */
-      dacPlay("bwin.raw");
+      effect = "bwin.raw";
       break;
     case p_notset: /* should never be reached, not possible to fight if p_notset */
       break;
     }
+    dacWait();
+    dacPlay(effect);
   }
 }
 
@@ -1415,22 +1416,17 @@ static void draw_attack_buttons(void) {
   wi.g.y = 50;
   wi.g.width = 140;
   wi.g.height = 59;
-  wi.text = "4";
   wi.customDraw = noRender;
   wi.customParam = 0;
   wi.customStyle = 0;
   p->ghAttackHi = gwinButtonCreate(0, &wi);
   
   // create button widget: ghAttackMid
-  wi.g.x = 180;
   wi.g.y = 110;
-  wi.text = "5";
   p->ghAttackMid = gwinButtonCreate(0, &wi);
   
   // create button widget: ghAttackLow
-  wi.g.x = 180;
   wi.g.y = 160;
-  wi.text = "6";
   p->ghAttackLow = gwinButtonCreate(0, &wi);
 }
   
@@ -1438,28 +1434,6 @@ static void draw_select_buttons(void) {
   GWidgetInit wi;
   coord_t totalheight = gdispGetHeight();
   FightHandles *p = instance.context->priv;
-
-  // Left
-  gwinWidgetClearInit(&wi);
-  wi.g.show = TRUE;
-  wi.g.x = 0;
-  wi.g.y = 20;
-  wi.g.width = 30;
-  wi.g.height = 180;
-  wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowLeft;
-  p->ghPrevEnemy = gwinButtonCreate(0, &wi);
-
-  // Right
-  gwinWidgetClearInit(&wi);
-  wi.g.show = TRUE;
-  wi.g.x = 290;
-  wi.g.y = 20;
-  wi.g.width = 30;
-  wi.g.height = 180;
-  wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowRight;
-  p->ghNextEnemy = gwinButtonCreate(0, &wi);
 
   // Fight
   gwinSetDefaultStyle(&RedButtonStyle, FALSE);
@@ -1474,14 +1448,26 @@ static void draw_select_buttons(void) {
   p->ghAttack = gwinButtonCreate(0, &wi);
   gwinSetDefaultStyle(&BlackWidgetStyle, FALSE);
   
+  // Left
+  wi.g.x = 0;
+  wi.g.y = 20;
+  wi.g.width = 30;
+  wi.g.height = 180;
+  wi.text = NULL;
+  wi.customDraw = gwinButtonDraw_ArrowLeft;
+  p->ghPrevEnemy = gwinButtonCreate(0, &wi);
+
+  // Right
+  wi.g.x = 290;
+  wi.g.y = 20;
+  wi.customDraw = gwinButtonDraw_ArrowRight;
+  p->ghNextEnemy = gwinButtonCreate(0, &wi);
+
   // Exit
-  gwinWidgetClearInit(&wi);
-  wi.g.show = TRUE;
   wi.g.width = 60;
   wi.g.height = 60;
   wi.g.y = totalheight - 60;
   wi.g.x = 0;
-  wi.text = "";
   wi.customDraw = noRender;
   p->ghExitButton = gwinButtonCreate(NULL, &wi);
 
@@ -1939,35 +1925,31 @@ static void fight_event(OrchardAppContext *context,
 
   }
 
-  if (event->type == keyEvent) {
+  if (event->type == keyEvent && event->key.flags == keyPress) {
     last_ui_time = chVTGetSystemTime();
     
     switch(current_fight_state) { 
     case ENEMY_SELECT:
       if ( (event->key.code == keyUp) &&     /* shhh! tell no one */
-           (event->key.flags == keyPress) &&
            (config->unlocks & UL_GOD) )  {
         // remember who this is so we can issue the grant
         memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(peer));
         changeState(GRANT_SCREEN);
         return;
       }
-      if ( (event->key.code == keyRight) &&
-           (event->key.flags == keyPress) )  {
+      if ( (event->key.code == keyRight) ) {
         if (nextEnemy()) {
           screen_select_draw(FALSE);
         }
         return;
       }
-      if ( (event->key.code == keyLeft) &&
-           (event->key.flags == keyPress) )  {
+      if ( (event->key.code == keyLeft) ) {
         if (prevEnemy()) {
           screen_select_draw(FALSE);
         }
         return;
       }
-      if ( (event->key.code == keySelect) &&
-           (event->key.flags == keyPress) )  {
+      if ( (event->key.code == keySelect) ) {
         // we are attacking.
         start_fight(context);
         return;
@@ -1977,21 +1959,16 @@ static void fight_event(OrchardAppContext *context,
       // TODO: cleanup -This code duplicates code from the button
       // handler, but just a couple lines per button.
       if ((rr.ourattack & ATTACK_MASK) == 0) {
-        if ( (event->key.code == keyDown) &&
-             (event->key.flags == keyPress) )  {
+        if ( (event->key.code == keyDown) ) {
           rr.ourattack |= ATTACK_LOW;
-          sendAttack();
         }
-        if ( (event->key.code == keyRight) &&
-             (event->key.flags == keyPress) )  {
+        if ( (event->key.code == keyRight) ) {
           rr.ourattack |= ATTACK_MID;
-          sendAttack();
         }
-        if ( (event->key.code == keyUp) &&
-           (event->key.flags == keyPress) )  {
+        if ( (event->key.code == keyUp) ) {
           rr.ourattack |= ATTACK_HI;
-          sendAttack();
         }
+        sendAttack();
       } else {
         // can't move.
 #ifdef DEBUG_FIGHT_STATE
@@ -2001,7 +1978,6 @@ static void fight_event(OrchardAppContext *context,
       }
       break;
     case GRANT_SCREEN:
-      if (event->key.flags == keyPress)  {
         if (p->grant_page == 0) {
           /* Page 1 */
           switch (event->key.code) {
@@ -2013,19 +1989,15 @@ static void fight_event(OrchardAppContext *context,
              */
           case keyUp:
             rr.last_hit = UL_PLUSDEF;
-            sendGamePacket(OP_GRANT);
             break;
           case keyDown:
             rr.last_hit = UL_LUCK;
-            sendGamePacket(OP_GRANT);
             break;
           case keyLeft:
             rr.last_hit = UL_HEAL;
-            sendGamePacket(OP_GRANT);
             break;
           case keyRight:
             rr.last_hit = UL_PLUSHP;
-            sendGamePacket(OP_GRANT);
             break;
           default:
             rr.last_hit = 0;
@@ -2036,19 +2008,15 @@ static void fight_event(OrchardAppContext *context,
           switch (event->key.code) {
           case keyUp:
             rr.last_hit = UL_PLUSMIGHT;
-            sendGamePacket(OP_GRANT);
             break;
           case keyDown:
             rr.last_hit = UL_LEDS;
-            sendGamePacket(OP_GRANT);
             break;
           case keyLeft:
             rr.last_hit = UL_CAESAR;
-            sendGamePacket(OP_GRANT);
             break;
           case keyRight:
             rr.last_hit = UL_SENATOR;
-            sendGamePacket(OP_GRANT);
             break;
           default:
             rr.last_hit = 0;
@@ -2068,10 +2036,9 @@ static void fight_event(OrchardAppContext *context,
           chThdSleepMilliseconds(ALERT_DELAY);
           orchardAppRun(orchardAppByName("Badge"));
         }
-      }
       break;
     case APPROVAL_DEMAND:
-      if ((event->key.flags == keyPress) && (event->key.code == keySelect)) {
+      if ((event->key.code == keySelect)) {
         accept_fight();
       }
     default:
@@ -2182,16 +2149,15 @@ static void fight_event(OrchardAppContext *context,
         if ((rr.ourattack & ATTACK_MASK) == 0) {
           if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackLow) {
             rr.ourattack |= ATTACK_LOW;
-            sendAttack();
           }
           if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackMid) {
             rr.ourattack |= ATTACK_MID;
-            sendAttack();
           }
           if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackHi) {
             rr.ourattack |= ATTACK_HI;
-            sendAttack();
           }
+
+          sendAttack();
 
           /* Destroy the arrow button handles */
 
