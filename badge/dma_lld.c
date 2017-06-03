@@ -329,8 +329,8 @@ dmaRecv8 (const void * dst, uint32_t len)
 	 * 1 bits.
 	 */
 
-	palSetPadMode (GPIOE, 1, PAL_MODE_OUTPUT_PUSHPULL);
-	palSetPad (GPIOE, 1);
+	palSetPadMode (SPI1_MOSI_PORT, SPI1_MOSI_PIN, PAL_MODE_OUTPUT_PUSHPULL);
+	palSetPad (SPI1_MOSI_PORT, SPI1_MOSI_PIN);
 
 	/*
 	 * Start the transfer and wait for it to complete.
@@ -365,7 +365,7 @@ dmaRecv8 (const void * dst, uint32_t len)
 
 	/* Release the MOSI pin. */
 
-	palSetPadMode (GPIOE, 1, PAL_MODE_ALTERNATIVE_2);
+	palSetPadMode (SPI1_MOSI_PORT, SPI1_MOSI_PIN, PAL_MODE_ALTERNATIVE_2);
 
 	/* Disable SPI DMA mode and turn off the FIFO. */
 
