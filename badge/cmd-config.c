@@ -88,6 +88,16 @@ static void cmd_config_set(BaseSequentialStream *chp, int argc, char *argv[]) {
     return;
   }
   
+  if (!strcasecmp(argv[1], "pingdump")) {
+    if (!strcmp(argv[2], "1")) {
+      config->unlocks |= UL_PINGDUMP;
+    } else {
+      config->unlocks &= ~(UL_PINGDUMP);
+    }
+    chprintf(chp, "Pingdump set.\r\n");
+    return;
+  }
+  
   if (!strcasecmp(argv[1], "name")) {
     strncpy(config->name, argv[2], CONFIG_NAME_MAXLEN);
     chprintf(chp, "Name set.\r\n");

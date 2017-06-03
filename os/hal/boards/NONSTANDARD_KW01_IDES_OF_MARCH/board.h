@@ -140,6 +140,31 @@
 #define DAC_PORT		GPIOE
 #define DAC_PIN			30
 
+/* SPI channel 0 */
+
+#define SPI0_MOSI_PORT		GPIOC
+#define SPI0_MOSI_PIN		7
+
+#define SPI0_MISO_PORT		GPIOC
+#define SPI0_MISO_PIN		6
+
+#define SPI0_SCK_PORT		GPIOC
+#define SPI0_SCK_PIN		5
+
+/* SPI channel 1 */
+
+#define SPI1_CS_PORT		GPIOD
+#define SPI1_CS_PIN		4
+
+#define SPI1_MOSI_PORT		GPIOE
+#define SPI1_MOSI_PIN		1
+
+#define SPI1_MISO_PORT		GPIOE
+#define SPI1_MISO_PIN		0
+
+#define SPI1_SCK_PORT		GPIOD
+#define SPI1_SCK_PIN		5
+
 #if !defined(_FROM_ASM_)
 #ifdef __cplusplus
 extern "C" {

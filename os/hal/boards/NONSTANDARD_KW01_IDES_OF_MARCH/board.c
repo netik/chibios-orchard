@@ -215,15 +215,15 @@ void __early_init(void) {
 
   /* Mux PTC5 as SCK */
 
-  palSetPadMode (GPIOC, 5, PAL_MODE_ALTERNATIVE_2);
+  palSetPadMode (SPI0_SCK_PORT, SPI0_SCK_PIN, PAL_MODE_ALTERNATIVE_2);
 
   /* Mux PTC6 as MISO */
 
-  palSetPadMode (GPIOC, 6, PAL_MODE_ALTERNATIVE_2);
+  palSetPadMode (SPI0_MISO_PORT, SPI0_MISO_PIN, PAL_MODE_ALTERNATIVE_2);
 
   /* Mux PTC7 as MOSI */
 
-  palSetPadMode (GPIOC, 7, PAL_MODE_ALTERNATIVE_2);
+  palSetPadMode (SPI0_MOSI_PORT, SPI0_MOSI_PIN, PAL_MODE_ALTERNATIVE_2);
 
   /* Force radio SPI select high. */
 

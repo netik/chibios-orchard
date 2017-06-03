@@ -40,22 +40,19 @@ static int32_t countdown = DEFAULT_WAIT_TIME; // used to hold a generic timer va
 
 // if true, we started the fight. We also handle all coordination of the fight. 
 static uint8_t fightleader = false;   
-
 static fight_state current_fight_state = IDLE;  // current state 
 static uint8_t current_enemy_idx = 0;
 static uint32_t last_ui_time = 0;
 static uint32_t last_tick_time = 0;
-
-static uint16_t animtick = 1; 
-
+static uint16_t animtick = 0; 
 extern struct FXENTRY fxlist[];
-
-extern systime_t char_reset_at;
-
 static uint32_t pending_enemy_netid = 0;
 static KW01_PKT pending_enemy_pkt;
 static peer current_enemy;                    // current enemy we are attacking/talking to
 static RoundState rr;
+
+extern systime_t char_reset_at;
+extern void ledShowHP(void);
 
 /* prototypes */
 static void fight_ack_callback(KW01_PKT *pkt);
@@ -122,8 +119,7 @@ static uint16_t calc_xp_gain(uint8_t won) {
 }
 
 static void changeState(fight_state nextstate) {
-  // call previous state exit
-
+  // if we need to switch states, do so. 
   if (nextstate == current_fight_state) {
     // do nothing.
 #ifdef DEBUG_FIGHT_STATE
@@ -135,7 +131,8 @@ static void changeState(fight_state nextstate) {
   chprintf(stream, "FIGHT: moving to state %d: %s...\r\n", nextstate, fight_state_name[nextstate]);
 
 #endif
-  
+
+  // exit the old state and reset counters
   if (fight_funcs[current_fight_state].exit != NULL) {
     fight_funcs[current_fight_state].exit();
   }
@@ -333,7 +330,6 @@ static void state_move_select_enter() {
   userconfig *config = getConfig();
   FightHandles *p = instance.context->priv;
 
-  animtick = 0;
   rr.ourattack = 0;
   rr.theirattack = 0;
   rr.last_damage = -1;
@@ -419,6 +415,13 @@ static void state_move_select_tick() {
     /* no one moved, just abort */
     do_timeout();
   }
+}
+
+static void state_move_select_exit(void) {
+  // set the LEDS to show HP
+  userconfig *config = getConfig();
+  ledSetHP(config, &current_enemy);
+  ledSetFunction(ledShowHP);
 }
 
 static void screen_select_draw(int8_t initial) {
@@ -644,14 +647,14 @@ static void draw_idle_players() {
 		      p->screen_width,
 		      p->fontsm_height,
 		      config->name,
-		      p->fontSM, Lime, justifyLeft);
+		      p->fontSM, Orange, justifyLeft);
 
   gdispDrawStringBox (0,
 		      0,
 		      p->screen_width,
 		      p->fontsm_height,
                       current_enemy.name,
-		      p->fontSM, Red, justifyRight);
+		      p->fontSM, Blue, justifyRight);
 
   putImageFile(IMG_GROUND, 0, POS_FLOOR_Y);
   
@@ -661,10 +664,12 @@ static void state_vs_screen_enter() {
   // versus screen!
   userconfig *config = getConfig();
   FightHandles *p;
-  animtick = 0;
+  ledSetHP(config, &current_enemy);
+  ledSetFunction(ledShowHP);
   p = instance.context->priv;
-    
+  
   gdispClear(Black);
+  
   draw_idle_players();
   chsnprintf(p->tmp, sizeof(p->tmp), "LEVEL %s", dec2romanstr(config->level));
   
@@ -674,7 +679,7 @@ static void state_vs_screen_enter() {
 		      p->screen_width,
 		      p->fontsm_height,
 		      p->tmp,
-		      p->fontSM, Lime, justifyLeft);
+		      p->fontSM, Orange, justifyLeft);
 
   chsnprintf(p->tmp, sizeof(p->tmp), "LEVEL %s", dec2romanstr(current_enemy.level));
   gdispDrawStringBox (0,
@@ -682,7 +687,7 @@ static void state_vs_screen_enter() {
 		      p->screen_width,
 		      p->fontsm_height,
                       p->tmp,
-		      p->fontSM, Red, justifyRight);  
+		      p->fontSM, Blue, justifyRight);  
 }
 
 
@@ -738,8 +743,10 @@ static void state_vs_screen_tick(void) {
 }
 
 static void do_timeout(void) {
-  // A timeout occurs when someone doesn't move or the game times out.
-  // not a network problem.
+  /* A timeout occurs when someone doesn't move or the game times out.
+   * Note that we can't really tell the difference between 'user took
+   * no action' and 'badge stopped communicating' as we don't
+   * implement a heartbeat aside from pings */
   orchardAppTimer(instance.context, 0, false); // shut down the timer
   screen_alert_draw(true, "TIMED OUT!");
   dacPlay("fight/select3.raw");
@@ -768,7 +775,7 @@ static void state_approval_demand_tick() {
 
 
 static void state_post_move_tick() {
-  drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y,PROGRESS_BAR_W,PROGRESS_BAR_H,MOVE_WAIT_TIME,countdown, true, false);
+  drawProgressBar(PROGRESS_BAR_X,PROGRESS_BAR_Y,PROGRESS_BAR_W,PROGRESS_BAR_H,MOVE_WAIT_TIME,countdown, false, false);
   if (countdown <= 0) {
     do_timeout();
   }
@@ -784,7 +791,6 @@ static void state_show_results_enter() {
    * If we are not the fightmaster, we start a countdown in tick(),
    * waiting for OP_NEXTROUND to come in. 
    */
-  animtick = 0;
 
   /* we should be out of this screen in five seconds or less. We will
    * change this timer in frame 30.
@@ -893,14 +899,14 @@ static void calc_damage(RoundState *r) {
   if (rr.ourattack & ATTACK_ISCRIT) { r->p2color = Purple; }
 
   config->hp = config->hp - rr.last_damage;
-  if (config->hp < 0) {
+  if (config->hp <= 0) {
     r->overkill_us = -config->hp;
     config->hp = 0;
     r->winner = 2;
   }
 
   current_enemy.hp = current_enemy.hp - rr.last_hit;
-  if (current_enemy.hp < 0) {
+  if (current_enemy.hp <= 0) {
     r->overkill_them = -current_enemy.hp;
     current_enemy.hp = 0;
     r->winner = 1;
@@ -1013,7 +1019,8 @@ static void show_opponent_death() {
 static void show_user_death() {
   userconfig *config = getConfig();
   FightHandles *p = instance.context->priv;
-  
+  char * effect;
+
   /* if you are dead, then you will do the same */
   dacPlay("fight/defrmix.raw");
   
@@ -1034,43 +1041,43 @@ static void show_user_death() {
   
   // Insult the user if they lose in the 1st round.
   if (rr.roundno == 1) {
-    dacWait();
     switch(rand() % 4 + 1) {
     case 1:
-      dacPlay("fight/pathtic.raw");
+      effect = "fight/pathtic.raw";
       break;
     case 2:
-      dacPlay("fight/nvrwin.raw");
+      effect = "fight/nvrwin.raw";
       break;
     case 3:
-      dacPlay("fight/brutal.raw");
+      effect = "fight/brutal.raw";
       break;
     default:
-      dacPlay("fight/usuck.raw");
+      effect = "fight/usuck.raw";
       break;
     }
   } else {
     // you lose, but let's be fun about it.
-    dacWait();
     switch(current_enemy.current_type) {
     case p_guard:
-      dacPlay("gwin.raw");
+      effect = "gwin.raw";
       break;
     case p_senator:
-      dacPlay("swin.raw");
+      effect = "swin.raw";
       break;
     case p_caesar:
-      dacPlay("cwin.raw");
+      effect = "cwin.raw";
       break;
     case p_gladiatrix:
-      dacPlay("xwin.raw");
+      effect = "xwin.raw";
       break;
     case p_bender: /* KILL ALL HUMANS! */
-      dacPlay("bwin.raw");
+      effect = "bwin.raw";
       break;
     case p_notset: /* should never be reached, not possible to fight if p_notset */
       break;
     }
+    dacWait();
+    dacPlay(effect);
   }
 }
 
@@ -1156,6 +1163,8 @@ static void state_show_results_tick() {
                  POS_PLAYER1_X, POS_PLAYER1_Y);
     putImageFile(getAvatarImage(current_enemy.current_type, "idla", 1, true),
                  POS_PLAYER2_X, POS_PLAYER2_Y);
+
+    ledSetHP(config, &current_enemy);
   }
 
   // if dying... 
@@ -1309,9 +1318,13 @@ static uint16_t calc_hit(userconfig *config, peer *current_enemy) {
   // show_results.
 
   // power table (x^0.3) to avoid using pow() math library
-  float exps[] = { 1.000000, 1.231144, 1.390389, 1.515717, 1.620657,
-                   1.711770, 1.792790, 1.866066, 1.933182, 1.995262  };
-  
+  //  float exps[] = { 1.000000, 1.231144, 1.390389, 1.515717, 1.620657,
+  //                   1.711770, 1.792790, 1.866066, 1.933182, 1.995262  };
+
+  // power table (x^0.2) to avoid using pow() math library
+  float exps[] = { 1.000000, 1.148698, 1.245731, 1.319508, 1.379730,
+                   1.430969, 1.475773, 1.515717, 1.551846, 1.584893  };
+
   // the max damage you can do
   basemax = 42 * exps[config->level - 1];
   basemin = basemax * .65; 
@@ -1385,7 +1398,7 @@ static void sendAttack(void) {
                       gdispGetFontMetric(p->fontSM, fontHeight),
                       "WAITING FOR CHALLENGER'S MOVE",
                       p->fontSM, White, justifyCenter);
-
+   
   sendGamePacket(OP_IMOVED);
   changeState(POST_MOVE);
 }
@@ -1403,22 +1416,17 @@ static void draw_attack_buttons(void) {
   wi.g.y = 50;
   wi.g.width = 140;
   wi.g.height = 59;
-  wi.text = "4";
   wi.customDraw = noRender;
   wi.customParam = 0;
   wi.customStyle = 0;
   p->ghAttackHi = gwinButtonCreate(0, &wi);
   
   // create button widget: ghAttackMid
-  wi.g.x = 180;
   wi.g.y = 110;
-  wi.text = "5";
   p->ghAttackMid = gwinButtonCreate(0, &wi);
   
   // create button widget: ghAttackLow
-  wi.g.x = 180;
   wi.g.y = 160;
-  wi.text = "6";
   p->ghAttackLow = gwinButtonCreate(0, &wi);
 }
   
@@ -1426,28 +1434,6 @@ static void draw_select_buttons(void) {
   GWidgetInit wi;
   coord_t totalheight = gdispGetHeight();
   FightHandles *p = instance.context->priv;
-
-  // Left
-  gwinWidgetClearInit(&wi);
-  wi.g.show = TRUE;
-  wi.g.x = 0;
-  wi.g.y = 20;
-  wi.g.width = 30;
-  wi.g.height = 180;
-  wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowLeft;
-  p->ghPrevEnemy = gwinButtonCreate(0, &wi);
-
-  // Right
-  gwinWidgetClearInit(&wi);
-  wi.g.show = TRUE;
-  wi.g.x = 290;
-  wi.g.y = 20;
-  wi.g.width = 30;
-  wi.g.height = 180;
-  wi.text = "";
-  wi.customDraw = gwinButtonDraw_ArrowRight;
-  p->ghNextEnemy = gwinButtonCreate(0, &wi);
 
   // Fight
   gwinSetDefaultStyle(&RedButtonStyle, FALSE);
@@ -1462,14 +1448,26 @@ static void draw_select_buttons(void) {
   p->ghAttack = gwinButtonCreate(0, &wi);
   gwinSetDefaultStyle(&BlackWidgetStyle, FALSE);
   
+  // Left
+  wi.g.x = 0;
+  wi.g.y = 20;
+  wi.g.width = 30;
+  wi.g.height = 180;
+  wi.text = NULL;
+  wi.customDraw = gwinButtonDraw_ArrowLeft;
+  p->ghPrevEnemy = gwinButtonCreate(0, &wi);
+
+  // Right
+  wi.g.x = 290;
+  wi.g.y = 20;
+  wi.customDraw = gwinButtonDraw_ArrowRight;
+  p->ghNextEnemy = gwinButtonCreate(0, &wi);
+
   // Exit
-  gwinWidgetClearInit(&wi);
-  wi.g.show = TRUE;
   wi.g.width = 60;
   wi.g.height = 60;
   wi.g.y = totalheight - 60;
   wi.g.x = 0;
-  wi.text = "";
   wi.customDraw = noRender;
   p->ghExitButton = gwinButtonCreate(NULL, &wi);
 
@@ -1927,35 +1925,31 @@ static void fight_event(OrchardAppContext *context,
 
   }
 
-  if (event->type == keyEvent) {
+  if (event->type == keyEvent && event->key.flags == keyPress) {
     last_ui_time = chVTGetSystemTime();
     
     switch(current_fight_state) { 
     case ENEMY_SELECT:
       if ( (event->key.code == keyUp) &&     /* shhh! tell no one */
-           (event->key.flags == keyPress) &&
            (config->unlocks & UL_GOD) )  {
         // remember who this is so we can issue the grant
         memcpy(&current_enemy, enemies[current_enemy_idx], sizeof(peer));
         changeState(GRANT_SCREEN);
         return;
       }
-      if ( (event->key.code == keyRight) &&
-           (event->key.flags == keyPress) )  {
+      if ( (event->key.code == keyRight) ) {
         if (nextEnemy()) {
           screen_select_draw(FALSE);
         }
         return;
       }
-      if ( (event->key.code == keyLeft) &&
-           (event->key.flags == keyPress) )  {
+      if ( (event->key.code == keyLeft) ) {
         if (prevEnemy()) {
           screen_select_draw(FALSE);
         }
         return;
       }
-      if ( (event->key.code == keySelect) &&
-           (event->key.flags == keyPress) )  {
+      if ( (event->key.code == keySelect) ) {
         // we are attacking.
         start_fight(context);
         return;
@@ -1965,29 +1959,25 @@ static void fight_event(OrchardAppContext *context,
       // TODO: cleanup -This code duplicates code from the button
       // handler, but just a couple lines per button.
       if ((rr.ourattack & ATTACK_MASK) == 0) {
-        if ( (event->key.code == keyDown) &&
-             (event->key.flags == keyPress) )  {
+        if ( (event->key.code == keyDown) ) {
           rr.ourattack |= ATTACK_LOW;
-          sendAttack();
         }
-        if ( (event->key.code == keyRight) &&
-             (event->key.flags == keyPress) )  {
+        if ( (event->key.code == keyRight) ) {
           rr.ourattack |= ATTACK_MID;
-          sendAttack();
         }
-        if ( (event->key.code == keyUp) &&
-           (event->key.flags == keyPress) )  {
+        if ( (event->key.code == keyUp) ) {
           rr.ourattack |= ATTACK_HI;
-          sendAttack();
         }
+        sendAttack();
       } else {
         // can't move.
+#ifdef DEBUG_FIGHT_STATE
         chprintf(stream, "rejecting key event -- already went\r\n");
+#endif
         playNope();
       }
       break;
     case GRANT_SCREEN:
-      if (event->key.flags == keyPress)  {
         if (p->grant_page == 0) {
           /* Page 1 */
           switch (event->key.code) {
@@ -1999,19 +1989,15 @@ static void fight_event(OrchardAppContext *context,
              */
           case keyUp:
             rr.last_hit = UL_PLUSDEF;
-            sendGamePacket(OP_GRANT);
             break;
           case keyDown:
             rr.last_hit = UL_LUCK;
-            sendGamePacket(OP_GRANT);
             break;
           case keyLeft:
             rr.last_hit = UL_HEAL;
-            sendGamePacket(OP_GRANT);
             break;
           case keyRight:
             rr.last_hit = UL_PLUSHP;
-            sendGamePacket(OP_GRANT);
             break;
           default:
             rr.last_hit = 0;
@@ -2022,19 +2008,15 @@ static void fight_event(OrchardAppContext *context,
           switch (event->key.code) {
           case keyUp:
             rr.last_hit = UL_PLUSMIGHT;
-            sendGamePacket(OP_GRANT);
             break;
           case keyDown:
             rr.last_hit = UL_LEDS;
-            sendGamePacket(OP_GRANT);
             break;
           case keyLeft:
             rr.last_hit = UL_CAESAR;
-            sendGamePacket(OP_GRANT);
             break;
           case keyRight:
             rr.last_hit = UL_SENATOR;
-            sendGamePacket(OP_GRANT);
             break;
           default:
             rr.last_hit = 0;
@@ -2054,10 +2036,9 @@ static void fight_event(OrchardAppContext *context,
           chThdSleepMilliseconds(ALERT_DELAY);
           orchardAppRun(orchardAppByName("Badge"));
         }
-      }
       break;
     case APPROVAL_DEMAND:
-      if ((event->key.flags == keyPress) && (event->key.code == keySelect)) {
+      if ((event->key.code == keySelect)) {
         accept_fight();
       }
     default:
@@ -2168,16 +2149,15 @@ static void fight_event(OrchardAppContext *context,
         if ((rr.ourattack & ATTACK_MASK) == 0) {
           if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackLow) {
             rr.ourattack |= ATTACK_LOW;
-            sendAttack();
           }
           if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackMid) {
             rr.ourattack |= ATTACK_MID;
-            sendAttack();
           }
           if ( ((GEventGWinButton*)pe)->gwin == p->ghAttackHi) {
             rr.ourattack |= ATTACK_HI;
-            sendAttack();
           }
+
+          sendAttack();
 
           /* Destroy the arrow button handles */
 
@@ -2187,7 +2167,9 @@ static void fight_event(OrchardAppContext *context,
 
         } else {
           // can't move.
+#ifdef DEBUG_FIGHT_STATE
           chprintf(stream, "rejecting event -- already went\r\n");
+#endif
           playNope();
         }
       }

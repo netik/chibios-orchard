@@ -201,7 +201,6 @@ static void radio_ping_handler(KW01_PKT *pkt) {
   
   u = (peer *)pkt->kw01_payload;
 
-#ifndef LEADERBOARD_AGENT
   if (c->unlocks & UL_PINGDUMP) {
     chprintf(stream, "PING: {\"name\":\"%s\"," \
              "\"badgeid\":\"%08x\"," \
@@ -232,7 +231,6 @@ static void radio_ping_handler(KW01_PKT *pkt) {
              u->luck
              );
   }
-#endif
 
   enemyAdd(u);
 
@@ -351,15 +349,19 @@ int main(void)
    * it in.
    */
 
-  palSetPadMode (GPIOE, 0, PAL_MODE_OUTPUT_PUSHPULL);	/* Set to output */
-  palSetPad (GPIOE, 0);					/* Pull high */
-  palSetPadMode (GPIOE, 0, PAL_MODE_INPUT_PULLUP);	/* Enable pullup */
-  palSetPadMode (GPIOE, 0, PAL_MODE_ALTERNATIVE_2);	/* Restore SPI mode */
+  /* Set to output */
+  palSetPadMode (SPI1_MISO_PORT, SPI1_MISO_PIN, PAL_MODE_OUTPUT_PUSHPULL);
+  /* Pull high */
+  palSetPad (SPI1_MISO_PORT, SPI1_MISO_PIN);
+  /* Enable pullup */
+  palSetPadMode (SPI1_MISO_PORT, SPI1_MISO_PIN, PAL_MODE_INPUT_PULLUP);
+  /* Restore SPI mode */
+  palSetPadMode (SPI1_MISO_PORT, SPI1_MISO_PIN, PAL_MODE_ALTERNATIVE_2);
 
-  palSetPadMode (GPIOE, 1, PAL_MODE_OUTPUT_PUSHPULL);
-  palSetPad (GPIOE, 1);
-  palSetPadMode (GPIOE, 1, PAL_MODE_INPUT_PULLUP);
-  palSetPadMode (GPIOE, 1, PAL_MODE_ALTERNATIVE_2);
+  palSetPadMode (SPI1_MOSI_PORT, SPI1_MOSI_PIN, PAL_MODE_OUTPUT_PUSHPULL);
+  palSetPad (SPI1_MOSI_PORT, SPI1_MOSI_PIN);
+  palSetPadMode (SPI1_MOSI_PORT, SPI1_MOSI_PIN, PAL_MODE_INPUT_PULLUP);
+  palSetPadMode (SPI1_MOSI_PORT, SPI1_MOSI_PIN, PAL_MODE_ALTERNATIVE_2);
 
 #if HAL_USE_MMC_SPI
   /* Connect the SD card */

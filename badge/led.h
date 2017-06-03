@@ -3,6 +3,7 @@
 
 #include "hal.h"
 #include "math.h"
+#include "userconfig.h"
 
 #define LEDS_COUNT 12
 
@@ -55,6 +56,8 @@ void leds_all_strobered(void);
 void leds_all_strobe(void);
 void leds_show_unlocks(void);
 
+void ledSetHP(userconfig *c, peer *p);
+
 const char *effectsCurName(void);
 
 #define EFFECTS_REDRAW_MS 35
@@ -62,5 +65,13 @@ struct FXENTRY {
   char *name;
   void (*function)(void);
 };
+
+typedef struct _led_hp {
+  int16_t top;
+  int16_t topmax;
+  int16_t bot;
+  int16_t botmax;
+} led_hp;
+
 
 #endif /* __LED_H__ */
