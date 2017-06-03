@@ -53,8 +53,11 @@ paramShow (uint32_t spanHz, uint32_t centerHz)
 {
 	font_t font;
 	char str[64];
+	coord_t width;
 
-	gdispGFillArea (GDISP, 40, 0, gdispGetWidth () - 80, 80, Teal);
+	width = gdispGetWidth();
+
+	gdispGFillArea (GDISP, 40, 0, width - 80, 80, Teal);
 
 	font = gdispOpenFont (FONT_KEYBOARD);
 
@@ -68,20 +71,20 @@ paramShow (uint32_t spanHz, uint32_t centerHz)
 	chsnprintf(str, sizeof(str), "Center: %dHz", centerHz);
   
 	gdispDrawStringBox (0, gdispGetFontMetric(font, fontHeight),
-	    gdispGetWidth(), gdispGetFontMetric(font, fontHeight),
+	    width, gdispGetFontMetric(font, fontHeight),
 	    str, font, White, justifyCenter);
 
 	chsnprintf(str, sizeof(str), "End: %dHz",
 	    centerHz + (spanHz * (320 / 2)));
   
 	gdispDrawStringBox (0, gdispGetFontMetric(font, fontHeight) * 2,
-	    gdispGetWidth(), gdispGetFontMetric(font, fontHeight),
+	    width, gdispGetFontMetric(font, fontHeight),
 	    str, font, White, justifyCenter);
 
 	chsnprintf(str, sizeof(str), "Span: %dHz", spanHz);
   
 	gdispDrawStringBox (0, gdispGetFontMetric(font, fontHeight) * 3,
-	    gdispGetWidth(), gdispGetFontMetric(font, fontHeight),
+	    width, gdispGetFontMetric(font, fontHeight),
 	    str, font, White, justifyCenter);
 
 	gdispCloseFont (font);

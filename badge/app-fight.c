@@ -248,7 +248,7 @@ static void state_approval_demand_enter(void) {
 		      "YOU ARE BEING ATTACKED!",
 		      p->fontFF, Red, justifyCenter);
 
-  ypos = (gdispGetHeight() / 2) - 60;
+  ypos = (gdispGetHeight() >> 1) - 60;
   xpos = 10;
 
   gdispDrawStringBox (0,
@@ -497,8 +497,8 @@ static void screen_select_draw(int8_t initial) {
   }
 
   // slightly above the middle
-  ypos = (gdispGetHeight() / 2) - 60;
-  xpos = (gdispGetWidth() / 2) + 10;
+  ypos = (gdispGetHeight() >> 1) - 60;
+  xpos = (gdispGetWidth() >> 1) + 10;
 
   // count
   chsnprintf(p->tmp, sizeof(p->tmp), "%d of %d", current_enemy_idx + 1, enemyCount() );

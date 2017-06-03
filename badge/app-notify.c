@@ -93,11 +93,11 @@ static void notify_start(OrchardAppContext *context)
 	font = gdispOpenFont(FONT_FIXED);
 	chsnprintf (id, 22, "Badge %x says:", sender);
 
-	gdispDrawStringBox (0, (gdispGetHeight() / 2) -
+	gdispDrawStringBox (0, (gdispGetHeight() >> 1) -
 	    gdispGetFontMetric(font, fontHeight),
 	    gdispGetWidth(), gdispGetFontMetric(font, fontHeight),
 	    id, font, White, justifyCenter);
-	gdispDrawStringBox (0, (gdispGetHeight() / 2), 
+	gdispDrawStringBox (0, (gdispGetHeight() >> 1), 
 	    gdispGetWidth(), gdispGetFontMetric(font, fontHeight),
 	    buf, font, Green, justifyCenter);
 	gdispCloseFont (font);	

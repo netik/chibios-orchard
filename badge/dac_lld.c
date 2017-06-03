@@ -203,7 +203,7 @@ THD_FUNCTION(dacThread, arg)
 
 			dacbuf = p;
 			dacpos = 0;
-			dacmax = br / 2;
+			dacmax = br >> 1;
 
 			/* Swap buffers and load the next block of samples */
 

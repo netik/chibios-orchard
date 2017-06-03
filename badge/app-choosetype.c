@@ -253,7 +253,7 @@ static void ct_remove_confirm(OrchardAppContext *context) {
 static void ct_save(OrchardAppContext *context) {
   /* store the final selection to flash.*/
   userconfig *config = getConfig();
-  uint16_t middle = (gdispGetHeight() / 2);
+  uint16_t middle = (gdispGetHeight() >> 1);
   char msg[40];
   CtHandles * p;
 
@@ -283,7 +283,7 @@ static void ct_save(OrchardAppContext *context) {
   gdispFillArea( 0, middle - 20, 320, 40, Black );
 
   gdispDrawStringBox (0,
-		      (gdispGetHeight() / 2) - (gdispGetFontMetric(p->font_manteka_20, fontHeight) / 2),
+		      middle - (gdispGetFontMetric(p->font_manteka_20, fontHeight) / 2),
 		      gdispGetWidth(),
 		      gdispGetFontMetric(p->font_manteka_20, fontHeight),
 		      msg,

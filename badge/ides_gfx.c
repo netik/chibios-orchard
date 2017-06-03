@@ -231,7 +231,7 @@ void blinkText (coord_t x, coord_t y,coord_t cx, coord_t cy, char *text, font_t 
 }
 
 void screen_alert_draw(uint8_t clear, char *msg) {
-  uint16_t middle = (gdispGetHeight() / 2);
+  uint16_t middle = (gdispGetHeight() >> 1);
   font_t fontFF = gdispOpenFont (FONT_FIXED);
   
   if (clear) {
@@ -245,7 +245,7 @@ void screen_alert_draw(uint8_t clear, char *msg) {
   gdispDrawThickLine(0,middle + 20, 320, middle +20, Red, 2, FALSE);
     
   gdispDrawStringBox (0,
-		      (gdispGetHeight() / 2) - (gdispGetFontMetric(fontFF, fontHeight) / 2),
+		      middle - (gdispGetFontMetric(fontFF, fontHeight) >> 1),
 		      gdispGetWidth(),
 		      gdispGetFontMetric(fontFF, fontHeight),
 		      msg,
