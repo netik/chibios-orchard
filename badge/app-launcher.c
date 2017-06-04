@@ -128,12 +128,6 @@ static void draw_launcher_buttons(struct launcher_list * list) {
         wi.g.height = 20;
         wi.text = "---";
         wi.customDraw = gwinLabelDrawJustifiedCenter;
-#ifdef notdef
-        wi.g.width = 80;
-        wi.g.show = TRUE;
-        wi.customParam = 0;
-        wi.customStyle = 0;
-#endif
         list->ghLabels[(i*LAUNCHER_COLS)+j] = gwinLabelCreate(0, &wi);
       }
   }
@@ -152,15 +146,6 @@ static void draw_launcher_buttons(struct launcher_list * list) {
 
   // create button widget: ghButtonDn
   wi.g.y = 190;
-#ifdef notdef
-  wi.g.show = TRUE;
-  wi.g.x = 270;
-  wi.g.width = 50;
-  wi.g.height = 50;
-  wi.text = "";
-  wi.customParam = 0;
-  wi.customStyle = &DarkPurpleStyle;
-#endif
   wi.customDraw = gwinButtonDraw_ArrowDown;
   list->ghButtonDn = gwinButtonCreate(0, &wi);
   gwinRedraw(list->ghButtonDn);

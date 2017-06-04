@@ -60,6 +60,10 @@
 
 #include "ides_gfx.h"     /* for putimage */
 
+#ifdef MAKE_DTMF
+extern int make_dtmf(void);
+#endif
+
 struct evt_table orchard_events;
 
 uint8_t pee_pbe(void);
@@ -474,6 +478,19 @@ int main(void)
 #ifndef FAST_STARTUP
   if (config->sound_enabled == 1) {
     playStartupSong();
+#ifdef MAKE_DTMF
+    make_dtmf();
+    dacPlay("dtmf-0.raw");
+    dacWait();
+    dacPlay("dtmf-1.raw");
+    dacWait();
+    dacPlay("dtmf-2.raw");
+    dacWait();
+    dacPlay("dtmf-3.raw");
+    dacWait();
+    dacPlay("dtmf-4.raw");
+    dacWait();
+#endif    
     chThdSleepMilliseconds(IMG_SPLASH_DISPLAY_TIME);
   } else {
     chThdSleepMilliseconds(IMG_SPLASH_NO_SOUND_DISPLAY_TIME);

@@ -92,20 +92,10 @@ unsigned long   tetrisScore                                           = 0;
 bool_t          tetrisKeysPressed[5]                                  = {FALSE, FALSE, FALSE, FALSE, FALSE}; // left/down/right/up/pause
 bool_t          tetrisPaused                                          = FALSE;
 bool_t          tetrisGameOver                                        = FALSE;
-font_t          font16;
 font_t          font12;
 gfxThreadHandle tetris_thread;
 
 GEventMouse     ev;
-
-// static void initRng(void) { //STM32 RNG hardware init
-//   rccEnableAHB2(RCC_AHB2ENR_RNGEN, 0);
-//   RNG->CR |= RNG_CR_RNGEN;
-// }
-
-static void initRng(void) {
-  srand(gfxSystemTicks());
-}
 
 static void drawShape(uint8_t color) {
   int i;
@@ -161,17 +151,17 @@ static void tellScore(uint8_t color) {
 
   chsnprintf (pps_str, sizeof(pps_str), "%d", tetrisLines);
   
-  gdispFillArea((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+5, height-50, gdispGetStringWidth(pps_str, font16)+4,  gdispGetCharWidth('A', font16)+2, tetrisShapeColors[0]);
-  gdispDrawString((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+5, height-50, pps_str, font16, tetrisShapeColors[color]);
+  gdispFillArea((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+5, height-50, gdispGetStringWidth(pps_str, font12)+4,  gdispGetCharWidth('A', font12)+2, tetrisShapeColors[0]);
+  gdispDrawString((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+5, height-50, pps_str, font12, tetrisShapeColors[color]);
   chsnprintf (pps_str, sizeof(pps_str), "%d", tetrisScore);
   gdispFillArea(0, 0, gdispGetWidth(),  height-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT)-6, tetrisShapeColors[0]);
 
   gdispDrawStringBox(0,
                      0,
                      TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH,
-                     gdispGetFontMetric(font16, fontHeight),
+                     gdispGetFontMetric(font12, fontHeight),
                      pps_str,
-                     font16,
+                     font12,
                      Lime,
                      justifyRight);
 }
@@ -201,8 +191,8 @@ static void drawCell(int x, int y, uint8_t color) {
 }
 
 static void printText(uint8_t color) {
-  gdispDrawString((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+TETRIS_CELL_WIDTH, gdispGetHeight()-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT), "Next", font16, tetrisShapeColors[color]);
-  gdispDrawString((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+5,   gdispGetHeight()-70, "Lines", font16, tetrisShapeColors[color]);
+  gdispDrawString((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+TETRIS_CELL_WIDTH, gdispGetHeight()-(TETRIS_FIELD_HEIGHT*TETRIS_CELL_HEIGHT), "Next", font12, tetrisShapeColors[color]);
+  gdispDrawString((TETRIS_FIELD_WIDTH*TETRIS_CELL_WIDTH)+5,   gdispGetHeight()-70, "Lines", font12, tetrisShapeColors[color]);
 }
 
 static void printPaused(void) {
@@ -222,12 +212,12 @@ static void printTouchAreas(void) {
   height = gdispGetHeight();
   width = gdispGetWidth();
 
-  gdispDrawStringBox(0, 0, width, gdispGetFontMetric(font16, fontHeight), "Touch Areas", font16, White, justifyCenter);
-  gdispDrawStringBox(0, 0, width, height/4, "Pause", font16, Grey, justifyCenter);
-  gdispDrawStringBox(0, height/4, width, height/2, "Rotate", font16, Grey, justifyCenter);
-  gdispDrawStringBox(0, height-(height/4), width/4, height/4, "Left", font16, Grey, justifyCenter);
-  gdispDrawStringBox(width/4, height-(height/4), width/2, height/4, "Down", font16, Grey, justifyCenter);
-  gdispDrawStringBox(width-(width/4), height-(height/4), width/4, height/4, "Right", font16, Grey, justifyCenter);
+  gdispDrawStringBox(0, 0, width, gdispGetFontMetric(font12, fontHeight), "Touch Areas", font12, White, justifyCenter);
+  gdispDrawStringBox(0, 0, width, height/4, "Pause", font12, Grey, justifyCenter);
+  gdispDrawStringBox(0, height/4, width, height/2, "Rotate", font12, Grey, justifyCenter);
+  gdispDrawStringBox(0, height-(height/4), width/4, height/4, "Left", font12, Grey, justifyCenter);
+  gdispDrawStringBox(width/4, height-(height/4), width/2, height/4, "Down", font12, Grey, justifyCenter);
+  gdispDrawStringBox(width-(width/4), height-(height/4), width/4, height/4, "Right", font12, Grey, justifyCenter);
   gdispDrawLine(0, height/4, width-1, height/4, Grey);
   gdispDrawLine(0, height-height/4, width-1, height-height/4, Grey);
   gdispDrawLine(width/4, height-height/4, width/4, height-1, Grey);
@@ -442,7 +432,6 @@ static DECLARE_THREAD_FUNCTION(thdTetris, arg) {
 }
 
 static void tetrisDeinit(void) {
-  gdispCloseFont(font16);
   gdispCloseFont(font12);
   chThdRelease (tetris_thread);
 }
@@ -473,8 +462,6 @@ void tetrisStart(void) {
 }
 
 void tetrisInit(void) {
-  initRng();
   tetrisNextShapeNum = randomInt(TETRIS_SHAPE_COUNT);
-  font16 = gdispOpenFont("fixed_10x20");
   font12 = gdispOpenFont("fixed_10x20");
 }

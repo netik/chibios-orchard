@@ -41,6 +41,12 @@ USE_OPT += -DENABLE_JOYPAD
 #
 #USE_OPT += -DBLACK_BADGE
 
+# This module will write out DTMF digits as sound files to the SD card.
+# I don't know if we need this or not yet but I've finished the code,
+# so I am checking it in. It consumes a fair amount of flash storage
+# to do this, and it takes time to generate the DTMF audio files
+# USE_OPT += -DMAKE_DTMF
+
 # Enabling this will cause a (factory default) device to stop sending
 # out pings so it cannot be identified. The device will also monitor
 # and dump all pings as JSON for collection purposes. A similar
@@ -177,6 +183,7 @@ CSRC = main.c \
        cmd-unix.c \
        ringbuf.c \
        proto.c \
+       make-dtmf.c \
        app-launcher.c \
        app-name.c \
        app-notify.c \

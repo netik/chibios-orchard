@@ -72,27 +72,17 @@ static void draw_setup_buttons(SetupHandles * p) {
 
   // create checkbox widget: ghCheckAirplane
   wi.g.show = TRUE;
-  wi.g.x = 10;
   wi.g.y = 150;
-  wi.g.width = 180;
-  wi.g.height = 20;
   wi.text = "Airplane Mode";
   wi.customDraw = gwinCheckboxDraw_CheckOnLeft;
-  wi.customParam = 0;
-  wi.customStyle = 0;
   p->ghCheckAirplane = gwinCheckboxCreate(0, &wi);
   gwinCheckboxCheck(p->ghCheckAirplane, config->airplane_mode);
 
   // create checkbox widget: ghCheckRotate
   wi.g.show = TRUE;
-  wi.g.x = 10;
   wi.g.y = 180;
-  wi.g.width = 180;
-  wi.g.height = 20;
   wi.text = "Rotate Badge";
   wi.customDraw = gwinCheckboxDraw_CheckOnLeft;
-  wi.customParam = 0;
-  wi.customStyle = 0;
   p->ghCheckRotate = gwinCheckboxCreate(0, &wi);
   gwinCheckboxCheck(p->ghCheckRotate, config->rotate);
 
@@ -116,8 +106,6 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.g.height = 20;
   wi.text = "LED Pattern";
   wi.customDraw = gwinLabelDrawJustifiedLeft;
-  wi.customParam = 0;
-  wi.customStyle = 0;
   p->ghLabel1 = gwinLabelCreate(0, &wi);
   gwinLabelSetBorder(p->ghLabel1, FALSE);
 
