@@ -194,15 +194,13 @@ int updater (void)
 		f_read (&f, src, UPDATE_SIZE, &br);
 
 		/*
-		 * This fixup is useed to ensure that the flash
+		 * This fixup is used to ensure that the flash
 		 * security bits are set correctly. The words at
 		 * address 0x400 are actually four registers which
 		 * are used to set the security state of the processor.
  		 * These coincide with the cfmprotect region of the
-		 * firmware image which is set by the linker to contain
-		 * the right values to keep the flash unlocked. This
-		 * means that when flashing a properly generated
-		 * firmware image, the flash will always remain unlocked.
+		 * firmware image which is set by the linker. It must
+		 * contain the right values to keep the flash unlocked.
 		 *
 		 * However the updater doesn't have any way to validate
 		 * the image, so it's possible for the user to flash a
@@ -211,7 +209,7 @@ int updater (void)
 		 * brick the badge.
 		 *
 		 * To prevent this, we _always_ force the security
-		 * bits to the unlocked state no matter what the
+		 * bits to the unlocked state here no matter what the
 		 * original file contains.
 		 */
 
