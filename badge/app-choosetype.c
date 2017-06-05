@@ -178,7 +178,6 @@ static void ct_draw_confirm(OrchardAppContext *context) {
   p->ghCancel = gwinButtonCreate(0, &wi);
   
   gwinSetDefaultStyle(&RedButtonStyle, FALSE);
-  gwinWidgetClearInit(&wi);
   wi.g.show = TRUE;
   wi.g.x = 170;
   wi.text = "CONFIRM";
