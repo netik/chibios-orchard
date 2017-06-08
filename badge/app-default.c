@@ -147,16 +147,16 @@ static void draw_stat (DefaultHandles * p,
                        uint16_t x, uint16_t y,
                        char * str1, char * str2) {
   uint16_t lmargin = 141;
-
+  
   gdispDrawStringBox (lmargin + x,
 		      y,
 		      gdispGetFontMetric(p->fontSM, fontMaxWidth)*strlen(str1),
 		      gdispGetFontMetric(p->fontSM, fontHeight),
 		      str1,
 		      p->fontSM, Yellow, justifyLeft);
-  gdispDrawStringBox (lmargin + x + 40,
+  gdispDrawStringBox (lmargin + x + 35,
 		      y,
-                      45,
+                      50,
 		      gdispGetFontMetric(p->fontSM, fontHeight),
 		      str2,
 		      p->fontSM, White, justifyRight);
@@ -470,7 +470,7 @@ static void default_event(OrchardAppContext *context,
           config->hp = maxhp(config->current_type, config->unlocks, config->level);
           configSave(config);
           dacPlay("fight/leveiup.raw");
-          screen_alert_draw(true, "YOU ARE NOW CAESAR!!");
+          screen_alert_draw(true, "YOU ARE NOW CAESAR! 2X XP");
           chThdSleepMilliseconds(ALERT_DELAY);
           gdispClear(Black);
           lastimg = -1;

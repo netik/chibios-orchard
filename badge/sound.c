@@ -124,7 +124,7 @@ void playStartupSong(void) {
 }
 
 void playConfigReset(void) {
-  /* played when you're getting attacked by another player */
+  /* played when a hard factory reset occurs */
   playTone(99, 500);
 }
 
