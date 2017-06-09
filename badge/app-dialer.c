@@ -3,34 +3,151 @@
 #include "ides_gfx.h"
 
 #include "dac_lld.h"
+#include "dac_reg.h"
+#include "pit_lld.h"
+#include "pit_reg.h"
+
+#include <stdint.h>
+#include <math.h>
+#include <string.h>
+
+typedef struct dialer_button {
+	coord_t		button_x;
+	coord_t		button_y;
+	char *		button_text;
+	uint16_t	button_freq_a;
+	uint16_t	button_freq_b;
+	uint16_t	button_samples;
+} DIALER_BUTTON;
+
+/*
+ * Pre-computed sample counts are based on a sample
+ * rate of 32500 Hz.
+ */
+
+#define DIALER_SAMPLERATE 32500
+
+static const DIALER_BUTTON buttons[] =  {
+	{ 10,  10,  "1", 1209, 697, 598 },
+	{ 90,  10,  "2", 1336, 697, 552 },
+	{ 170, 10,  "3", 1477, 697, 506 },
+/*	{ 170, 10,  "A", 1633, 697, 874 }, */
+
+	{ 10,  90,  "4", 1209, 770, 546 },
+	{ 90,  90,  "5", 1336, 770, 168 },
+	{ 170, 90,  "6", 1477, 770, 462 },
+/*	{ 170, 90,  "B", 1633, 770, 798 }, */
+
+	{ 10,  170, "7", 1209, 852, 494 },
+	{ 90,  170, "8", 1336, 852, 456 },
+	{ 170, 170, "9", 1477, 852, 418 },
+/*	{ 170, 170, "C", 1633, 852, 38  }, */
+
+	{ 10,  250, "*", 1209, 941, 442 },
+	{ 90,  250, "0", 1336, 941, 408 },
+	{ 170, 250, "#", 1477, 941, 374 },
+/*	{ 170, 250, "D", 1633, 941, 646 }, */
+	{ 0,   0,   NULL, 0,   0,   0 }
+};
 
 typedef struct _DHandles {
   // GListeners
   GListener glDListener;
 
   // GHandles
-  GHandle ghContainerPage0;
-  GHandle ghButton1;
-  GHandle ghButton2;
-  GHandle ghButton3;
-  GHandle ghButton4;
-  GHandle ghButton5;
-  GHandle ghButton6;
-  GHandle ghButton7;
-  GHandle ghButton8;
-  GHandle ghButton9;
-  GHandle ghStar;
-  GHandle ghButton0;
-  GHandle ghPound;
-  GHandle ghButtonA;
-  GHandle ghButtonB;
-  GHandle ghButtonC;
-  GHandle ghButtonD;
-  GHandle ghButton2600;
-  GHandle ghButtonSwitch;
+  GHandle ghButtons[16];
+
 } DHandles;
 
 static uint32_t last_ui_time = 0;
+
+
+double fast_sin(double x)
+{
+	const double PI	=  3.14159265358979323846264338327950288;
+	const double INVPI =  0.31830988618379067153776752674502872;
+	const double A	 =  0.00735246819687011731341356165096815;
+	const double B	 = -0.16528911397014738207016302002888890;
+	const double C	 =  0.99969198629596757779830113868360584;
+
+	int32_t k;
+	double x2;
+
+	/* find offset of x from the range -pi/2 to pi/2 */
+	k = round (INVPI * x);
+
+	/* bring x into range */
+	x -= k * PI;
+
+	/* calculate sine */
+	x2 = x * x;
+	x = x*(C + x2*(B + A*x2));
+
+	/* if x is in an odd pi count we must flip */
+	if (k % 2) x = -x;
+
+	return x;
+}
+
+static void
+tonePlay (OrchardAppContext *context, uint16_t freqa,
+    uint16_t freqb, uint16_t samples)
+{
+	int i;
+	double fract1;
+	double fract2;
+	double point1;
+	double point2;
+	double result;
+	double pi;
+	uint16_t * buf;
+
+	(void)context;
+
+	buf = chHeapAlloc (NULL, samples * sizeof(uint16_t));
+
+	pi = (3.14159265358979323846264338327950288 * 2);
+
+	fract1 = (double)(pi)/(double)(DIALER_SAMPLERATE/freqa);
+	fract2 = (double)(pi)/(double)(DIALER_SAMPLERATE/freqb);
+
+	for (i = 0; i < samples; i++) {
+		point1 = fract1 * i;
+		point2 = fract2 * i;
+		result = 2048.0 + (fast_sin (point1) * 2047.0);
+		result += 2048.0 + (fast_sin (point2) * 2047.0);
+		buf[i] = (uint16_t)round (result / 2.0);
+	}
+
+	dacStop ();
+
+	chThdSetPriority (ABSPRIO);
+
+	pitEnable (&PIT1, 1);
+
+	CSR_WRITE_4(&PIT1, PIT_LDVAL1,
+ 	    KINETIS_BUSCLK_FREQUENCY / DIALER_SAMPLERATE);
+
+	i = 0;
+	while (1) {
+		dacSamplesPlay (buf, samples);
+		i += samples;
+		if (i > 10000)
+			break;
+		dacSamplesWait ();
+	}
+
+	pitDisable (&PIT1, 1);
+
+	CSR_WRITE_4(&PIT1, PIT_LDVAL1,
+ 	    KINETIS_BUSCLK_FREQUENCY / DAC_SAMPLERATE);
+
+	chThdSetPriority (ORCHARD_APP_PRIO);
+
+	chHeapFree (buf);
+
+	return;
+}
 
 static uint32_t dialer_init(OrchardAppContext *context) {
 	(void)context;
@@ -46,116 +163,39 @@ static uint32_t dialer_init(OrchardAppContext *context) {
 static void draw_keypad(OrchardAppContext *context) {
   DHandles *p;
   GWidgetInit wi;
+  const DIALER_BUTTON * b;
+  int i = 0;
 
   p = context->priv;
   gwinWidgetClearInit(&wi);
 
   wi.g.show = TRUE;
-  wi.g.x = 10;
-  wi.g.y = 10;
   wi.g.width = 60;
   wi.g.height = 60;
-  wi.text = "1";
   wi.customDraw = gwinButtonDraw_Normal;
   wi.customStyle = &RedButtonStyle;
-  p->ghButton1 = gwinButtonCreate(0, &wi);
 
-  // create button widget: ghButton2
-  wi.g.show = TRUE;
-  wi.g.x = 90;
-  wi.g.y = 10;
-  wi.text = "2";
-  wi.customDraw = gwinButtonDraw_Normal;
-  p->ghButton2 = gwinButtonCreate(0, &wi);
+  /* Create button widgets */
 
-  // create button widget: ghButton3
-  wi.g.show = TRUE;
-  wi.g.x = 170;
-  wi.g.y = 10;
-  wi.text = "3";
-  wi.customDraw = gwinButtonDraw_Normal;
-  p->ghButton3 = gwinButtonCreate(0, &wi);
+  for (i = 0; i < 12; i++) {
+    b = &buttons[i];
+    wi.g.x = b->button_x;
+    wi.g.y = b->button_y;
+    wi.text = b->button_text;
+    p->ghButtons[i] = gwinButtonCreate(0, &wi);
+  }
 
-  // create button widget: ghButton4
-  wi.g.show = TRUE;
-  wi.g.x = 10;
-  wi.g.y = 90;
-  wi.text = "4";
-  wi.customDraw = gwinButtonDraw_Normal;
-  p->ghButton4 = gwinButtonCreate(0, &wi);
-
-  // create button widget: ghButton5
-  wi.g.show = TRUE;
-  wi.g.x = 90;
-  wi.g.y = 90;
-  wi.text = "5";
-  wi.customDraw = gwinButtonDraw_Normal;
-  p->ghButton5 = gwinButtonCreate(0, &wi);
-
-  // create button widget: ghButton6
-  wi.g.show = TRUE;
-  wi.g.x = 170;
-  wi.g.y = 90;
-  wi.text = "6";
-  wi.customDraw = gwinButtonDraw_Normal;
-  p->ghButton6 = gwinButtonCreate(0, &wi);
-
-  // create button widget: ghButton7
-  wi.g.show = TRUE;
-  wi.g.x = 10;
-  wi.g.y = 170;
-  wi.text = "7";
-  wi.customDraw = gwinButtonDraw_Normal;
-  p->ghButton7 = gwinButtonCreate(0, &wi);
-
-  // create button widget: ghButton8
-  wi.g.show = TRUE;
-  wi.g.x = 90;
-  wi.g.y = 170;
-  wi.text = "8";
-  wi.customDraw = gwinButtonDraw_Normal;
-  p->ghButton8 = gwinButtonCreate(0, &wi);
-
-  // create button widget: ghButton9
-  wi.g.show = TRUE;
-  wi.g.x = 170;
-  wi.g.y = 170;
-  wi.text = "9";
-  wi.customDraw = gwinButtonDraw_Normal;
-  p->ghButton9 = gwinButtonCreate(0, &wi);
-
-  // create button widget: ghStar
-  wi.g.show = TRUE;
-  wi.g.x = 10;
-  wi.g.y = 250;
-  wi.text = "*";
-  wi.customDraw = gwinButtonDraw_Normal;
-  p->ghStar = gwinButtonCreate(0, &wi);
-
-  // create button widget: ghButton0
-  wi.g.show = TRUE;
-  wi.g.x = 90;
-  wi.g.y = 250;
-  wi.text = "0";
-  wi.customDraw = gwinButtonDraw_Normal;
-  p->ghButton0 = gwinButtonCreate(0, &wi);
-
-  // create button widget: ghPound
-  wi.g.show = TRUE;
-  wi.g.x = 170;
-  wi.g.y = 250;
-  wi.text = "#";
-  wi.customDraw = gwinButtonDraw_Normal;
-  p->ghPound = gwinButtonCreate(0, &wi);
 }
 
 static void dialer_start(OrchardAppContext *context) {
-  gdispClear(Black);
-  gdispSetOrientation (0);
   DHandles *p;
+
   p = chHeapAlloc (NULL, sizeof(DHandles));
   memset(p, 0, sizeof(DHandles));
   context->priv = p;
+
+  gdispClear(Black);
+  gdispSetOrientation (0);
 
   // set up our UI timers and listeners
   last_ui_time = chVTGetSystemTime();
@@ -178,6 +218,7 @@ static void dialer_event(OrchardAppContext *context,
   GEvent * pe;
   DHandles *p;
   p = context->priv;
+  int i;
 
   // timer
   if (event->type == timerEvent) {
@@ -192,63 +233,25 @@ static void dialer_event(OrchardAppContext *context,
   if (event->type == keyEvent) {
     if (event->key.flags == keyPress) {
       // any key to exit
-      gdispSetOrientation (GDISP_DEFAULT_ORIENTATION);
       orchardAppExit();
     }
   }
 
   // ugfx
   if (event->type == ugfxEvent) {
-    char dial='\0';
-    dacWait();
     
     pe = event->ugfx.pEvent;
     last_ui_time = chVTGetSystemTime();
 
-    if (pe->type == GEVENT_GWIN_BUTTON) { 
-      if (((GEventGWinButton*)pe)->gwin == p->ghButton1) {
-        dial = '1';
+    if (pe->type == GEVENT_GWIN_BUTTON) {
+      for (i = 0; i < 12; i++) {
+        if (((GEventGWinButton*)pe)->gwin == p->ghButtons[i])
+          break;
       }
-      if (((GEventGWinButton*)pe)->gwin == p->ghButton2) {
-        dial = '2';
-      }
-      if (((GEventGWinButton*)pe)->gwin == p->ghButton3) {
-        dial = '3';
-      }
-      if (((GEventGWinButton*)pe)->gwin == p->ghButton4) {
-        dial = '4';
-      }
-      if (((GEventGWinButton*)pe)->gwin == p->ghButton5) {
-        dial = '5';
-      }
-      if (((GEventGWinButton*)pe)->gwin == p->ghButton6) {
-        dial = '6';
-      }
-      if (((GEventGWinButton*)pe)->gwin == p->ghButton7) {
-        dial = '7';
-      }
-      if (((GEventGWinButton*)pe)->gwin == p->ghButton8) {
-        dial = '8';
-      }
-      if (((GEventGWinButton*)pe)->gwin == p->ghButton9) {
-        dial = '9';
-      }
-      if (((GEventGWinButton*)pe)->gwin == p->ghButton0) {
-        dial = '0';
-      }
-      if (((GEventGWinButton*)pe)->gwin == p->ghStar) {
-        dial = 's';
-      }
-      if (((GEventGWinButton*)pe)->gwin == p->ghPound) {
-        dial = 'p';
-      }
-
-      // end
-      if (dial != '\0') {
-        char dialstr[14];
-
-        chsnprintf(dialstr,sizeof(dialstr),"dtmf-%c.raw", dial);
-        dacPlay(dialstr);
+      if (i != 12) {
+        dacWait ();
+        tonePlay (context, buttons[i].button_freq_a,
+            buttons[i].button_freq_b, buttons[i].button_samples);
       }
     }
   }
@@ -258,29 +261,19 @@ static void dialer_event(OrchardAppContext *context,
 static void dialer_exit(OrchardAppContext *context) {
   DHandles *p;
   p = context->priv;
+  int i;
 
-  gwinDestroy(p->ghContainerPage0);
-  gwinDestroy(p->ghButton1);
-  gwinDestroy(p->ghButton2);
-  gwinDestroy(p->ghButton3);
-  gwinDestroy(p->ghButton4);
-  gwinDestroy(p->ghButton5);
-  gwinDestroy(p->ghButton6);
-  gwinDestroy(p->ghButton7);
-  gwinDestroy(p->ghButton8);
-  gwinDestroy(p->ghButton9);
-  gwinDestroy(p->ghStar);
-  gwinDestroy(p->ghPound);
+  for (i = 0; i < 12; i++)
+      gwinDestroy(p->ghButtons[i]);
 
   geventDetachSource (&p->glDListener, NULL);
   geventRegisterCallback (&p->glDListener, NULL, NULL);
 
-  chHeapFree (context->priv);
+  chHeapFree (p);
   context->priv = NULL;
 
+  gdispSetOrientation (GDISP_DEFAULT_ORIENTATION);
 }
 
-orchard_app("Dialer", "phone.rgb", 0, dialer_init,
+orchard_app("Dialer", "mplay.rgb", 0, dialer_init,
              dialer_start, dialer_event, dialer_exit, 9999);
-
-  

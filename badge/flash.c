@@ -1,40 +1,45 @@
-#include "ch.h"
-#include "hal.h"
-
-#include "orchard.h"
-#include "chprintf.h"
-#include "orchard-app.h"
-
-#include "flash.h"
-
-uint32_t gCallBackCnt; /* global counter in callback(). */
-
-/*
- * The Freescale flash code provides the option of moving the flash
- * command code to RAM, in the event that we want to modify a section
- * of the flash that contains code. (This is so we don't potentially pull
- * the rug out from under ourselves.) We never encounter this scenario
- * however, so we turn this option off in order to save the RAM.
+/*-
+ * Copyright (c) 2016
+ *      Bill Paul <wpaul@windriver.com>.  All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. All advertising materials mentioning features or use of this software
+ *    must display the following acknowledgement:
+ *      This product includes software developed by Bill Paul.
+ * 4. Neither the name of the author nor the names of any co-contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY Bill Paul AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL Bill Paul OR THE VOICES IN HIS HEAD
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+ * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef FLASH_USE_RAM
-pFLASHCOMMANDSEQUENCE g_FlashLaunchCommand = (pFLASHCOMMANDSEQUENCE)0xFFFFFFFF;
-/* array to copy __Launch_Command func to RAM */
-uint16_t __ram_func[LAUNCH_CMD_SIZE/2];
-uint16_t __ram_for_callback[CALLBACK_SIZE/2]; /* length of this array depends on total size of the functions need to be copied to RAM*/
-#else
-const pFLASHCOMMANDSEQUENCE g_FlashLaunchCommand = FlashCommandSequence;
-#endif
+#include "ch.h"
+#include "hal.h"
+#include "flash.h"
 
-#ifdef FLASH_USE_RAM
-static void callback(void);
-extern uint32_t RelocateFunction(uint32_t dest, uint32_t size, uint32_t src);
+#include "SSD_FTFx.h"
 
-// Freescale's Flash Standard Software Driver Structure
+static pFLASHCOMMANDSEQUENCE g_FlashLaunchCommand = FlashCommandSequence;
+
+/* Freescale's Flash Standard Software Driver Structure */
 static FLASH_SSD_CONFIG flashSSDConfig =
-#else
-static const FLASH_SSD_CONFIG flashSSDConfig =
-#endif
 {
     FTFx_REG_BASE,          /* FTFx control register base */
     P_FLASH_BASE,           /* base address of PFlash block */
@@ -47,157 +52,52 @@ static const FLASH_SSD_CONFIG flashSSDConfig =
     NULL_CALLBACK           /* pointer to callback function */
 };
 
-// offset is in bytes
-// sectorCount is in sectors
-int8_t flashErase(uint32_t offset, uint16_t sectorCount) {
-  uint32_t destination;          // sector number of target
-  uint32_t end;
-  uint16_t number;               /* Number of longword or phrase to be program or verify*/
-  uint32_t margin_read_level;    /* 0=normal, 1=user - margin read for reading 1's */
-  uint32_t ret;
-  int8_t retval = F_ERR_OK;
-  
-  destination = offset;
-  end = destination + (uint32_t) sectorCount;
-
-  if( destination < F_USER_SECTOR_START ) {
-    chprintf(stream, "User sectors start at %d, aborting.\n\r", F_USER_SECTOR_START);
-    retval = F_ERR_RANGE;
-    return retval;
-  }
-  if( end > ((flashSSDConfig.PFlashBase + flashSSDConfig.PFlashSize) / FTFx_PSECTOR_SIZE) ) {
-    chprintf(stream, "Too many sectors requested, end at %d but we only have %d sectors.\n\r",
-	     end, (flashSSDConfig.PFlashBase + flashSSDConfig.PFlashSize) / FTFx_PSECTOR_SIZE);
-    retval = F_ERR_RANGE;
-    return retval;
-  }
-  
-  //  chprintf(stream, "Erasing sectors %d - %d\n\r", destination, end - 1);
-  
-  while (destination < end) {
-    chSysLock();
-    ret = FlashEraseSector((PFLASH_SSD_CONFIG)&flashSSDConfig,
-			   destination * FTFx_PSECTOR_SIZE,
-			   FTFx_PSECTOR_SIZE, g_FlashLaunchCommand);
-    chSysUnlock();
-    if (FTFx_OK != ret) {
-      retval = F_ERR_LOWLEVEL;
-      return retval;
-    }
-
-    /* Verify section for several sector of PFLASH */
-    number = FTFx_PSECTOR_SIZE/FSL_FEATURE_FLASH_PFLASH_SECTION_CMD_ADDRESS_ALIGMENT;
-    // margin level = 0 normal, 1 user, 2 factory
-    // factory is most stringent and only good on first P/E cycle
-    // user level will detect if we're approaching normal margin, e.g. running out of margin
-    for(margin_read_level = 0; margin_read_level < 0x2; margin_read_level++) {
-      chSysLock();
-      ret = FlashVerifySection((PFLASH_SSD_CONFIG)&flashSSDConfig,
-			       destination * FTFx_PSECTOR_SIZE,
-			       number, margin_read_level,
-			       g_FlashLaunchCommand);
-      chSysUnlock();
-      if (FTFx_OK != ret) {
-	chprintf( stream, "Erase verify failed (%d), margin read level: %d\n\r", ret, margin_read_level );
-	retval = F_ERR_LOWLEVEL;
-      }
-    }
-
-    //    chprintf(stream, "  Erased sector %d...\n\r", destination );
-    destination++;
-  }
-
-  return retval;
-}
-
-void flashStart(void) {
-  uint32_t ret;
-  
-  gCallBackCnt = 0;
-  
-  ret = FlashInit((PFLASH_SSD_CONFIG)&flashSSDConfig);
-  if (FTFx_OK != ret)  {
-    chprintf(stream, "Flash init failed\n\r");
-  }
-
-#ifdef FLASH_USE_RAM
-  // Set callbacks -- copy from FLASH to RAM (in case of programming sectors where code is located)
-  flashSSDConfig.CallBack = (PCALLBACK)RelocateFunction((uint32_t)__ram_for_callback , CALLBACK_SIZE , (uint32_t)callback);
-  g_FlashLaunchCommand = (pFLASHCOMMANDSEQUENCE)RelocateFunction((uint32_t)__ram_func , LAUNCH_CMD_SIZE ,(uint32_t)FlashCommandSequence);
-#endif
-
-}
-
-uint32_t flashGetSecurity(void) {
-  uint8_t  securityStatus; 
-  uint32_t ret;
-
-  securityStatus = 0x0;
-  ret = FlashGetSecurityState((PFLASH_SSD_CONFIG)&flashSSDConfig,
-			      &securityStatus);
-
-  return ret;
-}
-
-// src, dst are pointers to physical memory locations, not sectors
-// count is in bytes
-int8_t flashProgram(uint8_t *src, uint8_t *dest, uint32_t count) {
-  int8_t retval = F_ERR_OK;
-  uint8_t noterased = 0;
-  uint32_t i;
-  uint32_t ret;
-  uint32_t failaddr;
-
-  if( count == 0 )  // do nothing if our count is 0
-    return retval;
-  
-  // check if dest, dest+count is in the user-designated area of FLASH
-  if( ((uint32_t) dest < (F_USER_SECTOR_START * FTFx_PSECTOR_SIZE)) ||
-      (((uint32_t) dest + count) > (flashSSDConfig.PFlashBase + flashSSDConfig.PFlashSize)) ) {
-    return F_ERR_RANGE;
-  }
-
-  // check if number of bytes to write & destination is word-aligned
-  if( ((count % 4) != 0) || (( ((uint32_t) dest) % 4) != 0) ) {
-    return F_ERR_NOTALIGN;
-  }
-
-  // check that the destination bytes have been erased
-  // we can't re-program over 0's, it will overstress the Flash (per user manual spec)
-  for( i = 0; i < count; i++ ) {
-    if( dest[i] != 0xFF )
-      noterased = 1;
-  }
-  if( noterased )
-    return F_ERR_NOTBLANK;
-
-  chSysLock();
-  ret = FlashProgram((PFLASH_SSD_CONFIG)&flashSSDConfig,
-		     (uint32_t) dest, count, src, g_FlashLaunchCommand);
-  chSysUnlock();
-  
-  if (FTFx_OK != ret)
-    return F_ERR_LOWLEVEL;
-
-  // user margin is more strict than normal margin -- data can be read still if
-  // this fails, but indicates flash is wearing out
-  chSysLock();
-  ret = FlashProgramCheck((PFLASH_SSD_CONFIG)&flashSSDConfig,
-			  (uint32_t) dest, count, src, &failaddr,
-			  READ_USER_MARGIN, g_FlashLaunchCommand);
-  chSysUnlock();
-  
-  if (FTFx_OK != ret) {
-    chprintf( stream, "Failed programming verification at USER margin levels: worry a little bit. Failure address: %08x\n\r", failaddr );
-    return F_ERR_U_MARGIN;
-  }
-
-  return retval;
-}
-
-#ifdef FLASH_USE_RAM
-static void callback(void)
+void
+flashStart (void)
 {
-  // empty for now
+	FlashInit ((PFLASH_SSD_CONFIG)&flashSSDConfig);
+	return;
 }
-#endif
+
+int8_t
+flashErase (uint32_t offset, uint16_t count)
+{
+	int8_t r;
+	uint8_t * buf;
+
+	buf = (uint8_t *) (P_FLASH_BASE + (FTFx_PSECTOR_SIZE * offset));
+
+	chSysLock ();
+	r = FlashEraseSector ((PFLASH_SSD_CONFIG)&flashSSDConfig,
+	    (uint32_t)buf, FTFx_PSECTOR_SIZE * count,
+	    g_FlashLaunchCommand);
+	chSysUnlock ();
+
+	return (r);
+}
+
+int8_t
+flashProgram (uint8_t * src, uint8_t * dst, uint32_t count)
+{
+	int8_t r;
+
+	chSysLock ();
+ 	r = FlashProgram ((PFLASH_SSD_CONFIG)&flashSSDConfig,
+	    (uint32_t) dst, count, src, g_FlashLaunchCommand);
+	chSysUnlock ();
+
+	return (r);
+}
+
+uint32_t
+flashGetSecurity (void)
+{
+	uint8_t  securityStatus; 
+	uint32_t ret;
+
+	securityStatus = 0x0;
+	ret = FlashGetSecurityState ((PFLASH_SSD_CONFIG)&flashSSDConfig,
+	    &securityStatus);
+
+	return ret;
+}
