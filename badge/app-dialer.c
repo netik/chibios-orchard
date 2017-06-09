@@ -264,7 +264,7 @@ static void dialer_exit(OrchardAppContext *context) {
   p = context->priv;
   int i;
 
-  for (i = 0; i < 12; i++)
+  for (i = 0; i < DIALER_MAXBUTTONS; i++)
       gwinDestroy(p->ghButtons[i]);
 
   geventDetachSource (&p->glDListener, NULL);
