@@ -26,27 +26,28 @@ typedef struct dialer_button {
  */
 
 #define DIALER_SAMPLERATE 32500
+#define DIALER_MAXBUTTONS 16
 
 static const DIALER_BUTTON buttons[] =  {
 	{ 0,   0,  "1", 1209, 697, 598 },
 	{ 60,  0,  "2", 1336, 697, 552 },
 	{ 120, 0,  "3", 1477, 697, 506 },
-/*	{ 170, 10,  "A", 1633, 697, 874 }, */
+	{ 180, 0,  "A", 1633, 697, 874 }, 
 
 	{ 0,   60,  "4", 1209, 770, 546 },
 	{ 60,  60,  "5", 1336, 770, 168 },
 	{ 120, 60,  "6", 1477, 770, 462 },
-/*	{ 170, 90,  "B", 1633, 770, 798 }, */
+	{ 180, 60,  "B", 1633, 770, 798 }, 
 
 	{ 0,   120, "7", 1209, 852, 494 },
 	{ 60,  120, "8", 1336, 852, 456 },
 	{ 120, 120, "9", 1477, 852, 418 },
-/*	{ 170, 170, "C", 1633, 852, 38  }, */
+	{ 180, 120, "C", 1633, 852, 38  }, 
 
 	{ 0,   180, "*", 1209, 941, 442 },
 	{ 60,  180, "0", 1336, 941, 408 },
-	{ 120, 180, "#", 1477, 941, 374 },
-/*	{ 170, 250, "D", 1633, 941, 646 }, */
+        { 120, 180, "#", 1477, 941, 374 },
+	{ 180, 180, "D", 1633, 941, 646 }, 
 	{ 0,   0,   NULL, 0,   0,   0 }
 };
 
@@ -177,7 +178,7 @@ static void draw_keypad(OrchardAppContext *context) {
 
   /* Create button widgets */
 
-  for (i = 0; i < 12; i++) {
+  for (i = 0; i < DIALER_MAXBUTTONS; i++) {
     b = &buttons[i];
     wi.g.x = b->button_x;
     wi.g.y = b->button_y;
@@ -244,7 +245,7 @@ static void dialer_event(OrchardAppContext *context,
     last_ui_time = chVTGetSystemTime();
 
     if (pe->type == GEVENT_GWIN_BUTTON) {
-      for (i = 0; i < 12; i++) {
+      for (i = 0; i < DIALER_MAXBUTTONS; i++) {
         if (((GEventGWinButton*)pe)->gwin == p->ghButtons[i])
           break;
       }
