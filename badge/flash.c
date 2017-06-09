@@ -36,10 +36,10 @@
 
 #include "SSD_FTFx.h"
 
-static pFLASHCOMMANDSEQUENCE g_FlashLaunchCommand = FlashCommandSequence;
+static const pFLASHCOMMANDSEQUENCE g_FlashLaunchCommand = FlashCommandSequence;
 
 /* Freescale's Flash Standard Software Driver Structure */
-static FLASH_SSD_CONFIG flashSSDConfig =
+static const FLASH_SSD_CONFIG flashSSDConfig =
 {
     FTFx_REG_BASE,          /* FTFx control register base */
     P_FLASH_BASE,           /* base address of PFlash block */

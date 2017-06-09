@@ -26,13 +26,13 @@ typedef struct dialer_button {
  */
 
 #define DIALER_SAMPLERATE 32500
-#define DIALER_MAXBUTTONS 16
+#define DIALER_MAXBUTTONS 19
 
 static const DIALER_BUTTON buttons[] =  {
-	{ 0,   0,  "1", 1209, 697, 598 },
-	{ 60,  0,  "2", 1336, 697, 552 },
-	{ 120, 0,  "3", 1477, 697, 506 },
-	{ 180, 0,  "A", 1633, 697, 874 }, 
+	{ 0,   0,   "1", 1209, 697, 598 },
+	{ 60,  0,   "2", 1336, 697, 552 },
+	{ 120, 0,   "3", 1477, 697, 506 },
+	{ 180, 0,   "A", 1633, 697, 874 }, 
 
 	{ 0,   60,  "4", 1209, 770, 546 },
 	{ 60,  60,  "5", 1336, 770, 168 },
@@ -47,8 +47,40 @@ static const DIALER_BUTTON buttons[] =  {
 	{ 0,   180, "*", 1209, 941, 442 },
 	{ 60,  180, "0", 1336, 941, 408 },
         { 120, 180, "#", 1477, 941, 374 },
-	{ 180, 180, "D", 1633, 941, 646 }, 
-	{ 0,   0,   NULL, 0,   0,   0 }
+	{ 180, 180, "D", 1633, 941, 646 },
+
+	{ 0,   240, "2600",  2600, 0,    299  },
+#ifdef BLUEBOX
+	{ 130, 240, "Blue Box", 0, 0,    0    },
+#else
+	{ 130, 240, "",      0,    0,    0    },
+#endif
+	{ 70,  280, "Exit",  0,    0,    0    },
+#ifdef BLUEBOX
+	{ 0,   0,   "1",     700,  900,  442  },
+	{ 60,  0,   "2",     700,  1100, 408  },
+	{ 120, 0,   "3",     900,  1100, 374  },
+	{ 180, 0,   "KP1",   1100, 1700, 646  }, 
+
+	{ 0,   60,  "4",     700,  1300, 1150 },
+	{ 60,  60,  "5",     900,  1300, 900  },
+	{ 120, 60,  "6",     1100, 1300, 725  },
+	{ 180, 60,  "KP2",   1300, 1700, 475  }, 
+
+	{ 0,   120, "7",     700,  1500, 966  },
+	{ 60,  120, "8",     900,  1500, 252  },
+	{ 120, 120, "9",     1100, 1500, 609  },
+	{ 180, 120, "ST",    1500, 1700, 399  }, 
+
+	{ 0,   180, "Code1", 700,  1700, 874  },
+	{ 60,  180, "0",     1300, 1500, 525  },
+        { 120, 180, "Code2", 900,  1700, 684  },
+	{ 180, 180,  "",     0,    0,    0    },
+
+	{ 0,   240, "2600",  2600, 0,    299   },
+	{ 130, 240, "Silver Box",0,0,    0    },
+	{ 70,  280, "Exit",  0,    0,    0    }
+#endif
 };
 
 typedef struct _DHandles {
@@ -56,8 +88,9 @@ typedef struct _DHandles {
   GListener glDListener;
 
   // GHandles
-  GHandle ghButtons[16];
+  GHandle ghButtons[DIALER_MAXBUTTONS];
 
+  int mode;
 } DHandles;
 
 static uint32_t last_ui_time = 0;
@@ -103,6 +136,9 @@ tonePlay (OrchardAppContext *context, uint16_t freqa,
 	double pi;
 	uint16_t * buf;
 
+	if (freqa == 0 && freqa == 0)
+		return;
+
 	(void)context;
 
 	buf = chHeapAlloc (NULL, samples * sizeof(uint16_t));
@@ -110,14 +146,18 @@ tonePlay (OrchardAppContext *context, uint16_t freqa,
 	pi = (3.14159265358979323846264338327950288 * 2);
 
 	fract1 = (double)(pi)/(double)(DIALER_SAMPLERATE/freqa);
-	fract2 = (double)(pi)/(double)(DIALER_SAMPLERATE/freqb);
+	if (freqb)
+		fract2 = (double)(pi)/(double)(DIALER_SAMPLERATE/freqb);
 
 	for (i = 0; i < samples; i++) {
 		point1 = fract1 * i;
-		point2 = fract2 * i;
 		result = 2048.0 + (fast_sin (point1) * 2047.0);
-		result += 2048.0 + (fast_sin (point2) * 2047.0);
-		buf[i] = (uint16_t)round (result / 2.0);
+		if (freqb) {
+			point2 = fract2 * i;
+			result += 2048.0 + (fast_sin (point2) * 2047.0);
+			result /= 2.0;
+		}
+		buf[i] = (uint16_t)round (result);
 	}
 
 	dacStop ();
@@ -160,12 +200,13 @@ static uint32_t dialer_init(OrchardAppContext *context) {
 
 	return (0);
 }
-
 static void draw_keypad(OrchardAppContext *context) {
   DHandles *p;
   GWidgetInit wi;
+
   const DIALER_BUTTON * b;
-  int i = 0;
+  int i;
+  int off = 0;
 
   p = context->priv;
   gwinWidgetClearInit(&wi);
@@ -174,18 +215,39 @@ static void draw_keypad(OrchardAppContext *context) {
   wi.g.width = 60;
   wi.g.height = 60;
   wi.customDraw = gwinButtonDraw_Normal;
-  wi.customStyle = &RedButtonStyle;
 
   /* Create button widgets */
+#ifdef BLUEBOX
+  if (p->mode) {
+    wi.customStyle = &DarkPurpleFilledStyle;
+    off = DIALER_MAXBUTTONS;
+  } else
+#endif
+    wi.customStyle = &RedButtonStyle;
 
   for (i = 0; i < DIALER_MAXBUTTONS; i++) {
-    b = &buttons[i];
+    if (i > 15) {
+      wi.g.width = 110;
+      wi.g.height = 40;
+    }
+    b = &buttons[i + off];
     wi.g.x = b->button_x;
     wi.g.y = b->button_y;
     wi.text = b->button_text;
-    p->ghButtons[i] = gwinButtonCreate(0, &wi);
+    p->ghButtons[i] = gwinButtonCreate (0, &wi);
   }
 
+}
+
+static void destroy_keypad(OrchardAppContext *context) {
+  DHandles *p;
+  int i;
+  p = context->priv;
+
+  for (i = 0; i < DIALER_MAXBUTTONS; i++)
+      gwinDestroy (p->ghButtons[i]);
+
+  return;
 }
 
 static void dialer_start(OrchardAppContext *context) {
@@ -249,8 +311,19 @@ static void dialer_event(OrchardAppContext *context,
         if (((GEventGWinButton*)pe)->gwin == p->ghButtons[i])
           break;
       }
-      if (i != DIALER_MAXBUTTONS) {
-        dacWait ();
+      if (i == 18) {
+        orchardAppExit();
+      } else if (i == 17) {
+#ifdef BLUEBOX
+        p->mode = !p->mode;
+        destroy_keypad (context);
+        draw_keypad (context);
+#else
+	return;
+#endif
+      } else {
+        if (p->mode)
+          i += DIALER_MAXBUTTONS;
         tonePlay (context, buttons[i].button_freq_a,
             buttons[i].button_freq_b, buttons[i].button_samples);
       }
@@ -262,10 +335,8 @@ static void dialer_event(OrchardAppContext *context,
 static void dialer_exit(OrchardAppContext *context) {
   DHandles *p;
   p = context->priv;
-  int i;
 
-  for (i = 0; i < DIALER_MAXBUTTONS; i++)
-      gwinDestroy(p->ghButtons[i]);
+  destroy_keypad (context);
 
   geventDetachSource (&p->glDListener, NULL);
   geventRegisterCallback (&p->glDListener, NULL, NULL);
