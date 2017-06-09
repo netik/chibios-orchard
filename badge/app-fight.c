@@ -76,7 +76,7 @@ static uint16_t calc_xp_gain(uint8_t won) {
   //
   //  >=  3 = 2x XP     RED
   //  >=  2 = 1.50x XP  ORG
-  //  >=  1 = 1.25x XP  ORG/YEL
+  //  >=  1 = 1.25x XP  YEL
   //  ==  0 = 1x XP     GREEN
   //  <= -1 = .75x XP   GREY
   //  <= -2 = .25x XP   GREY
@@ -106,9 +106,13 @@ static uint16_t calc_xp_gain(uint8_t won) {
     if (current_enemy.current_type == p_caesar) {
       factor = factor + 1;
     }
-    
+    if (config->current_type == p_caesar) { 
+      // caesar is a dick and always gets 2x XP
+      factor = 2;
+    }
     return (80 + ((config->level-1) * 16)) * factor;
-  } else {
+  } 
+  else {
     // someone killed you, so you get much less XP, but we will give
     // some extra XP if someone higher than you killed you.
     if (factor < 1)
@@ -1412,7 +1416,7 @@ static void draw_attack_buttons(void) {
   
   // create button widget: ghAttackHi
   wi.g.show = TRUE;
-  wi.g.x = 180;
+  wi.g.x = 160;
   wi.g.y = 50;
   wi.g.width = 140;
   wi.g.height = 59;
