@@ -1,0 +1,398 @@
+#include <string.h>
+#include "orchard-app.h"
+#include "ides_gfx.h"
+#include "dac_lld.h"
+#include "ch.h"
+#include "hal.h"
+#include "tpm_lld.h"
+#include "kinetis_tpm.h"
+
+/* app-dialer.c
+ * 
+ * An implementation of a Red box, Blue box, and 2600Hz generator 
+*/
+
+typedef struct _DHandles {
+  // GListeners
+  GListener glDListener;
+
+  uint8_t mode; // 0 = silver box, 1 = blue box
+
+  // GHandles
+  GHandle ghButton0;
+  GHandle ghButton1;
+  GHandle ghButton2;
+  GHandle ghButton3;
+  GHandle ghButton4;
+  GHandle ghButton5;
+  GHandle ghButton6;
+  GHandle ghButton7;
+  GHandle ghButton8;
+  GHandle ghButton9;
+  GHandle ghButtonA;
+  GHandle ghButtonB;
+  GHandle ghButtonC;
+  GHandle ghButtonD;
+  GHandle ghButton2600;
+  GHandle ghModeSwitch;
+  GHandle ghStar;
+  GHandle ghPound;
+  GHandle ghExit;
+} DHandles;
+
+static uint32_t last_ui_time = 0;
+
+/* prototypes */
+static void dialer_build_ui(OrchardAppContext *);
+static void dialer_destroy_ui(OrchardAppContext *);
+
+static uint32_t dialer_init(OrchardAppContext *context) {
+  (void)context;
+  
+  /*
+   * We don't want any extra stack space allocated for us.
+   * We'll use the heap.
+   */
+  
+  return (0);
+}
+
+static void dialer_build_ui(OrchardAppContext *context) {
+  DHandles *p;
+  GWidgetInit wi;
+
+  p = context->priv;
+  gwinWidgetClearInit(&wi);
+
+  // create button widget: ghButton1
+  wi.g.show = TRUE;
+  wi.g.x = 0;
+  wi.g.y = 0;
+  wi.g.width = 60;
+  wi.g.height = 60;
+  wi.text = "1";
+  wi.customDraw = gwinButtonDraw_Normal;
+  if (p->mode) {
+    wi.customStyle = &DarkPurpleFilledStyle;
+  } else {
+    wi.customStyle = &RedButtonStyle;
+  }
+  p->ghButton1 = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghButton2
+  wi.g.show = TRUE;
+  wi.g.x = 60;
+  wi.text = "2";
+  p->ghButton2 = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghButton3
+  wi.g.show = TRUE;
+  wi.g.x = 120;
+  wi.text = "3";
+  p->ghButton3 = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghButton4
+  wi.g.show = TRUE;
+  wi.g.x = 0;
+  wi.g.y = 60;
+  wi.text = "4";
+  p->ghButton4 = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghButton5
+  wi.g.show = TRUE;
+  wi.g.x = 60;
+  wi.text = "5";
+  p->ghButton5 = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghButton6
+  wi.g.show = TRUE;
+  wi.g.x = 120;
+  wi.text = "6";
+  p->ghButton6 = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghButton7
+  wi.g.show = TRUE;
+  wi.g.x = 0;
+  wi.g.y = 120;
+  wi.text = "7";
+  p->ghButton7 = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghButton8
+  wi.g.show = TRUE;
+  wi.g.x = 60;
+  wi.text = "8";
+  p->ghButton8 = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghButton9
+  wi.g.show = TRUE;
+  wi.g.x = 120;
+  wi.text = "9";
+  p->ghButton9 = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghStar
+  wi.g.show = TRUE;
+  wi.g.x = 0;
+  wi.g.y = 180;
+  wi.text = "*";
+  p->ghStar = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghButton0
+  wi.g.show = TRUE;
+  wi.g.x = 60;
+  wi.text = "0";
+  p->ghButton0 = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghPound
+  wi.g.show = TRUE;
+  wi.g.x = 120;
+  wi.text = "#";
+  p->ghPound = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghButtonA
+  wi.g.show = TRUE;
+  wi.g.x = 180;
+  wi.g.y = 0;
+  wi.text = p->mode ? "KP1" : "A";
+  wi.customDraw = gwinButtonDraw_Normal;
+  p->ghButtonA = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghButtonB
+  wi.g.show = TRUE;
+  wi.g.y = 60;
+  wi.text = p->mode ? "KP2" : "B";
+  wi.customDraw = gwinButtonDraw_Normal;
+  p->ghButtonB = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghButtonC
+  wi.g.show = TRUE;
+  wi.g.y = 120;
+  wi.text = p->mode ? "ST" : "C";
+  p->ghButtonC = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghButtonD
+  wi.g.show = TRUE;
+  wi.g.y = 180;
+  wi.text = p->mode ? "ST2" : "D";
+  p->ghButtonD = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghButton2600
+  wi.g.show = TRUE;
+  wi.g.x = 0;
+  wi.g.y = 240;
+  wi.g.width = 110;
+  wi.g.height = 40;
+  wi.text = "2600Hz";
+  p->ghButton2600 = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghModeSwitch
+  wi.g.show = TRUE;
+  wi.g.x = 130;
+  if (p->mode) {
+    wi.text = "Silver Box";
+  } else {
+    wi.text = "Blue Box";
+  }
+  p->ghModeSwitch = gwinButtonCreate(0, &wi);
+
+  // create button widget: ghExit
+  wi.g.show = TRUE;
+  wi.g.x = 70;
+  wi.g.y = 280;
+  wi.g.width = 110;
+  wi.g.height = 40;
+  wi.text = "Exit";
+  p->ghExit = gwinButtonCreate(0, &wi);
+}
+
+static void dialer_start(OrchardAppContext *context) {
+  gdispClear(Black);
+  gdispSetOrientation (0);
+  DHandles *p;
+  p = chHeapAlloc (NULL, sizeof(DHandles));
+  memset(p, 0, sizeof(DHandles));
+  context->priv = p;
+
+  // set up our UI timers and listeners
+  last_ui_time = chVTGetSystemTime();
+
+  dialer_build_ui(context);
+  
+  geventListenerInit(&p->glDListener);
+  gwinAttachListener(&p->glDListener);
+
+  geventRegisterCallback (&p->glDListener,
+                          orchardAppUgfxCallback,
+                          &p->glDListener);
+
+  orchardAppTimer(context, 500000, true);
+}
+
+static void dialer_event(OrchardAppContext *context,
+                       const OrchardAppEvent *event) {
+
+  GEvent * pe;
+  DHandles *p;
+  p = context->priv;
+
+  // timer
+  if (event->type == timerEvent) {
+    // deal with lack of activity
+    if( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) {
+      orchardAppRun(orchardAppByName("Badge"));
+    }
+    return;
+  }
+
+  // joypad
+  if (event->type == keyEvent) {
+    if (event->key.flags == keyPress) {
+      // any key to exit
+      orchardAppExit();
+    }
+  }
+
+  // ugfx
+  if (event->type == ugfxEvent) {
+    char dial='\0';
+    dacWait();
+    
+    pe = event->ugfx.pEvent;
+    last_ui_time = chVTGetSystemTime();
+
+    if (pe->type == GEVENT_GWIN_BUTTON) { 
+      if (((GEventGWinButton*)pe)->gwin == p->ghExit) {
+        orchardAppExit();
+        return;
+      }
+      if (((GEventGWinButton*)pe)->gwin == p->ghButton1) {
+        dial = '1';
+      }
+      if (((GEventGWinButton*)pe)->gwin == p->ghButton2) {
+        dial = '2';
+      }
+      if (((GEventGWinButton*)pe)->gwin == p->ghButton3) {
+        dial = '3';
+      }
+      if (((GEventGWinButton*)pe)->gwin == p->ghButton4) {
+        dial = '4';
+      }
+      if (((GEventGWinButton*)pe)->gwin == p->ghButton5) {
+        dial = '5';
+      }
+      if (((GEventGWinButton*)pe)->gwin == p->ghButton6) {
+        dial = '6';
+      }
+      if (((GEventGWinButton*)pe)->gwin == p->ghButton7) {
+        dial = '7';
+      }
+      if (((GEventGWinButton*)pe)->gwin == p->ghButton8) {
+        dial = '8';
+      }
+      if (((GEventGWinButton*)pe)->gwin == p->ghButton9) {
+        dial = '9';
+      }
+      if (((GEventGWinButton*)pe)->gwin == p->ghButton0) {
+        dial = '0';
+      }
+      if (((GEventGWinButton*)pe)->gwin == p->ghButtonA) {
+        dial = 'a';
+      }
+      if (((GEventGWinButton*)pe)->gwin == p->ghButtonB) {
+        dial = 'b';
+      }
+      if (((GEventGWinButton*)pe)->gwin == p->ghButtonC) {
+        dial = 'c';
+      }
+      if (((GEventGWinButton*)pe)->gwin == p->ghButtonD) {
+        dial = 'd';
+      }
+      if (((GEventGWinButton*)pe)->gwin == p->ghStar) {
+        dial = 's';
+      }
+      if (((GEventGWinButton*)pe)->gwin == p->ghPound) {
+        dial = 'p';
+      }
+      if (((GEventGWinButton*)pe)->gwin == p->ghModeSwitch) {
+        p->mode = !p->mode;
+        dialer_destroy_ui(context);
+        dialer_build_ui(context);
+        return;
+      }      
+      if (((GEventGWinButton*)pe)->gwin == p->ghButton2600) {
+        /* FIXME: I am duplicating some code here from tpm_lld.h;
+           unfortunately we're set up to do notes and not frequencies
+           in that code. */
+
+	/* Disable timer */
+	TPM2->SC &= ~(TPM_SC_CMOD_LPTPM_CLK|TPM_SC_CMOD_LPTPM_EXTCLK);
+
+	/* Set modulus and pulse width */
+	TPM2->MOD = TPM_FREQ / 2600;
+	TPM2->C[TPM2_CHANNEL].V = (TPM_FREQ / 2600) / 2;
+	TPM2->CNT = 0;
+
+	/* Turn on timer for two seconds */
+	TPM2->SC |= TPM_SC_CMOD_LPTPM_CLK;
+        chThdSleepMilliseconds(2000);
+
+        /* turn it off */
+        TPM2->SC &= ~(TPM_SC_CMOD_LPTPM_CLK|TPM_SC_CMOD_LPTPM_EXTCLK);
+	TPM2->CNT = 0;
+      }
+
+      // end
+      if (dial != '\0') {
+        char dialstr[14];
+
+        chsnprintf(dialstr,sizeof(dialstr),"dtmf-%c.raw", dial);
+        dacPlay(dialstr);
+      }
+    }
+  }
+
+}
+
+static void dialer_destroy_ui(OrchardAppContext *context) {
+  DHandles *p;
+  p = context->priv;
+
+  gwinDestroy(p->ghButton0);
+  gwinDestroy(p->ghButton1);
+  gwinDestroy(p->ghButton2);
+  gwinDestroy(p->ghButton3);
+  gwinDestroy(p->ghButton4);
+  gwinDestroy(p->ghButton5);
+  gwinDestroy(p->ghButton6);
+  gwinDestroy(p->ghButton7);
+  gwinDestroy(p->ghButton8);
+  gwinDestroy(p->ghButton9);
+  gwinDestroy(p->ghButtonA);
+  gwinDestroy(p->ghButtonB);
+  gwinDestroy(p->ghButtonC);
+  gwinDestroy(p->ghButtonD);
+  gwinDestroy(p->ghButton2600);
+  gwinDestroy(p->ghModeSwitch);
+  gwinDestroy(p->ghStar);
+  gwinDestroy(p->ghPound);
+  gwinDestroy(p->ghExit);
+}
+
+static void dialer_exit(OrchardAppContext *context) {
+  DHandles *p;
+  p = context->priv;
+
+  dialer_destroy_ui(context);
+
+  geventDetachSource (&p->glDListener, NULL);
+  geventRegisterCallback (&p->glDListener, NULL, NULL);
+
+  chHeapFree (context->priv);
+  context->priv = NULL;
+
+  gdispSetOrientation (GDISP_DEFAULT_ORIENTATION);
+}
+
+orchard_app("Dialer", "phone.rgb", 0, dialer_init,
+             dialer_start, dialer_event, dialer_exit, 9999);
+
+  
