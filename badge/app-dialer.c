@@ -249,7 +249,7 @@ static void dialer_event(OrchardAppContext *context,
         if (((GEventGWinButton*)pe)->gwin == p->ghButtons[i])
           break;
       }
-      if (i != 12) {
+      if (i != DIALER_MAXBUTTONS) {
         dacWait ();
         tonePlay (context, buttons[i].button_freq_a,
             buttons[i].button_freq_b, buttons[i].button_samples);
