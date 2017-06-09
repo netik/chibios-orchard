@@ -42,7 +42,7 @@ static const DIALER_BUTTON buttons[] =  {
 	{ 0,   120, "7", 1209, 852, 494 },
 	{ 60,  120, "8", 1336, 852, 456 },
 	{ 120, 120, "9", 1477, 852, 418 },
-	{ 180, 120, "C", 1633, 852, 38  }, 
+	{ 180, 120, "C", 1633, 852, 304 }, 
 
 	{ 0,   180, "*", 1209, 941, 442 },
 	{ 60,  180, "0", 1336, 941, 408 },
@@ -89,8 +89,9 @@ typedef struct _DHandles {
 
   // GHandles
   GHandle ghButtons[DIALER_MAXBUTTONS];
-
+#ifdef BLUEBOX
   int mode;
+#endif
 } DHandles;
 
 static uint32_t last_ui_time = 0;
@@ -162,7 +163,7 @@ tonePlay (OrchardAppContext *context, uint16_t freqa,
 
 	dacStop ();
 
-	chThdSetPriority (ABSPRIO);
+	chThdSetPriority (NORMALPRIO + 1);
 
 	pitEnable (&PIT1, 1);
 
@@ -322,8 +323,10 @@ static void dialer_event(OrchardAppContext *context,
 	return;
 #endif
       } else {
+#ifdef BLUEBOX
         if (p->mode)
           i += DIALER_MAXBUTTONS;
+#endif
         tonePlay (context, buttons[i].button_freq_a,
             buttons[i].button_freq_b, buttons[i].button_samples);
       }
