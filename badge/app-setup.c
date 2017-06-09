@@ -86,18 +86,6 @@ static void draw_setup_buttons(SetupHandles * p) {
   p->ghCheckRotate = gwinCheckboxCreate(0, &wi);
   gwinCheckboxCheck(p->ghCheckRotate, config->rotate);
 
-  // create button widget: ghButtonPatDn
-  wi.g.show = TRUE;
-  wi.g.x = 260;
-  wi.g.y = 10;
-  wi.g.width = 50;
-  wi.g.height = 40;
-  wi.text = "->";
-  wi.customDraw = gwinButtonDraw_Normal;
-  wi.customParam = 0;
-  wi.customStyle = &DarkPurpleFilledStyle;
-  p->ghButtonPatDn = gwinButtonCreate(0, &wi);
-
   // Create label widget: ghLabel1
   wi.g.show = TRUE;
   wi.g.x = 10;
@@ -114,6 +102,18 @@ static void draw_setup_buttons(SetupHandles * p) {
   wi.text = "";
   p->ghLabelPattern = gwinLabelCreate(0, &wi);
   gwinLabelSetBorder(p->ghLabelPattern, FALSE);
+
+  // create button widget: ghButtonPatDn
+  wi.g.show = TRUE;
+  wi.g.x = 260;
+  wi.g.y = 10;
+  wi.g.width = 50;
+  wi.g.height = 40;
+  wi.text = "->";
+  wi.customDraw = gwinButtonDraw_Normal;
+  wi.customParam = 0;
+  wi.customStyle = &DarkPurpleFilledStyle;
+  p->ghButtonPatDn = gwinButtonCreate(0, &wi);
 
   // create button widget: ghButtonPatUp
   wi.g.x = 200;
