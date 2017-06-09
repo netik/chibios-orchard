@@ -78,6 +78,7 @@ static void cmd_config_show(BaseSequentialStream *chp, int argc, char *argv[])
 }
 
 static void cmd_config_set(BaseSequentialStream *chp, int argc, char *argv[]) {
+  uint32_t val;
   (void)argv;
   (void)argc;
 
@@ -116,65 +117,67 @@ static void cmd_config_set(BaseSequentialStream *chp, int argc, char *argv[]) {
     return;
   }
 
+  val = strtoul (argv[2], NULL, 0);;
+
   if (!strcasecmp(argv[1], "ctype")) {
-    config->current_type = strtoul (argv[2], NULL, 0);
+    config->current_type = val;
     chprintf(chp, "current class set to %d.\r\n", config->current_type);
     return;
   }
 
   if (!strcasecmp(argv[1], "tempcal")) {
-    config->tempcal = strtoul (argv[2], NULL, 0);
+    config->tempcal = val;
     chprintf(chp, "temperature calibration set to %d degrees C.\r\n", config->tempcal);
     return;
   }
 
 #ifdef BLACK_BADGE
   if (!strcasecmp(argv[1], "ptype")) {
-    config->p_type = strtoul (argv[2], NULL, 0);
+    config->p_type = val;
     chprintf(chp, "perm class set to %d.\r\n", config->p_type);
     return;
   }
   if (!strcasecmp(argv[1], "level")) {
-    config->level = strtoul (argv[2], NULL, 0);
+    config->level = val;
     chprintf(chp, "level set to %d.\r\n", config->level);
     return;
   }
 
   if (!strcasecmp(argv[1], "unlocks")) {
-    config->unlocks = strtoul (argv[2], NULL, 0);
+    config->unlocks = val;
     chprintf(chp, "Unlocks set to %d.\r\n", config->unlocks);
     return;
   }
   if (!strcasecmp(argv[1], "hp")) {
-    config->hp = strtoul (argv[2], NULL, 0);
+    config->hp = val;
     chprintf(chp, "HP set to %d.\r\n", config->hp);
     return;
   }
   if (!strcasecmp(argv[1], "xp")) {
-    config->xp = strtoul (argv[2], NULL, 0);
+    config->xp = val;
     chprintf(chp, "XP set to %d.\r\n", config->xp);
     return;
   }
   if (!strcasecmp(argv[1], "agl")) {
-    config->agl = strtoul (argv[2], NULL, 0);
+    config->agl = val;
     chprintf(chp, "agl set to %d.\r\n", config->agl);
     return;
   }
 
   if (!strcasecmp(argv[1], "luck")) {
-    config->luck = strtoul (argv[2], NULL, 0);
+    config->luck = val;
     chprintf(chp, "luck set to %d.\r\n", config->luck);
     return;
   }
 
   if (!strcasecmp(argv[1], "might")) {
-    config->might = strtoul (argv[2], NULL, 0);
+    config->might = val;
     chprintf(chp, "might set to %d.\r\n", config->might);
     return;
   }
 
   if (!strcasecmp(argv[1], "rtc")) {
-    rtc = strtoul (argv[2], NULL, 0);
+    rtc = val;
     rtc_set_at = chVTGetSystemTime();
     chprintf(chp, "rtc set to %d.\r\n", rtc);
     return;
