@@ -208,8 +208,6 @@ musicPlay (MusicHandles * p, char * fname)
 			columnDraw (i, b, 1);
 		}
 
-		chThdSleep (1);
-
 		for (i = 0; i < 128; i++)
 			p->in[i] = buf[i] << 2;
 
@@ -229,14 +227,14 @@ musicPlay (MusicHandles * p, char * fname)
 
 		f_read (&f, buf, DAC_SAMPLES * sizeof(uint16_t), &br);
 
+		dacSamplesWait ();
+
 		if (br == 0)
 			break;
 
 		me = (GEventMouse *)geventEventWait(&gl, 0);
 		if (me != NULL && me->type == GEVENT_TOUCH)
 			break;
-
-		dacSamplesWait ();
 
 	}
 
