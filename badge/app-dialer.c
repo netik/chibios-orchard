@@ -6,7 +6,6 @@
 #include "dac_reg.h"
 #include "pit_lld.h"
 #include "pit_reg.h"
-#include "tpm_lld.h"
 
 #include <stdint.h>
 #include <math.h>
@@ -28,6 +27,7 @@ typedef struct dialer_button {
 
 #define DIALER_SAMPLERATE 32500
 #define DIALER_MAXBUTTONS 19
+#define DIALER_BLUEBOX
 
 static const DIALER_BUTTON buttons[] =  {
 	{ 0,   0,   "1", 1209, 697, 598 },
@@ -50,35 +50,35 @@ static const DIALER_BUTTON buttons[] =  {
         { 120, 180, "#", 1477, 941, 374 },
 	{ 180, 180, "D", 1633, 941, 646 },
 
-	{ 0,   240, "2600",  2600, 0,    299  },
-#ifdef BLUEBOX
+	{ 0,   240, "2600",  2600, 2600, 504  },
+#ifdef DIALER_BLUEBOX
 	{ 130, 240, "Blue Box", 0, 0,    0    },
 #else
 	{ 130, 240, "",      0,    0,    0    },
 #endif
 	{ 70,  280, "Exit",  0,    0,    0    },
-#ifdef BLUEBOX
-	{ 0,   0,   "1",     700,  900,  442  },
+#ifdef DIALER_BLUEBOX
+	{ 0,   0,   "1",     700,  900,  828  },
 	{ 60,  0,   "2",     700,  1100, 408  },
-	{ 120, 0,   "3",     900,  1100, 374  },
-	{ 180, 0,   "KP1",   1100, 1700, 646  }, 
+	{ 120, 0,   "3",     900,  1100, 1044 },
+	{ 180, 0,   "KP1",   1100, 1700, 551  }, 
 
 	{ 0,   60,  "4",     700,  1300, 1150 },
 	{ 60,  60,  "5",     900,  1300, 900  },
 	{ 120, 60,  "6",     1100, 1300, 725  },
-	{ 180, 60,  "KP2",   1300, 1700, 475  }, 
+	{ 180, 60,  "KP2",   1300, 1700, 950  }, 
 
 	{ 0,   120, "7",     700,  1500, 966  },
-	{ 60,  120, "8",     900,  1500, 252  },
+	{ 60,  120, "8",     900,  1500, 504  },
 	{ 120, 120, "9",     1100, 1500, 609  },
-	{ 180, 120, "ST",    1500, 1700, 399  }, 
+	{ 180, 120, "ST",    1500, 1700, 798  }, 
 
 	{ 0,   180, "Code1", 700,  1700, 874  },
 	{ 60,  180, "0",     1300, 1500, 525  },
         { 120, 180, "Code2", 900,  1700, 684  },
 	{ 180, 180,  "",     0,    0,    0    },
 
-	{ 0,   240, "2600",  2600, 0,    299   },
+	{ 0,   240, "2600",  2600, 2600, 504  },
 	{ 130, 240, "Silver Box",0,0,    0    },
 	{ 70,  280, "Exit",  0,    0,    0    }
 #endif
@@ -90,7 +90,7 @@ typedef struct _DHandles {
 
   // GHandles
   GHandle ghButtons[DIALER_MAXBUTTONS];
-#ifdef BLUEBOX
+#ifdef DIALER_BLUEBOX
   int mode;
 #endif
   font_t font;
@@ -140,12 +140,6 @@ tonePlay (uint16_t freqa, uint16_t freqb, uint16_t samples)
 
 	if (freqa == 0 && freqa == 0)
 		return;
-
-	if (freqa == 2600) {
-		pwmToneStart (128);
-		chThdSleepMilliseconds (800);
-		pwmToneStop ();
-	}
 
 	buf = chHeapAlloc (NULL, samples * sizeof(uint16_t));
 
@@ -218,7 +212,7 @@ static void draw_keypad(OrchardAppContext *context) {
   wi.customDraw = gwinButtonDraw_Normal;
 
   /* Create button widgets */
-#ifdef BLUEBOX
+#ifdef DIALER_BLUEBOX
   if (p->mode) {
     wi.customStyle = &DarkPurpleFilledStyle;
     off = DIALER_MAXBUTTONS;
@@ -317,7 +311,7 @@ static void dialer_event(OrchardAppContext *context,
       if (i == 18) {
         orchardAppExit();
       } else if (i == 17) {
-#ifdef BLUEBOX
+#ifdef DIALER_BLUEBOX
         p->mode = !p->mode;
         destroy_keypad (context);
         draw_keypad (context);
@@ -325,7 +319,7 @@ static void dialer_event(OrchardAppContext *context,
 	return;
 #endif
       } else {
-#ifdef BLUEBOX
+#ifdef DIALER_BLUEBOX
         if (p->mode)
           i += DIALER_MAXBUTTONS;
 #endif
