@@ -68,8 +68,11 @@
 
 #include "dma_lld.h"
 
+__attribute__((section(".fsbss")))
 static thread_reference_t dma0Thread;
+__attribute__((section(".fsbss")))
 static thread_reference_t dma1Thread;
+__attribute__((section(".fsbss")))
 static thread_reference_t dma2Thread;
 
 /******************************************************************************

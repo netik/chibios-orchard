@@ -41,6 +41,10 @@
 #include "led.h"
 #include "radio_lld.h"
 
+#ifdef REV2_RADIO_WAR
+#include "tpm_lld.h"
+#endif
+
 #include "buildtime.h"
 
 #include "../updater/updater.h"
@@ -99,6 +103,11 @@ update (void)
 	chSysLock ();
 	chThdSetPriority (ABSPRIO);
 	chSysUnlock ();
+
+#ifdef REV2_RADIO_WAR
+	/* If the rev2 radio workaround is enabled, turn it off */
+	nvicDisableVector (TPM0_IRQn);
+#endif
 
 	/* Stop the radio */
 
@@ -278,6 +287,9 @@ update_event(OrchardAppContext *context, const OrchardAppEvent *event)
 
 	p = context->priv;
 
+	if (event->type == timerEvent)
+		update ();
+
 	if (event->type == ugfxEvent) {
 		pe = event->ugfx.pEvent;
 		if (pe->type == GEVENT_GWIN_BUTTON) {
@@ -291,7 +303,7 @@ update_event(OrchardAppContext *context, const OrchardAppEvent *event)
 				    " UNTIL IT COMPLETES!\n\n"
 				    " THE BADGE WILL REBOOT WHEN\n"
 				    " THE UPDATE IS FINISHED");
-				update ();
+				orchardAppTimer(context, 5000, false);
 			}
 			if (be->gwin == p->ghCANCEL)
 				orchardAppExit ();
