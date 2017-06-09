@@ -1,6 +1,6 @@
-#include <string.h>
 #include "orchard-app.h"
 #include "ides_gfx.h"
+#include "fontlist.h"
 
 #include "dac_lld.h"
 #include "dac_reg.h"
@@ -92,6 +92,7 @@ typedef struct _DHandles {
 #ifdef BLUEBOX
   int mode;
 #endif
+  font_t font;
 } DHandles;
 
 static uint32_t last_ui_time = 0;
@@ -125,8 +126,7 @@ double fast_sin(double x)
 }
 
 static void
-tonePlay (OrchardAppContext *context, uint16_t freqa,
-    uint16_t freqb, uint16_t samples)
+tonePlay (uint16_t freqa, uint16_t freqb, uint16_t samples)
 {
 	int i;
 	double fract1;
@@ -139,8 +139,6 @@ tonePlay (OrchardAppContext *context, uint16_t freqa,
 
 	if (freqa == 0 && freqa == 0)
 		return;
-
-	(void)context;
 
 	buf = chHeapAlloc (NULL, samples * sizeof(uint16_t));
 
@@ -257,9 +255,11 @@ static void dialer_start(OrchardAppContext *context) {
   p = chHeapAlloc (NULL, sizeof(DHandles));
   memset(p, 0, sizeof(DHandles));
   context->priv = p;
+  p->font = gdispOpenFont (FONT_KEYBOARD);
 
   gdispClear(Black);
   gdispSetOrientation (0);
+  gwinSetDefaultFont (p->font);
 
   // set up our UI timers and listeners
   last_ui_time = chVTGetSystemTime();
@@ -327,7 +327,7 @@ static void dialer_event(OrchardAppContext *context,
         if (p->mode)
           i += DIALER_MAXBUTTONS;
 #endif
-        tonePlay (context, buttons[i].button_freq_a,
+        tonePlay (buttons[i].button_freq_a,
             buttons[i].button_freq_b, buttons[i].button_samples);
       }
     }
@@ -340,6 +340,8 @@ static void dialer_exit(OrchardAppContext *context) {
   p = context->priv;
 
   destroy_keypad (context);
+
+  gdispCloseFont (p->font);
 
   geventDetachSource (&p->glDListener, NULL);
   geventRegisterCallback (&p->glDListener, NULL, NULL);
