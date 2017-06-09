@@ -6,6 +6,7 @@
 #include "dac_reg.h"
 #include "pit_lld.h"
 #include "pit_reg.h"
+#include "tpm_lld.h"
 
 #include <stdint.h>
 #include <math.h>
@@ -140,26 +141,27 @@ tonePlay (uint16_t freqa, uint16_t freqb, uint16_t samples)
 	if (freqa == 0 && freqa == 0)
 		return;
 
+	if (freqa == 2600) {
+		pwmToneStart (128);
+		chThdSleepMilliseconds (800);
+		pwmToneStop ();
+	}
+
 	buf = chHeapAlloc (NULL, samples * sizeof(uint16_t));
 
 	pi = (3.14159265358979323846264338327950288 * 2);
 
 	fract1 = (double)(pi)/(double)(DIALER_SAMPLERATE/freqa);
-	if (freqb)
-		fract2 = (double)(pi)/(double)(DIALER_SAMPLERATE/freqb);
+	fract2 = (double)(pi)/(double)(DIALER_SAMPLERATE/freqb);
 
 	for (i = 0; i < samples; i++) {
 		point1 = fract1 * i;
 		result = 2048.0 + (fast_sin (point1) * 2047.0);
-		if (freqb) {
-			point2 = fract2 * i;
-			result += 2048.0 + (fast_sin (point2) * 2047.0);
-			result /= 2.0;
-		}
+		point2 = fract2 * i;
+		result += 2048.0 + (fast_sin (point2) * 2047.0);
+		result /= 2.0;
 		buf[i] = (uint16_t)round (result);
 	}
-
-	dacStop ();
 
 	chThdSetPriority (NORMALPRIO + 1);
 
@@ -327,6 +329,7 @@ static void dialer_event(OrchardAppContext *context,
         if (p->mode)
           i += DIALER_MAXBUTTONS;
 #endif
+	dacStop ();
         tonePlay (buttons[i].button_freq_a,
             buttons[i].button_freq_b, buttons[i].button_samples);
       }
