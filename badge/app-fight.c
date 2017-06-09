@@ -1808,7 +1808,9 @@ static void sendGamePacket(uint8_t opcode) {
   OrchardAppContext *context = instance.context;
   FightHandles *p = instance.context->priv;
   fightpkt packet;
+#ifdef DEBUG_FIGHT_NETWORK
   int res;
+#endif /* DEBUG_FIGHT_NETWORK */
   
   config = getConfig();
   memset (&packet, 0, sizeof(fightpkt));
@@ -1838,12 +1840,15 @@ static void sendGamePacket(uint8_t opcode) {
 
 #ifdef DEBUG_FIGHT_NETWORK
   chprintf(stream, "%ld Transmit (to=%08x): currentstate=%d %s, opcode=0x%x, size=%d\r\n", chVTGetSystemTime()  , current_enemy.netid, current_fight_state, fight_state_name[current_fight_state],  packet.opcode,sizeof(packet));
-#endif /* DEBUG_FIGHT_NETWORK */
+
   res = msgSend(context, &packet);
 
   if (res == -1) {
     chprintf(stream, "transmit fail. packet too big / xmit busy?\r\n");
   }
+#else
+  msgSend(context, &packet);
+#endif /* DEBUG_FIGHT_NETWORK */
 
 }
 
