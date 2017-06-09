@@ -347,5 +347,5 @@ static void dialer_exit(OrchardAppContext *context) {
   gdispSetOrientation (GDISP_DEFAULT_ORIENTATION);
 }
 
-orchard_app("Dialer", "mplay.rgb", 0, dialer_init,
+orchard_app("DTMF Dialer", "mplay.rgb", 0, dialer_init,
              dialer_start, dialer_event, dialer_exit, 9999);
