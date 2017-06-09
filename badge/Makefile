@@ -192,6 +192,7 @@ CSRC = main.c \
        app-unlock.c \
        app-update.c \
        app-credits.c \
+       app-dialer.c \
        app-ledsign.c \
        app-spectrum.c \
        app-video.c \
