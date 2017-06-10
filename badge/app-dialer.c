@@ -25,9 +25,11 @@ typedef struct dialer_button {
  * rate of 32500 Hz.
  */
 
-#define DIALER_SAMPLERATE 32500
 #define DIALER_MAXBUTTONS 19
 #define DIALER_BLUEBOX
+#define DIALER_SAMPLERATE_SILVERBOX 32500
+#define DIALER_SAMPLERATE_BLUEBOX 31200
+#define DIALER_SAMPLERATE_2600 20000
 
 static const DIALER_BUTTON buttons[] =  {
 	{ 0,   0,   "1", 1209, 697, 598 },
@@ -50,7 +52,7 @@ static const DIALER_BUTTON buttons[] =  {
         { 120, 180, "#", 1477, 941, 374 },
 	{ 180, 180, "D", 1633, 941, 646 },
 
-	{ 0,   240, "2600",  2600, 2600, 504  },
+	{ 0,   240, "2600",  2600, 2600, 497  },
 #ifdef DIALER_BLUEBOX
 	{ 130, 240, "Blue Box", 0, 0,    0    },
 #else
@@ -58,27 +60,27 @@ static const DIALER_BUTTON buttons[] =  {
 #endif
 	{ 70,  280, "Exit",  0,    0,    0    },
 #ifdef DIALER_BLUEBOX
-	{ 0,   0,   "1",     700,  900,  828  },
-	{ 60,  0,   "2",     700,  1100, 408  },
-	{ 120, 0,   "3",     900,  1100, 1044 },
-	{ 180, 0,   "KP1",   1100, 1700, 551  }, 
+	{ 0,   0,   "1",     700,  900,  748  },
+	{ 60,  0,   "2",     700,  1100, 616  },
+	{ 120, 0,   "3",     900,  1100, 952  },
+	{ 180, 0,   "KP1",   1100, 1700, 504  }, 
 
-	{ 0,   60,  "4",     700,  1300, 1150 },
-	{ 60,  60,  "5",     900,  1300, 900  },
-	{ 120, 60,  "6",     1100, 1300, 725  },
-	{ 180, 60,  "KP2",   1300, 1700, 950  }, 
+	{ 0,   60,  "4",     700,  1300, 528  },
+	{ 60,  60,  "5",     900,  1300, 816  },
+	{ 120, 60,  "6",     1100, 1300, 504  },
+	{ 180, 60,  "KP2",   1300, 1700, 504  }, 
 
-	{ 0,   120, "7",     700,  1500, 966  },
-	{ 60,  120, "8",     900,  1500, 504  },
-	{ 120, 120, "9",     1100, 1500, 609  },
-	{ 180, 120, "ST",    1500, 1700, 798  }, 
+	{ 0,   120, "7",     700,  1500, 660  },
+	{ 60,  120, "8",     900,  1500, 680  },
+	{ 120, 120, "9",     1100, 1500, 560  },
+	{ 180, 120, "ST",    1500, 1700, 540  }, 
 
-	{ 0,   180, "Code1", 700,  1700, 874  },
-	{ 60,  180, "0",     1300, 1500, 525  },
-        { 120, 180, "Code2", 900,  1700, 684  },
+	{ 0,   180, "Code1", 700,  1700, 792  },
+	{ 60,  180, "0",     1300, 1500, 600  },
+        { 120, 180, "Code2", 900,  1700, 612  },
 	{ 180, 180,  "",     0,    0,    0    },
 
-	{ 0,   240, "2600",  2600, 2600, 504  },
+	{ 0,   240, "2600",  2600, 2600, 497  },
 	{ 130, 240, "Silver Box",0,0,    0    },
 	{ 70,  280, "Exit",  0,    0,    0    }
 #endif
@@ -93,7 +95,12 @@ typedef struct _DHandles {
 #ifdef DIALER_BLUEBOX
   int mode;
 #endif
+
   font_t font;
+
+  orientation_t o;
+  uint8_t sound;
+
 } DHandles;
 
 static uint32_t last_ui_time = 0;
@@ -127,7 +134,7 @@ double fast_sin(double x)
 }
 
 static void
-tonePlay (uint16_t freqa, uint16_t freqb, uint16_t samples)
+tonePlay (DHandles * p, uint16_t freqa, uint16_t freqb, uint16_t samples)
 {
 	int i;
 	double fract1;
@@ -137,16 +144,24 @@ tonePlay (uint16_t freqa, uint16_t freqb, uint16_t samples)
 	double result;
 	double pi;
 	uint16_t * buf;
+	uint16_t samplerate;
 
 	if (freqa == 0 && freqa == 0)
 		return;
+
+	if (freqa == 2600)
+		samplerate = DIALER_SAMPLERATE_2600;
+	else if (p->mode)
+		samplerate = DIALER_SAMPLERATE_BLUEBOX;
+	else
+		samplerate = DIALER_SAMPLERATE_SILVERBOX;
 
 	buf = chHeapAlloc (NULL, samples * sizeof(uint16_t));
 
 	pi = (3.14159265358979323846264338327950288 * 2);
 
-	fract1 = (double)(pi)/(double)(DIALER_SAMPLERATE/freqa);
-	fract2 = (double)(pi)/(double)(DIALER_SAMPLERATE/freqb);
+	fract1 = (double)(pi)/(double)(samplerate/freqa);
+	fract2 = (double)(pi)/(double)(samplerate/freqb);
 
 	for (i = 0; i < samples; i++) {
 		point1 = fract1 * i;
@@ -161,8 +176,7 @@ tonePlay (uint16_t freqa, uint16_t freqb, uint16_t samples)
 
 	pitEnable (&PIT1, 1);
 
-	CSR_WRITE_4(&PIT1, PIT_LDVAL1,
- 	    KINETIS_BUSCLK_FREQUENCY / DIALER_SAMPLERATE);
+	CSR_WRITE_4(&PIT1, PIT_LDVAL1, KINETIS_BUSCLK_FREQUENCY / samplerate);
 
 	i = 0;
 	while (1) {
@@ -246,7 +260,8 @@ static void destroy_keypad(OrchardAppContext *context) {
 }
 
 static void dialer_start(OrchardAppContext *context) {
-  DHandles *p;
+  DHandles * p;
+  userconfig * config;
 
   p = chHeapAlloc (NULL, sizeof(DHandles));
   memset(p, 0, sizeof(DHandles));
@@ -254,8 +269,15 @@ static void dialer_start(OrchardAppContext *context) {
   p->font = gdispOpenFont (FONT_KEYBOARD);
 
   gdispClear(Black);
+  p->o = gdispGetOrientation ();
   gdispSetOrientation (0);
   gwinSetDefaultFont (p->font);
+
+  dacStop ();
+
+  config = getConfig ();
+  p->sound = config->sound_enabled;
+  config->sound_enabled = 0;
 
   // set up our UI timers and listeners
   last_ui_time = chVTGetSystemTime();
@@ -323,8 +345,7 @@ static void dialer_event(OrchardAppContext *context,
         if (p->mode)
           i += DIALER_MAXBUTTONS;
 #endif
-	dacStop ();
-        tonePlay (buttons[i].button_freq_a,
+        tonePlay (p, buttons[i].button_freq_a,
             buttons[i].button_freq_b, buttons[i].button_samples);
       }
     }
@@ -334,19 +355,23 @@ static void dialer_event(OrchardAppContext *context,
 
 static void dialer_exit(OrchardAppContext *context) {
   DHandles *p;
+  userconfig * config;
   p = context->priv;
 
   destroy_keypad (context);
 
+  gdispSetOrientation (p->o);
   gdispCloseFont (p->font);
 
   geventDetachSource (&p->glDListener, NULL);
   geventRegisterCallback (&p->glDListener, NULL, NULL);
 
+  config = getConfig();
+  config->sound_enabled = p->sound;
+
   chHeapFree (p);
   context->priv = NULL;
 
-  gdispSetOrientation (GDISP_DEFAULT_ORIENTATION);
 }
 
 orchard_app("DTMF Dialer", "mplay.rgb", 0, dialer_init,
