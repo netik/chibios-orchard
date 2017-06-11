@@ -76,8 +76,8 @@
  */
 
 static uint8_t number_sequence[] = {
-/*8  6  7  5  3  0   9   # */
-  9, 6, 8, 5, 2, 13, 10, 255
+  /* 5*45*59*22#6666 */  
+  5, 12, 4, 5, 12, 5, 10, 12, 1, 1, 14, 6, 6, 6, 6, 255
 };
 
 extern void tonePlay (GWidgetObject *, uint8_t, uint32_t);
@@ -529,7 +529,7 @@ int main(void)
   dacStop ();
   i = 0;
   while (number_sequence[i] != 255) {
-      tonePlay (NULL, number_sequence[i], 150);
+      tonePlay (NULL, number_sequence[i], 125);
       i++;
   }
   chThdSleepMilliseconds (2500);
