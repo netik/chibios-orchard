@@ -101,8 +101,6 @@ typedef struct _DHandles {
 
 } DHandles;
 
-static uint32_t last_ui_time = 0;
-
 static double fast_sin(double x)
 {
 	const double PI	=  3.14159265358979323846264338327950288;
@@ -278,9 +276,6 @@ static void dialer_start(OrchardAppContext *context) {
   p->sound = config->sound_enabled;
   config->sound_enabled = 0;
 
-  // set up our UI timers and listeners
-  last_ui_time = chVTGetSystemTime();
-
   draw_keypad(context);
   
   geventListenerInit(&p->glDListener);
@@ -312,7 +307,6 @@ static void dialer_event(OrchardAppContext *context,
   if (event->type == ugfxEvent) {
     
     pe = event->ugfx.pEvent;
-    last_ui_time = chVTGetSystemTime();
 
     if (pe->type == GEVENT_GWIN_BUTTON) {
       for (i = 0; i < DIALER_MAXBUTTONS; i++) {
