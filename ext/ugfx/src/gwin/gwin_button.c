@@ -29,6 +29,8 @@
 		(void) x; (void) y;
 		gw->g.flags |= GBUTTON_FLG_PRESSED;
 		_gwinUpdate((GHandle)gw);
+
+		_gwinSendEvent(&gw->g, GEVENT_GWIN_BUTTON_DOWN);
 	}
 
 	// A mouse up has occurred (it may or may not be over the button)
@@ -43,7 +45,7 @@
 				return;
 		#endif
 
-		_gwinSendEvent(&gw->g, GEVENT_GWIN_BUTTON);
+		_gwinSendEvent(&gw->g, GEVENT_GWIN_BUTTON_UP);
 	}
 #endif
 

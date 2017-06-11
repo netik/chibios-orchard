@@ -202,7 +202,8 @@ static void ugfx_event(eventid_t id) {
 
   (void) id;
 
-  dacPlay ("click.raw");
+  if (ugfx_evt.ugfx.pEvent->type == GEVENT_GWIN_BUTTON)
+    dacPlay ("click.raw");
   instance.app->event (instance.context, &ugfx_evt);
   geventEventComplete (ugfx_evt.ugfx.pListener);
 
