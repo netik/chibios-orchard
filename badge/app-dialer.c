@@ -27,28 +27,28 @@ typedef struct dialer_button {
 
 #define DIALER_MAXBUTTONS 19
 #define DIALER_BLUEBOX
-#define DIALER_SAMPLERATE 15000
+#define DIALER_SAMPLERATE 18000
 
 static const DIALER_BUTTON buttons[] =  {
-	{ 0,   0,   "1", 1209, 697, 336 },
-	{ 60,  0,   "2", 1336, 697, 462 },
-	{ 120, 0,   "3", 1477, 697, 420 },
-	{ 180, 0,   "A", 1633, 697, 315 }, 
+	{ 0,   0,   "1",     1209, 697,  350  },
+	{ 60,  0,   "2",     1336, 697,  325  },
+	{ 120, 0,   "3",     1477, 697,  300  },
+	{ 180, 0,   "A",     1633, 697,  550  }, 
 
-	{ 0,   60,  "4", 1209, 770, 456 },
-	{ 60,  60,  "5", 1336, 770, 418 },
-	{ 120, 60,  "6", 1477, 770, 380 },
-	{ 180, 60,  "B", 1633, 770, 342 }, 
+	{ 0,   60,  "4",     1209, 770,  322  },
+	{ 60,  60,  "5",     1336, 770,  299  },
+	{ 120, 60,  "6",     1477, 770,  552  },
+	{ 180, 60,  "B",     1633, 770,  506  }, 
 
-	{ 0,   120, "7", 1209, 852, 408 },
-	{ 60,  120, "8", 1336, 852, 374 },
-	{ 120, 120, "9", 1477, 852, 340 },
-	{ 180, 120, "C", 1633, 852, 306 }, 
+	{ 0,   120, "7",     1209, 852,  336  },
+	{ 60,  120, "8",     1336, 852,  546  },
+	{ 120, 120, "9",     1477, 852,  336  },
+	{ 180, 120, "C",     1633, 852,  462  }, 
 
-	{ 0,   180, "*", 1209, 941, 300 },
-	{ 60,  180, "0", 1336, 941, 330 },
-        { 120, 180, "#", 1477, 941, 300 },
-	{ 180, 180, "D", 1633, 941, 315 },
+	{ 0,   180, "*",     1209, 941,  532  },
+	{ 60,  180, "0",     1336, 941,  494  },
+        { 120, 180, "#",     1477, 941,  456  },
+	{ 180, 180, "D",     1633, 941,  418  },
 
 	{ 0,   240, "2600",  2600, 2600, 300  },
 #ifdef DIALER_BLUEBOX
@@ -58,24 +58,24 @@ static const DIALER_BUTTON buttons[] =  {
 #endif
 	{ 70,  280, "Exit",  0,    0,    0    },
 #ifdef DIALER_BLUEBOX
-	{ 0,   0,   "1",     700,  900,  336  },
-	{ 60,  0,   "2",     700,  1100, 546  },
-	{ 120, 0,   "3",     900,  1100, 416  },
-	{ 180, 0,   "KP1",   1100, 1700, 312  }, 
+	{ 0,   0,   "1",     700,  900,  300  },
+	{ 60,  0,   "2",     700,  1100, 400  },
+	{ 120, 0,   "3",     900,  1100, 320  },
+	{ 180, 0,   "KP1",   1100, 1700, 320  }, 
 
-	{ 0,   60,  "4",     700,  1300, 462  },
-	{ 60,  60,  "5",     900,  1300, 352  },
-	{ 120, 60,  "6",     1100, 1300, 429  },
-	{ 180, 60,  "KP2",   1300, 1700, 352  }, 
+	{ 0,   60,  "4",     700,  1300, 325  },
+	{ 60,  60,  "5",     900,  1300, 520  },
+	{ 120, 60,  "6",     1100, 1300, 416  },
+	{ 180, 60,  "KP2",   1300, 1700, 390  }, 
 
-	{ 0,   120, "7",     700,  1500, 420  },
-	{ 60,  120, "8",     900,  1500, 320  },
-	{ 120, 120, "9",     1100, 1500, 390  },
-	{ 180, 120, "ST",    1500, 1700, 320  }, 
+	{ 0,   120, "7",     700,  1500, 300  },
+	{ 60,  120, "8",     900,  1500, 300  },
+	{ 120, 120, "9",     1100, 1500, 336  },
+	{ 180, 120, "ST",    1500, 1700, 300  }, 
 
-	{ 0,   180, "Code1", 700,  1700, 336  },
-	{ 60,  180, "0",     1300, 1500, 330  },
-        { 120, 180, "Code2", 900,  1700, 304  },
+	{ 0,   180, "Code1", 700,  1700, 300  },
+	{ 60,  180, "0",     1300, 1500, 312  },
+        { 120, 180, "Code2", 900,  1700, 300  },
 	{ 180, 180,  "",     0,    0,    0    },
 
 	{ 0,   240, "2600",  2600, 2600, 300  },
@@ -103,8 +103,7 @@ typedef struct _DHandles {
 
 static uint32_t last_ui_time = 0;
 
-
-double fast_sin(double x)
+static double fast_sin(double x)
 {
 	const double PI	=  3.14159265358979323846264338327950288;
 	const double INVPI =  0.31830988618379067153776752674502872;
@@ -131,10 +130,10 @@ double fast_sin(double x)
 	return x;
 }
 
-static void
-tonePlay (GWidgetObject * w, uint8_t b)
+void
+tonePlay (GWidgetObject * w, uint8_t b, uint32_t duration)
 {
-	int i;
+	uint32_t i;
 	double fract1;
 	double fract2;
 	double point1;
@@ -170,8 +169,6 @@ tonePlay (GWidgetObject * w, uint8_t b)
 		buf[i] = (uint16_t)round (result);
 	}
 
-	chThdSetPriority (NORMALPRIO + 1);
-
 	pitEnable (&PIT1, 1);
 
 	CSR_WRITE_4(&PIT1, PIT_LDVAL1,
@@ -182,7 +179,7 @@ tonePlay (GWidgetObject * w, uint8_t b)
 		dacSamplesPlay (buf, samples);
 		if (w == NULL) {
 			i += samples;
-			if (i > 5000)
+			if (i > (duration * (DIALER_SAMPLERATE / 1000)))
 				break;
 		} else {
 			if ((w->g.flags & GBUTTON_FLG_PRESSED) == 0)
@@ -195,8 +192,6 @@ tonePlay (GWidgetObject * w, uint8_t b)
 
 	CSR_WRITE_4(&PIT1, PIT_LDVAL1,
  	    KINETIS_BUSCLK_FREQUENCY / DAC_SAMPLERATE);
-
-	chThdSetPriority (ORCHARD_APP_PRIO);
 
 	chHeapFree (buf);
 
@@ -294,8 +289,6 @@ static void dialer_start(OrchardAppContext *context) {
   geventRegisterCallback (&p->glDListener,
                           orchardAppUgfxCallback,
                           &p->glDListener);
-
-  orchardAppTimer(context, 500000, true);
 }
 
 static void dialer_event(OrchardAppContext *context,
@@ -306,15 +299,6 @@ static void dialer_event(OrchardAppContext *context,
   p = context->priv;
   int i;
   int b;
-
-  // timer
-  if (event->type == timerEvent) {
-    // deal with lack of activity
-    if( (chVTGetSystemTime() - last_ui_time) > UI_IDLE_TIME ) {
-      orchardAppRun(orchardAppByName("Badge"));
-    }
-    return;
-  }
 
   // joypad
   if (event->type == keyEvent) {
@@ -330,7 +314,7 @@ static void dialer_event(OrchardAppContext *context,
     pe = event->ugfx.pEvent;
     last_ui_time = chVTGetSystemTime();
 
-    if (pe->type == GEVENT_GWIN_BUTTON_DOWN) {
+    if (pe->type == GEVENT_GWIN_BUTTON) {
       for (i = 0; i < DIALER_MAXBUTTONS; i++) {
         if (((GEventGWinButton*)pe)->gwin == p->ghButtons[i])
           break;
@@ -352,7 +336,9 @@ static void dialer_event(OrchardAppContext *context,
           b += DIALER_MAXBUTTONS;
 #endif
         /*geventEventComplete (&p->glDListener);*/
-        tonePlay (&((GButtonObject *)(p->ghButtons[i]))->w, b);
+	chThdSetPriority (NORMALPRIO + 1);
+        tonePlay (&((GButtonObject *)(p->ghButtons[i]))->w, b, 0);
+	chThdSetPriority (ORCHARD_APP_PRIO);
       }
     }
   }

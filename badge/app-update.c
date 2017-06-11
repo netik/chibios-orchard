@@ -287,12 +287,9 @@ update_event(OrchardAppContext *context, const OrchardAppEvent *event)
 
 	p = context->priv;
 
-	if (event->type == timerEvent)
-		update ();
-
 	if (event->type == ugfxEvent) {
 		pe = event->ugfx.pEvent;
-		if (pe->type == GEVENT_GWIN_BUTTON) {
+		if (pe->type == GEVENT_GWIN_BUTTON_UP) {
 			be = (GEventGWinButton *)pe;
 			if (be->gwin == p->ghOK) {
 				gwinClear (p->ghConsole);
@@ -303,7 +300,7 @@ update_event(OrchardAppContext *context, const OrchardAppEvent *event)
 				    " UNTIL IT COMPLETES!\n\n"
 				    " THE BADGE WILL REBOOT WHEN\n"
 				    " THE UPDATE IS FINISHED");
-				orchardAppTimer(context, 5000, false);
+				update ();
 			}
 			if (be->gwin == p->ghCANCEL)
 				orchardAppExit ();

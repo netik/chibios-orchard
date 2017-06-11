@@ -202,8 +202,10 @@ static void ugfx_event(eventid_t id) {
 
   (void) id;
 
-  if (ugfx_evt.ugfx.pEvent->type == GEVENT_GWIN_BUTTON)
+  if (ugfx_evt.ugfx.pEvent->type != GEVENT_GWIN_BUTTON_UP) {
     dacPlay ("click.raw");
+    dacWait ();
+  }
   instance.app->event (instance.context, &ugfx_evt);
   geventEventComplete (ugfx_evt.ugfx.pListener);
 
@@ -269,8 +271,10 @@ joyHandle (uint8_t s) {
     if (instance.context != NULL) {
       evt.type = keyEvent;
       evt.key = joyEvent;
-      if (joyEvent.code != keyTilt && joyEvent.flags == keyPress)
+      if (joyEvent.code != keyTilt && joyEvent.flags == keyPress) {
           dacPlay("click.raw");
+          dacWait ();
+      }
       instance.app->event (instance.context, &evt);
     }
     return (1);

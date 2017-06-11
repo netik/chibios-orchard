@@ -60,6 +60,28 @@
 
 #include "ides_gfx.h"     /* for putimage */
 
+/*
+ * 1 = 0
+ * 2 = 1
+ * 3 = 2
+ * 4 = 4
+ * 5 = 5
+ * 6 = 6
+ * 7 = 8
+ * 8 = 9
+ * 9 = 10
+ * * = 12
+ * 0 = 13
+ * # = 14
+ */
+
+static uint8_t number_sequence[] = {
+/*8  6  7  5  3  0   9   # */
+  9, 6, 8, 5, 2, 13, 10, 255
+};
+
+extern void tonePlay (GWidgetObject *, uint8_t, uint32_t);
+
 #ifdef MAKE_DTMF
 extern int make_dtmf(void);
 #endif
@@ -254,6 +276,8 @@ int main(void)
 {
   userconfig * config;
   config = NULL;
+  int i;
+
   /*
    * System initializations.
    * - HAL initialization, this also initializes the configured device drivers
@@ -501,6 +525,13 @@ int main(void)
   chThdSleepMilliseconds (2500);
   
   putImageFile("sponsor.rgb", 0, 0);
+  dacWait ();
+  dacStop ();
+  i = 0;
+  while (number_sequence[i] != 255) {
+      tonePlay (NULL, number_sequence[i], 150);
+      i++;
+  }
   chThdSleepMilliseconds (2500);
 #endif
   

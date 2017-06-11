@@ -64,7 +64,6 @@ static void
 photos_start (OrchardAppContext *context)
 {
 	PhotoHandles * p;
-	GSourceHandle gs;
 
 	context->priv = chHeapAlloc (NULL, sizeof(PhotoHandles));
 	memset (context->priv, 0, sizeof(PhotoHandles));
@@ -72,8 +71,6 @@ photos_start (OrchardAppContext *context)
 	p = context->priv;
 
 	geventListenerInit (&p->gl);
-	gs = ginputGetMouse (0);
-        geventAttachSource (&p->gl, gs, GLISTEN_MOUSEMETA);
 	geventRegisterCallback (&p->gl, orchardAppUgfxCallback, &p->gl);
 
 	return;
@@ -85,14 +82,15 @@ photos_event (OrchardAppContext *context,
 {
 	PhotoHandles * p;
 	FILINFO info;
-        GEvent * pe;
+	GEventMouse * me;
+	GSourceHandle gs;
 	char str[64];
  
 	p = context->priv;
 
 	if (event->type == ugfxEvent) {
-	        pe = event->ugfx.pEvent;
-		if (pe->type == GEVENT_TOUCH) {
+	        me = (GEventMouse *)event->ugfx.pEvent;
+		if (me->buttons & GMETA_MOUSE_DOWN) {
 			orchardAppExit ();
 			return;
 		}
@@ -126,7 +124,10 @@ photos_event (OrchardAppContext *context,
 			p->cnt++;
 			chsnprintf (str, sizeof(str),
 			    "photos/%s", info.fname);
+			geventDetachSource (&p->gl, NULL);
 			scrollImage (str, 1);
+			gs = ginputGetMouse (0);
+        		geventAttachSource (&p->gl, gs, GLISTEN_MOUSEMETA);
 			orchardAppTimer (context, 5000000, FALSE);
 		}
 	}
