@@ -22,7 +22,7 @@ typedef struct dialer_button {
 
 /*
  * Pre-computed sample counts are based on a sample
- * rate of 32500 Hz.
+ * rate of 18000 Hz.
  */
 
 #define DIALER_MAXBUTTONS 19
