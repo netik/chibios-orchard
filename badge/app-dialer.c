@@ -27,32 +27,30 @@ typedef struct dialer_button {
 
 #define DIALER_MAXBUTTONS 19
 #define DIALER_BLUEBOX
-#define DIALER_SAMPLERATE_SILVERBOX 32500
-#define DIALER_SAMPLERATE_BLUEBOX 31200
-#define DIALER_SAMPLERATE_2600 20000
+#define DIALER_SAMPLERATE 15000
 
 static const DIALER_BUTTON buttons[] =  {
-	{ 0,   0,   "1", 1209, 697, 598 },
-	{ 60,  0,   "2", 1336, 697, 552 },
-	{ 120, 0,   "3", 1477, 697, 506 },
-	{ 180, 0,   "A", 1633, 697, 874 }, 
+	{ 0,   0,   "1", 1209, 697, 336 },
+	{ 60,  0,   "2", 1336, 697, 462 },
+	{ 120, 0,   "3", 1477, 697, 420 },
+	{ 180, 0,   "A", 1633, 697, 315 }, 
 
-	{ 0,   60,  "4", 1209, 770, 546 },
-	{ 60,  60,  "5", 1336, 770, 168 },
-	{ 120, 60,  "6", 1477, 770, 462 },
-	{ 180, 60,  "B", 1633, 770, 798 }, 
+	{ 0,   60,  "4", 1209, 770, 456 },
+	{ 60,  60,  "5", 1336, 770, 418 },
+	{ 120, 60,  "6", 1477, 770, 380 },
+	{ 180, 60,  "B", 1633, 770, 342 }, 
 
-	{ 0,   120, "7", 1209, 852, 494 },
-	{ 60,  120, "8", 1336, 852, 456 },
-	{ 120, 120, "9", 1477, 852, 418 },
-	{ 180, 120, "C", 1633, 852, 304 }, 
+	{ 0,   120, "7", 1209, 852, 408 },
+	{ 60,  120, "8", 1336, 852, 374 },
+	{ 120, 120, "9", 1477, 852, 340 },
+	{ 180, 120, "C", 1633, 852, 306 }, 
 
-	{ 0,   180, "*", 1209, 941, 442 },
-	{ 60,  180, "0", 1336, 941, 408 },
-        { 120, 180, "#", 1477, 941, 374 },
-	{ 180, 180, "D", 1633, 941, 646 },
+	{ 0,   180, "*", 1209, 941, 300 },
+	{ 60,  180, "0", 1336, 941, 330 },
+        { 120, 180, "#", 1477, 941, 300 },
+	{ 180, 180, "D", 1633, 941, 315 },
 
-	{ 0,   240, "2600",  2600, 2600, 497  },
+	{ 0,   240, "2600",  2600, 2600, 300  },
 #ifdef DIALER_BLUEBOX
 	{ 130, 240, "Blue Box", 0, 0,    0    },
 #else
@@ -60,27 +58,27 @@ static const DIALER_BUTTON buttons[] =  {
 #endif
 	{ 70,  280, "Exit",  0,    0,    0    },
 #ifdef DIALER_BLUEBOX
-	{ 0,   0,   "1",     700,  900,  748  },
-	{ 60,  0,   "2",     700,  1100, 616  },
-	{ 120, 0,   "3",     900,  1100, 952  },
-	{ 180, 0,   "KP1",   1100, 1700, 504  }, 
+	{ 0,   0,   "1",     700,  900,  336  },
+	{ 60,  0,   "2",     700,  1100, 546  },
+	{ 120, 0,   "3",     900,  1100, 416  },
+	{ 180, 0,   "KP1",   1100, 1700, 312  }, 
 
-	{ 0,   60,  "4",     700,  1300, 528  },
-	{ 60,  60,  "5",     900,  1300, 816  },
-	{ 120, 60,  "6",     1100, 1300, 504  },
-	{ 180, 60,  "KP2",   1300, 1700, 504  }, 
+	{ 0,   60,  "4",     700,  1300, 462  },
+	{ 60,  60,  "5",     900,  1300, 352  },
+	{ 120, 60,  "6",     1100, 1300, 429  },
+	{ 180, 60,  "KP2",   1300, 1700, 352  }, 
 
-	{ 0,   120, "7",     700,  1500, 660  },
-	{ 60,  120, "8",     900,  1500, 680  },
-	{ 120, 120, "9",     1100, 1500, 560  },
-	{ 180, 120, "ST",    1500, 1700, 540  }, 
+	{ 0,   120, "7",     700,  1500, 420  },
+	{ 60,  120, "8",     900,  1500, 320  },
+	{ 120, 120, "9",     1100, 1500, 390  },
+	{ 180, 120, "ST",    1500, 1700, 320  }, 
 
-	{ 0,   180, "Code1", 700,  1700, 792  },
-	{ 60,  180, "0",     1300, 1500, 600  },
-        { 120, 180, "Code2", 900,  1700, 612  },
+	{ 0,   180, "Code1", 700,  1700, 336  },
+	{ 60,  180, "0",     1300, 1500, 330  },
+        { 120, 180, "Code2", 900,  1700, 304  },
 	{ 180, 180,  "",     0,    0,    0    },
 
-	{ 0,   240, "2600",  2600, 2600, 497  },
+	{ 0,   240, "2600",  2600, 2600, 300  },
 	{ 130, 240, "Silver Box",0,0,    0    },
 	{ 70,  280, "Exit",  0,    0,    0    }
 #endif
@@ -134,7 +132,7 @@ double fast_sin(double x)
 }
 
 static void
-tonePlay (DHandles * p, uint16_t freqa, uint16_t freqb, uint16_t samples)
+tonePlay (GWidgetObject * w, uint8_t b)
 {
 	int i;
 	double fract1;
@@ -144,24 +142,24 @@ tonePlay (DHandles * p, uint16_t freqa, uint16_t freqb, uint16_t samples)
 	double result;
 	double pi;
 	uint16_t * buf;
-	uint16_t samplerate;
+	uint16_t freqa;
+	uint16_t freqb;
+	uint16_t samples;
+
+	freqa = buttons[b].button_freq_a;
+	freqb = buttons[b].button_freq_b;
 
 	if (freqa == 0 && freqa == 0)
 		return;
 
-	if (freqa == 2600)
-		samplerate = DIALER_SAMPLERATE_2600;
-	else if (p->mode)
-		samplerate = DIALER_SAMPLERATE_BLUEBOX;
-	else
-		samplerate = DIALER_SAMPLERATE_SILVERBOX;
+	samples = buttons[b].button_samples;
 
 	buf = chHeapAlloc (NULL, samples * sizeof(uint16_t));
 
 	pi = (3.14159265358979323846264338327950288 * 2);
 
-	fract1 = (double)(pi)/(double)(samplerate/freqa);
-	fract2 = (double)(pi)/(double)(samplerate/freqb);
+	fract1 = (double)(pi)/(double)(DIALER_SAMPLERATE/freqa);
+	fract2 = (double)(pi)/(double)(DIALER_SAMPLERATE/freqb);
 
 	for (i = 0; i < samples; i++) {
 		point1 = fract1 * i;
@@ -176,14 +174,20 @@ tonePlay (DHandles * p, uint16_t freqa, uint16_t freqb, uint16_t samples)
 
 	pitEnable (&PIT1, 1);
 
-	CSR_WRITE_4(&PIT1, PIT_LDVAL1, KINETIS_BUSCLK_FREQUENCY / samplerate);
+	CSR_WRITE_4(&PIT1, PIT_LDVAL1,
+	    KINETIS_BUSCLK_FREQUENCY / DIALER_SAMPLERATE);
 
 	i = 0;
 	while (1) {
 		dacSamplesPlay (buf, samples);
-		i += samples;
-		if (i > 10000)
-			break;
+		if (w == NULL) {
+			i += samples;
+			if (i > 5000)
+				break;
+		} else {
+			if ((w->g.flags & GBUTTON_FLG_PRESSED) == 0)
+				break;
+		}	
 		dacSamplesWait ();
 	}
 
@@ -301,6 +305,7 @@ static void dialer_event(OrchardAppContext *context,
   DHandles *p;
   p = context->priv;
   int i;
+  int b;
 
   // timer
   if (event->type == timerEvent) {
@@ -325,7 +330,7 @@ static void dialer_event(OrchardAppContext *context,
     pe = event->ugfx.pEvent;
     last_ui_time = chVTGetSystemTime();
 
-    if (pe->type == GEVENT_GWIN_BUTTON) {
+    if (pe->type == GEVENT_GWIN_BUTTON_DOWN) {
       for (i = 0; i < DIALER_MAXBUTTONS; i++) {
         if (((GEventGWinButton*)pe)->gwin == p->ghButtons[i])
           break;
@@ -341,12 +346,13 @@ static void dialer_event(OrchardAppContext *context,
 	return;
 #endif
       } else {
+        b = i;
 #ifdef DIALER_BLUEBOX
         if (p->mode)
-          i += DIALER_MAXBUTTONS;
+          b += DIALER_MAXBUTTONS;
 #endif
-        tonePlay (p, buttons[i].button_freq_a,
-            buttons[i].button_freq_b, buttons[i].button_samples);
+        /*geventEventComplete (&p->glDListener);*/
+        tonePlay (&((GButtonObject *)(p->ghButtons[i]))->w, b);
       }
     }
   }
