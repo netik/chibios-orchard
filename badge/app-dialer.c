@@ -329,7 +329,6 @@ static void dialer_event(OrchardAppContext *context,
         if (p->mode)
           b += DIALER_MAXBUTTONS;
 #endif
-        /*geventEventComplete (&p->glDListener);*/
 	chThdSetPriority (NORMALPRIO + 1);
         tonePlay (&((GButtonObject *)(p->ghButtons[i]))->w, b, 0);
 	chThdSetPriority (ORCHARD_APP_PRIO);
