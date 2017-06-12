@@ -45,7 +45,7 @@
 				return;
 		#endif
 
-		_gwinSendEvent(&gw->g, GEVENT_GWIN_BUTTON_UP);
+		/*_gwinSendEvent(&gw->g, GEVENT_GWIN_BUTTON_UP);*/
 	}
 #endif
 
