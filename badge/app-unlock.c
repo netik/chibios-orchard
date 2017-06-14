@@ -77,9 +77,11 @@ static uint32_t last_ui_time = 0;
 static uint8_t code[5];
 static int8_t focused = 0;
 
+/* prototypes */
 static void updatecode(OrchardAppContext *, uint8_t, int8_t);
 static void do_unlock(OrchardAppContext *context);
 static void unlock_result(UnlockHandles *, char *);
+static void destroy_unlock_ui(OrchardAppContext *);
 
 static void unlock_result(UnlockHandles *p, char *msg) {
   gdispClear(Black);
@@ -89,6 +91,23 @@ static void unlock_result(UnlockHandles *p, char *msg) {
 		      gdispGetFontMetric(p->font_manteka_20, fontHeight),
 		      msg,
 		      p->font_manteka_20, Yellow, justifyCenter);
+
+  if (code[0] == 0x0f) {
+    // Almus / Caezer display
+    gdispDrawStringBox (0,
+                        60,
+                        320,
+                        gdispGetFontMetric(p->font_manteka_20, fontHeight),
+                        "User: badgeinvite",
+                        p->font_manteka_20, Cyan, justifyCenter);
+    
+    gdispDrawStringBox (0,
+                        180,
+                        320,
+                        gdispGetFontMetric(p->font_manteka_20, fontHeight),
+                        "http://famwqkizjdga.xyz",
+                        p->font_manteka_20, Cyan, justifyCenter);
+  }
 }
 
 static void init_unlock_ui(UnlockHandles *p) {
@@ -308,6 +327,7 @@ static uint8_t validate_code(OrchardAppContext *context, userconfig *config) {
       configSave(config);
       
       chThdSleepMilliseconds(ALERT_DELAY);
+
       orchardAppRun(orchardAppByName("Badge"));
       return true;
     }
@@ -319,20 +339,23 @@ static void do_unlock(OrchardAppContext *context) {
   userconfig *config = getConfig();
   UnlockHandles * p;
   p = context->priv;
+
+  destroy_unlock_ui(context);
   
   if (validate_code(context, config)) {
     return;
   } else {
-    
     if (code[0] == 0x0f) {
       char tmp[20];
-      chsnprintf(tmp, sizeof(tmp), "%x%x%x%x ?",
+      chsnprintf(tmp, sizeof(tmp), "PW: %x%x%x%x",
                  code[0] ^ unlock_challenge[0],
                  code[1] ^ unlock_challenge[1],
                  code[2] ^ unlock_challenge[2],
                  code[3] ^ unlock_challenge[3]);
       unlock_result(p, tmp);
       dacPlay("alert1.raw");
+      // give ane extra 10ms to write down the url
+      chThdSleepMilliseconds(10000);
     } else { 
       // no match
       ledSetFunction(leds_all_strobered);
@@ -445,23 +468,33 @@ static void unlock_event(OrchardAppContext *context,
   }
 }
 
+static void destroy_unlock_ui(OrchardAppContext *context) {
+  UnlockHandles * p;
+  p = context->priv;
+
+  gwinDestroy(p->ghUnlock);
+  gwinDestroy(p->ghNum1);
+  gwinDestroy(p->ghNum2);
+  gwinDestroy(p->ghNum3);
+  gwinDestroy(p->ghNum4);
+  gwinDestroy(p->ghNum5);
+  gwinDestroy(p->ghBack);
+
+  // if this is non-null we will destroy the ui again.
+  p->ghUnlock = NULL;
+}
 
 static void unlock_exit(OrchardAppContext *context) {
   UnlockHandles * p;
 
   p = context->priv;
 
+  if (p->ghUnlock != NULL) {
+    destroy_unlock_ui(context);
+  }
+  
   gdispCloseFont (p->font_manteka_20);
   gdispCloseFont (p->font_jupiterpro_36);
-  
-  gwinDestroy(p->ghNum1);
-  gwinDestroy(p->ghNum2);
-  gwinDestroy(p->ghNum3);
-  gwinDestroy(p->ghNum4);
-  gwinDestroy(p->ghNum5);
-
-  gwinDestroy(p->ghBack);
-  gwinDestroy(p->ghUnlock);
   
   geventDetachSource (&p->glUnlockListener, NULL);
   geventRegisterCallback (&p->glUnlockListener, NULL, NULL);
