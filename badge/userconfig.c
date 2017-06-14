@@ -23,9 +23,6 @@
  * "virus" of the RTC to other badges. Thanks to Queercon 11's badge
  * badge for this idea.
  *
- * TODO: If the packet is sent from a TIMELORD then immediately
- * override the RTC even if it has been set before and start spilling
- * out that value.
  */
 unsigned long rtc = 0;
 unsigned long rtc_set_at = 0;
