@@ -1228,7 +1228,7 @@ static void state_show_results_tick() {
         return;
       }
       
-      // someone died, time to exit.  -- TODO WAIT FOR FIN!!
+      // someone died, time to exit. 
       orchardAppRun(orchardAppByName("Badge"));
       return;
     }
