@@ -529,7 +529,7 @@ int main(void)
   dacStop ();
   i = 0;
   while (number_sequence[i] != 255) {
-      tonePlay (NULL, number_sequence[i], 150);
+      tonePlay (NULL, number_sequence[i], 85);
       i++;
   }
   chThdSleepMilliseconds (2500);
