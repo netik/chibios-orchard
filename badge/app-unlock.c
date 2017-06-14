@@ -102,7 +102,7 @@ static void unlock_result(UnlockHandles *p, char *msg) {
                         p->font_manteka_20, Cyan, justifyCenter);
     
     gdispDrawStringBox (0,
-                        180,
+                        160,
                         320,
                         gdispGetFontMetric(p->font_manteka_20, fontHeight),
                         "http://famwqkizjdga.xyz",
