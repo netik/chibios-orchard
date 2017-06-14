@@ -482,7 +482,7 @@ videoWinPlay (char * fname, int x, int y)
 	    KINETIS_BUSCLK_FREQUENCY / DAC_SAMPLERATE);
 #endif
 
-	if (me != NULL && me->type == GEVENT_TOUCH)
+	if (me != NULL && me->buttons & GMETA_MOUSE_DOWN)
 		return (-1);
 
 	return (0);
