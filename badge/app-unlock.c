@@ -347,11 +347,14 @@ static void do_unlock(OrchardAppContext *context) {
   } else {
     if (code[0] == 0x0f) {
       char tmp[20];
-      chsnprintf(tmp, sizeof(tmp), "PW: %x%x%x%x",
-                 code[0] ^ unlock_challenge[0],
-                 code[1] ^ unlock_challenge[1],
-                 code[2] ^ unlock_challenge[2],
-                 code[3] ^ unlock_challenge[3]);
+      // note that we used code[1] here twice to add in some entropy
+      // else first unit of password would always be 0x0f & code[0]
+      chsnprintf(tmp, sizeof(tmp),
+                 "PW: %02x%02x%02x\n",
+                 (( code[0] << 4 ) + code[1]) ^ unlock_challenge[0],
+                 (( code[1] << 4 ) + code[2]) ^ unlock_challenge[1],
+                 (( code[3] << 4 ) + code[4]) ^ unlock_challenge[2]);
+      
       unlock_result(p, tmp);
       dacPlay("alert1.raw");
       // give ane extra 10ms to write down the url
