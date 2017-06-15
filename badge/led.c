@@ -168,6 +168,9 @@ void ledSetFunction(void *func) {
    * the configured pattern. */
   userconfig *config = getConfig();
 
+  fx_position = 0;
+  fx_index = 0;
+  
   ledClear();
   if (func == NULL) {
     // run the current config.
@@ -329,12 +332,15 @@ void leds_shownetid(void) {
    * "RGBRGB
    */
   uint8_t rgb[3];
-  int8_t pos = 31;   // position in netid
-  int8_t col = 0;      // position in rgb (starts on R in RGB)
-  uint8_t lednum = 0;  // which led we start on
+  int8_t pos = 31;    // position in netid
+  int8_t col = 0;     // position in rgb (starts on R in RGB)
+  uint8_t lednum = 0; // which led we start on
 
   ledClear();
-
+  fx_position++;      // we will light the LEDs one by one until full
+  if (fx_position % 3 == 0) { 
+    fx_index++;
+  }
   /*
    * starting at the MSB
    * starting at R
@@ -353,8 +359,14 @@ void leds_shownetid(void) {
       rgb[0] = rgb[1] = rgb[2] = 0;
       col = 0;
       lednum++;
+
     }
     pos--;
+    if ((32-fx_index) > pos) {
+      // be stingy about lighting the LEDs
+      return;
+    }
+
   }
   ledSetRGB(led_config.fb, lednum, rgb[0], rgb[1], rgb[2]);
 }
