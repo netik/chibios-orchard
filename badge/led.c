@@ -20,14 +20,14 @@
    by the algorithms */
 #define MAX_INT_VALUE 65535
 
-static int16_t fx_index = 0;           // fx index 
+static int16_t fx_index = 0;           // fx index
 static int16_t fx_position = 0;        // fx position counter
 static float   led_progress = 0;       // last progress setting for drawProgressBar
 static int8_t  fx_direction = 1;       // fx direction
 static uint8_t led_brightshift = 0;    // right-shift value, normally zero.
 
 // the current function that updates the LEDs. Override with ledSetFunction();
-static void   (*led_current_func)(void) = NULL; 
+static void   (*led_current_func)(void) = NULL;
 
 static struct led_config {
   uint8_t  *fb;          // effects frame buffer
@@ -53,7 +53,7 @@ static void anim_double_bounce(void);
 static void anim_rgb_bounce(void);
 static void anim_violets(void);
 static void anim_wave(void);
-static void anim_violetwave(void); // sorry, my favorite color is purple sooo... 
+static void anim_violetwave(void); // sorry, my favorite color is purple sooo...
 static void anim_kraftwerk(void);
 
 static uint8_t ledExitRequest = 0;
@@ -106,26 +106,26 @@ static int16_t msin( uint16_t theta )
     { 0, 6393, 12539, 18204, 23170, 27245, 30273, 32137 };
   static const uint8_t slope[] =
     { 49, 48, 44, 38, 31, 23, 14, 4 };
-  
+
   uint16_t offset = (theta & 0x3FFF) >> 3; // 0..2047
   if( theta & 0x4000 ) offset = 2047 - offset;
-  
+
   uint8_t section = offset / 256; // 0..7
   uint16_t b   = base[section];
   uint8_t  m   = slope[section];
-  
+
   uint8_t secoffset8 = (uint8_t)(offset) / 2;
-  
+
   uint16_t mx = m * secoffset8;
   int16_t  y  = mx + b;
-  
+
   if( theta & 0x8000 ) y = -y;
-  
+
   return y;
 }
 
 // These are a variety of functions shamelessly ported from fastled.
-static inline uint8_t qadd8 ( uint8_t i, uint8_t j) { 
+static inline uint8_t qadd8 ( uint8_t i, uint8_t j) {
   unsigned int t = i + j;
   // 8 bit "saturating" addition
   if( t > 255) t = 255;
@@ -180,7 +180,7 @@ void ledSetFunction(void *func) {
   } else {
     if (ledsOff == 1) // we are coming out of sleep
         effectsStart();
-    
+
     led_current_func = func;
   }
 }
@@ -204,7 +204,7 @@ void ledShowHP(void) {
   float pct_lit_bot = (float)ledhp.bot / ledhp.botmax;
   int total_lit_top = 6 * pct_lit_top;
   int total_lit_bot = 6 * pct_lit_bot;
-  
+
   ledClear();
 
   /* top */
@@ -221,7 +221,7 @@ void ledShowHP(void) {
 
 void handle_progress(void) {
   uint8_t i,c;
-  
+
   float pct_lit = (float)led_progress / 100;
   int total_lit = led_config.pixel_count * pct_lit;
 
@@ -232,20 +232,20 @@ void handle_progress(void) {
   } else {
     c = 0; // red
   }
-  
+
   ledClear();
 
   for(i=0; i < total_lit; i++)  {
-    // invert the last few, because our LEDs are clockwise. 
+    // invert the last few, because our LEDs are clockwise.
     if (i > 5) {
 
       /*
         board layout:          actual representation:
-         0  1  2  3  4  5      0 1 2 3  4  5 
+         0  1  2  3  4  5      0 1 2 3  4  5
         11 10  9  8  7  6      6 7 8 9 10 11
 
-        so when we want to light 6, we want to light 11. 
-        light 7, we light 10, etc... 
+        so when we want to light 6, we want to light 11.
+        light 7, we light 10, etc...
       */
 
       ledSetRGB(led_config.fb, 17-i, roygbiv[c].r, roygbiv[c].g, roygbiv[c].b);
@@ -253,7 +253,7 @@ void handle_progress(void) {
       ledSetRGB(led_config.fb, i, roygbiv[c].r, roygbiv[c].g, roygbiv[c].b);
     }
   }
-					     
+
 }
 
 void leds_all_strobered(void) {
@@ -261,13 +261,13 @@ void leds_all_strobered(void) {
   ledClear();
   for(i=0; i < LEDS_COUNT; i++)  {
     if (fx_position % 2 == 0) {
-      if (i % 2 == 0) { 
+      if (i % 2 == 0) {
         ledSetRGB(led_config.fb, i, 0xff,0, 0);
-      } 
+      }
     } else {
-      if (i % 2 != 0) { 
+      if (i % 2 != 0) {
         ledSetRGB(led_config.fb, i, 0xff,0, 0);
-      } 
+      }
     }
   }
   fx_position++;
@@ -276,9 +276,9 @@ void leds_all_strobered(void) {
 void leds_all_strobe(void) {
   int i;
   for(i=0; i < LEDS_COUNT; i++)  {
-    if (fx_position % 2 == 0) { 
+    if (fx_position % 2 == 0) {
       ledSetRGB(led_config.fb, i, 0x00, 0x00, 0x00);
-    } else { 
+    } else {
       ledSetRGB(led_config.fb, i, 0xff, 0xff, 0xff);
     }
   }
@@ -297,31 +297,73 @@ void leds_show_unlocks(void) {
     fx_direction = 0;
   }
 
-  if (fx_index < 50) { 
+  if (fx_index < 50) {
     fx_index = 50;
     fx_direction = 1;
   }
-  if (fx_direction == 1) { 
+  if (fx_direction == 1) {
     fx_index += 5;
   } else {
     fx_index -= 5;
   }
 
   for(i=0; i < LEDS_COUNT; i++)  {
-    if (config->unlocks & (1 << i)) { 
+    if (config->unlocks & (1 << i)) {
       ledSetRGB(led_config.fb, i, fx_index,0,fx_index);
-    } else { 
+    } else {
       ledSetRGB(led_config.fb, i, 0, 0, 0xff);
     }
   }
 }
 
 
+void leds_shownetid(void) {
+  userconfig *config = getConfig();
+
+  /* display our netid on the leds
+   *
+   * the encoding here is:
+   * MSB                            LSB
+   * 3        2          1
+   * 21098765432109876543210987654321
+   * "RGBRGB
+   */
+  uint8_t rgb[3];
+  int8_t pos = 31;   // position in netid
+  int8_t col = 0;      // position in rgb (starts on R in RGB)
+  uint8_t lednum = 0;  // which led we start on
+
+  ledClear();
+
+  /*
+   * starting at the MSB
+   * starting at R
+   *
+   */
+  rgb[0] = rgb[1] = rgb[2] = 0;
+
+  while (pos >= 0)  { /* bits 0-31 */
+    if (config->netid & (1 << pos)) {
+      rgb[col] = 0xff;
+    }
+    col++;
+
+    if (col > 2) {
+      ledSetRGB(led_config.fb, lednum, rgb[0], rgb[1], rgb[2]);
+      rgb[0] = rgb[1] = rgb[2] = 0;
+      col = 0;
+      lednum++;
+    }
+    pos--;
+  }
+  ledSetRGB(led_config.fb, lednum, rgb[0], rgb[1], rgb[2]);
+}
+
 void leds_test(void) {
   /* walks through R, G, B to test LEDs. */
   int i;
 
-  fx_position++; 
+  fx_position++;
 
   if (fx_position > 10)  {
     fx_position = 0;
@@ -330,7 +372,7 @@ void leds_test(void) {
   }
 
   for(i=0; i < LEDS_COUNT; i++)  {
-    switch (fx_index) { 
+    switch (fx_index) {
     case 0:
       ledSetRGB(led_config.fb, i, 255, 0, 0);
       break;
@@ -445,7 +487,7 @@ void ledStart(uint32_t leds, uint8_t *o_fb)
 static void ledSetRGB(void *ptr, int x, uint8_t r, uint8_t g, uint8_t b) {
   uint8_t *buf = ((uint8_t *)ptr) + (3 * x);
 
-  // note color reordering, ws2812b's are g,r,b not r,g,b. 
+  // note color reordering, ws2812b's are g,r,b not r,g,b.
   buf[0] = g >> led_brightshift;
   buf[1] = r >> led_brightshift;
   buf[2] = b >> led_brightshift;
@@ -457,7 +499,7 @@ static void ledAddHSV(void *ptr, int x, int h, uint8_t s, uint8_t v) {
   uint8_t color[3];
 
   HSVtoRGB(h,s,v,color);
-  // note color reordering, ws2812b's are g,r,b not r,g,b. 
+  // note color reordering, ws2812b's are g,r,b not r,g,b.
   buf[0] = qadd8(buf[0], color[1]) >> led_brightshift;
   buf[1] = qadd8(buf[1], color[0]) >> led_brightshift;
   buf[2] = qadd8(buf[2], color[2]) >> led_brightshift;
@@ -474,7 +516,7 @@ void drawFractionalBar(int pos16, int width, int hue, bool wrap)
   uint8_t lastpixelbrightness = 255 - firstpixelbrightness;
 
   uint8_t bright;
-  
+
   for (int n = 0; n <= width; n++) {
     if (n == 0) {
       // first pixel in the bar
@@ -532,9 +574,9 @@ static void anim_double_bounce(void) {
   // https://gist.github.com/hsiboy/f9ef711418b40e259b06
 
   ledClear();
-  Bounce(fx_position, 0); 
+  Bounce(fx_position, 0);
   Bounce(fx_position + (MAX_INT_VALUE/2), 15);
-  fx_position += 500; 
+  fx_position += 500;
 }
 
 static void Wave(uint16_t animationFrame, int hue) {
@@ -546,7 +588,7 @@ static void Wave(uint16_t animationFrame, int hue) {
   for(uint8_t i=0;i<LEDS_COUNT;i++)
     {
       value=(msin(animationFrame+((MAX_INT_VALUE/LEDS_COUNT)*i)) + (MAX_INT_VALUE/2))/256;
-      if (value > 0) { 
+      if (value > 0) {
         ledAddHSV(led_config.fb, i, hue, 255, value);
       }
     }
@@ -555,12 +597,12 @@ static void Wave(uint16_t animationFrame, int hue) {
 static void anim_wave(void) {
   Wave(fx_position, 330);
   Wave(fx_position + (MAX_INT_VALUE/2), 142);
-  fx_position += 1000; 
+  fx_position += 1000;
 }
 
 static void anim_violetwave(void) {
   Wave(fx_position, 264);
-  fx_position += 2000; 
+  fx_position += 2000;
 }
 
 static void anim_triangle(void) {
@@ -569,9 +611,9 @@ static void anim_triangle(void) {
   fx_index++;
   if ( fx_index % 3 != 0 ) { return; } // 1/3rd speed
   ledClear();
-  
+
   for(int i = 0; i < led_config.max_pixels; i++ ) {
-    if ((i == (0+fx_position)) || (i == (N3+1+fx_position)) || (i == (N3 * 3 - 1) + fx_position)) { 
+    if ((i == (0+fx_position)) || (i == (N3+1+fx_position)) || (i == (N3 * 3 - 1) + fx_position)) {
       ledSetRGB(led_config.fb, i, fx_index % 255, fx_index % 255, 0);
     }
   }
@@ -584,7 +626,7 @@ static void anim_triangle(void) {
 static void anim_kraftwerk(void) {
   fx_index++;
   if (fx_index % 8 == 0) { fx_position++; }
-  
+
   if (fx_position > 6) { fx_position = 0; };
 
   ledClear();
@@ -597,36 +639,36 @@ static void anim_rgb_bounce(void) {
   Bounce(fx_position, 0); // red
   Bounce(fx_position + (MAX_INT_VALUE/2), 114); // green
   Bounce(fx_position + (MAX_INT_VALUE/3), 253); // blue
-  fx_position += 500; 
+  fx_position += 500;
 }
 
 static void anim_violets(void) {
   uint8_t acolor[3];
 
   // breathing violet colors with sparkle ponies
-  if (fx_direction) { 
+  if (fx_direction) {
     fx_position++;
   } else {
     fx_position--;
   }
-  
+
   if (fx_position < 10)  {
     fx_position = 10;
     fx_direction = 1;
   }
 
   if (fx_position > 128) {
-    fx_position = 128; 
-    fx_direction = 0; 
+    fx_position = 128;
+    fx_direction = 0;
   }
-  
+
   for(int i = 0; i < led_config.max_pixels; i++ ) {
     HSVtoRGB(274, 255, fx_position, acolor);
     ledSetRGB(led_config.fb, i, acolor[0], acolor[1], acolor[2]);
   }
 
-  // sparkles 
-  if (fx_position % 5 == 0) 
+  // sparkles
+  if (fx_position % 5 == 0)
     ledSetRGB(led_config.fb, random8(0, led_config.max_pixels), 0xf0, 0xf0, 0xf0);
 }
 
@@ -635,21 +677,21 @@ static void anim_comet(void) {
   int hueval = 180;
   uint8_t intensity = 200;
   uint8_t bright;
-  
-  if (fx_position >= led_config.max_pixels) { 
+
+  if (fx_position >= led_config.max_pixels) {
     fx_position = 0;
   }
 
   HSVtoRGB(hueval, 255, intensity, color);
   ledSetRGB(led_config.fb, fx_position, color[0], color[1], color[2]); // head
 
-  
+
   bright=random8(50,100);
   HSVtoRGB((hueval+40), 255, bright, color);
   ledSetRGB(led_config.fb, fx_position, color[0], color[1], color[2]);
 
   FadeLEDs(led_config.fb, 8);
-  fx_position++;  
+  fx_position++;
 
 }
 
@@ -712,7 +754,7 @@ static void anim_dot(void) { // single dim white dot, one direction
   for(int i = 0; i < led_config.max_pixels; i++ ) {
     if (i == fx_position) {
       ledSetRGB(led_config.fb, i, 20,20,20 );
-    } else { 
+    } else {
       ledSetRGB(led_config.fb, i, 0, 0, 0 );
     }
   }
@@ -728,7 +770,7 @@ static void anim_larson(void) {
 
   ledClear();
 
-  // set primary dot 
+  // set primary dot
   ledSetRGB(led_config.fb, fx_position, c.r, c.g, c.b);
 
   // handle spread
@@ -736,16 +778,16 @@ static void anim_larson(void) {
     scol.r = c.r * ((spread + 1 - i) / (spread + 1)) - (40*i);
     scol.g = c.g * ((spread + 1 - i) / (spread + 1));
     scol.b = c.b * ((spread + 1 - i) / (spread + 1));
-    
+
     if (fx_position + i < led_config.max_pixels) {
       ledSetRGB(led_config.fb, fx_position + i, scol.r, scol.g, scol.b);
     }
-    
+
     if (fx_position - i >= 0) {
       ledSetRGB(led_config.fb, fx_position - i, scol.r, scol.g, scol.b);
     }
   }
-  
+
   fx_position += fx_direction;
 
   // check for out-of-bounds:
@@ -765,7 +807,7 @@ static void anim_solid_color(void) {
 
   // solid color spiral (green)
   for(i=0; i < led_config.pixel_count; i++) {
-    // range 0-16 + 
+    // range 0-16 +
     ledSetRGB(led_config.fb, i, 0, ((msin((i+fx_position)) * 127 + 128)/255)*180,  0);
   }
 
@@ -794,15 +836,15 @@ static THD_FUNCTION(effects_thread, arg) {
 
     // transmit the actual framebuffer to the LED chain
     ledUpdate(led_config.fb, led_config.pixel_count);
-    
+
     // wait until the next update cycle
     chThdYield();
     chThdSleepMilliseconds(EFFECTS_REDRAW_MS);
-    
+
     // re-render the internal framebuffer animations
-    if (led_current_func != NULL) 
+    if (led_current_func != NULL)
       led_current_func();
-    
+
     if( ledExitRequest ) {
       // force one full cycle through an update on request to force LEDs off
       ledUpdate(led_config.fb, led_config.pixel_count);
@@ -824,7 +866,7 @@ void effectsStart(void) {
 
   if (*fxlist[config->led_pattern].function != NULL)
     (*fxlist[config->led_pattern].function)();
-  
+
   ledExitRequest = 0;
   ledsOff = 0;
 

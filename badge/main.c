@@ -522,19 +522,21 @@ int main(void)
 
   /* Promote sponsors */
   putImageFile("dc25lgo.rgb", 0, 0);
-  chThdSleepMilliseconds (2500);
-  
+  chThdSleepMilliseconds (2000);
+
+  ledSetFunction(leds_shownetid);
   putImageFile("sponsor.rgb", 0, 0);
   dacWait ();
   dacStop ();
   i = 0;
+
   while (number_sequence[i] != 255) {
       tonePlay (NULL, number_sequence[i], 85);
       i++;
   }
-  chThdSleepMilliseconds (2500);
+  chThdSleepMilliseconds (2000);
 #endif
-  
+  ledSetFunction(NULL);
   /* run apps */
   orchardAppInit();
   evtTableHook(orchard_events, orchard_app_terminated, orchard_app_restart);
