@@ -84,7 +84,7 @@ gtimerCallback (void * arg)
 }
 
 static void
-update (void)
+update (VHandles * p)
 {
 	FIL f;
 	UINT br;
@@ -123,7 +123,18 @@ update (void)
 	gtimerInit (t);
 	gtimerStart (t, gtimerCallback, NULL, FALSE, 1);
 
+	chThdSleepMilliseconds (20);
+
 	/* Wait for the LED and gtimer threads to exit */
+
+	gwinClear (p->ghConsole);
+	gwinPrintf (p->ghConsole,
+	    "\n\n"
+	    " FIRMWARE UPDATE IN PROGRESS\n"
+	    " DO NOT POWER OFF THE BADGE\n"
+	    " UNTIL IT COMPLETES!\n\n"
+	    " THE BADGE WILL REBOOT WHEN\n"
+	    " THE UPDATE IS FINISHED");
 
 	chThdSleepMilliseconds (2000);
 
@@ -225,9 +236,10 @@ update_start(OrchardAppContext *context)
 	if (buildinfo.build_ver <= firmware_version.build_ver) {
 		gwinPrintf (ghConsole,
 		    "\n\n\n"
-		    "    Firmware on the SD card is\n"
-		    "    older or same as currently\n"
-		    "    running version!");
+		    "    Firmware on the SD card\n"
+		    "    is older or same as the\n"
+		    "    currently running\n"
+		    "    version!");
 		goto done;
 	}
 
@@ -291,26 +303,10 @@ update_event(OrchardAppContext *context, const OrchardAppEvent *event)
 		pe = event->ugfx.pEvent;
 		if (pe->type == GEVENT_GWIN_BUTTON) {
 			be = (GEventGWinButton *)pe;
-			if (be->gwin == p->ghOK) {
-                          gwinDestroy (p->ghOK);
-                          gwinDestroy (p->ghCANCEL);
-                          
-                          gwinClear (p->ghConsole);
-                          gwinPrintf (p->ghConsole,
-                                      "\n\n"
-                                      " FIRMWARE UPDATE IN PROGRESS\n"
-                                      " DO NOT POWER OFF THE BADGE\n"
-                                      " UNTIL IT COMPLETES!\n\n"
-                                      " THE BADGE WILL REBOOT WHEN\n"
-                                      " THE UPDATE IS FINISHED");
-                          update();
-			}
-
-			if (be->gwin == p->ghCANCEL) {
-                          gwinDestroy (p->ghOK);
-                          gwinDestroy (p->ghCANCEL);
-                          orchardAppExit ();
-                        }
+			if (be->gwin == p->ghOK)
+				update (p);
+			if (be->gwin == p->ghCANCEL)
+				orchardAppExit ();
 		}
 	}
 
@@ -328,6 +324,8 @@ void update_exit(OrchardAppContext *context)
 		return;
 
 	gdispCloseFont (p->font);
+	gwinDestroy (p->ghOK);
+	gwinDestroy (p->ghCANCEL);
 	gwinDestroy (p->ghConsole);
 
 	geventDetachSource (&p->glCtListener, NULL);
