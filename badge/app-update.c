@@ -226,7 +226,7 @@ update_start(OrchardAppContext *context)
 		gwinPrintf (ghConsole,
 		    "\n\n\n"
 		    "    Firmware on the SD card is\n"
-		    "    older than the currently\n"
+		    "    older or same as currently\n"
 		    "    running version!");
 		goto done;
 	}
@@ -289,21 +289,28 @@ update_event(OrchardAppContext *context, const OrchardAppEvent *event)
 
 	if (event->type == ugfxEvent) {
 		pe = event->ugfx.pEvent;
-		if (pe->type == GEVENT_GWIN_BUTTON_UP) {
+		if (pe->type == GEVENT_GWIN_BUTTON) {
 			be = (GEventGWinButton *)pe;
 			if (be->gwin == p->ghOK) {
-				gwinClear (p->ghConsole);
-				gwinPrintf (p->ghConsole,
-				    "\n\n"
-				    " FIRMWARE UPDATE IN PROGRESS\n"
-				    " DO NOT POWER OFF THE BADGE\n"
-				    " UNTIL IT COMPLETES!\n\n"
-				    " THE BADGE WILL REBOOT WHEN\n"
-				    " THE UPDATE IS FINISHED");
-				update ();
+                          gwinDestroy (p->ghOK);
+                          gwinDestroy (p->ghCANCEL);
+                          
+                          gwinClear (p->ghConsole);
+                          gwinPrintf (p->ghConsole,
+                                      "\n\n"
+                                      " FIRMWARE UPDATE IN PROGRESS\n"
+                                      " DO NOT POWER OFF THE BADGE\n"
+                                      " UNTIL IT COMPLETES!\n\n"
+                                      " THE BADGE WILL REBOOT WHEN\n"
+                                      " THE UPDATE IS FINISHED");
+                          update();
 			}
-			if (be->gwin == p->ghCANCEL)
-				orchardAppExit ();
+
+			if (be->gwin == p->ghCANCEL) {
+                          gwinDestroy (p->ghOK);
+                          gwinDestroy (p->ghCANCEL);
+                          orchardAppExit ();
+                        }
 		}
 	}
 
@@ -321,8 +328,6 @@ void update_exit(OrchardAppContext *context)
 		return;
 
 	gdispCloseFont (p->font);
-	gwinDestroy (p->ghOK);
-	gwinDestroy (p->ghCANCEL);
 	gwinDestroy (p->ghConsole);
 
 	geventDetachSource (&p->glCtListener, NULL);
