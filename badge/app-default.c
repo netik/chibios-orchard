@@ -139,8 +139,6 @@ static void redraw_player(DefaultHandles *p) {
 		      gdispGetFontMetric(p->fontXS, fontHeight),
 		      tmp2,
 		      p->fontXS, White, justifyLeft);
-
-
 }
 
 static void draw_stat (DefaultHandles * p,
@@ -246,6 +244,11 @@ static void redraw_badge(DefaultHandles *p) {
 
   if (config->airplane_mode)
     putImageFile(IMG_PLANE, 0, 0);
+
+#ifdef LEADERBOARD_AGENT
+  screen_alert_draw(false, "LB AGENT MODE");
+#endif
+
 }
 
 static uint32_t default_init(OrchardAppContext *context) {
@@ -442,7 +445,7 @@ static void default_event(OrchardAppContext *context,
 
       }
     }
-
+#ifndef LEADERBOARD_AGENT
     /* Caesar Election
      * ---------------
      * Every 60 seconds...
@@ -478,7 +481,7 @@ static void default_event(OrchardAppContext *context,
         } 
       }
     }
-
+#endif
     /* is it time to revert the player? 
      * 
      * reverts bender, caesar after certain amount of time 
