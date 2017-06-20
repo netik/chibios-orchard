@@ -153,6 +153,26 @@ static void orchard_app_restart(eventid_t id) {
 extern int print_hex(BaseSequentialStream *chp,
                      const void *block, int count, uint32_t start);
 
+static char *sanitize_string(char *dest, char *src) {
+  // escape characters that could break JSON parsing. Caveat: dest
+  // should be 2x the size of src just incase every character is made
+  // of evil.
+  char *p, *d;
+  if (!dest || !src)
+    return NULL;
+  d = dest;
+  for (p = src; *p != (char)'\0'; p++) {
+    if (*p == '\"' || *p == '\'' || *p == '\"' || *p == '\\') {
+      *d++ = '\\';
+    }
+    
+    *d++ = *p;
+  }
+  *d = '\0';
+  
+  return d;
+}
+
 static void default_radio_handler(KW01_PKT * pkt)
 {
   chprintf(stream, "\r\nNo handler for packet found.  %02x -> %02x : %02x (signal strength: -%ddBm)\r\n",
@@ -229,7 +249,11 @@ static void radio_ping_handler(KW01_PKT *pkt) {
 
 #ifndef LEADERBOARD_AGENT
   if (c->unlocks & UL_PINGDUMP) {
-#endif    
+#endif
+    /* sanitize the name */
+    char tmpname[2 * (CONFIG_NAME_MAXLEN+1)];
+    sanitize_string(tmpname, u->name);
+    
     chprintf(stream, "PING: {\"name\":\"%s\"," \
              "\"badgeid\":\"%08x\"," \
              "\"ptype\":\"%d\"," \
@@ -237,7 +261,7 @@ static void radio_ping_handler(KW01_PKT *pkt) {
              "\"hp\":%d," \
              "\"xp\":%d," \
              "\"level\":%d,",
-             u->name,
+             tmpname,
              u->netid,
              u->current_type,
              u->p_type,
