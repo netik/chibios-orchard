@@ -162,12 +162,21 @@ static char *sanitize_string(char *dest, char *src) {
     return NULL;
   d = dest;
   for (p = src; *p != (char)'\0'; p++) {
-    if (*p == '\"' || *p == '\'' || *p == '\"' || *p == '\\') {
+    switch(*p) {
+    case '"':
       *d++ = '\\';
+      *d++ = '\"';
+      break;
+    case '\\':
+      *d++ = '\\';
+      *d++ = '\\';
+      break;
+    default:
+      *d++ = *p;
+      break;
     }
-    
-    *d++ = *p;
   }
+
   *d = '\0';
   
   return d;
