@@ -532,6 +532,8 @@ int main(void)
   /* Initialize uGfx */
   gfxInit();
   uiStart();
+  /* run apps */
+  orchardAppInit();
 
   /* Draw a banner... */
   oledOrchardBanner();
@@ -574,8 +576,6 @@ int main(void)
   chThdSleepMilliseconds (2000);
 #endif
   ledSetFunction(NULL);
-  /* run apps */
-  orchardAppInit();
   evtTableHook(orchard_events, orchard_app_terminated, orchard_app_restart);
   orchardAppRestart();
 
