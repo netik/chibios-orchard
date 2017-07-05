@@ -4,6 +4,7 @@
 
 #include "orchard-shell.h"
 #include "orchard-app.h"
+#include "unlocks.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -80,17 +81,10 @@ void cmd_peeradd(BaseSequentialStream *chp, int argc, char *argv[]) {
 }
 orchard_command("peeradd", cmd_peeradd);
 
-void cmd_peerping(BaseSequentialStream *chp, int argc, char *argv[]) {
-  (void) chp;
-  (void) argc;
-  (void) argv;
+// Generate a list of random names to simulate other players.  if you
+// attack these simulated users, the game will run the fight locally
+// and not wait for network traffic.
 
-  //  chEvtBroadcast(&radio_app);
-}
-orchard_command("peerping", cmd_peerping);
-
-// jna: remove this once we go live
-// generate a list of random names and broadcast them until told to stop
 void cmd_peersim(BaseSequentialStream *chp, int argc, char *argv[]) {
   (void) chp;
   (void) argc;
@@ -106,12 +100,12 @@ void cmd_peersim(BaseSequentialStream *chp, int argc, char *argv[]) {
       // enemies[i]->ttl will be filled in by the recipient.
       enemies[i]->current_type = p_guard;
       enemies[i]->p_type = p_guard;
-      enemies[i]->netid = i; // fake 
+      enemies[i]->netid = i; // net id's below 0x10 are simulated
       enemies[i]->ttl = 12;
       enemies[i]->in_combat = 0;
-      enemies[i]->level = 9;
-
-      enemies[i]->hp = maxhp(p_guard, 0, 9) * 0.5; // start at 50% HP to test
+      enemies[i]->level = i >=10 ? 10 : i;
+      enemies[i]->unlocks = UL_SIMULATED; // this tells app-fight to not to request these peers over the radio
+      enemies[i]->hp = maxhp(p_guard, 0, enemies[i]->level ) * 0.85; // start at 85% HP to test
 
       chsnprintf(tmp, sizeof(tmp), "test%05d",i);
       strncpy(enemies[i]->name, tmp, CONFIG_NAME_MAXLEN);
