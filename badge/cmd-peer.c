@@ -103,9 +103,9 @@ void cmd_peersim(BaseSequentialStream *chp, int argc, char *argv[]) {
       enemies[i]->netid = i; // net id's below 0x10 are simulated
       enemies[i]->ttl = 12;
       enemies[i]->in_combat = 0;
-      enemies[i]->level = i >=10 ? 10 : i;
+      enemies[i]->level = ( i + 1 ) >= 10 ? 10 : ( i + 1 );
       enemies[i]->unlocks = UL_SIMULATED; // this tells app-fight to not to request these peers over the radio
-      enemies[i]->hp = maxhp(p_guard, 0, enemies[i]->level ) * 0.85; // start at 85% HP to test
+      enemies[i]->hp = maxhp(p_guard, 0, enemies[i]->level );
 
       chsnprintf(tmp, sizeof(tmp), "test%05d",i);
       strncpy(enemies[i]->name, tmp, CONFIG_NAME_MAXLEN);
