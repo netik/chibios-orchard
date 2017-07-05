@@ -96,7 +96,7 @@
  * play at the correct rate too.
  *
  * Encoding of the video and audio is done on a host system using ffmpeg.
- * The video is textextracted as individual uncompressed frames in the native
+ * The video is extracted as individual uncompressed frames in the native
  * RGB565 pixel format supported by the ILI9341 display controller. The
  * audio is converted to 16-bit monoaural raw sample data, and then processed
  * with a custom utility to convert the 16-bit samples to 12-bit samples
@@ -171,7 +171,7 @@
 
 __attribute__((section(".textextra")))
 static void
-write_pixel (pixel_t p1, int textextra)
+write_pixel (pixel_t p1, int extra)
 {
 	volatile pixel_t * dst;
 
@@ -179,7 +179,7 @@ write_pixel (pixel_t p1, int textextra)
 
 	dst[0] = p1;
 	dst[0] = p1;
-	if (textextra)
+	if (extra)
 		dst[0] = p1;
 
 	while ((SPI1->S & SPIx_S_SPTEF) == 0)
@@ -199,7 +199,7 @@ write_pixel (pixel_t p1, int textextra)
 *
 * Since the video is 128x96 pixels and the display is 320x240, we upscale
 * each scanline by a factor of 2.5 so that we fill the whole screen. Each
-* scanline is drawn at least twice. If the <textextra> argument is non-zero,
+* scanline is drawn at least twice. If the <extra> argument is non-zero,
 * the scanline is drawn a third time as well. This results in each line
 * being drawn 2.5 times. The write_pixel() function used to place each
 * pixel on the screen uses a similar transformation.
@@ -217,7 +217,7 @@ write_pixel (pixel_t p1, int textextra)
 
 __attribute__((section(".textextra")))
 static void
-draw_lines (pixel_t * buf, int textextra)
+draw_lines (pixel_t * buf, int extra)
 {
 	uint8_t p;
 
@@ -229,7 +229,7 @@ draw_lines (pixel_t * buf, int textextra)
 		write_pixel (buf[p], p & 1);
 	}
 
-	if (textextra) {
+	if (extra) {
 		for (p = 0; p < FRAMERES_HORIZONTAL; p++) {
 			write_pixel (buf[p], p & 1);
 		}
