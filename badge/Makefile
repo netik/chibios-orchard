@@ -30,7 +30,7 @@ USE_OPT += -DENABLE_JOYPAD
 # Enable this to support single player mode. You will have to generate
 # enemies with the 'peersim' command by hold down RIGHT during boot to
 # play with yourself.
-#USE_OPT += -DSINGLE_PLAYER
+USE_OPT += -DSINGLE_PLAYER
 
 # Enable this to bypass startup splash page and sponsors
 #
