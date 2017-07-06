@@ -27,7 +27,11 @@ ifeq ($(USE_OPT),)
 #
 USE_OPT += -DENABLE_JOYPAD
 
-# enable this to bypass startup splash page and sponsors
+# Enable this to support single player mode. You will have to generate
+# enemies with the 'peersim' command or hold down RIGHT during boot.
+USE_OPT += -DSINGLE_PLAYER
+
+# Enable this to bypass startup splash page and sponsors
 #
 # USE_OPT += -DFAST_STARTUP
 
@@ -53,7 +57,7 @@ USE_OPT += -DENABLE_JOYPAD
 # feature is available by getting enabling the unlock UL_PINGDUMP on
 # generic badges, minus the ability to disable pings.
 #
-# USE_OPT += -DLEADERBOARD_AGENT
+#USE_OPT += -DLEADERBOARD_AGENT
 
 endif
 

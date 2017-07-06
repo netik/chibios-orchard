@@ -81,6 +81,7 @@ static uint8_t number_sequence[] = {
 };
 
 extern void tonePlay (GWidgetObject *, uint8_t, uint32_t);
+extern void cmd_peersim(BaseSequentialStream *chp, int argc, char *argv[]);  
 
 #ifdef MAKE_DTMF
 extern int make_dtmf(void);
@@ -532,8 +533,21 @@ int main(void)
   /* Initialize uGfx */
   gfxInit();
   uiStart();
+
   /* run apps */
   orchardAppInit();
+
+#ifdef SINGLE_PLAYER
+  /* holding right and booting the system will run peersim. */
+#ifdef ENABLE_JOYPAD
+  if ((palReadPad (BUTTON_RIGHT_PORT, BUTTON_RIGHT_PIN) == 0)) {
+    cmd_peersim(0,0,0);
+    playTone(48, 100);
+    playTone(52, 100);
+    playTone(55, 100);
+  }
+#endif
+#endif
 
   /* Draw a banner... */
   oledOrchardBanner();

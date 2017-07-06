@@ -1207,8 +1207,14 @@ static void state_show_results_tick() {
       // no one is dead yet, go on!
       if (fightleader == true) {
         countdown = MS2ST(10000);
+#ifdef SINGLE_PLAYER
+        if (current_enemy.unlocks & UL_SIMULATED) {
+          changeState(MOVE_SELECT);
+          return; // don't allow the sendgamepacket to execute
+        }
+#endif
+        // we will transition out on ACK
         sendGamePacket(OP_NEXTROUND);
-        // we will transition out on ACK 
       } else { 
         /* else, we'll spin, waiting in state_show_results_tick() for a next round 
          * packet. if we do not get on in ten seconds, we abort.
@@ -1402,7 +1408,35 @@ static void sendAttack(void) {
                       gdispGetFontMetric(p->fontSM, fontHeight),
                       "WAITING FOR CHALLENGER'S MOVE",
                       p->fontSM, White, justifyCenter);
-   
+#ifdef SINGLE_PLAYER
+  if (current_enemy.unlocks & UL_SIMULATED) {
+    userconfig *config = getConfig();
+    /* SINGLE PLAYER MODE: this is a simulation so it is a very poor,
+     * inverted implementation of calc_hit()
+     * 
+     * I don't want to waste alot of code reimplementing this. 
+     */
+
+    /* first we select a random hit with fairly standard base damage */
+    rr.theirattack = 1 << ((rand() % 2) + 3);
+    rr.last_damage = 42 * (1 + (.05 * current_enemy.level));
+    
+    /* factor in agility and might in reverse */
+    rr.last_damage += (2 * current_enemy.might) - (3 * config->agl);
+
+    if ( (int)rand() % 100 <= current_enemy.luck) { 
+      rr.theirattack |= ATTACK_ISCRIT;
+      rr.last_damage *= 2;
+    }
+
+    /* figure out what damage we do to them */
+    rr.last_hit = calc_hit(config, &current_enemy);
+
+    /* immediately go to show results, breaking the normal flow. */
+    changeState(SHOW_RESULTS);
+    return;
+  }
+#endif
   sendGamePacket(OP_IMOVED);
   changeState(POST_MOVE);
 }
@@ -1872,6 +1906,12 @@ static void start_fight(OrchardAppContext *context) {
   // We're going to preemptively call this before changing state
   // so the screen doesn't go black while we wait for an ACK.
   screen_alert_draw(true, "Connecting...");
+#ifdef SINGLE_PLAYER
+  if (current_enemy.unlocks & UL_SIMULATED) {
+    changeState(VS_SCREEN);
+    return;
+  }
+#endif  
   sendGamePacket(OP_BATTLE_REQ);
 }
 
