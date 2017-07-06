@@ -152,9 +152,10 @@ static void draw_stat (DefaultHandles * p,
 		      gdispGetFontMetric(p->fontSM, fontHeight),
 		      str1,
 		      p->fontSM, Yellow, justifyLeft);
-  gdispDrawStringBox (lmargin + x + 35,
+
+  gdispDrawStringBox (lmargin + x + 15,
 		      y,
-                      50,
+                      72,
 		      gdispGetFontMetric(p->fontSM, fontHeight),
 		      str2,
 		      p->fontSM, White, justifyRight);
@@ -208,7 +209,7 @@ static void redraw_badge(DefaultHandles *p) {
 
   if (!config->rotate) {
     chsnprintf(tmp2, sizeof(tmp2), "%3d", config->won);
-    draw_stat (p, 94, ypos, "WON", tmp2);
+    draw_stat (p, 92, ypos, "WON", tmp2);
   }
 
   /* AGL / LOST */
@@ -218,7 +219,7 @@ static void redraw_badge(DefaultHandles *p) {
 
   if (!config->rotate) { 
     chsnprintf(tmp2, sizeof(tmp2), "%3d", config->lost);
-    draw_stat (p, 94, ypos, "LOST", tmp2);
+    draw_stat (p, 92, ypos, "LOST", tmp2);
   }
 
   /* MIGHT */
