@@ -94,7 +94,21 @@ As a demo, we've loaded a few photos from our recent trip to Rome. Place TIFs in
 
 Typing `make images` will also perform a build of the `photos/` sdcard directory.
 
-Images must be 320x240. Because we're using scrolling, the 
+Images must be 320x240. Because of the way scrolling works, we need to do the following two things to prepare the image so that it diplays correctly:
+
+1) Rotate the image left by 90 degrees
+2) "Flop" the image to reverse it
+
+This script depends on the following tools to work correctly:
+- ImageMagick identify(1) utility
+- ImageMagick convert(1) utility
+- ffmpeg
+- the rgbhdr tool from this distribution
+
+Image files will be forcibly resized to 320x240 pixels, then processed
+into the RGB565 native format of the display. Once the files are generated,
+they can be copied to the "photos" subdirectory on the badge's SD card.
+
 
 ## Icons
 
