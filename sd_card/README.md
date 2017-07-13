@@ -50,6 +50,23 @@ static const PWM_NOTE soundVictory[] = {
 
 A MIDI-like note system is available in notes.h, and we have some (limited) conversion tools in `/chibios-orchard/sd_card/midi` as `midi.c` and `midi2.c` which will generate these structs.
 
+As you may have guessed, note16 is a 16th note, note4 a quarter note, and so on, all based at about 140bpm.
+
+The durations can be set as follows:
+
+```
+#define note4  50 /*400*/ /* mS per quarter note @ 120bpm */
+#define note16 12 /*100*/ /* 16th note */
+#define note32 5 /*50*/  /* 32nd note */
+
+/* slow! */
+#define snote4  60 /*400*/ /* mS per quarter note @ 100bpm */
+#define snote8  30 /*400*/ /* 8th note */
+#define snote16 15 /*100*/ /* 16th note */
+#define snote32 10 /*50*/  /* 32nd note */
+```
+
+
 Playback API
 
 `playTone(NOTE_D4, 500);` to play one note for 500mS
