@@ -41,7 +41,7 @@ typedef struct _UnlockHandles {
 
 } UnlockHandles;
 
-/* codes, packed as bits. Note only last five bits are used, MSB of
+/* codes, packed as bits. Note only last five nibbles (4 bits) are used, MSB of
    1st byte is always zero */
 #define MAX_ULCODES 11
 static uint8_t unlock_codes[MAX_ULCODES][3] = { { 0x01, 0xde, 0xf1 }, // 0 +10% DEF
