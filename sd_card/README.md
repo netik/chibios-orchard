@@ -25,7 +25,7 @@ There are *two* audio facilities on the badge. A 12 bit DAC capable of playing m
 
 ### For the DAC:
 
-To convert audio, drop `.wafiles into the dac directory and run `make sdcard`
+To convert audio, drop `.wav` files into the dac directory and run `make sdcard`
 
 Audo playback runs in a separate thread and can be accessed with the `dacPlay("filename")` call. 
 
