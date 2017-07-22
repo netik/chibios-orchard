@@ -395,6 +395,43 @@ void leds_test(void) {
       ledSetRGB(led_config.fb, i, 0,  0, 255);
       break;
     }
+#ifdef ENABLE_JOYPAD
+    // switch test, holding down buttons lights the LEDs white
+    switch (i) {
+    case 0:
+      // UP
+      if (palReadPad (BUTTON_UP_PORT, BUTTON_UP_PIN) == 0) {
+        ledSetRGB(led_config.fb, i, 255, 255, 255);
+      }
+      break;
+    case 1:
+      // DOWN
+      if (palReadPad (BUTTON_DOWN_PORT, BUTTON_DOWN_PIN) == 0) {
+        ledSetRGB(led_config.fb, i, 255, 255, 255);
+      }
+      break;
+    case 2:
+      // LEFT
+      if (palReadPad (BUTTON_LEFT_PORT, BUTTON_LEFT_PIN) == 0) {
+        ledSetRGB(led_config.fb, i, 255, 255, 255);
+      }
+      break;
+    case 3:
+      // RIGHT
+      if (palReadPad (BUTTON_RIGHT_PORT, BUTTON_RIGHT_PIN) == 0) {
+        ledSetRGB(led_config.fb, i, 255, 255, 255);
+      }
+      break;
+    case 4:
+      // ENTER
+      if (palReadPad (BUTTON_ENTER_PORT, BUTTON_ENTER_PIN) == 0) {
+        ledSetRGB(led_config.fb, i, 255, 255, 255);
+      }
+      break;
+    default:
+      break;
+    }
+#endif
   }
 }
 
