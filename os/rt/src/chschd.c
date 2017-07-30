@@ -39,6 +39,7 @@
 /**
  * @brief   System data structures.
  */
+__attribute__((section(".fsbss")))
 ch_system_t ch;
 
 /*===========================================================================*/
