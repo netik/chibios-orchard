@@ -65,13 +65,13 @@
  * to be able to use the radio's 32MHz crystal as a reference clock for
  * the CPU (to keep the parts count low). This is possible because the
  * radio passes through its reference clock to the CLKOUT pin. However
- * at power up or reset, it sets a divisor of 32 on the CLKOUT signal
- * by default. We need to disable this to restore it to 32MHz again,
- * which we do in the __early_init() function in ChibisOS. The problem
- * is that if we hard reset the radio again later, the clock will go
- * back to 1MHz again and slow the whole system down until we can correct
- * it again. For now we rely on the reset during __early_init() to put
- * the radio into a known state and avoid asserting its reset pin again
+ * at power up or reset, it sets a default divisor of 32 on the CLKOUT
+ * signal. We need to disable this to restore it to 32MHz again,
+ * which we do in the __early_init() function in ChibiOS. The problem
+ * is that if we hard reset the radio later, the clock will go back
+ * to 1MHz again and slow the whole system down until we can correct
+ * it. For now we rely on the reset during __early_init() to put
+ * the radio into a known state and avoid asserting its reset pin
  * while the system is running.
  *
  * SEE ALSO:

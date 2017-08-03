@@ -6,7 +6,7 @@
  * This program merges a video and audio stream together into a single file
  * for playback on the Kinetis KW01 using our video player. The video stream
  * is a file containing sequential 128x96 resolution frames in 16-bit RGB565
- * pixel format. The audio stream is a fine containing a stream of 12-bit
+ * pixel format. The audio stream is a file containing a stream of 12-bit
  * audio samples encoded at a rate of 9216Hz, stored 16 bits per sample.
  * We interleave the video and audio together, outputting two video scalines
  * 256 pixels) followed by two lines worth of audio samples (24 samples,
