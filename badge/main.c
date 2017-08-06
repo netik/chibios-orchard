@@ -429,6 +429,41 @@ int main(void)
   palSetPadMode (SPI1_MOSI_PORT, SPI1_MOSI_PIN, PAL_MODE_INPUT_PULLUP);
   palSetPadMode (SPI1_MOSI_PORT, SPI1_MOSI_PIN, PAL_MODE_ALTERNATIVE_2);
 
+  /*
+   * This is a workaround for a problem sometimes seen on prodction
+   * boards. On some units, the soldering for the chip is a little
+   * sketchy. The problems created by this vary, but one problem
+   * seen occasionally is glitches in the video display. Sometimes
+   * when the screen finishes drawing, there will be additional dots
+   * or white lines drawn. On the third menu screen, a block of white
+   * lines can be seen appearing under the e-mail app.
+   *
+   * This appears to be due to the chip select signal for the screen
+   * not transitioning correctly. The screen should only accept data
+   * when its chip select is held low. The spurious glitches are
+   * apparently due to the screen controller continuing to accept
+   * data when it should not. In this case SPI transfers used to poll
+   * the touch panel controller.
+   *
+   * The problem seems to be that the chip select pin on the CPU has
+   * a weak solder joint. Reflowing the solder connections seems to
+   * correct it.
+   *
+   * However it appears possible to also work around it in software. The
+   * chip select for the screen (PORTD pin 4) is set to PAL_MODE_ALTERNATIVE_2
+   * so that the SPI controller can toggle its state directly (this avoids
+   * the need to have code to do it explicitly, which saves a few machine
+   * instructions here and there). However when this mode is specified, the
+   * ChibiOS PAL code leaves the internal pullup disabled. On the IDES
+   * of DEF CON board design, we did not use external pullups. The code
+   * below enables the internal pullup resistor for PORTD pin 4, and that
+   * seems to avoid the video glitches without needing physical rework,
+   * at least on my board.
+   */
+
+  PORTD->PCR[SCREEN_CHIP_SELECT_PIN] |= PORTx_PCRn_PE | PORTx_PCRn_PS;
+
+
 #if HAL_USE_MMC_SPI
   /* Connect the SD card */
 
