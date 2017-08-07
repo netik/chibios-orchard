@@ -430,7 +430,7 @@ int main(void)
   palSetPadMode (SPI1_MOSI_PORT, SPI1_MOSI_PIN, PAL_MODE_ALTERNATIVE_2);
 
   /*
-   * This is a workaround for a problem sometimes seen on prodction
+   * This is a workaround for a problem sometimes seen on production
    * boards. On some units, the soldering for the chip is a little
    * sketchy. The problems created by this vary, but one problem
    * seen occasionally is glitches in the video display. Sometimes
@@ -451,8 +451,8 @@ int main(void)
    *
    * However it appears possible to also work around it in software. The
    * chip select for the screen (PORTD pin 4) is set to PAL_MODE_ALTERNATIVE_2
-   * so that the SPI controller can toggle its state directly (this avoids
-   * the need to have code to do it explicitly, which saves a few machine
+   * so that the SPI controller can toggle its state internally (this avoids
+   * the need to have code to do it manually, which saves a few machine
    * instructions here and there). However when this mode is specified, the
    * ChibiOS PAL code leaves the internal pullup disabled. On the IDES
    * of DEF CON board design, we did not use external pullups. The code
