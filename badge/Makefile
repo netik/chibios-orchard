@@ -44,7 +44,7 @@ USE_OPT += -DSINGLE_PLAYER
 # configuration utilities and other goodies reserved. Should not be
 # used on production badges.
 #
-#USE_OPT += -DBLACK_BADGE
+USE_OPT += -DBLACK_BADGE
 
 # This module will write out DTMF digits as sound files to the SD card.
 # I don't know if we need this or not yet but I've finished the code,

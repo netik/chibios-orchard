@@ -98,6 +98,16 @@ static void cmd_config_set(BaseSequentialStream *chp, int argc, char *argv[]) {
     chprintf(chp, "Pingdump set.\r\n");
     return;
   }
+
+  if (!strcasecmp(argv[1], "rotate")) {
+    if (!strcmp(argv[2], "1")) {
+      config->rotate = 1;
+    } else {
+      config->rotate = 0;
+    }
+    chprintf(chp, "Rotation set.\r\n");
+    return;
+  }
   
   if (!strcasecmp(argv[1], "name")) {
     strncpy(config->name, argv[2], CONFIG_NAME_MAXLEN);

@@ -338,12 +338,12 @@ static void default_event(OrchardAppContext *context,
     if (event->key.flags == keyPress)
       storeKey(context, event->key.code);
 
-    /* hitting enter goes into fight, unless konami has been entered,
+    /* hitting enter or left goes into fight, unless konami has been entered,
        then we send you to the unlock screen! */
-    if ( (event->key.code == keySelect) &&
+    if ( ( (event->key.code == keyLeft) || (event->key.code == keySelect) )&&
          (event->key.flags == keyPress) )  {
 
-      if (testKonami(context)) { 
+      if (testKonami(context) && (event->key.code == keySelect)) { 
         orchardAppRun(orchardAppByName("Unlocks"));
       } else {
         orchardAppRun(orchardAppByName("Fight"));
@@ -351,6 +351,12 @@ static void default_event(OrchardAppContext *context,
       return;
     }
 
+    /* hitting right will take you into setup */
+    if ( (event->key.code == keyRight) &&
+         (event->key.flags == keyPress) )  {
+        orchardAppRun(orchardAppByName("Setup"));
+        return;
+    }
   }
   
   if (event->type == ugfxEvent) {
