@@ -351,11 +351,13 @@ static void default_event(OrchardAppContext *context,
       return;
     }
 
-    /* hitting right will take you into setup */
-    if ( (event->key.code == keyRight) &&
+    /* hitting up and down at same time will take you into setup */
+    if ( (event->key.code == keyUp) &&
          (event->key.flags == keyPress) )  {
+      if (palReadPad (BUTTON_DOWN_PORT, BUTTON_DOWN_PIN) == 0) { 
         orchardAppRun(orchardAppByName("Setup"));
         return;
+      }
     }
   }
   
