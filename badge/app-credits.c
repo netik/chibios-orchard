@@ -78,6 +78,9 @@ credits_event(OrchardAppContext *context, const OrchardAppEvent *event)
 	(void)context;
 	(void)event;
 
+  if (event->type == keyEvent) {
+    orchardAppExit();
+  }
 	return;
 }
 

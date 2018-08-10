@@ -164,6 +164,8 @@ spectrum_event (OrchardAppContext *context,
 			state->center -= STEP;
 		if (event->key.code == keyRight)
 			state->center += STEP;
+		if (event->key.code == keySelect)
+      orchardAppExit ();
 		paramShow (state->span, state->center);
 	}
 

@@ -458,10 +458,11 @@ videoWinPlay (char * fname, int x, int y)
 
 		gdisp_lld_write_stop (GDISP);
 
-		/* Check for the user requesting exit. */
+		/* Check for the user requesting exit via mouse down or button press */
 
 		me = (GEventMouse *)geventEventWait (&gl, 0);
-		if (me != NULL && me->buttons & GMETA_MOUSE_DOWN)
+		if ( ( me != NULL && me->buttons & GMETA_MOUSE_DOWN ) || 
+         ( palReadPad (BUTTON_LEFT_PORT, BUTTON_LEFT_PIN) == 0) )
 			break;
 	}
 

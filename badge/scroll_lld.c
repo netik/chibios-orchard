@@ -132,7 +132,8 @@ scrollImage (char * file, int delay)
 		scrollCount (o == GDISP_ROTATE_90 ?
 			(gdispGetWidth() - 1) - scroll_pos : scroll_pos);
 		me = (GEventMouse *)geventEventWait(&gl, 0);
-		if (me != NULL &&  me->buttons & GMETA_MOUSE_DOWN)
+		if ( ( me != NULL && me->buttons & GMETA_MOUSE_DOWN ) || 
+         ( palReadPad (BUTTON_LEFT_PORT, BUTTON_LEFT_PIN) == 0) )
 			break;
 		chThdSleepMilliseconds (delay);
 	}
